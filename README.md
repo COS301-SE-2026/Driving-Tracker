@@ -27,13 +27,13 @@ wrapped in gamification and social features to make safer driving engaging and r
 | Team Lead • Backend |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Brayden-ux) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brayden-butler-b96591328?) |
 
-| <img src="docs/images/" alt="Sente Mngomezulu" width="280"/>|
+| <img src="docs/images/Sente.jpeg" alt="Sente Mngomezulu" width="280"/>|
 |:---:|
 | **Sentelweyinkhosi Mngomezulu** |
 | Backend Engineer |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/SenteMngomez) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sentelweyinkhosi-mngomezulu?) |
 
-| <img src="docs/images/" alt="Mosa Leiee" width="280"/>|
+| <img src="docs/images/Mosa.jpeg" alt="Mosa Leiee" width="280"/>|
 |:---:|
 | **Mosa Leiee** |
 | Frontned Engineer |
@@ -45,7 +45,7 @@ wrapped in gamification and social features to make safer driving engaging and r
 | Frontend Engineer |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/kundaindemera) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kundai-ndemera?) |
 
-| <img src="docs/images/" alt="Lesedi Padi" width="280"/>|
+| <img src="docs/images/Lesedi.jpeg" alt="Lesedi Padi" width="280"/>|
 |:---:|
 | **Lesedi Padi** |
 | Backend Engineer |
