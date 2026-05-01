@@ -28,7 +28,7 @@ CREATE TABLE vehicle (
 CREATE TABLE trips(
     trip_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES users(user_id) ON UPDATE CASCADE,
-    vehicle_id      VARCHAR(50),
+    vehicle_id      UUID REFERENCES vehicle(vehicle_id),
     start_time      TIMESTAMP DEFAULT NOW(),
     start_date      DATETIME DEFAULT NOW(),
     end_time        TIMESTAMP,
@@ -45,4 +45,41 @@ CREATE TABLE trips(
     data_source      VARCHAR(20) CHECK (data_source IN ('OBD', 'PHONE_SENSORS')),
     status           VARCHAR(20) DEFAULT 'IN_PROGRESS' CHECK (status IN ('IN_PROGRESS', 'COMPLETED', 'ABORTED')),
     created_at       TIMESTAMP DEFAULT NOW()  
+);
+
+CREATE TABLE trip_scores(
+    score_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trip_id       UUID NOT NULL REFERENCES trips(trip_id),
+    safety_score  DECIMAL(5,2),
+    eco_score     DECIMAL(5,2),
+    overall_score DECIMAL(5,2),
+    created_at    TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE trip_events(
+    event_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trip_id       UUID NOT NULL REFERENCES trips(trip_id),
+    type          VARCHAR(30) CHECK (type IN ('HARSH_BRAKE', 'HARSH_ACCELERATION', 'SHARP_CORNER', 'CRASH_LIKE')),
+    latitude      DECIMAL(9,6),
+    longitude     DECIMAL(9,6),
+    severity      DECIMAL(5,2),
+    sensor_source VARCHAR(20) CHECK (sensor_source IN ('ACCELEROMETER', 'GYROSCOPE', 'OBD')),
+    timestamp     TIMESTAMP NOT NULL
+);
+
+CREATE TABLE trip_readings(
+    reading_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trip_id            UUID NOT NULL REFERENCES trips(trip_id),
+    timestamp          TIMESTAMP NOT NULL,
+    data_source        VARCHAR(25) CHECK (data_source IN ('OBD','PHONE_SENSORS')),
+    speed_kmh          DECIMAL(6,2),
+    accelerometer      DECIMAL(8,4),
+    gyroscope_x        DECIMAL(8,4),
+    gyroscope_y        DECIMAL(8,4),
+    gyroscope_z        DECIMAL(8,4),
+    rpm                INTEGER,
+    coolant_temp_c     DECIMAL(5,2),
+    fuel_trim_percent  DECIMAL(5,2),
+    throttle_position  DECIMAL(5,2),
+    dtc_codes          TEXT[]
 );
