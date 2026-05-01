@@ -36,7 +36,7 @@ wrapped in gamification and social features to make safer driving engaging and r
 | <img src="docs/images/Mosa.jpeg" alt="Mosa Leiee" width="280"/>|
 |:---:|
 | **Mosa Leiee** |
-| Frontned Engineer |
+| Frontend Engineer |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Mosa-L) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mosa-leiee?) |
 
 | <img src="docs/images/Kundai.jpeg" alt="Kundai Ndemera" width="280"/>|
