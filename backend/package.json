@@ -1,6 +1,9 @@
 {
   "name": "backend",
   "packageManager": "yarn@4.6.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
