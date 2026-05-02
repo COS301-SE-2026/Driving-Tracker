@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXIST "pgcrypto";-- enables uuid
 
 CREATE TABLE users (
     user_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username        VARCHAR(50),
+    username        VARCHAR(50) UNIQUE NOT NULL,
     name            VARCHAR(100) NOT NULL,
     surname         VARCHAR(100) NOT NULL,
     email           VARCHAR(150) UNIQUE NOT NULL,
@@ -72,6 +72,8 @@ CREATE TABLE trip_readings(
     trip_id            UUID NOT NULL REFERENCES trips(trip_id),
     timestamp          TIMESTAMP NOT NULL,
     data_source        VARCHAR(25) CHECK (data_source IN ('OBD','PHONE_SENSORS')),
+    longitude          DECIMAL(9,6),
+    latitude           DECIMAL(9,6),
     speed_kmh          DECIMAL(6,2),
     accelerometer      DECIMAL(8,4),
     gyroscope_x        DECIMAL(8,4),
@@ -82,4 +84,41 @@ CREATE TABLE trip_readings(
     fuel_trim_percent  DECIMAL(5,2),
     throttle_position  DECIMAL(5,2),
     dtc_codes          TEXT[]
+);
+
+CREATE TABLE trusted_contacts(
+    contact_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(user_id) on update cascade,
+    name                VARCHAR(100) NOT NULL,
+    relationship        VARCHAR(50),
+    email               VARCHAR(255),
+    phone               VARCHAR(20),
+    consent_status      VARCHAR(10) DEFAULT 'PENDING' CHECK (consent_status IN ('PENDING', 'ACCEPTED', 'DECLINED')),
+    created_at          TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE alert_preferences(
+  preference_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contact_id          UUID NOT NULL REFERENCES trusted_contacts(contact_id),
+  on_crash            BOOLEAN DEFAULT TRUE,
+  on_trip_end         BOOLEAN DEFAULT FALSE,
+  on_unexpected_stop  BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE alerts(
+    alert_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trip_id         UUID NOT NULL REFERENCES trips(trip_id),
+    user_id         UUID NOT NULL REFERENCES users(user_id),
+    alert_type      VARCHAR(20) CHECK (alert_type IN ('CRASH_LIKE', 'UNEXPECTED_STOP', 'TRIP_COMPLETE', 'MANUAL')),
+    latitude        DECIMAL(9,6),
+    longitude       DECIMAL(9,6),
+    timestamp       TIMESTAMP NOT NULL
+);
+
+CREATE TABLE alert_notifications(
+  notification_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  alert_id           UUID NOT NULL REFERENCES alerts(alert_id),
+  contact_id         UUID NOT NULL REFERENCES trusted_contacts(contact_id),
+  delivery_status    VARCHAR(10) DEFAULT 'SENT' CHECK (delivery_status IN ('SENT', 'FAILED')),
+  sent_at            TIMESTAMP DEFAULT NOW()
 );
