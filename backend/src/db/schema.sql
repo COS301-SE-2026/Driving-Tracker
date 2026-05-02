@@ -17,9 +17,9 @@ CREATE TABLE users (
     deleted_at      TIMESTAMPTZ        
 );
 
-CREATE TABLE vehicleS (
+CREATE TABLE vehicles (
     vehicle_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id         UUID NOT NULL REFERENCES users(user_id),
+    user_id         UUID NOT NULL REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
     registration    VARCHAR(20),
     make            VARCHAR(50),
     model           VARCHAR(50),
@@ -30,7 +30,7 @@ CREATE TABLE vehicleS (
 CREATE TABLE trips(
     trip_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    vehicle_id      UUID REFERENCES vehicle(vehicle_id) ON DELETE SET NULL,
+    vehicle_id      UUID REFERENCES vehicles(vehicle_id) ON DELETE SET NULL,
     start_time      TIMESTAMPTZ DEFAULT NOW(),
     end_time        TIMESTAMPTZ,
     start_longitude DECIMAL(9,6),
