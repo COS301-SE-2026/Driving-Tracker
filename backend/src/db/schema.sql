@@ -23,16 +23,16 @@ CREATE TABLE vehicle (
     model           VARCHAR(50),
     year            INTEGER,
     fuel_type       VARCHAR(20)
-)
+);
 
 CREATE TABLE trips(
     trip_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES users(user_id) ON UPDATE CASCADE,
     vehicle_id      UUID REFERENCES vehicle(vehicle_id),
     start_time      TIMESTAMP DEFAULT NOW(),
-    start_date      DATETIME DEFAULT NOW(),
+    start_date      DATE DEFAULT NOW(),
     end_time        TIMESTAMP,
-    end_date        DATETIME,
+    end_date        DATE,
     start_longitude DECIMAL(9,6),
     start_latitude  DECIMAL(9,6),
     end_longitude   DECIMAL(9,6),
@@ -121,4 +121,48 @@ CREATE TABLE alert_notifications(
   contact_id         UUID NOT NULL REFERENCES trusted_contacts(contact_id),
   delivery_status    VARCHAR(10) DEFAULT 'SENT' CHECK (delivery_status IN ('SENT', 'FAILED')),
   sent_at            TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE badges(
+    badge_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            VARCHAR(100) UNIQUE NOT NULL,
+    description     TEXT,
+    category        VARCHAR(20) CHECK (category IN ('MILESTONE', 'STREAK', 'SOCIAL', 'VARIETY')),
+    icon_url        VARCHAR(255)
+);
+
+CREATE TABLE user_badges (
+  user_badge_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(user_id) ON UPDATE CASCADE,
+  badge_id          UUID NOT NULL REFERENCES badges(badge_id),
+  earned_at         TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, badge_id)
+);
+
+-- CREATE TABLE badge_progress (
+--   progress_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   user_id      UUID NOT NULL REFERENCES users(user_id),
+--   badge_id     UUID NOT NULL REFERENCES badges(badge_id),
+--   current      INTEGER DEFAULT 0,
+--   target       INTEGER NOT NULL,
+--   updated_at   TIMESTAMP DEFAULT NOW(),
+--   UNIQUE (username, badge_id)
+-- );
+CREATE TABLE badge_criteria (
+  criteria_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  badge_id     UUID NOT NULL REFERENCES badges(badge_id),
+  metric       VARCHAR(50),   
+  operator     VARCHAR(10),   
+  threshold    DECIMAL(10,2),
+  target       INTEGER      
+);
+
+CREATE TABLE leaderboard (
+  leaderboard_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(user_id),
+  category        VARCHAR(20) CHECK (category IN ('SAFETY', 'ECO', 'OVERALL')),
+  scope           VARCHAR(20) CHECK (scope IN ('WEEKLY', 'MONTHLY', 'ALL_TIME')),
+  score           DECIMAL(10,2) DEFAULT 0,
+  updated_at      TIMESTAMP DEFAULT NOW(),
+  UNIQUE (user_id, category, scope)
 );
