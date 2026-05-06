@@ -1,5 +1,5 @@
 import {router, request, response } from "express";
-import trip_controllers from "../controllers/trips.controller";
+import badge_leaderboard_controller from "../controllers/badges_leaderboard.controller";
 import {verify_token} from '../middleware/auth';
 
 

@@ -1,5 +1,5 @@
 import {router, request, response } from "express";
-import trip_controllers from "../controllers/trips.controller";
+import auth_controller from "../controllers/auth.controller";
 import {verify_token} from '../middleware/auth';
 
 
