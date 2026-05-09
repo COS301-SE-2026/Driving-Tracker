@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker
+import com.omnitech.drivingtracker.ui.auth.SignUp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
