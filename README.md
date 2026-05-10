@@ -12,13 +12,11 @@
 - [Documentation](#documentation)
 - [Meet OmniTech](#meet-omnitech)
 - [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
 - [Branching Strategy](#branching-strategy)
-- [Getting Started](#getting-started)
+- [Getting Started](#prerequisites)
   - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Backend & Frontend - Docker Setup](#backend--frontend--docker-setup)
-  - [Android App - Android Studio Setup](#android-app--android-studio-setup)
+  - [Running](#running)
+
 
 ---
 
@@ -90,7 +88,7 @@ The system operates across three layers:
 | Branch | Purpose |
 |--------|---------|
 | `main` | Stable, prod-ready releases only |
-| `develop` | Integration branch - all PRs merge here |
+| `develop` | Integration branch - all PRs merge here and new branches branch from here|
 | `feature/name/description` | New feature development |
 | `fix/name/description` | Bug fixes |
 | `docs/name/description` | Documentation updates |
@@ -115,16 +113,107 @@ Install every tool below before continuing. Each one is required.
 
 Node.js is the runtime that powers the backend and frontend build tools. We use version 20.
 
+The recommended way to install Node.js is through **nvm** (Node Version Manager), which lets you install and switch between Node versions without conflicts.
+
+``` bash
+#install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+#reload shell
+source ~/.bashrc #bash users
+OR 
+source ~/.zshrc #zsh users
+
+#Install Node 20
+nvm install 20
+nvm use 20
+
+#verify
+node --version #must show v20.x.x
+```
+
 #### 2. Yarn
 
 Yarn is the package manager used for both the backend and frontend. It is enabled through **corepack**, which ships with Node.js - no separate download needed.
+```
+corepack enable
+corepack prepare yarn@stable --activate
+
+#verify
+yarn --version
+```
+
+> If you see `command not found: corepack`, your Node.js version is too old. Re-run the nvm steps above.
 
 #### 3. Docker Desktop
 
 Docker runs the backend, frontend, and PostgreSQL database inside isolated containers. This means you do not need to install or configure a database manually - Docker handles everything.
 
+Download and install Docker Desktop for your operating system:
+- **macOS:** https://www.docker.com/products/docker-desktop
+- **Windows:** https://www.docker.com/products/docker-desktop
+- **Linux:** https://docs.docker.com/engine/install/
+
+After installation, open Docker Desktop and wait for it to finish starting.
+
+**Verify:**
+```bash
+docker --version
+docker compose version    # must show v2.x or higher
+```
+
+> **Windows users:** Docker Desktop requires WSL 2 (Windows Subsystem for Linux). The installer will prompt you to enable it if needed. Follow the prompts and restart when asked.
+
+---
+
 #### 4. Android Studio 
 
 Android Studio is the official IDE for building the Android app. It includes the Kotlin compiler, Android SDK, emulator and all build tools.
 
-#### To be completed...
+Download from: https://developer.android.com/studio
+
+Run the installer and follow all default prompts. When the **SDK Components Setup** screen appears, ensure these are checked:
+- Android SDK
+- Android SDK Platform (API 34)
+- Android Virtual Device
+- Android Emulator
+
+**Verify:**
+After installation, open Android Studio. If it opens without errors and shows the welcome screen, it is installed correctly.
+
+### Running
+
+First Time - Build and Start
+```bash
+docker compose up --build
+```
+
+This will:
+1. Build the backend and frontend Docker images
+2. Start a PostgreSQL database and apply the schema automatically
+3. Start the backend API
+4. Start the frontend dashboard
+
+
+## Daily Development
+
+```bash
+# Start all services (no rebuild - faster for daily use)
+docker compose up
+
+# Start in background so terminal stays free
+docker compose up -d
+
+# Stop all services
+docker compose down
+
+# View live logs from all services
+docker compose logs -f
+
+# Rebuild images after pulling changes that modify dependencies or Dockerfiles
+docker compose up --build
+
+# Full reset - stops everything and wipes the database
+# Use this if your database gets into a broken state
+docker compose down -v
+docker compose up --build
