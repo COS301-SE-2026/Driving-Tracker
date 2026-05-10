@@ -1,1 +1,5 @@
-import {prisma} from '../../Prisma';
+import prisma from '../db/prisma';
+
+export const contact_services ={
+
+}
