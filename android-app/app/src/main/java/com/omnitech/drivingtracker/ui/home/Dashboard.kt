@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.item
 
 @Composable
 fun Dashboard() {
@@ -39,11 +41,11 @@ fun Dashboard() {
 
                 item{ //This week cards
                     Column (verticalArrangement = Arrangement.spacedBy(16.dp)){
-                        Row(horozontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
                             Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
                         }
-                        Row(horozontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
                             Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
                         }
@@ -62,7 +64,7 @@ fun Dashboard() {
                         ) {
                             Text("Today, 0815")
                             Text("Home      40km")
-                            Text("Office    50 min)
+                            Text("Office    50 min")
                         }
                         //3. Score
                         Text("78")//Gonna add score ring around
@@ -74,44 +76,12 @@ fun Dashboard() {
 
 }
 
-//Using lazy column so that user may be able to scroll through dashboard if there are many cards
-LazyColumn(
-    modifier = Modifier.fillMaxSize(),
-    verticalArrangement = Arrangement.spacedBy(24.dp)
-){
-    item {
-        //Your Driving score
-    }
 
-    item{ //This week cards
-        Column (verticalArrangement = Arrangement.spacedBy(16.dp)){
-            Row(horozontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
-                Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
-            }
-            Row(horozontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
-                Card(modifier = Modifier.weight(1f)) {/*Distance card*/}
-            }
-        }
-    }
 
-    item {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween 
-        ) {
-            //1. Trip Icon
-            //2. Trip details
-            Column(
-
-            ) {
-                Text("Today, 0815")
-                Text("Home      40km")
-                Text("Office    50 min)
-            }
-            //3. Score
-            Text("78")//Gonna add score ring around
-        }
+@Preview(showBackground=true)
+@Composable
+fun DashboardPreview(){
+    DrivingTrackerTheme{
+        Dashboard()
     }
 }
