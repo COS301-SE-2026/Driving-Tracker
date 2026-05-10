@@ -9,7 +9,6 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "jest",
-
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:db:push": "prisma db push"
