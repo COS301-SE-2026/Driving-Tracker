@@ -65,6 +65,105 @@ const contacts_controller = {
    * GET /contacts
    * Response: list of contacts for logged-in user
    */
+    async get_contacts(req: Request, res: Response){
+        const user_id = get_user_id(res);
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        try{
+            //delegate to service
+            const contacts = await contact_services.list_trusted_contacts(user_id);
+
+            return res.status(200).json({
+                data: { contacts },
+                message: "Contacts successfully retrieved",
+            });
+        }catch(e: any){
+            if(e?.node === "CANNOT_ACCESS_CONTACTS"){
+                return res.status(403).json({
+                    error: "CANNOT_ACCESS_CONTACTS",
+                    message: "Cannot access these contacts",
+                });
+            }
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR"
+            });
+        }
+    },
+
+
+    /**
+   * POST /contacts/alerts
+   * Body: {
+   *   event_type: string,
+   *   event_id: uuid,
+   *   message?: string,
+   *   contacts: [{ contact_id: uuid }]
+   * }
+   */
+    async alert_contacts(req: Request, res: Response){
+        const user_id = get_user_id(res);
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        const { event_type, event_id, message, contacts } = req.body ?? {};
+
+        if((!event_type || typeof event_type !== "string" || !event_id || typeof event_id !== "string")){
+            return res.status(400).json({
+                error: "BAD_REQUEST",
+                message: "Invalid request body",
+            });
+        }
+
+        //extract contact ids from array of objects
+        const contact_ids = 
+        Array.isArray(contacts)? contacts.map((c) => c?.contact_id).filter(Boolean) : [];
+
+        try{
+            await contact_services.alert_contacts_for_event({
+                user_id,
+                event_type,
+                event_id,
+                message: typeof message === "string" ? message : null,
+                contact_ids,
+            });
+            return res.status(200).json({
+                message: "Contacts successfully alerted"
+            });
+        }catch(e: any){
+            if (e?.code === "CANNOT_ACCESS_CONTACTS") {
+                return res.status(403).json({
+                error: "CANNOT_ACCESS_CONTACTS",
+                message: "Cannot access these contacts",
+                });
+            }
+
+            if (e?.code === "CONTACT_NOT_FOUND") {
+                return res.status(404).json({
+                error: "CONTACT_NOT_FOUND",
+                message: "Cannot find contact",
+                });
+            }
+
+            if (e?.code === "EVENT_NOT_FOUND") {
+                return res.status(404).json({
+                error: "EVENT_NOT_FOUND",
+                message: "Cannot find event",
+                });
+            }     
+            
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR"
+            });
+        }
+    },
+
     
 };
 export default contacts_controller;
