@@ -27,4 +27,4 @@ export const trips_services ={
 
         }
     }
-}
+}       
