@@ -69,7 +69,7 @@ export function verify_token(req: AuthRequest, res: Response, next: NextFunction
   }
 }
 
-//Refreshes access token
+//Refreshes access token when it expires and refresh token is still valid
 export function refresh_token(req: AuthRequest, res: Response){
 
   const token=req.body?.refresh_token as string | undefined;
