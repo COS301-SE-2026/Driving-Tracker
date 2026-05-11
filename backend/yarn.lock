@@ -1362,6 +1362,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bcrypt@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "@types/bcrypt@npm:6.0.0"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/48b66408838f5eb59791da5a77260cef59a5291ce0945f2caa3b5a6158c44b321b684b4aa7dce771852c63271c766cadd587374273451b300377a17015c1d51d
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*":
   version: 1.19.6
   resolution: "@types/body-parser@npm:1.19.6"
@@ -1907,6 +1916,7 @@ __metadata:
   resolution: "backend@workspace:."
   dependencies:
     "@prisma/client": "npm:^7.8.0"
+    "@types/bcrypt": "npm:^6.0.0"
     "@types/cors": "npm:^2.8.19"
     "@types/express": "npm:^4.17.21"
     "@types/jsonwebtoken": "npm:^9.0.10"
