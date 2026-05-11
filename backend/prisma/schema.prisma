@@ -183,23 +183,25 @@ enum UserStatus{
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  user_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username         String             @unique @db.VarChar(50)
-  name             String             @db.VarChar(100)
-  surname          String             @db.VarChar(100)
-  email            String             @unique @db.VarChar(150)
-  password_hash    String             @db.VarChar(255)
-  role             SystemRole         @default(USER)
-  consent_status   Boolean?           @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
-  status           UserStatus         @default(ACTIVE)
-  deleted_at       DateTime?          @db.Timestamptz(6)
-  alerts           alerts[]
-  leaderboard      leaderboard[]
-  trips            trips[]
-  trusted_contacts trusted_contacts[]
-  user_badges      user_badges[]
-  vehicles         vehicles[]
+  user_id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username          String             @unique @db.VarChar(50)
+  name              String             @db.VarChar(100)
+  surname           String             @db.VarChar(100)
+  email             String             @unique @db.VarChar(150)
+  password_hash     String             @db.VarChar(255)
+  role              SystemRole         @default(USER)
+  refresh_token     String?            @db.VarChar(512)
+  refresh_token_exp DateTime?          @db.Timestamptz(6)
+  consent_status    Boolean?           @default(false)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  status            UserStatus         @default(ACTIVE)
+  deleted_at        DateTime?          @db.Timestamptz(6)
+  alerts            alerts[]
+  leaderboard       leaderboard[]
+  trips             trips[]
+  trusted_contacts  trusted_contacts[]
+  user_badges       user_badges[]
+  vehicles          vehicles[]
 }
 
 model vehicles {
