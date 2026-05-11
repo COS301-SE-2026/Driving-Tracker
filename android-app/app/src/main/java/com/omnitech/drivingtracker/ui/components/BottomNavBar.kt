@@ -1,3 +1,6 @@
+package com.omnitech.drivingtracker.ui.components
+
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
@@ -15,7 +18,7 @@ fun BottomNavBar() {
                     contentDescription = "Home"
                 )
             },
-            label = { Text("Home") }'
+            label = { Text("Home") },
             selected = false,
             onClick = { /*Navigates to home*/ }
         )
@@ -24,11 +27,11 @@ fun BottomNavBar() {
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_trips),
+                    painter = painterResource(id = R.drawable.ic_nav_road),
                     contentDescription = "Trips"
                 )
             },
-            label = { Text("Trips") }'
+            label = { Text("Trips") },
             selected = false,
             onClick = { /*Navigates to trips page*/ }
         )
@@ -37,11 +40,11 @@ fun BottomNavBar() {
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_starFilled),
+                    painter = painterResource(id = R.drawable.ic_nav_starfilled),
                     contentDescription = "Achievements"
                 )
             },
-            label = { Text("Achievements") }'
+            label = { Text("Achievements") },
             selected = false,
             onClick = { /*Navigates to achievements*/ }
         )
@@ -54,7 +57,7 @@ fun BottomNavBar() {
                     contentDescription = "Alerts"
                 )
             },
-            label = { Text("Alerts") }'
+            label = { Text("Alerts") },
             selected = false,
             onClick = { /*Navigates to alerts*/ }
         )
@@ -67,7 +70,7 @@ fun BottomNavBar() {
                     contentDescription = "More"
                 )
             },
-            label = { Text("More") }'
+            label = { Text("More") },
             selected = false,
             onClick = { /*Displays other selectable pages*/ }
         )
