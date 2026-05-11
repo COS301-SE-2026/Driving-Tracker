@@ -15,10 +15,11 @@ RUN yarn install --immutable
 #yarn is then not allowed to update yarn.lock to make the system "work"
 
 COPY . .
-RUN yarn build
-
-#Generate prisma client during build
+# Generate prisma client during build so types are available to TypeScript
 RUN yarn prisma:generate
+
+# Build TypeScript after prisma client is generated
+RUN yarn build
 
 
 
