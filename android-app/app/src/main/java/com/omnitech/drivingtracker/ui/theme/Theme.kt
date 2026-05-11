@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.omnitech.drivingtracker.ui.theme.TextSecondary
 
 
+
 private val DarkColorScheme = darkColorScheme(
     primary = Blue,
     secondary = Green,
