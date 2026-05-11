@@ -164,6 +164,87 @@ const contacts_controller = {
         }
     },
 
+
+    /**
+     * POST /contacts/share_location
+     * intentional: support both possible shapes (although API contract specifies contacts object)
+     * {
+        *   "trip_id": "...uuid...",
+        *   "contacts": [{ "contact_id": "...uuid..." }]
+        * }
     
+    * {
+        *   "contacts": {
+        *     "trip_id": "...uuid...",
+        *     "contacts": [{ "contact_id": "...uuid..." }]
+        *   }
+        * }
+     */
+
+    async share_location(req: Request, res: Response){
+        const user_id = get_user_id(res);
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+        const body = req.body ?? {};
+
+        // if body.contacts is an object wrapper, use it, else use body directly
+        const wrapper = body.contacts && typeof body.contacts === "object" ? body.contacts : body;
+        const trip_id = wrapper.trip_id;
+        const contacts_arr = wrapper.contacts;
+
+        const contact_ids = 
+        Array.isArray(contacts_arr) ? contacts_arr.map((c) => c?.contact_id).filter(Boolean) : [];
+
+        if(!contact_ids.length){
+            return res.status(400).json({
+                error: "NO_CONTACTS_PROVIDED",
+                message: "Contact list is empty",
+            });
+        }
+
+        if(!trip_id || typeof trip_id !== "string"){
+            return res.status(404).json({
+                error: "TRIP_NOT_FOUND",
+                message: "Cannot find trip",
+            });
+        }
+
+        //delegate to service
+        try{
+            const result = await contact_services.share_location({
+                user_id,
+                trip_id,
+                contact_ids,
+            });
+
+            return res.status(201).json({
+                message: "Location successfully shared",
+                data: {
+                    trip_id: result.trip,
+                    shared_with: result.shared_with,
+                    shared_at: result.shared_at,
+                },
+            });
+        }catch(e: any){
+            if (e?.code === "TRIP_NOT_FOUND") {
+                return res.status(404).json({
+                error: "TRIP_NOT_FOUND",
+                message: "Cannot find trip",
+                });
+            }
+
+            if (e?.code === "NOT_TRUSTED_CONTACT") {
+                return res.status(403).json({
+                error: "NOT_TRUSTED_CONTACT",
+                message: "Cannot share location with non-trusted contacts",
+                });
+            }
+
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR" }); 
+        }
+    },
 };
 export default contacts_controller;
