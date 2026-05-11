@@ -1,4 +1,30 @@
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  prisma-migrate:
+    build:
+      context: ./backend
+      target: builder
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -lc "yarn prisma migrate deploy && yarn prisma generate"
+    restart: "no"
+
   api:
     build: ./backend
     ports:
@@ -6,43 +32,25 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
-      NODE_ENV: development
+      NODE_ENV: production
     depends_on:
       db:
         condition: service_healthy
-   # volumes:
-   #     - ./backend:/app
-   #     - /app/node_modules
+      prisma-migrate:
+        condition: service_completed_successfully
 
-  #frontend:
-  #  build: ./frontend
-  #  ports:
-  #    - "3001:3001"
-  #  environment:
-  #    PORT: 3001
-  #    NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-  #  depends_on:
-  #    - api
-  #  volumes:
-  #    - ./frontend:/app
-  #    - /app/node_modules
-  
-  db:
-    image: postgres:15-alpine
+  frontend:
+    build:
+        context: ./frontend
+        args:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    ports:
+        - "3001:3001"
+    depends_on:
+        - api
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    #ports:
-    #  - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    #  - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+        PORT: 3001
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
 
 volumes:
   postgres_data:

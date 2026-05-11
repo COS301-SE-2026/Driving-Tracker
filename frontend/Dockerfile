@@ -1,5 +1,5 @@
 # Builder
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare yarn@stable --activate
@@ -28,11 +28,7 @@ ENV NODE_ENV=production
 RUN corepack enable && corepack prepare yarn@stable --activate
 
 COPY package.json yarn.lock .yarnrc.yml ./
-Run node -e "const fs=require('fs'); 
-            const p=require('./package.json'); 
-            delete p.devDependencies;
-            fs.writeFileSync('./package.json', JSON.stringify(p, null, 2));"\
-            && yarn install --immutable
+RUN yarn workspaces focus --all --production
 
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/.next ./.next
