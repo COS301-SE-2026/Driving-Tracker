@@ -21,3 +21,5 @@ yarn-error.log*
 .pnpm-debug.log*
 
 *.tsbuildinfo
+
+backend/dist/
