@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
 
 enum class ContactStatus{ON_TRIP, OFF_TRIP}
 //contact class
@@ -107,8 +108,8 @@ fun Contacts(){
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            //navbar goes here
         }
+        BottomNavBar()
     }
 }
 @Composable

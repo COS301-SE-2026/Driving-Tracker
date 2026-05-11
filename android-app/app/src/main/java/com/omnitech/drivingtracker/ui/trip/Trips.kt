@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Tune
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
 
 //trip class
 data class Trip(
@@ -120,8 +121,8 @@ fun Trips(){
             trips.forEach {
                     trip->TripCard(trip=trip) //display contact card for each contact in the class
             }
-            //navbar goes here
         }
+        BottomNavBar()
     }
 }
 @Composable
