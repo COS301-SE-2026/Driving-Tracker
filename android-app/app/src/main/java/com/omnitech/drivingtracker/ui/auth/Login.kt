@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.auth
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -14,19 +15,41 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.omnitech.drivingtracker.ui.theme.Green
+import com.omnitech.drivingtracker.ui.theme
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 
 @Composable
 Column(
     modifier = Modifier.fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally,
+    horizontalAlignment = Alignment.CenterHorizontally
     verticalArrangement = Arrangement.Center
 ) {
-    //The Logo 
+    Card {
+        Column (
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            //Email
+            OutlinedTextField(
+                value="",
+                paceholder = {Text("Email", color=TextSecondary)}
+            )
+            //Password
+            OutlinedTextField(
+                value="",
+                paceholder = {Text("Password", color=TextSecondary)}
+            )
 
-    Row {
-        //Sign in button
-        //Register button
+            //Button
+            Button(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Login")
+            }
+
+            //Forgot password
+            Text("Forgot Password?")
+
+        }
     }
 }
