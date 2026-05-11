@@ -79,7 +79,7 @@ fun Contacts(){
         Text(
             text = "Contacts",
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -107,7 +107,7 @@ fun Contacts(){
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            BottomNavBar()
+            //navbar goes here
         }
     }
 }
@@ -179,45 +179,6 @@ fun ContactCard(contact: Contact){
                 Text("See Activity", style = MaterialTheme.typography.bodyMedium)
             }
         }
-    }
-}
-
-@Composable
-fun BottomNavBar(){
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 4.dp
-    ){
-        NavigationBarItem(
-            selected = true,
-            onClick = {},
-            icon = {Icon(Icons.Default.AccountCircle,contentDescription = "Home")},
-            label = {Text("Home")}
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {Icon(Icons.Default.AccountCircle,contentDescription = "Trips")},
-            label = {Text("Trips")}
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {Icon(Icons.Default.AccountCircle,contentDescription = "Achievements")},
-            label = {Text("Achievements")}
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {Icon(Icons.Default.AccountCircle,contentDescription = "Alerts")},
-            label = {Text("Alerts")}
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {Icon(Icons.Default.AccountCircle,contentDescription = "More")},
-            label = {Text("More")}
-        )
     }
 }
 
