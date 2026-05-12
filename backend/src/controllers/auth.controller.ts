@@ -2,7 +2,7 @@ import {Request, Response} from 'express';
 import {auth_services} from  "../services/auth_services";
 import {verify_token, generate_token} from "../middleware/auth";//the file containing the tokens 
 
-const auth_controller ={
+const auth_controller={
 
     async register(req:Request, res: Response){
 
@@ -17,7 +17,7 @@ const auth_controller ={
                 token:access_token, 
                 refresh_token
             });
-            
+
         }catch(err:any){
 
             if(err.code&&err.code==="P2002"){
@@ -52,10 +52,37 @@ const auth_controller ={
                 }
             }
 
-            res.status(500).json({error:"INTERNAL_SERVER_ERROR", message: err.message})
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"})
             
         }
     },
+    async login(req:Request, res: Response){
+
+        const {identifier, password}=req.body;
+
+        try{
+            const {user, refresh_token}=await auth_services.login(identifier,password);
+
+            const access_token=generate_token({sub: user.user_id, role: user.role});
+
+            res.status(201).json({
+                token:access_token, 
+                refresh_token
+            });
+
+        }catch(err:any){
+
+            if((err instanceof Error) && err.message.includes("credentials")){
+
+                res.status(401).json({error:"INVALID_CREDENTIALS", message: "Invalid Email/Username or Password"});
+                return; 
+            }
+
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"})
+            
+        }
+
+    }
 
 };
 
