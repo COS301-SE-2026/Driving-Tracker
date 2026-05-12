@@ -110,7 +110,18 @@ export const auth_services = {
         });
 
         return {user, refresh_token};
-    }
+    },
+
+    async logout(user_id:string){
+
+        await prisma.users.update({
+            where: {user_id: user_id}, 
+            data: {
+                refresh_token: null, 
+                refresh_token_exp: null,
+            },
+        });
+    },
 
 };
 

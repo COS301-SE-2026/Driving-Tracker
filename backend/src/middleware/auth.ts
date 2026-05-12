@@ -4,12 +4,14 @@ import { NextFunction, Request, Response } from "express";
 const ACCESS_SECRET=process.env.JWT_SECRET!;
 const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
 
+//Extends JwtPAylod to add a role claim. sub claim stores user uuid
 export interface AppJwtPayload extends JwtPayload{
   role: "admin" | "user";
 }
 
+//Interface that extends Request to add user which holds custom JwtPayload
 export interface AuthRequest extends Request{
-  user?: JwtPayload
+  user?: AppJwtPayload
 }
 
 //Generates a new access token

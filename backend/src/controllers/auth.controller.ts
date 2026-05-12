@@ -1,6 +1,6 @@
 import {Request, Response} from 'express';
 import {auth_services} from  "../services/auth_services";
-import {verify_token, generate_token} from "../middleware/auth";//the file containing the tokens 
+import {generate_token, AuthRequest} from "../middleware/auth";//the file containing the tokens 
 
 const auth_controller={
 
@@ -13,7 +13,7 @@ const auth_controller={
 
             const access_token=generate_token({sub: user.user_id, role: user.role});
 
-            res.status(201).json({
+            return res.status(201).json({
                 token:access_token, 
                 refresh_token
             });
@@ -38,21 +38,22 @@ const auth_controller={
 
                 if(err.message.includes("email")){
 
-                     res.status(400).json({error:"INVALID_EMAIL", message: err.message})
+                     res.status(400).json({error:"INVALID_EMAIL", message: err.message});
                      return;
 
                 } else if(err.message.includes("Username")){
 
-                    res.status(400).json({error:"INVALID_USERNAME", message: err.message})
+                    res.status(400).json({error:"INVALID_USERNAME", message: err.message});
                     return;
                 }else if(err.message.includes("Name")){
 
-                    res.status(400).json({error:"INVALID_NAME/SURNAME", message: err.message})
+                    res.status(400).json({error:"INVALID_NAME/SURNAME", message: err.message});
                     return;
                 }
             }
 
-            res.status(500).json({error:"INTERNAL_SERVER_ERROR"})
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
+            return;
             
         }
     },
@@ -65,7 +66,7 @@ const auth_controller={
 
             const access_token=generate_token({sub: user.user_id, role: user.role});
 
-            res.status(201).json({
+            return res.status(201).json({
                 token:access_token, 
                 refresh_token
             });
@@ -78,10 +79,23 @@ const auth_controller={
                 return; 
             }
 
-            res.status(500).json({error:"INTERNAL_SERVER_ERROR"})
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
+            return;
             
         }
 
+    },
+    async logout(req: AuthRequest, res: Response){
+
+        try{
+
+           await auth_services.logout(req.user!.sub!);
+           res.status(200).json({message:"Logged out successfully"});
+        }catch(err:any){
+
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
+            
+        }
     }
 
 };
