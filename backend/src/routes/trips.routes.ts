@@ -1,5 +1,5 @@
 import {Router, request, response } from "express";
-import trip_controllers from "../controllers/trips.controller";
+import * as trips_controller from "../controllers/trips.controller";
 import {verify_token} from '../middleware/auth';
 
 const trips_router = Router();
@@ -7,7 +7,7 @@ const trips_router = Router();
 //will structure in crud operations 
 
 //Create 
-
+trips_router.post("/trips/start_trip",verify_token,trips_controller.start_trip);
 //read basically get 
 
 //delete 

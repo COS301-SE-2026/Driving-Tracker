@@ -13,7 +13,7 @@ export interface create_trip{
     };
 };
 
-export const trips_services ={
+export class trips_services {
     async create(data: create_trip){
         if(!data.user_id || !data.vehicle_id ){
             throw new Error("Missing required fields");
