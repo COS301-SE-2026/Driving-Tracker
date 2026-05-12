@@ -1,5 +1,6 @@
 import {Request, Response} from "express";
 import {trips_services} from  "../services/trips_services";
+import { error } from "console";
 
 //trips controllers will go here, so what is served by the api back to the frontend  
 const var_trips_services = new trips_services();
@@ -41,13 +42,16 @@ export const start_trip = async (req: Request, res: Response) =>{
 
 export const end_trip = async (req:Request, res:Response) =>{
     try{
-        const {trip_id,user_id, end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score} = req.body;
+        const { trip_id } = req.params;
+        const user_id = (req as any).user?.user_id; // From JWT decoded by verifyToken middleware
+        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score } = req.body;
+
         if(!user_id){
             res.status(400).json({
-                error:"Not a valid user"
+                error:"UNAUTHORIZED"
             });
         }
-        const end_trip = await var_trips_services.end_trip({
+        const end_trip_results = await var_trips_services.end_trip({
             trip_id,
             user_id,
             end_time,
@@ -60,7 +64,67 @@ export const end_trip = async (req:Request, res:Response) =>{
             eco_score,
             overall_score
         });
-    }catch(error){
 
+        res.status(200).json({
+            message:"Trip completed successfully",
+            data:end_trip_results
+        });
+    }catch(error: any){
+        if(error.message.includes("Trip not found")){
+            res.status(404).json({ error: "Trip not found" });
+        } else if(error.message.includes("You do not own this trip")){
+            res.status(403).json({ error: "You do not own this trip" });
+        } else{
+            res.status(500).json({ error: "Internal server error" });
+        }
+    }
+};
+
+export const record_trip = async (req:Request, res:Response) =>{
+    try{
+        const 	{	trip_id,
+                recorded_at,
+                data_source,
+                location,
+                speed_kmh,
+                accelerometer,
+                gyroscope_x,
+                gyroscope_y,
+                gyroscope_z,
+                rpm,
+                coolant_temp,
+                fuel_trim_percent,
+                throttle_position,
+                dtc_codes
+            }= req.body;
+
+        const record_trip_results = await var_trips_services.record({
+            trip_id,
+                recorded_at,
+                data_source,
+                location,
+                speed_kmh,
+                accelerometer,
+                gyroscope_x,
+                gyroscope_y,
+                gyroscope_z,
+                rpm,
+                coolant_temp,
+                fuel_trim_percent,
+                throttle_position,
+                dtc_codes
+        });
+        res.status(201);
+        
+    }catch(error: any){
+        if(error.message.includes("Missing required fields")){
+            res.status(401).json({
+                error: "Fill all valid fields"
+            });
+        }else if(error.message.includes("Trip not found")){
+            res.status(404).json({
+                error:"Trip not found"
+            });
+        }
     }
 }

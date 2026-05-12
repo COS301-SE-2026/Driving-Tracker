@@ -8,10 +8,11 @@ const trips_router = Router();
 
 //Create 
 trips_router.post("/trips/start_trip",verify_token,trips_controller.start_trip);
+trips_router.post("/trips/:trip_id/readings/record",verify_token,trips_controller.record_trip);
 //read basically get 
 
 //delete 
 
 //Update 
-
+trips_router.patch("/trips/:trip_id/end_trip",verify_token,trips_controller.end_trip);
 export default trips_router;

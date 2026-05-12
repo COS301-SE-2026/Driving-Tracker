@@ -1,5 +1,6 @@
 //connection to the data base 
 // not quite sure of the imports as yet 
+import { error } from 'console';
 import prisma from '../db/prisma';
 
 export interface create_trip{
@@ -24,6 +25,25 @@ export interface end_trip {
     safety_score: number;
     eco_score: number;
     overall_score: number;
+};
+export interface record_data{
+    recorded_at: Date;
+    trip_id: string;
+    location:{
+        lng : number;
+        lat: number;
+    }
+    data_source:"OBD"|"PHONE";
+    speed_kmh: number;
+    accelerometer: number;
+    gyroscope_x: number;
+    gyroscope_y: number;
+    gyroscope_z: number;
+    rpm: number;
+    coolant_temp: number;
+    fuel_trim_percent: number;
+    throttle_position: number;
+    dtc_codes: string;
 }
 
 export class trips_services {
@@ -130,14 +150,51 @@ export class trips_services {
                 status: updatedTrip.status,
                 distance_km: updatedTrip.distance_km,
                 duration_minutes: updatedTrip.duration_minutes,
-                fuel_estimate_l: updatedTrip.fuel_estimate,
+                fuel_estimate: updatedTrip.fuel_estimate,
                 scores: {
                     safety_score: tripScore.safety_score,
                     eco_score: tripScore.eco_score,
                     overall_score: tripScore.overall_score
-                },
-                message: "Trip completed successfully"
+                }
             };
+
+        }catch(error){
+            throw error;
+        }
+    }
+
+    async record(data:record_data){//consistent trip update endpoint 
+        if(!data.trip_id){
+            throw new Error("Missing required fields");
+        }
+
+        try{
+            const trip_reading = await prisma.trip_readings.findUnique({
+            where:{ trip_id: data.trip_id}
+            });
+            if(!trip_reading){
+                throw new Error("Trip not found");
+            }// verifying if the trip exists
+
+            const newReading = await prisma.trip_readings.create({
+                data: {
+                    trip_id: data.trip_id,
+                    recorded_at: data.recorded_at,
+                    data_source: data.data_source,
+                    longitude: data.location.lng,
+                    latitude: data.location.lat,
+                    speed_kmh: data.speed_kmh,
+                    accelerometer: data.accelerometer,
+                    gyroscope_x: data.gyroscope_x,
+                    gyroscope_y: data.gyroscope_y,
+                    gyroscope_z: data.gyroscope_z,
+                    rpm: data.rpm,
+                    coolant_temp_c: data.coolant_temp,
+                    fuel_trim_percent: data.fuel_trim_percent,
+                    throttle_position: data.throttle_position,
+                    dtc_codes: data.dtc_codes ? [data.dtc_codes] : []
+                }
+            });
 
         }catch(error){
             throw error;
