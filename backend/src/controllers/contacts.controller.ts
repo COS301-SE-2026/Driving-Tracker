@@ -214,7 +214,7 @@ const contacts_controller = {
 
         //delegate to service
         try{
-            const result = await contact_services.share_location({
+            const result = await contact_services.share_trip_location({
                 user_id,
                 trip_id,
                 contact_ids,
@@ -223,7 +223,7 @@ const contacts_controller = {
             return res.status(201).json({
                 message: "Location successfully shared",
                 data: {
-                    trip_id: result.trip,
+                    trip_id: result.trip_id,
                     shared_with: result.shared_with,
                     shared_at: result.shared_at,
                 },
