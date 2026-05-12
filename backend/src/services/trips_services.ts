@@ -19,7 +19,7 @@ export interface end_trip {
     route_polyline: string;
     distance_km: number;
     duration_minutes: number;
-    fuel_estimate_l: number;
+    fuel_estimate: number;
     status: "COMPLETED" | "ABORTED";
     safety_score: number;
     eco_score: number;
@@ -74,6 +74,7 @@ export class trips_services {
         }
     }
     async end_trip(data:end_trip){
+        
         if(!data.trip_id || !data.user_id){
             throw new Error("Missing required fields");
         }
@@ -98,7 +99,7 @@ export class trips_services {
                     route_polyline: data.route_polyline,
                     distance_km: data.distance_km,
                     duration_minutes: data.duration_minutes,
-                    fuel_estimate: data.fuel_estimate_l,
+                    fuel_estimate: data.fuel_estimate,
                     status: data.status
                 }
             });

@@ -38,3 +38,29 @@ export const start_trip = async (req: Request, res: Response) =>{
         }
     }
 };
+
+export const end_trip = async (req:Request, res:Response) =>{
+    try{
+        const {trip_id,user_id, end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score} = req.body;
+        if(!user_id){
+            res.status(400).json({
+                error:"Not a valid user"
+            });
+        }
+        const end_trip = await var_trips_services.end_trip({
+            trip_id,
+            user_id,
+            end_time,
+            route_polyline,
+            distance_km,
+            duration_minutes,
+            fuel_estimate,
+            status,
+            safety_score,
+            eco_score,
+            overall_score
+        });
+    }catch(error){
+
+    }
+}
