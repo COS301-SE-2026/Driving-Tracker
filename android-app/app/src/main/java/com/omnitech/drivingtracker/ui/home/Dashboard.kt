@@ -19,7 +19,6 @@ import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.item
 
 @Composable
 fun Dashboard() {

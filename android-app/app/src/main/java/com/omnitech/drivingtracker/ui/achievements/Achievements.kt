@@ -19,12 +19,25 @@ import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.item
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.components.BadgeSection
+import com.omnitech.drivingtracker.ui.components.RankCard
+import com.omnitech.drivingtracker.ui.components.ScoreCard
+import com.omnitech.drivingtracker.ui.home.Dashboard
 
 
 @Composable
-fun AchievemtsScreen() {
+fun AchievemtsScreen(
+    //Compose will automatically find and create a viewmodel
+    viewModel: AchievementsViewModel = viewModel()
+) {
+
+    val ranks = viewModel.rankList //taking list from Viewmodel
+
     Scaffold(
         bottomBar = {
             BottomNavBar()
@@ -35,21 +48,44 @@ fun AchievemtsScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
+                .padding(16.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
                 //Overal Driving score
+                ScoreCard(score = 85)
             }
 
             item {
                 // Badges Gallery (LazyRow)
+                BadgeSection()
             }
 
             item {
-                // other sections and so on
+                Text(
+                    text = "Ranks",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
+
+            items(ranks) { person ->
+                RankCard(
+                    name = person.name,
+                    score = person.score,
+                    isUser = person.name == "You"
+                )
+                HorizontalDivider() //Thin line between rows
+            }
+
         }
 
+    }
+}
+
+@Preview(showBackground=true)
+@Composable
+fun AchievementsPreview(){
+    DrivingTrackerTheme{
+        AchievemtsScreen()
     }
 }

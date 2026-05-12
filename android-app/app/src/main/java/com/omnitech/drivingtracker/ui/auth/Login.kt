@@ -1,5 +1,7 @@
 package com.omnitech.drivingtracker.ui.auth
 
+import android.R.attr.onClick
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -15,41 +17,101 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.omnitech.drivingtracker.ui.theme
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.text.style.TextDecoration
 
 @Composable
-Column(
-    modifier = Modifier.fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally
-    verticalArrangement = Arrangement.Center
-) {
-    Card {
-        Column (
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+fun Login() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp), //Adds space between the card and screen edges
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFE0E0E0)), //lifght grey border
+            shape = RoundedCornerShape(8.dp)
+
         ) {
-            //Email
-            OutlinedTextField(
-                value="",
-                paceholder = {Text("Email", color=TextSecondary)}
-            )
-            //Password
-            OutlinedTextField(
-                value="",
-                paceholder = {Text("Password", color=TextSecondary)}
-            )
-
-            //Button
-            Button(
-                modifier = Modifier.fillMaxWidth()
+            Column (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.Start
             ) {
-                Text("Login")
+
+                // Email Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    Text(
+                        text = "Email",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {},
+                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+
+                }
+
+                // Password Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    Text(
+                        text = "Password",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {},
+                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+
+                }
+
+                //Sign In Button
+                Button(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)), //Dark grey
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Sign In", color = Color.White)
+                }
+
+                //Forgot password
+                Text(
+                    text = "Forgot password",
+                    textDecoration = TextDecoration.Underline,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
             }
-
-            //Forgot password
-            Text("Forgot Password?")
-
         }
+    }
+}
+
+@Preview(showBackground=true, backgroundColor = 0xFFFFFFFF)
+@Composable
+fun LoginPreview(){
+    DrivingTrackerTheme{
+        Login()
     }
 }

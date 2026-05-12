@@ -18,15 +18,25 @@ import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 
 @Composable
-Column(
-    modifier = Modifier.fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center
-) {
-    //The Logo 
+fun WellcomePage() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        //The Logo
 
-    Row {
-        //Sign in button
-        //Register button
+        Row {
+            //Sign in button
+            //Register button
+        }
+    }
+}
+
+@Preview(showBackground=true)
+@Composable
+fun WelcomePreview(){
+    DrivingTrackerTheme{
+        WellcomePage()
     }
 }
