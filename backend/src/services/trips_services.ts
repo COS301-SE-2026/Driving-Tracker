@@ -13,6 +13,10 @@ export interface create_trip{
         lng: number;
     };
 };
+export interface trip_summary_filter {
+    trip_id: string;
+    user_id: string;
+};
 export interface end_trip {
     trip_id: string;
     user_id: string; 
@@ -44,6 +48,12 @@ export interface record_data{
     fuel_trim_percent: number;
     throttle_position: number;
     dtc_codes: string;
+};
+export interface trip_history_filter {
+    user_id: string;
+    start_date: Date;
+    end_date?: Date;
+    status?: "COMPLETED" | "IN_PROGRESS" | "ABORTED";
 }
 
 export class trips_services {
@@ -200,4 +210,29 @@ export class trips_services {
             throw error;
         }
     }
+    async get_history(data: trip_history_filter){
+        if(!data.user_id || !data.start_date){
+            throw new Error("Missing required fields");
+        }
+        if (isNaN(data.start_date.getTime())) {
+            throw new Error("Invalid start date");
+        }
+
+        const end_date = data.end_date || new Date();
+        if (isNaN(end_date.getTime())) {
+            throw new Error("Invalid end date");
+        }
+        try {
+            const user = await prisma.users.findUnique({
+                where:{ user_id: data.user_id}
+            });
+            if(!user){
+                throw new Error("User not found");//unauthorized 
+            }
+            
+        } catch (error) {
+            
+        }
+
+    } 
 }       
