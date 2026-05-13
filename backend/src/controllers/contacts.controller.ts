@@ -1,21 +1,18 @@
-import {Request, Response} from "express";
-import {contact_services} from  "../services/contacts_services";
+import type { Response } from "express";
+import type { AuthRequest } from "../middleware/auth";
+import { contact_services } from "../services/contacts_services";
 
-/**
- * authenticated user id stored at res.locals.user_id inside verify_token middleware
- * request-scoped storage in Express 
- */
-function get_user_id(res: Response): string | null {
-    const user_id = res.locals.user_id as string | undefined;
-    return user_id ?? null;
+
+function get_user_id(req: AuthRequest): string | null {
+  return req.user?.sub ?? null;
 }
 
 const contacts_controller = {
     /**POST /contacts
     *Body: identifer is username or user_id
     */
-    async create_contact(req: Request, res: Response) {
-        const user_id = get_user_id(res);
+    async create_contact(req: AuthRequest, res: Response) {
+        const user_id = get_user_id(req);
         if(!user_id){
             return res.status(401).json({ error: "UNAUTHORIZED"});
         }
@@ -65,8 +62,8 @@ const contacts_controller = {
    * GET /contacts
    * Response: list of contacts for logged-in user
    */
-    async get_contacts(req: Request, res: Response){
-        const user_id = get_user_id(res);
+    async get_contacts(req: AuthRequest, res: Response){
+        const user_id = get_user_id(req);
         if(!user_id){
             return res.status(401).json({
                 error: "UNAUTHORIZED"
@@ -104,8 +101,8 @@ const contacts_controller = {
    *   contacts: [{ contact_id: uuid }]
    * }
    */
-    async alert_contacts(req: Request, res: Response){
-        const user_id = get_user_id(res);
+    async alert_contacts(req: AuthRequest, res: Response){
+        const user_id = get_user_id(req);
         if(!user_id){
             return res.status(401).json({
                 error: "UNAUTHORIZED"
@@ -181,8 +178,8 @@ const contacts_controller = {
         * }
      */
 
-    async share_location(req: Request, res: Response){
-        const user_id = get_user_id(res);
+    async share_location(req: AuthRequest, res: Response){
+        const user_id = get_user_id(req);
         if(!user_id){
             return res.status(401).json({
                 error: "UNAUTHORIZED"
