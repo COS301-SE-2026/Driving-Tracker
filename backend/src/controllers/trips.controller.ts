@@ -187,17 +187,63 @@ export const get_trip_summary = async (req: Request, res: Response) => {
         const summary = await var_trips_services.get_summary({ trip_id, user_id });
         res.status(200).json(summary);
 
-    } catch (error: any) {
-        if (error.message.includes("Trip not found")) {
+    } catch(error: any) {
+        if(error.message.includes("Trip not found")) {
             res.status(404).json({ 
                 error: "NOT_FOUND", 
                 message: "Trip not found" 
             });
-        } else if (error.message.includes("You do not own this trip")) {
+        } else if(error.message.includes("You do not own this trip")) {
             res.status(403).json({ 
                 error: "FORBIDDEN",
                  message: "You do not own this trip" 
                 });
+        } else{
+            res.status(500).json({ 
+                error: "Internal server error" 
+            });
+        }
+    }
+};
+export const log_event = async (req: Request, res: Response) => {
+    try {
+        const { trip_id } = req.params;
+        const user_id = (req as any).user?.user_id;
+        const { event_type, location, severity, sensor_source, timestamp } = req.body;
+
+        if (!user_id){
+            res.status(401).json({ 
+                error: "UNAUTHORIZED" 
+            });
+            return;
+        }
+
+        const result = await var_trips_services.events_log({
+            trip_id,
+            user_id,
+            event_type,
+            location,
+            severity,
+            sensor_source,
+            recorded_at: new Date(timestamp)
+        });
+
+        res.status(201).json(result);
+    } catch(error: any){
+        if (error.message.includes("Trip not found")){
+            res.status(404).json({ 
+                error: "TRIP_NOT_FOUND", 
+                message: "Trip not found" 
+            });
+        } else if (error.message.includes("You do not own this trip")) {
+            res.status(403).json({ 
+                error: "FORBIDDEN", 
+                message: "You do not own this trip"
+            });
+        } else if (error.message.includes("Invalid event type")) {
+            res.status(400).json({ 
+                error: "INVALID_EVENT_TYPE"
+            });
         } else {
             res.status(500).json({ 
                 error: "Internal server error" 

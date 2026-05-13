@@ -53,6 +53,18 @@ export interface trip_history_filter {
     start_date: Date;
     end_date?: Date;
     status?: "COMPLETED" | "IN_PROGRESS" | "ABORTED";
+};
+export interface trip_events_log{
+    trip_id: string;
+    user_id: string;
+    event_type: "HARSH_BRAKE"| "HARSH_ACCELERATION"| "SHARP_CORNER"|"CRASH";
+    location:{
+        lat: number;
+        lng: number;
+    }
+    severity: number;
+    sensor_source: "ACCELEROMETER"| "GYROSCOPE"|"OBD";
+    recorded_at: Date;
 }
 
 export class trips_services {
@@ -369,10 +381,61 @@ export class trips_services {
                     }))
                 }
             };
-
-            
         } catch (error) {
             throw error;
         }
+    }
+    async events_log(data: trip_events_log){
+        const validEventTypes = ["HARSH_BRAKE", "HARSH_ACCELERATION", "SHARP_CORNER", "CRASH_LIKE"];
+
+        if(!data.trip_id||!data.user_id){
+            throw new Error("Missing required trips");
+        }
+         if(!validEventTypes.includes(data.event_type)){
+        throw new Error("Invalid event type");
+        }
+    
+        if(!data.location.lat || !data.location.lng){
+            throw new Error("Invalid location");
+        }
+        try{
+            const trip = await prisma.trips.findUnique({
+                where: { trip_id:data.trip_id}
+            });
+            if(!trip){
+                throw new Error("Trip not found");
+            }
+            if(trip.user_id !== data.user_id){
+                throw new Error("You do not own this trip");
+            }
+             // Create event
+        const newEvent = await prisma.trip_events.create({
+            data: {
+                trip_id: data.trip_id,
+                type: data.event_type,
+                latitude: data.location.lat,
+                longitude: data.location.lng,
+                severity: data.severity,
+                sensor_source: data.sensor_source,
+                recorded_at: data.recorded_at
+            }
+        });
+        
+        return {
+            data: {
+                event_id: newEvent.event_id,
+                trip_id: newEvent.trip_id,
+                type: newEvent.type,
+                severity: newEvent.severity,
+                sensor_source: newEvent.sensor_source,
+                timestamp: newEvent.recorded_at,
+                message: "Event logged successfully"
+            }
+        };
+
+        }catch(error){
+            throw error;
+        }
+
     }
 }       
