@@ -145,8 +145,11 @@ export class trips_services {
                 }
             });
              // Create/Update trip scores
+            const existing_score = await prisma.trip_scores.findFirst({
+                where: {trip_id :data.trip_id}
+            });
             const tripScore = await prisma.trip_scores.upsert({
-                where: { trip_id: data.trip_id },
+                where: { score_id: existing_score?.score_id || "" },
                 update: {
                     safety_score: data.safety_score,
                     eco_score: data.eco_score,
@@ -190,7 +193,7 @@ export class trips_services {
         }
 
         try{
-            const trip_reading = await prisma.trip_readings.findUnique({
+            const trip_reading = await prisma.trip_readings.findFirst({
             where:{ trip_id: data.trip_id}
             });
             if(!trip_reading){
@@ -268,24 +271,21 @@ export class trips_services {
                 orderBy: { created_at: 'desc' }
             });
 
-            if(!trips){
-                throw new Error("Trip not found");
-            }
-            if(trips.user_id !== data.user_id){
-                throw new Error("You do not own this trip");
+            if(trips.length === 0){
+                throw new Error("No trips found");
             }
             const total_trips = trips.length;
             let total_distance = 0;
             for (let n = 0; n < trips.length; n++) {
-                total_distance += trips[n].distance_km;
+                total_distance += Number(trips[n].distance_km || 0);
             }
-            const mean_distance = total_distance/total_trips;
-            let total_minutes = 0 ;
-            for(let i =0; i < trips.length;i++){
-                total_minutes += trips[i].duration_minutes;
-            }
-            const mean_minutes = total_minutes/total_trips;
+            const mean_distance = total_trips > 0 ? total_distance / total_trips : 0;
 
+            let total_minutes = 0;
+            for(let i = 0; i < trips.length; i++){
+                total_minutes += (trips[i].duration_minutes || 0);
+            }
+            const mean_minutes = total_trips > 0 ? total_minutes / total_trips : 0;
             return{
                 data:{
                     username: user.username,
