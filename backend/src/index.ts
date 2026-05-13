@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
 import contacts_router from "./routes/contacts.route";
+import trip_router from "./routes/trips.routes";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/health', (req, res) => {
 //tell Express to hand requests starting with /contacts to contacts_router
 //contacts_router's "/" becomes "/contacts"
 app.use("/contacts", contacts_router);
+app.use("/trips", trip_router);
 
 const PORT = process.env.PORT || 3000;
 
