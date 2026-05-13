@@ -194,13 +194,18 @@ export const trips_services ={
         }
 
         try{
-            const trip_reading = await prisma.trip_readings.findFirst({
-            where:{ trip_id: data.trip_id}
+            if (!data.user_id) {
+                throw new Error("Missing required fields");
+            }
+
+            const trip = await prisma.trips.findUnique({
+                where: { trip_id: data.trip_id },
+                select: { user_id: true }
             });
-            if(!trip_reading){
+            if(!trip){
                 throw new Error("Trip not found");
             }// verifying if the trip exists
-            if(trip_reading.user_id !== data.user_id){
+            if(trip.user_id !== data.user_id){
                 throw new Error("You do not own this trip");
             }
 
