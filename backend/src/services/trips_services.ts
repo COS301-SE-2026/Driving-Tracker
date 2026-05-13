@@ -67,7 +67,7 @@ export interface trip_events_log{
     recorded_at: Date;
 }
 
-export class trips_services {
+export const trips_services ={
     async create(data: create_trip){
         if(!data.user_id || !data.vehicle_id ){
             throw new Error("Missing required fields");
@@ -113,7 +113,7 @@ export class trips_services {
         }catch(error){
             throw error;
         }
-    }
+    },
     async end_trip(data:end_trip){
         
         if(!data.trip_id || !data.user_id){
@@ -185,7 +185,7 @@ export class trips_services {
         }catch(error){
             throw error;
         }
-    }
+    },
 
     async record(data:record_data){//consistent trip update endpoint 
         if(!data.trip_id){
@@ -223,7 +223,7 @@ export class trips_services {
         }catch(error){
             throw error;
         }
-    }
+    },
     
     async get_history(data: trip_history_filter){
         if(!data.user_id || !data.start_date){
@@ -304,7 +304,7 @@ export class trips_services {
             throw error;
         }
 
-    } 
+    },
 
     async get_summary(data: trip_summary_filter){
         if(!data.user_id || !data.trip_id){
@@ -384,7 +384,7 @@ export class trips_services {
         } catch (error) {
             throw error;
         }
-    }
+    },
     async events_log(data: trip_events_log){
         const validEventTypes = ["HARSH_BRAKE", "HARSH_ACCELERATION", "SHARP_CORNER", "CRASH_LIKE"];
 
@@ -438,4 +438,4 @@ export class trips_services {
         }
 
     }
-}       
+};       

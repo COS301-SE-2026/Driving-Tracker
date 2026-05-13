@@ -4,7 +4,7 @@ import { trips_services } from "../services/trips_services";
 import { error } from "console";
 
 //trips controllers will go here, so what is served by the api back to the frontend  
-const var_trips_services = new trips_services();
+
 export const start_trip = async (req: AuthRequest, res: Response) =>{
     try{
         const user_id = req.user?.sub;
@@ -15,7 +15,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
         const { vehicle_id, start_date, data_source, start_location}= req.body;
 
         //sending to services
-        const new_trip = await var_trips_services.create({
+        const new_trip = await trips_services.create({
             user_id,
             vehicle_id,
             start_date,
@@ -58,7 +58,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             });
             return;
         }
-        const end_trip_results = await var_trips_services.end_trip({
+        const end_trip_results = await trips_services.end_trip({
             trip_id,
             user_id,
             end_time,
@@ -105,7 +105,7 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
                 dtc_codes
             }= req.body;
 
-        const record_trip_results = await var_trips_services.record({
+        const record_trip_results = await trips_services.record({
             trip_id,
                 recorded_at,
                 data_source,
@@ -149,7 +149,7 @@ export const get_history = async (req:AuthRequest, res:Response)=>{
             });
             return;
         }
-        const history_results = await var_trips_services.get_history({
+        const history_results = await trips_services.get_history({
             user_id,
             start_date: new Date(start_date),
             end_date: end_date? new Date(end_date): undefined,
@@ -193,7 +193,7 @@ export const get_trip_summary = async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const summary = await var_trips_services.get_summary({ trip_id, user_id });
+        const summary = await trips_services.get_summary({ trip_id, user_id });
         res.status(200).json(summary);
 
     } catch(error: any) {
@@ -227,7 +227,7 @@ export const log_event = async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const result = await var_trips_services.events_log({
+        const result = await trips_services.events_log({
             trip_id,
             user_id,
             event_type,
