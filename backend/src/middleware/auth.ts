@@ -70,26 +70,3 @@ export function verify_token(req: AuthRequest, res: Response, next: NextFunction
     return res.status(401).json({error, message});
   }
 }
-
-//Refreshes access token when it expires and refresh token is still valid
-export function refresh_token(req: AuthRequest, res: Response){
-
-  const token=req.body?.refresh_token as string | undefined;
-
-  if(!token){
-
-    res.status(422).json({error : "MISSING_FIELDS", message : "Missing refresh token"});
-    return;
-  }
-
-  try{
-    const payload=jwt.verify(token, REFRESH_SECRET) as AppJwtPayload;
-
-    const new_access_token=generate_token(payload);
-
-    res.status(200).json({token: new_access_token});
-  } catch{
-
-    res.status(401).json({error : "UNAUTHORIZED", message: "Invalid refresh token"});
-  }
-}

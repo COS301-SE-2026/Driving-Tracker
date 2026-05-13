@@ -1,8 +1,12 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
-import { generate_refresh_token } from '../middleware/auth';
+import { generate_refresh_token, generate_token } from '../middleware/auth';
 import {z} from "zod";
-import { ValidationError, ConflictError } from '../utils/errors';
+import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
+import { AppJwtPayload } from '../middleware/auth';
+import jwt from 'jsonwebtoken';
+
+const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
 
 const email_schema=z.email("Invalid email address");
 
@@ -144,6 +148,35 @@ export const auth_services = {
             },
         });
     },
+    async refresh(token: string){
 
+        const payload=jwt.verify(token, REFRESH_SECRET) as AppJwtPayload;
+
+        //find user associated with token
+        const user= await prisma.users.findFirst({
+
+            where: {
+                user_id: payload.sub!,
+                refresh_token: token,
+                refresh_token_exp: { gt: new Date() }
+            },
+        });
+
+        if(!user) throw new ExtendedError("Invalid refresh token", "UNAUTHORIZED");
+
+        //generatte new refresh token
+        const new_refresh_token=generate_refresh_token({sub: user.user_id, role: user.role});
+
+        //rotate refresh token
+        await prisma.users.update({
+            where: { user_id: user.user_id},
+            data: {
+                refresh_token: new_refresh_token,
+                refresh_token_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            },
+        });
+
+        return {user, new_refresh_token};
+    }
 };
 

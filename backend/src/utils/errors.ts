@@ -22,3 +22,11 @@ export class ConflictError extends Error{
         return this.field.toUpperCase()+"_TAKEN";
     }
 }
+
+export class ExtendedError extends Error{
+
+    constructor(message: string, public errorCode: string){
+        super(message);
+        this.name="ConflictError";
+    }
+}

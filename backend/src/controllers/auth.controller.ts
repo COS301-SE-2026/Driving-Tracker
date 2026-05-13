@@ -1,7 +1,7 @@
 import {Request, Response} from 'express';
 import {auth_services} from  "../services/auth_services";
 import {generate_token, AuthRequest} from "../middleware/auth";//the file containing the tokens 
-import { ConflictError, ValidationError } from '../utils/errors';
+import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 
 const auth_controller={
     //Register controller method
@@ -44,7 +44,7 @@ const auth_controller={
         const {identifier, password}=req.body;
 
         try{
-            //User and reefreesh token returned from service
+            //User and refresh token returned from service
             const {user, refresh_token}=await auth_services.login(identifier,password);
 
             //Generating access token
@@ -79,6 +79,41 @@ const auth_controller={
 
             return res.status(500).json({error:"INTERNAL_SERVER_ERROR", message:"Failed to log out"});
             
+        }
+    },
+    //refreshes expired access_token if refresh_token is still valid. Also rotates refresh_token
+    async refresh(req: Request, res: Response){
+
+        const {refresh_token}= req.body;
+
+        if(!refresh_token){
+
+            res.status(400).json({error: "MISSING_REFRESH_TOKEN", message:"Refresh token required"});
+            return;
+        }
+
+        try{
+
+            const {user, new_refresh_token}= await auth_services.refresh(refresh_token);
+
+            const access_token=generate_token({user: user.user_id, role: user.role});
+
+            res.status(200).json({
+                token: access_token,
+                refresh_token: new_refresh_token
+            });
+        }catch(err){
+
+            if(err instanceof ExtendedError){
+
+                res.status(401).json({
+                    error: err.errorCode, 
+                    message: err.message
+                });
+                return;
+            }
+
+            res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
         }
     }
 
