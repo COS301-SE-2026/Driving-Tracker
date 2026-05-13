@@ -29,10 +29,13 @@ services:
     build: ./backend
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend/src:/app/src
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
-      NODE_ENV: production
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      NODE_ENV: development
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +49,8 @@ services:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
         - "3001:3001"
+    volumes:
+      - ./frontend/src:/app/src
     depends_on:
         - api
     environment:
