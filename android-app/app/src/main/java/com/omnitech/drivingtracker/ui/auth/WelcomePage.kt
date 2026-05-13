@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.res.painterResource
+import com.omnitech.drivingtracker.R
 
 @Composable
 fun WellcomePage() {
@@ -25,6 +27,7 @@ fun WellcomePage() {
         verticalArrangement = Arrangement.Center
     ) {
         //The Logo
+        Icon(painterResource(id = R.drawable.lg_ww_1), null)
 
         Row {
             //Sign in button
