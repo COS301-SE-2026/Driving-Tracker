@@ -2,6 +2,7 @@ package com.omnitech.drivingtracker.ui.auth
 
 import android.R.attr.onClick
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -18,7 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
+import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 fun Login() {
@@ -27,10 +31,19 @@ fun Login() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
+        //The Logo
+        Image(
+            painter = painterResource(id = R.drawable.lg_nw2),
+            contentDescription = "Driving Tracker logo",
+            modifier = Modifier.size(150.dp)
+        )
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp), //Adds space between the card and screen edges
+                .padding(horizontal = 32.dp) //Adds space between the card and screen edges
+                .padding(top = 10.dp), //Adds space between the card and logo
             colors = CardDefaults.cardColors(containerColor = Color.White),
             border = BorderStroke(1.dp, Color(0xFFE0E0E0)), //lifght grey border
             shape = RoundedCornerShape(8.dp)
@@ -89,7 +102,7 @@ fun Login() {
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                         .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C)), //Dark grey
+                    colors = ButtonDefaults.buttonColors(containerColor = Green), //Dark grey
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("Sign In", color = Color.White)

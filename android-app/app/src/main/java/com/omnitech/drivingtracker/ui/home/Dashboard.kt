@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.omnitech.drivingtracker.ui.theme.Green
+import com.omnitech.drivingtracker.ui.theme.*
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import androidx.compose.foundation.lazy.LazyColumn
