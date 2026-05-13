@@ -22,7 +22,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh -lc "yarn prisma migrate deploy && yarn prisma generate"
+    command: sh -lc "yarn prisma:migrate:deploy && yarn prisma:generate"
     restart: "no"
 
   api:
