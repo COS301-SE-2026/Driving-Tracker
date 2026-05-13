@@ -1,12 +1,12 @@
-import { Router, Request, Response } from "express";
+import { Router} from "express";
 import auth_controller from "../controllers/auth.controller";
 import { verify_token } from '../middleware/auth';
 
-const router = Router();
+const auth_router = Router();
 
-router.post("/register", auth_controller.register);
-router.post("/login", auth_controller.login);
-router.post("/logout", verify_token, auth_controller.logout);
+auth_router.post("/register", auth_controller.register);
+auth_router.post("/login", auth_controller.login);
+auth_router.post("/logout", verify_token, auth_controller.logout);
 
 
-export default router;
+export default auth_router;

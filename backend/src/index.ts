@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import 'dotenv/config';
+
+//import 'dotenv/config';
+import auth_router from "./routes/auth.routes";
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.get('/health', (req, res) => {
         message: 'Driving Tracker API is running'
     });
 });
+
+app.use("/api/auth", auth_router);
 
 
 const PORT = process.env.PORT || 3000;

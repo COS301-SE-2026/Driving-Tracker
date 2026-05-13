@@ -67,7 +67,7 @@ export function verify_token(req: AuthRequest, res: Response, next: NextFunction
       message="Invalid Token";
     }
 
-    res.status(401).json({error, message});
+    return res.status(401).json({error, message});
   }
 }
 

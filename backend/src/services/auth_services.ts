@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { generate_refresh_token } from '../middleware/auth';
 import {z} from "zod";
 
-const email_schema=z.email("Invalid email address")
+const email_schema=z.email("Invalid email address");
 
 const password_schema=z.string().min(8).max(20)
 .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -31,26 +31,47 @@ export const auth_services = {
         const username_result=username_schema.safeParse(username);
         
         if(!username_result.success){
-            throw new Error(username_result.error.message)
+            throw new Error(username_result.error.issues.at(0)?.message);
         }
 
         const name_result=name_schema.safeParse(name);
         
         if(!name_result.success){
-            throw new Error(name_result.error.message)
+            throw new Error(name_result.error.issues.at(0)?.message);
         }
 
         const surname_result=name_schema.safeParse(surname);
         
         if(!surname_result.success){
-            throw new Error(surname_result.error.message)
+            throw new Error(surname_result.error.issues.at(0)?.message)
         }
 
 
         const email_result=validate_email(email);
         
         if(!email_result.success){
-            throw new Error(email_result.error.message)
+            throw new Error(email_result.error.issues.at(0)?.message)
+        }
+
+        const existing_user=await prisma.users.findFirst({
+            where: {
+                OR: [
+                    {email},
+                    {username}
+                ]
+            }
+        });
+
+        if(existing_user){
+
+            if(existing_user.email===email){
+
+                throw new Error("You already have an account with this email address");
+            }
+            if(existing_user.username===username){
+
+                throw new Error("Username not available");
+            }
         }
 
         const password_result=validate_password(password);
