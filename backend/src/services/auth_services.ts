@@ -31,7 +31,7 @@ export const auth_services = {
 
     async register (email: string, username: string, name:string, surname:string, password: string, consent_status: boolean){
         //validating all parameters
-        if(!consent_status) throw new Error("You must accept the terms to register");
+        if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
 
         const username_result=username_schema.safeParse(username);
         
@@ -172,7 +172,7 @@ export const auth_services = {
             where: { user_id: user.user_id},
             data: {
                 refresh_token: new_refresh_token,
-                refresh_token_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                refresh_token_exp: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             },
         });
 
