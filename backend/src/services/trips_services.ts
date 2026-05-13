@@ -1,6 +1,5 @@
 //connection to the data base 
 // not quite sure of the imports as yet 
-import { error } from 'console';
 import prisma from '../db/prisma';
 
 export interface create_trip{
@@ -229,9 +228,67 @@ export class trips_services {
             if(!user){
                 throw new Error("User not found");//unauthorized 
             }
-            
+
+            const date_conditions: any = {
+                user_id: data.user_id,
+                trip_date:{
+                    gte: data.start_date,
+                    lte: end_date
+                }
+            };
+
+            if(!data.status){
+                console.log("No status");
+            }
+
+             const trips = await prisma.trips.findMany({
+                where: date_conditions,
+                include: {
+                    trip_scores: {
+                        select: {
+                            safety_score: true,
+                            eco_score: true,
+                            overall_score: true
+                        }
+                    }
+                },
+                orderBy: { created_at: 'desc' }
+            });
+
+            if(!trips){
+                throw new Error("Trip not found");
+            }
+            if(trips.user_id !== data.user_id){
+                throw new Error("You do not own this trip");
+            }
+            const total_trips = trips.length;
+            let total_distance = 0;
+            for (let n = 0; n < trips.length; n++) {
+                total_distance += trips[n].distance_km;
+            }
+            const mean_distance = total_distance/total_trips;
+            let total_minutes = 0 ;
+            for(let i =0; i < trips.length;i++){
+                total_minutes += trips[i].duration_minutes;
+            }
+            const mean_minutes = total_minutes/total_trips;
+
+            return{
+                data:{
+                    username: user.username,
+                    start_date: data.start_date,
+                    end_date: end_date,
+                    total_trips:total_trips,
+                    trips: trips,
+                    meta:{
+                        mean_distance: parseFloat(mean_distance.toFixed(2)),
+                        mean_minutes: parseFloat(mean_minutes.toFixed(2))
+                    }
+                }
+            };
+
         } catch (error) {
-            
+            throw error;
         }
 
     } 
