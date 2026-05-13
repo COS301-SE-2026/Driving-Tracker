@@ -30,6 +30,7 @@ export interface end_trip {
     overall_score: number;
 };
 export interface record_data{
+    user_id: string;
     recorded_at: Date;
     trip_id: string;
     location:{
@@ -199,6 +200,9 @@ export const trips_services ={
             if(!trip_reading){
                 throw new Error("Trip not found");
             }// verifying if the trip exists
+            if(trip_reading.user_id !== data.user_id){
+                throw new Error("You do not own this trip");
+            }
 
             const newReading = await prisma.trip_readings.create({
                 data: {

@@ -89,6 +89,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
 
 export const record_trip = async (req:AuthRequest, res:Response) =>{
     try{
+        const user_id = req.user?.sub;
         const 	{	trip_id,
                 recorded_at,
                 data_source,
@@ -104,8 +105,15 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
                 throttle_position,
                 dtc_codes
             }= req.body;
+            if(!user_id){
+                res.status(400).json({
+                    error:"UNAUTHORIZED"
+                });
+                return;
+            }
 
         const record_trip_results = await trips_services.record({
+            user_id,
             trip_id,
                 recorded_at,
                 data_source,
@@ -134,6 +142,8 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
             res.status(404).json({
                 error:"Trip not found"
             });
+        }else if(error.message.includes("You do not own this trip")){
+            res.status(400).json({error:"UNAUTHORIZED"});
         }
     }
 };
