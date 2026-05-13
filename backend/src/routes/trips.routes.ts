@@ -10,7 +10,8 @@ const trips_router = Router();
 trips_router.post("/trips/start_trip",verify_token,trips_controller.start_trip);
 trips_router.post("/trips/:trip_id/readings/record",verify_token,trips_controller.record_trip);
 //read basically get 
-
+trips_router.get("/trips/history",verify_token,trips_controller.get_history);
+trips_router.get("/trips/:trip_id/summary", verify_token, trips_controller.get_trip_summary);
 //delete 
 
 //Update 

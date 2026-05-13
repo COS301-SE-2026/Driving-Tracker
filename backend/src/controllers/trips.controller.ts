@@ -127,4 +127,81 @@ export const record_trip = async (req:Request, res:Response) =>{
             });
         }
     }
-}
+};
+
+export const get_history = async (req:Request, res:Response)=>{
+    try{
+        const user_id = (req as any).user?.user_id;//jwt token 
+        const {start_date, end_date, status} = req.body;
+        if(!user_id){
+            res.status(400).json({
+                error:"UNAUTHORIZED",
+                message:"user not identified"
+            });
+            return;
+        }
+        const history_results = await var_trips_services.get_history({
+            user_id,
+            start_date: new Date(start_date),
+            end_date: end_date? new Date(end_date): undefined,
+            status
+        });
+         res.status(200).json({
+            message: "Trip history retrieved successfully",
+            data: history_results
+        });
+    }catch(error :any){
+        if (error.message.includes("Missing required fields")) {
+            res.status(400).json({
+                error: "Missing required fields"
+            });
+        } else if (error.message.includes("User not found")) {
+            res.status(404).json({
+                error: "User not found"
+            });
+        } else if (error.message.includes("Invalid")) {
+            res.status(400).json({
+                error: error.message
+            });
+        } else {
+            res.status(500).json({
+                error: "Internal server error"
+            });
+        }
+
+    }
+};
+export const get_trip_summary = async (req: Request, res: Response) => {
+    try {
+        const { trip_id } = req.params;
+        const user_id = (req as any).user?.user_id;
+
+        if (!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+        const summary = await var_trips_services.get_summary({ trip_id, user_id });
+        res.status(200).json(summary);
+
+    } catch (error: any) {
+        if (error.message.includes("Trip not found")) {
+            res.status(404).json({ 
+                error: "NOT_FOUND", 
+                message: "Trip not found" 
+            });
+        } else if (error.message.includes("You do not own this trip")) {
+            res.status(403).json({ 
+                error: "FORBIDDEN",
+                 message: "You do not own this trip" 
+                });
+        } else {
+            res.status(500).json({ 
+                error: "Internal server error" 
+            });
+        }
+    }
+};

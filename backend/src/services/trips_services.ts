@@ -209,6 +209,7 @@ export class trips_services {
             throw error;
         }
     }
+    
     async get_history(data: trip_history_filter){
         if(!data.user_id || !data.start_date){
             throw new Error("Missing required fields");
@@ -292,4 +293,86 @@ export class trips_services {
         }
 
     } 
+
+    async get_summary(data: trip_summary_filter){
+        if(!data.user_id || !data.trip_id){
+            throw new Error("Missing required fields");
+        }
+
+        try {
+            const trip = await prisma.trips.findUnique({
+                where: { trip_id: data.trip_id },
+                include: {
+                    trip_scores: {
+                        select: {
+                            safety_score: true,
+                            eco_score: true,
+                            overall_score: true
+                        }
+                    },
+                    trip_events: {
+                        select: {
+                            event_id: true,
+                            type: true,
+                            longitude: true,
+                            latitude: true,
+                            severity: true,
+                            sensor_source: true,
+                            recorded_at: true
+                        }
+                    }
+                }
+            });
+            if (!trip) {
+                throw new Error("Trip not found");
+            }
+
+            // Check ownership
+            if (trip.user_id !== data.user_id) {
+                throw new Error("You do not own this trip");
+            }
+
+            // Determine data source (MIXED if both OBD and PHONE exist)
+            const readings = await prisma.trip_readings.findMany({
+                where: { trip_id: data.trip_id },
+                select: { data_source: true },
+                distinct: ['data_source']
+            });
+            const data_sources = readings.map((r :any) => r.data_source).filter(Boolean);
+            const data_source = data_sources.length > 1 ? "MIXED" : data_sources[0] || trip.data_source;
+
+              return {
+                data: {
+                    trip_id: trip.trip_id,
+                    vehicle_id: trip.vehicle_id,
+                    started_At: trip.start_time,
+                    ended_At: trip.end_time,
+                    status: trip.status,
+                    data_source: data_source,
+                    route_polyline: trip.route_polyline,
+                    distance_km: trip.distance_km?.toNumber(),
+                    duration_minutes: trip.duration_minutes,
+                    fuel_estimate: trip.fuel_estimate?.toNumber(),
+                    scores: trip.trip_scores?.[0] ? {
+                        safety_score: trip.trip_scores[0].safety_score?.toNumber(),
+                        eco_score: trip.trip_scores[0].eco_score?.toNumber(),
+                        overall_score: trip.trip_scores[0].overall_score?.toNumber()
+                    } : null,
+                    events: trip.trip_events.map((event:any) => ({
+                        event_id: event.event_id,
+                        event_type: event.type,
+                        longitude: event.longitude?.toNumber(),
+                        latitude: event.latitude?.toNumber(),
+                        severity: event.severity?.toNumber(),
+                        sensor_source: event.sensor_source,
+                        time_stamp: event.recorded_at
+                    }))
+                }
+            };
+
+            
+        } catch (error) {
+            throw error;
+        }
+    }
 }       
