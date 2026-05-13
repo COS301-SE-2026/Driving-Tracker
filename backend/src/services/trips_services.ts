@@ -247,7 +247,7 @@ export class trips_services {
 
             const date_conditions: any = {
                 user_id: data.user_id,
-                trip_date:{
+                created_at:{
                     gte: data.start_date,
                     lte: end_date
                 }

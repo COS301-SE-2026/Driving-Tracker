@@ -1,12 +1,18 @@
-import {Request, Response} from "express";
-import {trips_services} from  "../services/trips_services";
+import type { Response } from "express";
+import type { AuthRequest } from "../middleware/auth";
+import { trips_services } from "../services/trips_services";
 import { error } from "console";
 
 //trips controllers will go here, so what is served by the api back to the frontend  
 const var_trips_services = new trips_services();
-export const start_trip = async (req: Request, res: Response) =>{
+export const start_trip = async (req: AuthRequest, res: Response) =>{
     try{
-        const {user_id, vehicle_id, start_date, data_source, start_location}= req.body;
+        const user_id = req.user?.sub;
+        if(!user_id){
+            throw new Error("user not found");
+            return ;
+        }
+        const { vehicle_id, start_date, data_source, start_location}= req.body;
 
         //sending to services
         const new_trip = await var_trips_services.create({
@@ -40,16 +46,17 @@ export const start_trip = async (req: Request, res: Response) =>{
     }
 };
 
-export const end_trip = async (req:Request, res:Response) =>{
+export const end_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const { trip_id } = req.params;
-        const user_id = (req as any).user?.user_id; // From JWT decoded by verifyToken middleware
+        const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
         const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score } = req.body;
 
         if(!user_id){
             res.status(400).json({
                 error:"UNAUTHORIZED"
             });
+            return;
         }
         const end_trip_results = await var_trips_services.end_trip({
             trip_id,
@@ -80,7 +87,7 @@ export const end_trip = async (req:Request, res:Response) =>{
     }
 };
 
-export const record_trip = async (req:Request, res:Response) =>{
+export const record_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const 	{	trip_id,
                 recorded_at,
@@ -114,7 +121,9 @@ export const record_trip = async (req:Request, res:Response) =>{
                 throttle_position,
                 dtc_codes
         });
-        res.status(201);
+        res.status(201).json({
+            message:"Recorded successfully"
+        });
         
     }catch(error: any){
         if(error.message.includes("Missing required fields")){
@@ -129,9 +138,9 @@ export const record_trip = async (req:Request, res:Response) =>{
     }
 };
 
-export const get_history = async (req:Request, res:Response)=>{
+export const get_history = async (req:AuthRequest, res:Response)=>{
     try{
-        const user_id = (req as any).user?.user_id;//jwt token 
+        const user_id = req.user?.sub;//jwt token 
         const {start_date, end_date, status} = req.body;
         if(!user_id){
             res.status(400).json({
@@ -171,10 +180,10 @@ export const get_history = async (req:Request, res:Response)=>{
 
     }
 };
-export const get_trip_summary = async (req: Request, res: Response) => {
+export const get_trip_summary = async (req: AuthRequest, res: Response) => {
     try {
         const { trip_id } = req.params;
-        const user_id = (req as any).user?.user_id;
+        const user_id = req.user?.sub;
 
         if (!user_id) {
             res.status(401).json({ 
@@ -205,10 +214,10 @@ export const get_trip_summary = async (req: Request, res: Response) => {
         }
     }
 };
-export const log_event = async (req: Request, res: Response) => {
+export const log_event = async (req: AuthRequest, res: Response) => {
     try {
         const { trip_id } = req.params;
-        const user_id = (req as any).user?.user_id;
+        const user_id = req.user?.sub;
         const { event_type, location, severity, sensor_source, timestamp } = req.body;
 
         if (!user_id){
