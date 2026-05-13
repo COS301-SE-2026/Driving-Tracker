@@ -50,6 +50,12 @@ const contacts_controller = {
                     message: "Cannot add this user as a contact",
                 });
             }
+            if(e?.code === "USER_NOT_FOUND"){
+                return res.status(404).json({
+                    error: "USER_NOT_FOUND",
+                    message: "User not found",
+                });
+            }
 
             return res.status(500).json({
                 error: "INTERNAL_SERVER_ERROR"
@@ -79,7 +85,7 @@ const contacts_controller = {
                 message: "Contacts successfully retrieved",
             });
         }catch(e: any){
-            if(e?.node === "CANNOT_ACCESS_CONTACTS"){
+            if(e?.code === "CANNOT_ACCESS_CONTACTS"){
                 return res.status(403).json({
                     error: "CANNOT_ACCESS_CONTACTS",
                     message: "Cannot access these contacts",
@@ -188,7 +194,7 @@ const contacts_controller = {
         const body = req.body ?? {};
 
         // if body.contacts is an object wrapper, use it, else use body directly
-        const wrapper = body.contacts && typeof body.contacts === "object" ? body.contacts : body;
+        const wrapper = body.contacts && typeof body.contacts === "object" && !Array.isArray(body.contacts) ? body.contacts : body;
         const trip_id = wrapper.trip_id;
         const contacts_arr = wrapper.contacts;
 
