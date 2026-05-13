@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import 'dotenv/config';
+
+import auth_router from "./routes/auth.routes";
+//import 'dotenv/config';
 import contacts_router from "./routes/contacts.route";
 import trip_router from "./routes/trips.routes";
 
@@ -23,6 +25,8 @@ app.get('/health', (req, res) => {
         message: 'Driving Tracker API is running'
     });
 });
+
+app.use("/api/auth", auth_router);
 
 //tell Express to hand requests starting with /contacts to contacts_router
 //contacts_router's "/" becomes "/contacts"
