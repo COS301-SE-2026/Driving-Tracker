@@ -2,6 +2,7 @@ import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
 import { generate_refresh_token } from '../middleware/auth';
 import {z} from "zod";
+import { ValidationError, ConflictError } from '../utils/errors';
 
 const email_schema=z.email("Invalid email address");
 
@@ -25,34 +26,34 @@ function validate_password(password: string){
 export const auth_services = {
 
     async register (email: string, username: string, name:string, surname:string, password: string, consent_status: boolean){
-
+        //validating all parameters
         if(!consent_status) throw new Error("You must accept the terms to register");
 
         const username_result=username_schema.safeParse(username);
         
         if(!username_result.success){
-            throw new Error(username_result.error.issues.at(0)?.message);
+            throw new ValidationError(username_result.error.issues.at(0)?.message!,"username");
         }
 
         const name_result=name_schema.safeParse(name);
         
         if(!name_result.success){
-            throw new Error(name_result.error.issues.at(0)?.message);
+            throw new ValidationError(name_result.error.issues.at(0)?.message!,"name");
         }
 
         const surname_result=name_schema.safeParse(surname);
         
         if(!surname_result.success){
-            throw new Error(surname_result.error.issues.at(0)?.message)
+            throw new ValidationError(surname_result.error.issues.at(0)?.message!,"surname")
         }
 
 
         const email_result=validate_email(email);
         
         if(!email_result.success){
-            throw new Error(email_result.error.issues.at(0)?.message)
+            throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
         }
-
+        //Checking if user with email or username already exists
         const existing_user=await prisma.users.findFirst({
             where: {
                 OR: [
@@ -66,20 +67,20 @@ export const auth_services = {
 
             if(existing_user.email===email){
 
-                throw new Error("You already have an account with this email address");
+                throw new ConflictError("You already have an account with this email address","email");
             }
             if(existing_user.username===username){
 
-                throw new Error("Username not available");
+                throw new ConflictError("Username not available","username");
             }
         }
 
         const password_result=validate_password(password);
 
          if(!password_result.success){
-            throw new Error(password_result.error.message)
+            throw new ValidationError(password_result.error.issues.at(0)?.message!,"password")
         }
-
+        //password hashing with bcrypt
         const hashedPassword=await bcrypt.hash(password,10);
         const user=await prisma.users.create({
 
@@ -91,7 +92,7 @@ export const auth_services = {
                 password_hash:hashedPassword
             }
         });
-
+        //generating refresh token
         const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
 
         await prisma.users.update({
@@ -114,11 +115,11 @@ export const auth_services = {
             ]
         }});
 
-        if(!user) throw new Error("Invalid credentials");
+        if(!user) throw new ValidationError("Incorrect username/email", "credentials");
 
         const valid=await bcrypt.compare(password, user.password_hash);
 
-        if(!valid) throw new Error("Invalid credentials");
+        if(!valid) throw new ValidationError("Password incorrect","password");
 
         const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
 
