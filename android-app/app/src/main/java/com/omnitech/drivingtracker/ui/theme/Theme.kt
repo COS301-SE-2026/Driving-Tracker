@@ -10,6 +10,8 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.omnitech.drivingtracker.ui.theme.TextSecondary
+
 
 
 private val DarkColorScheme = darkColorScheme(
@@ -23,7 +25,8 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = CardWhite,
     onBackground = TextPrimary,
     onSurface = TextPrimary,
-    error = Error
+    error = Error,
+    onSurfaceVariant = TextSecondary
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -37,7 +40,8 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = CardWhite,
     onBackground = TextPrimary,
     onSurface = TextPrimary,
-    error = Error
+    error = Error,
+    onSurfaceVariant = TextSecondary
 )
 
 @Composable
