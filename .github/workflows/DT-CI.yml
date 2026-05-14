@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -22,10 +25,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: backend/yarn.lock
       
       - run: corepack enable
+      - run: corepack prepare yarn@4.6.0 --activate
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build
@@ -43,10 +45,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: frontend/yarn.lock
         
       - run: corepack enable
+      - run: corepack prepare yarn@4.14.1 --activate
       - run: yarn install --immutable
       - run: yarn lint
       - run: yarn build
@@ -97,6 +98,24 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+
+          sdkmanager --install "platform-tools" "platforms;android-36"
+
+          for bt in 36.0.1 36.0.0 35.0.1 35.0.0 34.0.0; do
+            if sdkmanager --install "build-tools;${bt}"; then
+              exit 0
+            fi
+          done
+
+          echo "Failed to install Android build-tools" >&2
+          exit 1
           
       - run: chmod +x ./gradlew
-      - run: ./gradlew test
+      - run: ./gradlew test --stacktrace
