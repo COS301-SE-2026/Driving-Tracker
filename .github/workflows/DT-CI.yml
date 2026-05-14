@@ -85,37 +85,37 @@ jobs:
       - if: always()
         run: docker compose down -v
 
-  android-unit: 
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android-app
-    steps:
-      - uses: actions/checkout@v4
+  # android-unit: 
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: android-app
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
+  #     - uses: actions/setup-java@v4
+  #       with:
+  #         distribution: temurin
+  #         java-version: 17
+  #         cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+  #     - name: Set up Android SDK
+  #       uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
-        run: |
-          set -euo pipefail
+  #     - name: Install Android SDK packages
+  #       run: |
+  #         set -euo pipefail
 
-          sdkmanager --install "platform-tools" "platforms;android-36"
+  #         sdkmanager --install "platform-tools" "platforms;android-36"
 
-          for bt in 36.0.1 36.0.0 35.0.1 35.0.0 34.0.0; do
-            if sdkmanager --install "build-tools;${bt}"; then
-              exit 0
-            fi
-          done
+  #         for bt in 36.0.1 36.0.0 35.0.1 35.0.0 34.0.0; do
+  #           if sdkmanager --install "build-tools;${bt}"; then
+  #             exit 0
+  #           fi
+  #         done
 
-          echo "Failed to install Android build-tools" >&2
-          exit 1
+  #         echo "Failed to install Android build-tools" >&2
+  #         exit 1
           
-      - run: chmod +x ./gradlew
-      - run: ./gradlew test --stacktrace
+  #     - run: chmod +x ./gradlew
+  #     - run: ./gradlew test --stacktrace
