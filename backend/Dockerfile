@@ -2,6 +2,11 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
+# Prisma v7 loads DATABASE_URL from prisma.config.ts at generate time.
+# During Docker builds we don't copy .env (ignored by .dockerignore), so provide a safe default.
+ARG DATABASE_URL=postgresql://user:pass@localhost:5432/db?schema=public
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
