@@ -11,6 +11,7 @@ export interface create_trip{
         lat: number;
         lng: number;
     };
+    share_with_contacts?: string[]; //optional
 };
 export interface trip_summary_filter {
     trip_id: string;
