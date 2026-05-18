@@ -1,6 +1,16 @@
 package com.omnitech.drivingtracker.data.models
 
+import com.google.gson.annotations.SerializedName
+
 //response models matching backend structure for /contacts endpoint
+
+enum class ConsentStatus(val value: String){
+    Pending("PENDING"),
+    APPROVED("APPROVED"),
+    DENIED("DENIED");
+
+    override fun toString() = value
+}
 
 data class ContactsResponse(
     val data: ContactsData,
@@ -12,9 +22,11 @@ data class ContactsData(
 )
 
 data class ContactDto(
-    val contact_id: String,
+    @SerializedName("contact_id")
+    val contactId: String,
     val username: String,
     val name: String,
     val email: String? = null,
-    val consent_status: String? = null
+    @SerializedName("consent_status")
+    val consentStatus: ConsentStatus? = null
 )
