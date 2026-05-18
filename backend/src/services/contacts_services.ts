@@ -80,6 +80,7 @@ export const contact_services ={
                 contact_id: true,
                 name: true,
                 email: true,
+                consent_status: true,
                 contact_user: {
                     select: { username: true},
                 },
