@@ -7,7 +7,7 @@ val Green = Color(0xFF2ECC71)
 val Purple = Color(0xFF7861FF)
 
 //Neutrals
-val Background = Color(0xFFF7F9FC)
+val Background = Color(0xFFEEEEEE)
 val CardWhite = Color(0xFFFFFFFF)
 val Border = Color(0xFFE6EAF0)
 

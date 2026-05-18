@@ -41,7 +41,7 @@ data class LiveTripSummary(
 @Composable
 fun LiveTrip() {
 
-    Column {
+    Column (modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)){
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 30.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -67,7 +67,7 @@ fun LiveTrip() {
             )
         }
         //Map
-        Box(modifier = Modifier.fillMaxWidth().height(280.dp).background(Color(0xFFD0D8E0))) {
+        Box(modifier = Modifier.fillMaxWidth().height(320.dp).background(Color(0xFFD0D8E0))) {
             Card(
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
                 shape = RoundedCornerShape(50)
@@ -165,12 +165,13 @@ fun LiveTrip() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
             //Trip summary card
             Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row {
@@ -185,7 +186,7 @@ fun LiveTrip() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -202,7 +203,8 @@ fun LiveTrip() {
             //Alerts section
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -210,7 +212,7 @@ fun LiveTrip() {
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     AlertItem("Hard Braking", 3)
                     Spacer(modifier = Modifier.height(4.dp))
                     AlertItem("Hard Acceleration", 5)
