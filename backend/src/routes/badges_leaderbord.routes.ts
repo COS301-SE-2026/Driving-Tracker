@@ -14,6 +14,7 @@ badges_leaderBoard_router.post("/evaluate", verify_token,badge_leaderboard_contr
 
 //read basically get 
 badges_leaderBoard_router.get("/",verify_token, badge_leaderboard_controller.get_badges);
+badges_leaderBoard_router.get("/definitions", verify_token, badge_leaderboard_controller.get_badge_definitions);
 //delete 
 
 //Update 

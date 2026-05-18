@@ -213,7 +213,7 @@ export const badges_leaderboard_services = {
             description: entry.badges.description,
             current: 1,
         }));
-        const categoryCounts = earned.reduce((acc: Record<string, number>, badge) => {
+        const categoryCounts = earned.reduce((acc: Record<string, number>, badge:any) => {
             const category = badge.category ?? "UNCATEGORIZED";
             acc[category] = (acc[category] ?? 0) + 1;
             return acc;
@@ -233,5 +233,34 @@ export const badges_leaderboard_services = {
             },
         };
 
-    }
+    },
+
+    async get_badge_definitions(){
+        const badges = await prisma.badges.findMany({
+            include:{
+                badge_criteria: true,
+            },
+            orderBy:{
+                name:"asc",
+            },
+        });
+        return {
+            data: {
+                badges: badges.map((badge:any) => ({
+                    badge_id: badge.badge_id,
+                    name: badge.name,
+                    description: badge.description,
+                    category: badge.category,
+                    icon_url: badge.icon_url,
+                    criteria: badge.badge_criteria.map((criterion:any) => ({
+                    metric: criterion.metric,
+                    operator: criterion.operator,
+                    threshold: criterion.threshold,
+                    target: criterion.target,
+                    })),
+                })),
+            },
+        }
+    },
+    
 };

@@ -66,6 +66,24 @@ const badge_leaderboard_controller ={
                 message: "Could not retrieve badges",
             });
         }
+    },
+    
+    async get_badge_definitions(req: AuthRequest, res: Response) {
+        try {
+            const user_id = req.user?.sub;
+            if (!user_id) {
+                return res.status(401).json({ error: "UNAUTHORIZED" });
+            }
+
+            const result = await badges_leaderboard_services.get_badge_definitions();
+
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Could not retrieve badge definitions",
+            });
+        }
     }
 };
 export default badge_leaderboard_controller;
