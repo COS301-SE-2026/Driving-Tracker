@@ -5,7 +5,7 @@ import prisma from '../db/prisma';
 export interface create_trip{
     user_id: string ;
     vehicle_id: string;
-    data_source: string;
+    data_source: "OBD" | "PHONE";
     start_date: Date;
     start_location:{
         lat: number;
@@ -186,7 +186,7 @@ export const trips_services ={
                 where: { trip_id: data.trip_id, revoked_at: null },
                 data: { revoked_at: new Date() }
             });
-            
+
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}

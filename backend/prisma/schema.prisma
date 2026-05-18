@@ -94,7 +94,7 @@ model trip_readings {
   reading_id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   trip_id           String   @db.Uuid
   recorded_at       DateTime @db.Timestamptz(6)
-  data_source       String?  @db.VarChar(25)
+  data_source       DataSource?  @default(OBD)
   longitude         Decimal? @db.Decimal(9, 6)
   latitude          Decimal? @db.Decimal(9, 6)
   speed_kmh         Decimal? @db.Decimal(6, 2)
@@ -135,7 +135,7 @@ model trips {
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
-  data_source      String?         @db.VarChar(20)
+  data_source      DataSource?     @default(OBD)
   status           String?         @default("IN_PROGRESS") @db.VarChar(20)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
   alerts           alerts[]
@@ -193,6 +193,11 @@ enum ConsentStatus{
   PENDING
   APPROVED
   DENIED
+}
+
+enum DataSource {
+  PHONE
+  OBD
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
