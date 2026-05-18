@@ -25,3 +25,11 @@ yarn-error.log*
 backend/dist/
 
 .DS_Store
+
+.idea/
+*.iml
+.vscode/
+
+local.properties
+.gradle/
+build/
