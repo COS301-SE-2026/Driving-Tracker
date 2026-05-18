@@ -47,5 +47,25 @@ const badge_leaderboard_controller ={
             }
         }
     },
+    async get_badges(req: AuthRequest,res:Response){
+        try{
+            const user_id = req.user?.sub;
+
+            if (!user_id) {
+                return res.status(401).json({
+                error: "UNAUTHORIZED",
+                });
+            }
+
+            const result = await badges_leaderboard_services.get_badges({ user_id });
+
+            return res.status(200).json(result);
+        }catch(error:any){
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Could not retrieve badges",
+            });
+        }
+    }
 };
 export default badge_leaderboard_controller;

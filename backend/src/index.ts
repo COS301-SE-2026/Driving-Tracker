@@ -6,6 +6,7 @@ import auth_router from "./routes/auth.routes";
 //import 'dotenv/config';
 import contacts_router from "./routes/contacts.route";
 import trip_router from "./routes/trips.routes";
+import badges_leaderBoard_router from './routes/badges_leaderbord.routes';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/auth", auth_router);
 //contacts_router's "/" becomes "/contacts"
 app.use("/contacts", contacts_router);
 app.use("/trips", trip_router);
+app.use("/badges",badges_leaderBoard_router);
 
 const PORT = process.env.PORT || 3000;
 

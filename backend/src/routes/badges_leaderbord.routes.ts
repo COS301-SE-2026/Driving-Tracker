@@ -13,7 +13,7 @@ const badges_leaderBoard_router = Router();
 badges_leaderBoard_router.post("/evaluate", verify_token,badge_leaderboard_controller.evaluate_badges); 
 
 //read basically get 
-
+badges_leaderBoard_router.get("/",verify_token, badge_leaderboard_controller.get_badges);
 //delete 
 
 //Update 

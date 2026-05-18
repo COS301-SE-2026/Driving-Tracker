@@ -5,6 +5,9 @@ export interface evaluate_badge{
     user_id: string;
     trip_id: string;
 };
+export interface get_badges{
+    user_id: string;
+}
 //helper function used to compare if the threshold was met 
 type MetricMap = Record<string, number>;
 
@@ -182,5 +185,53 @@ export const badges_leaderboard_services = {
             }
         };
     },
+    async get_badges(data: get_badges){
+        const user_id = data.user_id;
+        if(!user_id){
+            throw new Error("Missing required fields");
+        }
+        const user_badges = await prisma.user_badges.findMany({
+            where: {user_id},
+            include:{
+                badges:{
+                    select:{
+                        badge_id: true,
+                        name: true,
+                        category: true,
+                        description: true,
+                    },
+                },
+            },
+            orderBy:{
+                earned_at: "desc",
+            }
+        });
+        const earned = user_badges.map((entry: any)=>({
+            badge_id: entry.badge_id,
+            name: entry.badges.name,
+            category: entry.badges.category,
+            description: entry.badges.description,
+            current: 1,
+        }));
+        const categoryCounts = earned.reduce((acc: Record<string, number>, badge) => {
+            const category = badge.category ?? "UNCATEGORIZED";
+            acc[category] = (acc[category] ?? 0) + 1;
+            return acc;
+            }, {});
 
+            const categories = Object.entries(categoryCounts).map(([category, current]) => ({
+            category,
+            current,
+        }));
+        return {
+            data: {
+                earned,
+                summary: {
+                Total_earned: earned.length,
+                categories: categories,
+                },
+            },
+        };
+
+    }
 };
