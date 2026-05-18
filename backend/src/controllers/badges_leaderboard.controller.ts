@@ -1,8 +1,9 @@
-import {Request, Response} from "express";
-import {badges_leaderboard_services} from  "../services/badges_leaderboard_services";
-import {verify_token} from "../middleware/auth";//the file containing the tokens 
-
+import type { Response } from "express";
+import type { AuthRequest } from "../middleware/auth";
+import { badges_leaderboard_services } from "../services/badges_leaderboard_services";
 const badge_leaderboard_controller ={
+    async evaluate_badges (req: AuthRequest, res: Response){
 
+    },
 };
 export default badge_leaderboard_controller;
