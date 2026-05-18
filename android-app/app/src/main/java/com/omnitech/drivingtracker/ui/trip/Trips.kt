@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Tune
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
 
 //trip class
 data class Trip(
@@ -117,15 +118,15 @@ fun Trips(){
                 .padding(horizontal=16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ){
-            trips.forEach {
-                    trip->TripCard(trip=trip) //display contact card for each contact in the class
+            trips.forEachIndexed {
+                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display contact card for each contact in the class
             }
-            //navbar goes here
         }
+        BottomNavBar()
     }
 }
 @Composable
-fun TripCard(trip: Trip) {
+fun TripCard(trip: Trip, isLatest: Boolean = false) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -133,6 +134,13 @@ fun TripCard(trip: Trip) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        Column{
+            if (isLatest){
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFF9CA3AF))
+                )
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
