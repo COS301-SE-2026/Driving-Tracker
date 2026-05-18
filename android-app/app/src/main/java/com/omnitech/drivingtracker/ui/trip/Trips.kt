@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.ui.auth
+package com.omnitech.drivingtracker.ui.trip
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -167,7 +167,7 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
             //distance and duration
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(trip.distance, style = MaterialTheme.typography.bodyMedium)
-                Text(trip.distance, style = MaterialTheme.typography.bodyMedium)
+                Text(trip.duration, style = MaterialTheme.typography.bodyMedium)
             }
             Spacer(modifier = Modifier.width(12.dp))
 

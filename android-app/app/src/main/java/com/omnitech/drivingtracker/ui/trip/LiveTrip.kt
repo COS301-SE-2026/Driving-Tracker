@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.ui.auth
+package com.omnitech.drivingtracker.ui.trip
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,7 +43,7 @@ fun LiveTrip() {
 
     Column {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 30.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
