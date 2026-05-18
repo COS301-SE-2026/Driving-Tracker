@@ -156,7 +156,7 @@ model trusted_contacts {
   relationship          String?               @db.VarChar(50)
   email                 String?               @db.VarChar(255)
   phone                 String?               @db.VarChar(20)
-  consent_status        String?               @default("PENDING") @db.VarChar(10)
+  consent_status        ConsentStatus?        @default(PENDING) 
   created_at            DateTime?             @default(now()) @db.Timestamptz(6)
   alert_notifications   alert_notifications[]
   alert_preferences     alert_preferences[]
@@ -187,6 +187,12 @@ enum UserStatus{
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+enum ConsentStatus{
+  PENDING
+  APPROVED
+  DENIED
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
