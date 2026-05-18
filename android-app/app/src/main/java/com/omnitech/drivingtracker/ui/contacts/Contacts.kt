@@ -22,41 +22,77 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.ContactsResponse
+import com.omnitech.drivingtracker.services.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-enum class ContactStatus{ON_TRIP, OFF_TRIP}
-//contact class
-data class Contact(
-    val name: String,
-    val relationship: String,
-    val status: ContactStatus
-)
 @Composable
-fun Contacts(){
+fun Contacts(authToken: String = "") {
+    var contacts by remember {
+        mutableStateOf<List<ContactDto>>(emptyList())
+    }
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+    var errorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
 
-    val contacts = listOf(
-        //Contact("John Doe", "Friend for 8 months", ContactStatus.ON_TRIP),
-        Contact("Emma Doe", "Friend for 6 months", ContactStatus.OFF_TRIP),
-        Contact("Sarah Kim", "Friend for 4 months", ContactStatus.OFF_TRIP),
-        Contact("Eren Yeager", "Friend for 2 months", ContactStatus.ON_TRIP),
-        //Contact("Karabo Mokena", "Friend for 1 months", ContactStatus.OFF_TRIP),
+    LaunchedEffect(authToken) {
+        //do not make network request if user not signed in
+        if (authToken.isBlank()) {
+            return@LaunchedEffect
+        }
 
-    )
+        isLoading = true
+        errorMessage = null
+
+        //fetch current user's contacts
+        RetrofitClient.apiService.getContacts("Bearer $authToken")
+            .enqueue(object : Callback<ContactsResponse> {
+                override fun onResponse(
+                    call: Call<ContactsResponse>,
+                    response: Response<ContactsResponse>
+                ) {
+                    isLoading = false
+
+                    //on success, replace list with server response
+                    if (response.isSuccessful) {
+                        contacts = response.body()?.data?.contacts.orEmpty()
+                    } else {
+                        errorMessage = "Failed to load contacts"
+                    }
+                }
+
+                override fun onFailure(call: Call<ContactsResponse>, t: Throwable) {
+                    isLoading = false
+                    errorMessage = t.message ?: "Network error"
+                }
+            })
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ){
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-        ){
+        ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
-            Row{
+            Row {
                 Text(
                     text = "Driving ",
                     fontWeight = FontWeight.Bold,
@@ -85,33 +121,73 @@ fun Contacts(){
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        //Contacts
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
-                .padding(horizontal=16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ){
-            contacts.forEach {
-                contact->ContactCard(contact=contact) //display contact card for each contact in the class
+        when {
+            authToken.isBlank() -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Sign in to load your contacts.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            //Add contact button
-            Spacer(modifier = Modifier.height(4.dp))
-            OutlinedButton(
-                onClick = {},
-                shape = RoundedCornerShape(50),
-                border = ButtonDefaults.outlinedButtonBorder,
-            ){
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+
+            isLoading -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorMessage.orEmpty(),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            else -> {
+                //Contacts
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    contacts.forEach { contact ->
+                        ContactCard(contact = contact) //display contact card for each contact in the class
+                    }
+                    //Add contact button
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = {},
+                        shape = RoundedCornerShape(50),
+                        border = ButtonDefaults.outlinedButtonBorder,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Add Contact")
+                    }
+                }
             }
         }
+
         BottomNavBar()
     }
 }
+
 @Composable
 fun ContactCard(contact: Contact){
     val isOnTrip = contact.status ==  ContactStatus.ON_TRIP
