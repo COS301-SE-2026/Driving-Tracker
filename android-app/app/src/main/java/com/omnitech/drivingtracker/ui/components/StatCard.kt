@@ -24,15 +24,17 @@ import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //This function displays the stat box on the dashboard (the grid of 4)
-fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int) {
+fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int, modifier: Modifier = Modifier) {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0))
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ){
 
@@ -65,7 +67,8 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                     text = "+$percentage%",
                     color = Green,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.End) //pushes text to the right
                 )
 
             } else if (percentage < 0) {
@@ -74,7 +77,8 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                     text = "$percentage%",
                     color = Error,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.End)
                 )
             }
 

@@ -21,12 +21,17 @@ import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.BadgeSection
 import com.omnitech.drivingtracker.ui.components.RankCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
+import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.home.Dashboard
 
 
@@ -39,6 +44,16 @@ fun AchievemtsScreen(
     val ranks = viewModel.rankList //taking list from Viewmodel
 
     Scaffold(
+
+        topBar = {
+            TopBar(
+                leftIcon = Icons.Default.ArrowBackIosNew,
+                rightIcon = Icons.Default.Settings,
+                onLeftClick = {/*Open menu*/},
+                onRightClick = {/*Open settings*/}
+            )
+        },
+
         bottomBar = {
             BottomNavBar()
         }

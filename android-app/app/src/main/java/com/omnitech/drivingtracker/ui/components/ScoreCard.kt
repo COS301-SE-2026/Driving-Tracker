@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 
 @Composable
 //This function displays the Overal driving score with progress bar
-fun ScoreCard(score: Int) {
+fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -29,7 +29,7 @@ fun ScoreCard(score: Int) {
     ) {
 
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -39,15 +39,17 @@ fun ScoreCard(score: Int) {
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Box(
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
+                //modifier = Modifier.weight(1f, fill = false)//so that box can dynamically change size
+                modifier = Modifier.wrapContentSize()
             ) {
 
                 CircularProgressIndicator(
                     progress = { score / 100f },
-                    modifier = Modifier.size(160.dp),
+                    modifier = Modifier.size(130.dp),
                     strokeWidth = 12.dp,
                     color = Color.DarkGray,
                     trackColor = Color.LightGray
