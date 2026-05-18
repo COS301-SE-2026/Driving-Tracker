@@ -96,21 +96,56 @@ export const trips_services ={
             if (activeTrip) {
                 throw new Error("Trip already in progress");
             }
-            const newTrip = await prisma.trips.create({
-                data: {
-                    user_id: user.user_id,
-                    vehicle_id: data.vehicle_id,
-                    start_time: data.start_date,
-                    start_latitude: data.start_location.lat,
-                    start_longitude: data.start_location.lng,
-                    data_source: data.data_source,
-                    status: "IN_PROGRESS"
+
+            //create trip and shares atomically
+            const createdTrip =  await prisma.$transaction(async (tx) => {
+                const newTrip = await tx.trips.create({
+                    data: {
+                        user_id: user.user_id,
+                        vehicle_id: data.vehicle_id,
+                        start_time: data.start_date,
+                        start_latitude: data.start_location.lat,
+                        start_longitude: data.start_location.lng,
+                        data_source: data.data_source,
+                        status: "IN_PROGRESS"
+                    }
+                });
+
+                //create shares if user explicitly selected contacts
+                if(Array.isArray(data.share_with_contacts) && data.share_with_contacts.length){
+                    // validate all provided contact_ids are user's trusted contacts with APPROVED consent
+                    const valid = await tx.trusted_contacts.findMany({
+                        where: {
+                            user_id: data.user_id,
+                            contact_id: { in: data.share_with_contacts},
+                            consent_status: "APPROVED"
+                        },
+                        select: {contact_id: true}
+                    });
+
+                    const validIds = valid.map(v => v.contact_id);
+                    //if provided ids were invalid, throw error
+                    if(validIds.length !== data.share_with_contacts.length){
+                        throw new Error("Inavlid contacts selection: some contacts not found or have not given consent.");
+                    }
+
+                    //create share rows
+                    const shareRows = validIds.map(contact_id => ({
+                        trip_id: newTrip.trip_id,
+                        owner_user_id: data.user_id,
+                        contact_id
+                    }));
+                    await tx.trip_location_shares.createMany({
+                        data: shareRows,
+                        skipDuplicates: true
+                    });
                 }
+                return newTrip;
             });
 
             return {
-                trip_id: newTrip.trip_id,
-                data_source: newTrip.data_source
+                trip_id: createdTrip.trip_id,
+                data_source: createdTrip.data_source
             };
         }catch(error){
             throw error;
@@ -146,6 +181,12 @@ export const trips_services ={
                     status: data.status
                 }
             });
+            // revoke any active shares for this trip
+            await prisma.trip_location_shares.updateMany({
+                where: { trip_id: data.trip_id, revoked_at: null },
+                data: { revoked_at: new Date() }
+            });
+            
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
