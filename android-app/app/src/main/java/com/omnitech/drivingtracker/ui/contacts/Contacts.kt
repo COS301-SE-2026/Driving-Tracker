@@ -1,6 +1,5 @@
 package com.omnitech.drivingtracker.ui.contacts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.indication
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -20,14 +19,12 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.ContactsResponse
@@ -35,6 +32,8 @@ import com.omnitech.drivingtracker.services.RetrofitClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
 fun Contacts(authToken: String = "") {
@@ -90,7 +89,7 @@ fun Contacts(authToken: String = "") {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
@@ -172,7 +171,7 @@ fun Contacts(authToken: String = "") {
                     OutlinedButton(
                         onClick = {},
                         shape = RoundedCornerShape(50),
-                        border = ButtonDefaults.outlinedButtonBorder,
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
