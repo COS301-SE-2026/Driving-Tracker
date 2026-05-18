@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.contacts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.indication
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.data.models.ContactDto
@@ -189,10 +191,9 @@ fun Contacts(authToken: String = "") {
 }
 
 @Composable
-fun ContactCard(contact: Contact){
-    val isOnTrip = contact.status ==  ContactStatus.ON_TRIP
-    val statusColor = if (isOnTrip) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
-    val statusText = if (isOnTrip) "On Trip" else "Offline"
+fun ContactCard(contact: ContactDto){
+    //only show trip sharing controls when backend says consent was approved
+    val isSharing = contact.consent_status == "APPROVED"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -201,61 +202,98 @@ fun ContactCard(contact: Contact){
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            //Name and Avatar
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Avatar",
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outline
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically){
+                //Name and Avatar
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column{
+                    Text(
+                        text = contact.name,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = contact.username,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if(isSharing){
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Row(verticalAlignment = Alignment.CenterVertically){
+                        Box(
+                            modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.error, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "On Trip",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = {},
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Green,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                        modifier = Modifier.height(30.dp).padding(end=8.dp).padding(vertical=4.dp)
+                    ) {
+                        Text("See Activity", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
         }
 
-        Column{
-            Text(
-                text = contact.name,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = contact.relationship,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        //Activity
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start=8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(10.dp).background(statusColor, CircleShape)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Button(
-                onClick = {},
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Green,
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                modifier = Modifier.height(30.dp).padding(end=8.dp).padding(vertical=4.dp)
-            ) {
-                Text("See Activity", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+//        Column{
+//            Text(
+//                text = contact.name,
+//                fontWeight = FontWeight.SemiBold,
+//                style = MaterialTheme.typography.bodyLarge,
+//                color = MaterialTheme.colorScheme.onBackground
+//            )
+//            Text(
+//                text = contact.relationship,
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//        }
+//        Spacer(modifier = Modifier.height(12.dp))
+//
+//        //Activity
+//        Row(
+//            modifier = Modifier.fillMaxWidth().padding(start=8.dp),
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.SpaceBetween
+//        ) {
+//            Row(verticalAlignment = Alignment.CenterVertically) {
+//                Box(
+//                    modifier = Modifier.size(10.dp).background(statusColor, CircleShape)
+//                )
+//                Spacer(modifier = Modifier.width(6.dp))
+//                Text(
+//                    text = statusText,
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                )
+//            }
+//
+//        }
     }
 }
 
