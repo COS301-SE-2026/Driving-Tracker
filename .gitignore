@@ -21,3 +21,15 @@ yarn-error.log*
 .pnpm-debug.log*
 
 *.tsbuildinfo
+
+backend/dist/
+
+.DS_Store
+
+.idea/
+*.iml
+.vscode/
+
+local.properties
+.gradle/
+build/
