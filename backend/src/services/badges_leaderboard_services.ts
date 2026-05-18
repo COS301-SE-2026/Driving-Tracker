@@ -262,5 +262,7 @@ export const badges_leaderboard_services = {
             },
         }
     },
-    
+    async get_leaderboard(){
+
+    }
 };
