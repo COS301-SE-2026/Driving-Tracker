@@ -23,3 +23,13 @@ yarn-error.log*
 *.tsbuildinfo
 
 backend/dist/
+
+.DS_Store
+
+.idea/
+*.iml
+.vscode/
+
+local.properties
+.gradle/
+build/
