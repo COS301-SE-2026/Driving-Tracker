@@ -57,7 +57,7 @@ fun Contacts(authToken: String = "") {
         errorMessage = null
 
         //fetch current user's contacts
-        RetrofitClient.apiService.getContacts("Bearer $authToken")
+        RetrofitClient.apiService.getContacts()
             .enqueue(object : Callback<ContactsResponse> {
                 override fun onResponse(
                     call: Call<ContactsResponse>,
