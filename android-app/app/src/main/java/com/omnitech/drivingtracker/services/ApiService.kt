@@ -7,9 +7,15 @@ import retrofit2.http.Header
 
 interface ApiService{
     //returns trusted contacts for authenticated user
-    //Backend expects JWT in the auth header
     @GET("contacts")
-    fun getContacts(@Header("Authorization")
-                    authorization: String
-    ): Call<ContactsResponses>
+    fun getContacts(): Call<ContactsResponse>
+
+    @POST("auth/login")
+    fun login(@Body body: LoginRequest): Call<AuthResponse>
+
+    @POST("auth/register")
+    fun register(@Body body: RegisterRequest): Call<AuthResponse>
+
+    @POST("auth/refresh")
+    fun refresh(@Body body: RefreshRequest): Call<AuthResponse>
 }

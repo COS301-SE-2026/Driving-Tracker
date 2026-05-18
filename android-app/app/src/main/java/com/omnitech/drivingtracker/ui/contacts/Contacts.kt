@@ -258,41 +258,6 @@ fun ContactCard(contact: ContactDto){
                 }
             }
         }
-
-//        Column{
-//            Text(
-//                text = contact.name,
-//                fontWeight = FontWeight.SemiBold,
-//                style = MaterialTheme.typography.bodyLarge,
-//                color = MaterialTheme.colorScheme.onBackground
-//            )
-//            Text(
-//                text = contact.relationship,
-//                style = MaterialTheme.typography.bodyMedium,
-//                color = MaterialTheme.colorScheme.onSurfaceVariant
-//            )
-//        }
-//        Spacer(modifier = Modifier.height(12.dp))
-//
-//        //Activity
-//        Row(
-//            modifier = Modifier.fillMaxWidth().padding(start=8.dp),
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.SpaceBetween
-//        ) {
-//            Row(verticalAlignment = Alignment.CenterVertically) {
-//                Box(
-//                    modifier = Modifier.size(10.dp).background(statusColor, CircleShape)
-//                )
-//                Spacer(modifier = Modifier.width(6.dp))
-//                Text(
-//                    text = statusText,
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    color = MaterialTheme.colorScheme.onSurfaceVariant
-//                )
-//            }
-//
-//        }
     }
 }
 
