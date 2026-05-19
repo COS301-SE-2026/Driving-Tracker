@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.services
+/*package com.omnitech.drivingtracker.services
 
 import com.omnitech.drivingtracker.data.models.ContactsResponse
 import retrofit2.Call
@@ -18,4 +18,4 @@ interface ApiService{
 
     @POST("auth/refresh")
     fun refresh(@Body body: RefreshRequest): Call<AuthResponse>
-}
+}*/
