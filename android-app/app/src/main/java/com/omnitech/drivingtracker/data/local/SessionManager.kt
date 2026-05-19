@@ -22,7 +22,7 @@ class SessionManager(context: Context) {
         }
     }
 
-    fun getAccessToken(): String? = prefs.getString("access_token", null)
+    fun getAccessToken(): String? = prefs.getString("token", null)
     fun getRefreshToken(): String? = prefs.getString("refresh_token", null)
 
     fun clearTokens(){
