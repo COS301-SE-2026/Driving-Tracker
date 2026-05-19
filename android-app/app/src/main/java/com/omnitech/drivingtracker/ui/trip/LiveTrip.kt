@@ -5,38 +5,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Tune
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.omnitech.drivingtracker.R
 
-
-data class LiveTripSummary(
-    val distanceKm: String,
-    val time: String,
-    val avgSpeed: String,
-    val fuelEfficiency: String
-)
 
 @Composable
 fun LiveTrip() {
@@ -67,10 +56,20 @@ fun LiveTrip() {
             )
         }
         //Map
-        Box(modifier = Modifier.fillMaxWidth().height(320.dp).background(Color(0xFFD0D8E0))) {
+        Box(modifier = Modifier.fillMaxWidth().height(370.dp).background(Color(0xFFD0D8E0)))
+        {
+            //Map placeholder
+            Image(
+                painter = painterResource(id = R.drawable.map),
+                contentDescription = "Trip map",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            //Recording badge
             Card(
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-                shape = RoundedCornerShape(50)
+                shape = RoundedCornerShape(50),
+                colors = CardDefaults.cardColors(containerColor = Color.Black)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -78,18 +77,19 @@ fun LiveTrip() {
                 ) {
                     Box(modifier = Modifier.size(8.dp).background(Color.Red, CircleShape))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Recording", style = MaterialTheme.typography.labelSmall)
+                    Text("Recording", style = MaterialTheme.typography.labelSmall,fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
             //Timer
             Card(
                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                shape = RoundedCornerShape(50)
+                shape = RoundedCornerShape(50),
+                colors = CardDefaults.cardColors(containerColor = Color.Black)
             ) {
                 Text(
                     "00:35:24", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelSmall,fontWeight = FontWeight.Bold, color = Color.White
                 )
             }
 
@@ -98,7 +98,7 @@ fun LiveTrip() {
                 modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Card(shape = RoundedCornerShape(8.dp)) {
+                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -106,20 +106,21 @@ fun LiveTrip() {
                         Icon(
                             Icons.Default.Speed,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
+                            tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
                                 "82 km/h",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold, color = Color.White
                             )
-                            Text("Speed", style = MaterialTheme.typography.labelSmall)
+                            Text("Speed", style = MaterialTheme.typography.labelSmall, color = Color.White)
                         }
                     }
                 }
-                Card(shape = RoundedCornerShape(8.dp)) {
+                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -130,9 +131,9 @@ fun LiveTrip() {
                             Text(
                                 "7.4 km/l",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold, color = Color.White
                             )
-                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall)
+                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.White)
                         }
                     }
                 }
@@ -146,14 +147,14 @@ fun LiveTrip() {
                 Button(
                     onClick = {},
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A3ADB))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
                 ) {
                     Text("End Trip", color = Color.White)
                 }
                 Button(
                     onClick = {},
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF313ADB))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
                 ) {
                     Icon(
                         Icons.Default.Share,
@@ -200,7 +201,7 @@ fun LiveTrip() {
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            //Alerts section
+            //Alerts section: Alerts are hard coded for now
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
