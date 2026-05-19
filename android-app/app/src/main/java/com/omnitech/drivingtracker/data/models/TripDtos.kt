@@ -40,3 +40,120 @@ data class StartTripData(
     @SerializedName("data_source")
     val dataSource: String?
 )
+
+data class TripHistoryResponse(
+    val message: String,
+    val data: TripHistoryData
+)
+
+data class TripHistoryData(
+    val username: String,
+    val start_date: String,
+    val end_date: String,
+    val total_trips: Int,
+    val trips: List<TripItemDto>,
+    val meta: TripMetaDto
+)
+
+data class TripItemDto(
+    @SerializedName("trip_id")
+    val tripId: String,
+    @SerializedName("user_id")
+    val userId: String,
+    @SerializedName("vehicle_id")
+    val vehicleId: String?,
+    @SerializedName("start_time")
+    val startTime: String,
+    @SerializedName("end_time")
+    val endTime: String?,
+    @SerializedName("distance_km")
+    val distanceKm: Double?,
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int?,
+    @SerializedName("fuel_estimate")
+    val fuelEstimate: Double?,
+    @SerializedName("data_source")
+    val dataSource: String?,
+    val status: String,
+    @SerializedName("created_at")
+    val createdAt: String,
+    val trip_scores: List<TripScoreDto>?
+)
+
+data class TripMetaDto(
+    val mean_distance: Double,
+    val mean_minutes: Double
+)
+
+data class TripScoreDto(
+    @SerializedName("safety_score")
+    val safetyScore: Double?,
+    @SerializedName("eco_score")
+    val ecoScore: Double?,
+    @SerializedName("overall_score")
+    val overallScore: Double?
+)
+
+// Trip Summary Response
+data class TripSummaryResponse(
+    val data: TripSummaryDto
+)
+
+data class TripSummaryDto(
+    @SerializedName("trip_id")
+    val tripId: String,
+    @SerializedName("vehicle_id")
+    val vehicleId: String?,
+    @SerializedName("started_At")
+    val startedAt: String,
+    @SerializedName("ended_At")
+    val endedAt: String?,
+    val status: String,
+    @SerializedName("data_source")
+    val dataSource: String?,
+    @SerializedName("route_polyline")
+    val routePolyline: String?,
+    @SerializedName("distance_km")
+    val distanceKm: Double?,
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int?,
+    @SerializedName("fuel_estimate")
+    val fuelEstimate: Double?,
+    val scores: TripScoreDto?,
+    val events: List<TripEventDto>
+)
+
+data class TripEventDto(
+    @SerializedName("event_id")
+    val eventId: String,
+    @SerializedName("event_type")
+    val eventType: String,
+    val longitude: Double?,
+    val latitude: Double?,
+    val severity: Double?,
+    @SerializedName("sensor_source")
+    val sensorSource: String?,
+    @SerializedName("time_stamp")
+    val timestamp: String
+)
+
+// End Trip Request
+data class EndTripRequest(
+    @SerializedName("end_time")
+    val endTime: String,
+    @SerializedName("route_polyline")
+    val routePolyline: String? = null,
+    @SerializedName("distance_km")
+    val distanceKm: Double? = null,
+    @SerializedName("duration_minutes")
+    val durationMinutes: Int? = null,
+    @SerializedName("fuel_estimate")
+    val fuelEstimate: Double? = null,
+    val status: String,
+    @SerializedName("safety_score")
+    val safetyScore: Double? = null,
+    @SerializedName("eco_score")
+    val ecoScore: Double? = null,
+    @SerializedName("overall_score")
+    val overallScore: Double? = null
+)

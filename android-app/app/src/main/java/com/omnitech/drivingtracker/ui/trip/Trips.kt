@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.ui.auth
+package com.omnitech.drivingtracker.ui.trip
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -6,7 +6,6 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -19,11 +18,15 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Tune
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.components.ScoreRing
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.res.painterResource
+import com.omnitech.drivingtracker.R
+import androidx.compose.ui.layout.ContentScale
 
 //trip class
 data class Trip(
@@ -54,7 +57,7 @@ fun Trips(){
             horizontalArrangement = Arrangement.SpaceBetween
         ){
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
@@ -78,6 +81,7 @@ fun Trips(){
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
+
         //Page title
         Text(
             text = "Trips",
@@ -102,7 +106,7 @@ fun Trips(){
                 }
             }
         }
-
+        //past trips heading and trips filtering
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -112,14 +116,14 @@ fun Trips(){
             Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
         }
 
-        //Contacts
+        //Trips
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
                 .padding(horizontal=16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ){
             trips.forEachIndexed {
-                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display contact card for each contact in the class
+                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display trip card for each trip in the class
             }
         }
         BottomNavBar()
@@ -135,22 +139,30 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column{
-            if (isLatest){
-                Box(
+            if (isLatest){ //expands the details (map) of the latest trip
+                /*Box(
                     modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFF9CA3AF))
+                )*/
+                //This is the map placeholder (bottom=actual map, top = grey map placeholder)
+                Image(
+                    painter = painterResource(id = R.drawable.map),
+                    contentDescription = "Trip map",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(160.dp)
                 )
             }
         }
+
+        //Trip details row
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             //route icon placeholder
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outline
+            Image(
+                painter = painterResource(id = R.drawable.destination),
+                contentDescription = "Destination icon",
+                modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -164,19 +176,23 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
                 Text(trip.from, style = MaterialTheme.typography.bodyMedium)
                 Text(trip.to, style = MaterialTheme.typography.bodyMedium)
             }
+
             //distance and duration
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(trip.distance, style = MaterialTheme.typography.bodyMedium)
-                Text(trip.distance, style = MaterialTheme.typography.bodyMedium)
+                Text(trip.duration, style = MaterialTheme.typography.bodyMedium)
             }
+
             Spacer(modifier = Modifier.width(12.dp))
 
             //score and see more
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = trip.score.toString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
+
+                //score ring
+                ScoreRing(
+                    score = trip.score,
+                    modifier = Modifier.size(44.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
