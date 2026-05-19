@@ -1,21 +1,21 @@
 package com.omnitech.drivingtracker.services
 
-import com.omnitech.drivingtracker.data.models.AuthResponse
-import com.omnitech.drivingtracker.data.models.ContactsResponse
-import com.omnitech.drivingtracker.data.models.LoginRequest
-import com.omnitech.drivingtracker.data.models.RefreshRequest
-import com.omnitech.drivingtracker.data.models.RegisterRequest
-import retrofit2.Call
 import com.omnitech.drivingtracker.data.models.*
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Header
+import retrofit2.http.*
 
 interface ApiService{
     //returns trusted contacts for authenticated user
     @GET("contacts")
     suspend fun getContacts(): ContactsResponse
+
+    @POST("contacts")
+    suspend fun createContact(@Body body: CreateContactRequest): ContactCreateResponse
+
+    @POST("contacts/alerts")
+    suspend fun alertContacts(@Body body: AlertContactsRequest): GenericResponse
+
+    @POST("contacts/share_location")
+    suspend fun shareLocation(@Body body: ShareLocationRequest): GenericResponse
 
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
@@ -33,7 +33,7 @@ interface ApiService{
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
 
     @GET("trips/history")
-    suspend fun getTripHistory(@Body body: Map<String, String>): TripHistoryResponse
+    suspend fun getTripHistory(@QueryMap filters: Map<String, String>): TripHistoryResponse
 
     @GET("trips/{trip_id}/summary")
     suspend fun getTripSummary(@Path("trip_id") tripId: String): TripSummaryResponse

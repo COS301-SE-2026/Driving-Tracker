@@ -2,8 +2,7 @@ package com.omnitech.drivingtracker.data.repository
 
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
-import com.omnitech.drivingtracker.data.models.LocationDto
-import com.omnitech.drivingtracker.data.models.StartTripRequest
+import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.RetrofitClient
 import retrofit2.HttpException
 import java.time.Instant
