@@ -27,6 +27,6 @@ export class ExtendedError extends Error{
 
     constructor(message: string, public errorCode: string){
         super(message);
-        this.name="ConflictError";
+        this.name="ExtendedError";
     }
 }
