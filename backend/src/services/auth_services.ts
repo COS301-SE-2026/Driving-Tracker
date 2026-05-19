@@ -19,6 +19,24 @@ const username_schema=z.string().min(3, "Username must have atleast 3 characters
 
 const name_schema=z.string().min(1, "Name/Surname must have atleast 1 character").max(50, "Name/Surname can have atmost 50 characters");
 
+const phone_schema=z.string().regex(/^\+[1-9]\d{1,14}$/, "Invalid phone number. Should be +27123456789 format");
+
+const dob_schema = z.preprocess(val => {
+  if (typeof val !== 'string') return val;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return new Date(val + 'T00:00:00Z');
+
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(val)) {
+    const [y,m,d] = val.split('/').map(Number);
+    return new Date(Date.UTC(y, m-1, d));
+  }
+
+  return val;
+}, z.date().refine(d => {
+  const e = new Date(d); e.setFullYear(e.getFullYear()+18);
+  return e <= new Date();
+}, { message: 'You must be 18 or older' }));
+
 function validate_email(email: string){
     return email_schema.safeParse(email);
 }
@@ -51,12 +69,26 @@ export const auth_services = {
             throw new ValidationError(surname_result.error.issues.at(0)?.message!,"surname")
         }
 
+        const phone_result=phone_schema.safeParse(phone_number);
+
+        if(!phone_result.success){
+            throw new ValidationError(phone_result.error.issues.at(0)?.message!,"phone")
+        }
 
         const email_result=validate_email(email);
         
         if(!email_result.success){
             throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
         }
+
+        const dob_result=dob_schema.safeParse(dob);
+
+        if(!dob_result.success){
+            throw new ValidationError(dob_result.error.issues.at(0)?.message!,"dob")
+        }
+
+        const dob_date=dob_result.data;
+
         //Checking if user with email or username already exists
         const existing_user=await prisma.users.findFirst({
             where: {
@@ -93,7 +125,7 @@ export const auth_services = {
                 username,
                 name,
                 surname,
-                dob,
+                dob: dob_date,
                 phone_number,
                 password_hash:hashedPassword
             }
