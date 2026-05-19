@@ -17,14 +17,14 @@ interface ApiService{
     fun getContacts(): Call<ContactsResponse>
 
     @POST("api/auth/login")
-    fun login(@Body body: LoginRequest): Call<AuthResponse>
+    suspend fun login(@Body body: LoginRequest): AuthResponse
 
     @POST("api/auth/register")
-    fun register(@Body body: RegisterRequest): Call<AuthResponse>
+    suspend fun register(@Body body: RegisterRequest): AuthResponse
 
     @POST("api/auth/refresh")
-    fun refresh(@Body body: RefreshRequest): Call<AuthResponse>
+    suspend fun refresh(@Body body: RefreshRequest): AuthResponse
 
     @POST("api/auth/logout")
-    fun logout(): Unit
+    suspend fun logout(): Unit
 }
