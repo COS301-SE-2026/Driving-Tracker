@@ -29,7 +29,7 @@ function validate_password(password: string){
 
 export const auth_services = {
 
-    async register (email: string, username: string, name:string, surname:string, password: string, consent_status: boolean){
+    async register (email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean){
         //validating all parameters
         if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
 
@@ -93,6 +93,8 @@ export const auth_services = {
                 username,
                 name,
                 surname,
+                dob,
+                phone_number,
                 password_hash:hashedPassword
             }
         });
