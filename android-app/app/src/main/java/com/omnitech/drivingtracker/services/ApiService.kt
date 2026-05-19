@@ -31,4 +31,16 @@ interface ApiService{
 
     @POST("api/trips/start")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
+
+    @GET("trips/history")
+    suspend fun getTripHistory(@Body body: Map<String, String>): TripHistoryResponse
+
+    @GET("trips/{trip_id}/summary")
+    suspend fun getTripSummary(@Path("trip_id") tripId: String): TripSummaryResponse
+
+    @PATCH("trips/{trip_id}/end_trip")
+    suspend fun endTrip(
+        @Path("trip_id") tripId: String,
+        @Body body: EndTripRequest
+    ): StartTripResponse
 }
