@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 //response models matching backend structure for /contacts endpoint
 
 enum class ConsentStatus(val value: String){
-    Pending("PENDING"),
+    PENDING("PENDING"),
     APPROVED("APPROVED"),
     DENIED("DENIED");
 

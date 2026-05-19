@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ContactsViewModel(private val repository: ContactsRepository = ContactsRepository()): ViewModel{
+class ContactsViewModel(private val repository: ContactsRepository = ContactsRepository()): ViewModel(){
     //define UI state machine
     sealed class UiState{
         object Idle : UiState() //initial state
         object Loading : UiState() //fetching data
         data class Success(val contacts: List<ContactDto>) : UiState() //Got data
-        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occured
+        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occurred
     }
 
     // Expose state to UI as StateFlow
@@ -49,7 +49,7 @@ class ContactsViewModel(private val repository: ContactsRepository = ContactsRep
             )
         }
     }
-    //Auto-load on creation
+    //Autoload on creation
     init {
         loadContacts() // Fetch when ViewModel is created
     }

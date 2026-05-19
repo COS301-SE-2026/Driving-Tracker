@@ -14,9 +14,9 @@ class ContactsRepository{
             Result.success(response.data.contacts) //extract contacts, wrap in success
         } catch(e: HttpException){
             val error = ApiErrorParser.parse(e) //parse HTTP error
-            Result.failure(ApiException(...)) //wrap in failure
+            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch contacts")) //wrap in failure
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", ...)) //handle other errors
+            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
         }
     }
     suspend fun fetchApprovedContacts(): Result<List<ContactDto>> {
