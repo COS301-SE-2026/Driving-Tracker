@@ -20,8 +20,8 @@ import androidx.compose.ui.Alignment
 import com.omnitech.drivingtracker.ui.theme.Green
 
 @Composable
-//This function displays the Overal driving score with progress bar
-fun ScoreRing(score: Int, modifier: Modifier = Modifier, rating: String) {
+//This function displays the Overall driving score with progress bar
+fun ScoreRingTwo(score: Int, modifier: Modifier = Modifier, rating: String) {
 
     Box(
         contentAlignment = Alignment.Center,
@@ -30,8 +30,8 @@ fun ScoreRing(score: Int, modifier: Modifier = Modifier, rating: String) {
 
         CircularProgressIndicator(
             progress = { score / 100f },
-            strokeWidth = 8.dp,
-            color = Color.Green,
+            strokeWidth = 12.dp,
+            color = Color(0xD9006400),
             trackColor = Color.LightGray,
             modifier = Modifier.fillMaxSize()
         )
@@ -39,12 +39,12 @@ fun ScoreRing(score: Int, modifier: Modifier = Modifier, rating: String) {
         Column(horizontalAlignment = Alignment.CenterHorizontally){
             Text(
                 text = "$score",
-                fontSize = 20.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = rating,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
         }
