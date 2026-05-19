@@ -78,6 +78,7 @@ fun Trips(){
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
+
         //Page title
         Text(
             text = "Trips",
@@ -112,14 +113,14 @@ fun Trips(){
             Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
         }
 
-        //Contacts
+        //Trips
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
                 .padding(horizontal=16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ){
             trips.forEachIndexed {
-                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display contact card for each contact in the class
+                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display trip card for each trip in the class
             }
         }
         BottomNavBar()
@@ -135,12 +136,13 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column{
-            if (isLatest){
+            if (isLatest){ //expands the details (map) of the latest trip
                 Box(
                     modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFF9CA3AF))
                 )
             }
         }
+
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -164,11 +166,13 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
                 Text(trip.from, style = MaterialTheme.typography.bodyMedium)
                 Text(trip.to, style = MaterialTheme.typography.bodyMedium)
             }
+
             //distance and duration
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(trip.distance, style = MaterialTheme.typography.bodyMedium)
                 Text(trip.duration, style = MaterialTheme.typography.bodyMedium)
             }
+
             Spacer(modifier = Modifier.width(12.dp))
 
             //score and see more
