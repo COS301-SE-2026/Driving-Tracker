@@ -6,6 +6,7 @@ import com.omnitech.drivingtracker.data.models.LoginRequest
 import com.omnitech.drivingtracker.data.models.RefreshRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import retrofit2.Call
+import com.omnitech.drivingtracker.data.models.*
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -14,7 +15,7 @@ import retrofit2.http.Header
 interface ApiService{
     //returns trusted contacts for authenticated user
     @GET("contacts")
-    fun getContacts(): Call<ContactsResponse>
+    suspend fun getContacts(): ContactsResponse
 
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
@@ -27,4 +28,7 @@ interface ApiService{
 
     @POST("api/auth/logout")
     suspend fun logout(): Unit
+
+    @POST("api/trips/start")
+    suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
 }
