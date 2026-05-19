@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.ui.contacts
+/*package com.omnitech.drivingtracker.ui.contacts
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -267,4 +267,4 @@ fun ContactsPreview(){
     DrivingTrackerTheme{
         Contacts()
     }
-}
+}*/

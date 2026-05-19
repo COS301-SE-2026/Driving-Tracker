@@ -44,7 +44,7 @@ fun BottomNavBar() {
                     contentDescription = "Achievements"
                 )
             },
-            label = { Text("Achievements") },
+            label = { Text("Achieve") },
             selected = false,
             onClick = { /*Navigates to achievements*/ }
         )

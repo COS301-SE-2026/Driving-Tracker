@@ -6,7 +6,6 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -19,11 +18,15 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Tune
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.components.ScoreRing
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.res.painterResource
+import com.omnitech.drivingtracker.R
+import androidx.compose.ui.layout.ContentScale
 
 //trip class
 data class Trip(
@@ -54,7 +57,7 @@ fun Trips(){
             horizontalArrangement = Arrangement.SpaceBetween
         ){
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
@@ -103,7 +106,7 @@ fun Trips(){
                 }
             }
         }
-
+        //past trips heading and trips filtering
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -137,22 +140,29 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
     ) {
         Column{
             if (isLatest){ //expands the details (map) of the latest trip
-                Box(
+                /*Box(
                     modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFF9CA3AF))
+                )*/
+                //This is the map placeholder (bottom=actual map, top = grey map placeholder)
+                Image(
+                    painter = painterResource(id = R.drawable.map),
+                    contentDescription = "Trip map",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(160.dp)
                 )
             }
         }
 
+        //Trip details row
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             //route icon placeholder
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outline
+            Image(
+                painter = painterResource(id = R.drawable.destination),
+                contentDescription = "Destination icon",
+                modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -176,11 +186,13 @@ fun TripCard(trip: Trip, isLatest: Boolean = false) {
             Spacer(modifier = Modifier.width(12.dp))
 
             //score and see more
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = trip.score.toString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
+
+                //score ring
+                ScoreRing(
+                    score = trip.score,
+                    modifier = Modifier.size(44.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
