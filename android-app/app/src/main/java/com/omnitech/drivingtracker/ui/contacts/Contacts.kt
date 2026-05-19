@@ -1,4 +1,4 @@
-package com.omnitech.drivingtracker.ui.auth
+package com.omnitech.drivingtracker.ui.contacts
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,44 +19,81 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.ContactsResponse
+import com.omnitech.drivingtracker.services.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
-enum class ContactStatus{ON_TRIP, OFF_TRIP}
-//contact class
-data class Contact(
-    val name: String,
-    val relationship: String,
-    val status: ContactStatus
-)
 @Composable
-fun Contacts(){
+fun Contacts(authToken: String = "") {
+    var contacts by remember {
+        mutableStateOf<List<ContactDto>>(emptyList())
+    }
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+    var errorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
 
-    val contacts = listOf(
-        //Contact("John Doe", "Friend for 8 months", ContactStatus.ON_TRIP),
-        Contact("Emma Doe", "Friend for 6 months", ContactStatus.OFF_TRIP),
-        Contact("Sarah Kim", "Friend for 4 months", ContactStatus.OFF_TRIP),
-        Contact("Eren Yeager", "Friend for 2 months", ContactStatus.ON_TRIP),
-        //Contact("Karabo Mokena", "Friend for 1 months", ContactStatus.OFF_TRIP),
+    LaunchedEffect(authToken) {
+        //do not make network request if user not signed in
+        if (authToken.isBlank()) {
+            return@LaunchedEffect
+        }
 
-    )
+        isLoading = true
+        errorMessage = null
+
+        //fetch current user's contacts
+        RetrofitClient.apiService.getContacts()
+            .enqueue(object : Callback<ContactsResponse> {
+                override fun onResponse(
+                    call: Call<ContactsResponse>,
+                    response: Response<ContactsResponse>
+                ) {
+                    isLoading = false
+
+                    //on success, replace list with server response
+                    if (response.isSuccessful) {
+                        contacts = response.body()?.data?.contacts.orEmpty()
+                    } else {
+                        errorMessage = "Failed to load contacts"
+                    }
+                }
+
+                override fun onFailure(call: Call<ContactsResponse>, t: Throwable) {
+                    isLoading = false
+                    errorMessage = t.message ?: "Network error"
+                }
+            })
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ){
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-        ){
+        ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
-            Row{
+            Row {
                 Text(
                     text = "Driving ",
                     fontWeight = FontWeight.Bold,
@@ -85,38 +122,77 @@ fun Contacts(){
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        //Contacts
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
-                .padding(horizontal=16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ){
-            contacts.forEach {
-                contact->ContactCard(contact=contact) //display contact card for each contact in the class
+        when {
+            authToken.isBlank() -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Sign in to load your contacts.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            //Add contact button
-            Spacer(modifier = Modifier.height(4.dp))
-            OutlinedButton(
-                onClick = {},
-                shape = RoundedCornerShape(50),
-                border = ButtonDefaults.outlinedButtonBorder,
-            ){
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+
+            isLoading -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorMessage.orEmpty(),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            else -> {
+                //Contacts
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    contacts.forEach { contact ->
+                        ContactCard(contact = contact) //display contact card for each contact in the class
+                    }
+                    //Add contact button
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = {},
+                        shape = RoundedCornerShape(50),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Add Contact")
+                    }
+                }
             }
         }
+
         BottomNavBar()
     }
 }
+
 @Composable
-fun ContactCard(contact: Contact){
-    val isOnTrip = contact.status ==  ContactStatus.ON_TRIP
-    val statusColor = if (isOnTrip) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
-    val statusText = if (isOnTrip) "On Trip" else "Offline"
+fun ContactCard(contact: ContactDto){
+    //only show trip sharing controls when backend says consent was approved
+    val isSharing = contact.consent_status == "APPROVED"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -125,59 +201,61 @@ fun ContactCard(contact: Contact){
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            //Name and Avatar
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Avatar",
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outline
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-
-        Column{
-            Text(
-                text = contact.name,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = contact.relationship,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        //Activity
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start=8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(10.dp).background(statusColor, CircleShape)
+            Row(verticalAlignment = Alignment.CenterVertically){
+                //Name and Avatar
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.outline
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column{
+                    Text(
+                        text = contact.name,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = contact.username,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Button(
-                onClick = {},
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Green,
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                modifier = Modifier.height(30.dp).padding(end=8.dp).padding(vertical=4.dp)
-            ) {
-                Text("See Activity", style = MaterialTheme.typography.bodyMedium)
+
+            if(isSharing){
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Row(verticalAlignment = Alignment.CenterVertically){
+                        Box(
+                            modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.error, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "On Trip",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = {},
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Green,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                        modifier = Modifier.height(30.dp).padding(end=8.dp).padding(vertical=4.dp)
+                    ) {
+                        Text("See Activity", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
     }

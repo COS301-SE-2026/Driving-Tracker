@@ -32,6 +32,8 @@ model alerts {
   trip_id             String                @db.Uuid
   user_id             String                @db.Uuid
   alert_type          String?               @db.VarChar(20)
+  event_id            String?               @db.Uuid
+  message             String?
   latitude            Decimal?              @db.Decimal(9, 6)
   longitude           Decimal?              @db.Decimal(9, 6)
   recorded_at         DateTime              @db.Timestamptz(6)
@@ -140,23 +142,29 @@ model trips {
   trip_events      trip_events[]
   trip_readings    trip_readings[]
   trip_scores      trip_scores[]
+  trip_location_shares  trip_location_shares[]
   users            users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   vehicles         vehicles?       @relation(fields: [vehicle_id], references: [vehicle_id], onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model trusted_contacts {
-  contact_id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id             String                @db.Uuid
-  name                String                @db.VarChar(100)
-  relationship        String?               @db.VarChar(50)
-  email               String?               @db.VarChar(255)
-  phone               String?               @db.VarChar(20)
-  consent_status      String?               @default("PENDING") @db.VarChar(10)
-  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
-  alert_notifications alert_notifications[]
-  alert_preferences   alert_preferences[]
-  users               users                 @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  contact_id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String                @db.Uuid
+  contact_user_id       String                @db.Uuid
+  name                  String                @db.VarChar(100)
+  relationship          String?               @db.VarChar(50)
+  email                 String?               @db.VarChar(255)
+  phone                 String?               @db.VarChar(20)
+  consent_status        ConsentStatus?        @default(PENDING) 
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  alert_notifications   alert_notifications[]
+  alert_preferences     alert_preferences[]
+  owner_user            users                 @relation("TrustedContactsOwner", fields: [user_id], references: [user_id], onDelete: Cascade)
+  contact_user          users                 @relation("TrustedContactsContactUser", fields: [contact_user_id], references: [user_id], onDelete: Cascade)
+  trip_location_shares  trip_location_shares[] 
+
+  @@unique([user_id, contact_user_id])
 }
 
 model user_badges {
@@ -170,23 +178,62 @@ model user_badges {
   @@unique([user_id, badge_id])
 }
 
+enum SystemRole{
+    ADMIN
+    USER
+}
+
+enum UserStatus{
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ConsentStatus{
+  PENDING
+  APPROVED
+  DENIED
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  user_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username         String             @unique @db.VarChar(50)
-  name             String             @db.VarChar(100)
-  surname          String             @db.VarChar(100)
-  email            String             @unique @db.VarChar(150)
-  consent_status   Boolean?           @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
-  status           String?            @default("ACTIVE") @db.VarChar(10)
-  deleted_at       DateTime?          @db.Timestamptz(6)
-  alerts           alerts[]
-  leaderboard      leaderboard[]
-  trips            trips[]
-  trusted_contacts trusted_contacts[]
+  user_id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username          String             @unique @db.VarChar(50)
+  name              String             @db.VarChar(100)
+  surname           String             @db.VarChar(100)
+  email             String             @unique @db.VarChar(150)
+  password_hash     String             @db.VarChar(255)
+  role              SystemRole         @default(USER)
+  refresh_token     String?            @db.VarChar(512)
+  refresh_token_exp DateTime?          @db.Timestamptz(6)
+  consent_status    Boolean?           @default(false)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  status            UserStatus         @default(ACTIVE)
+  deleted_at        DateTime?          @db.Timestamptz(6)
+  alerts            alerts[]
+  leaderboard       leaderboard[]
+  trips             trips[]
+  //contacts the user owns
+  trusted_contacts_owned  trusted_contacts[]  @relation("TrustedContactsOwner")
+  //where a user is someone elses contact
+  trusted_contacts_of_user  trusted_contacts[]  @relation("TrustedContactsContactUser")
   user_badges      user_badges[]
   vehicles         vehicles[]
+  trip_location_shares  trip_location_shares[]  @relation("TripSharesOwner")
+}
+
+model trip_location_shares {
+  share_id      String              @id @default (dbgenerated("gen_random_uuid()")) @db.Uuid
+  trip_id       String              @db.Uuid
+  owner_user_id String              @db.Uuid
+  contact_id    String              @db.Uuid
+  shared_at     DateTime            @default(now()) @db.Timestamptz(6)
+  revoked_at    DateTime?           @db.Timestamptz(6)
+  trip          trips               @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+  owner         users               @relation("TripSharesOwner", fields: [owner_user_id], references: [user_id], onDelete: Cascade)
+  contact       trusted_contacts    @relation(fields: [contact_id], references: [contact_id], onDelete: Cascade)
+
+  @@unique([trip_id, contact_id])
 }
 
 model vehicles {

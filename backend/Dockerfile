@@ -2,6 +2,11 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
+# Prisma v7 loads DATABASE_URL from prisma.config.ts at generate time.
+# During Docker builds we don't copy .env (ignored by .dockerignore), so provide a safe default.
+ARG DATABASE_URL=postgresql://user:pass@localhost:5432/db?schema=public
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -26,7 +31,7 @@ RUN yarn build
 # Runner
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -36,7 +41,11 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 
 #remove deps then install immutably like builder
 COPY package.json yarn.lock .yarnrc.yml ./
-RUN yarn workspaces focus --all --production
+RUN if [ "$NODE_ENV" = "development" ]; then \
+  yarn install --immutable;\
+else \
+  yarn workspaces focus --all --production; \
+fi
 
 # runtime artifacts only
 COPY --from=builder --chown=node:node /app/dist ./dist
@@ -49,4 +58,4 @@ COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.
 
 USER node
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["yarn", "dev"]

@@ -1,6 +1,72 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
 
-export function verify_token(req: Request, res: Response, next: NextFunction) {
-  // Implementation here
+const ACCESS_SECRET=process.env.JWT_SECRET!;
+const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
+
+//Extends JwtPAylod to add a role claim. sub claim stores user uuid
+export interface AppJwtPayload extends JwtPayload{
+  role: "admin" | "user";
+}
+
+//Interface that extends Request to add user which holds custom JwtPayload
+export interface AuthRequest extends Request{
+  user?: AppJwtPayload
+}
+
+//Generates a new access token
+export function generate_token(payload: Omit<AppJwtPayload, "iat" | "exp">): string {
+
+    return jwt.sign(payload, ACCESS_SECRET, {expiresIn: "15m"});
+}
+
+//Genereates a new refresh token
+export function generate_refresh_token(payload: Omit<AppJwtPayload, "iat" | "exp">): string {
+
+    return jwt.sign(payload, REFRESH_SECRET, {expiresIn: "7d"});
+}
+
+//Extracts access token from request headers
+function extract_token(req: Request):string | null{
+
+  const auth=req.headers.authorization;
+
+  if(auth?.startsWith("Bearer ")){ 
+    return auth.slice(7); 
+  }
+
+  return null;
+}
+
+//Verifies access token for authentication
+export function verify_token(req: AuthRequest, res: Response, next: NextFunction) {
+
+  const token=extract_token(req);
+
+  if(!token){
+    res.status(401).json({error:"UNAUTHORIZED", messsage: "No token provided"});
+    return;
+  }
+
+  try{
+
+    req.user=jwt.verify(token, ACCESS_SECRET) as AppJwtPayload;
+    next();
+
+  }catch(err){
+
+    let error;
+    let message;
+    
+    if(err instanceof jwt.TokenExpiredError){
+      error="TOKEN_EXPIRED";
+      message="Token expired";
+    }else{
+
+      error="UNAUTHORIZED";
+      message="Invalid Token";
+    }
+
+    return res.status(401).json({error, message});
+  }
 }
