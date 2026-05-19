@@ -14,7 +14,7 @@ class ContactsRepository{
             Result.success(response.data.contacts) //extract contacts, wrap in success
         } catch(e: HttpException){
             val error = ApiErrorParser.parse(e) //parse HTTP error
-            Result.failure(ApiException(...)) //wrap in failur
+            Result.failure(ApiException(...)) //wrap in failure
         } catch(e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", ...)) //handle other errors
         }

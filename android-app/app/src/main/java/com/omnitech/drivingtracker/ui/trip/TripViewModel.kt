@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
-class `TripViewModel.kt`(
+class TripViewModel(
     private val tripRepository: TripRepository = TripRepository(),
     private val contactsRepository: ContactsRepository = ContactsRepository()
-) : viewModel(){
+) : ViewModel(){
 
     sealed class UiState{
         object Idle : UiState()
@@ -64,4 +64,36 @@ class `TripViewModel.kt`(
         }
     }
 
+    fun startTrip(
+        vehicleId: String,
+        dataSource: String,
+        latitude: Double,
+        longitude: Double,
+        selectedContactIds: List<String>?
+    ){
+        viewModelScope.launch {
+            _tripStartState.value = UiState.Loading
+
+            tripRepository.startTrip(vehicleId, dataSource, latitude, longitude, selectedContactIds).fold(
+                onSuccess = { tripId ->
+                    _tripStartState.value = UiState.Success(tripId)
+                },
+                onFailure = { exception ->
+                    when {
+                        exception is ApiException -> {
+                            _tripStartState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to start trip"
+                            )
+                        }
+                        else -> {
+                            _tripStartState.value = UiState.Error(
+                                message = exception.message ?: "Unknown error"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
 }
