@@ -16,10 +16,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 
 @Composable
-fun SignUp(){
+fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
+           onRegister: (String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _ -> }){
+
+    var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("")}
+    var consentStatus by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -55,10 +66,10 @@ fun SignUp(){
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value="",
-                        onValueChange={},
+                        value=name,
+                        onValueChange={ name=it },
                         placeholder = {Text("First Name", color=Color.LightGray)},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -71,10 +82,10 @@ fun SignUp(){
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value="",
-                        onValueChange={},
+                        value=surname,
+                        onValueChange={ surname=it},
                         placeholder = {Text("Surname", color=Color.LightGray)},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -87,10 +98,10 @@ fun SignUp(){
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value="",
-                        onValueChange={},
+                        value=email,
+                        onValueChange={ email=it },
                         placeholder = {Text("Email", color=Color.LightGray)},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -106,7 +117,39 @@ fun SignUp(){
                         value="",
                         onValueChange={},
                         placeholder = {Text("Phone Number", color=Color.LightGray)},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+                }
+                Column{
+                    Text(
+                        text = "Password",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value=password,
+                        onValueChange={ password=it },
+                        placeholder = {Text("Password", color=Color.LightGray)},
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+                }
+                Column{
+                    Text(
+                        text = "Confirm Password",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value=confirmPassword,
+                        onValueChange={ confirmPassword=it },
+                        placeholder = {Text("Confirm Password", color=Color.LightGray)},
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -119,7 +162,7 @@ fun SignUp(){
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ){
                         OutlinedTextField(
@@ -152,7 +195,16 @@ fun SignUp(){
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        onRegister(
+                            username,
+                            name,
+                            surname,
+                            email,
+                            password,
+                            consentStatus
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = Color.White)
@@ -164,6 +216,22 @@ fun SignUp(){
         }
     }
 }
+
+@Composable
+fun SignUpScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={}){
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) { if (uiState is AuthViewModel.UiState.Success) onSuccess() }
+
+    SignUp(
+        uiState = uiState,
+        onRegister = { username, name, surname, email, password, consent ->
+            viewModel.register(username, name, surname, email, password, consent)
+        }
+    )
+}
+
 @Preview(showBackground=true)
 @Composable
 fun SignUpPreview(){
