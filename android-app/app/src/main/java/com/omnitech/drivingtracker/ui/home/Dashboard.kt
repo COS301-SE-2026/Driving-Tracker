@@ -31,8 +31,11 @@ import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.components.RecentTripCard
 import androidx.compose.foundation.*
 
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.MainActivity
+
 @Composable
-fun Dashboard() {
+fun Dashboard(navController: NavController? = null) {
 
     Scaffold(
 
@@ -46,7 +49,7 @@ fun Dashboard() {
         },
 
         bottomBar = {
-            BottomNavBar()
+            BottomNavBar(navController = navController)
         }
 
     ) { innerPadding -> 

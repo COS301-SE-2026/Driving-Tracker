@@ -218,11 +218,15 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
 }
 
 @Composable
-fun SignUpScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={}){
+fun SignUpScreen(
+    viewModel: AuthViewModel = viewModel(), 
+    onSignUpSuccess: () -> Unit = {},
+    onBackClick: () -> Unit = {}
+){
 
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState) { if (uiState is AuthViewModel.UiState.Success) onSuccess() }
+    LaunchedEffect(uiState) { if (uiState is AuthViewModel.UiState.Success) onSignUpSuccess() }
 
     SignUp(
         uiState = uiState,

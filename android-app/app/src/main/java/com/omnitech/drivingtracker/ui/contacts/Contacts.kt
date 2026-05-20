@@ -34,8 +34,13 @@ import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 
+import androidx.navigation.NavController
+
 @Composable
-fun Contacts(viewModel: ContactsViewModel = viewModel()) {
+fun Contacts(
+    navController: NavController? = null,
+    viewModel: ContactsViewModel = viewModel()
+) {
 
     val state by viewModel.uiState.collectAsState()
     var showAddContactDialog by remember { mutableStateOf(false) }
@@ -150,7 +155,7 @@ fun Contacts(viewModel: ContactsViewModel = viewModel()) {
             }
         }
 
-        BottomNavBar()
+        BottomNavBar(navController = navController)
     }
 
     if(showAddContactDialog){
