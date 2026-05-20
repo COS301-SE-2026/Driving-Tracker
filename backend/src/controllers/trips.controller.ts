@@ -12,7 +12,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             throw new Error("user not found");
             return ;
         }
-        const { vehicle_id, start_date, data_source, start_location}= req.body;
+        const { vehicle_id, start_date, data_source, start_location, share_with_contacts}= req.body;
 
         //sending to services
         const new_trip = await trips_services.create({
@@ -20,7 +20,8 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             vehicle_id,
             start_date,
             data_source,
-            start_location
+            start_location,
+            share_with_contacts
         });
 
         res.status(200).json({
