@@ -21,11 +21,17 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
-fun Login() {
+fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = { _ , _ -> }) {
+
+    var identifier by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -119,6 +125,19 @@ fun Login() {
             }
         }
     }
+}
+
+@Composable
+fun LoginScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={}){
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) { if (uiState is UiState.Success) onSuccess() }
+
+    Login(
+        uiState = uiState,
+        onLogin = { identifier, password -> viewModel.login(identifier, password) }
+    )
 }
 
 @Preview(showBackground=true, backgroundColor = 0xFFFFFFFF)

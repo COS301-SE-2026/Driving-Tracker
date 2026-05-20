@@ -41,7 +41,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
-            val validationError = validate(username, name, surname, email, password, phoneNumber, day, month, year,consentStatus)
+            val validationError = validateRegister(username, name, surname, email, password, phoneNumber, day, month, year,consentStatus)
 
             if(validationError != null){
                 _uiState.value = validationError
@@ -77,7 +77,49 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun validate(
+    fun login(
+        identifier: String,
+        password: String
+    ){
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+
+            val validationError = validateLogin(identifier,password)
+
+            if(validationError != null){
+                _uiState.value = validationError
+                return@launch
+            }
+
+            repository.login(identifier, password).fold(
+                onSuccess = {
+                    _uiState.value = UiState.Success
+                },
+                onFailure = { exception ->
+                    when {
+                        exception is ApiException -> {
+                            _uiState.value = UiState.Error(message = exception.errorMessage ?: "Something went wrong",
+                                code = exception.errorCode)
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Something went wrong"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun validateLogin(identifier: String, password: String): UiState.Error?{
+        if (identifier.isBlank()) return UiState.Error("INVALID_EMAIL/Username","Email or Username is required")
+        if (password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
+
+        return null
+    }
+
+    fun validateRegister(
          username: String,
          name: String,
          surname: String,

@@ -4,6 +4,7 @@ import retrofit2.HttpException
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.local.SessionManager
+import com.omnitech.drivingtracker.data.models.LoginRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 
@@ -34,6 +35,22 @@ class AuthRepository(
         }catch(e: Exception){
         Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
     }
+    }
+
+    suspend fun login(identifier: String, password: String):Result<Unit>{
+        return try{
+            val response = api.login(
+                LoginRequest(identifier, password)
+            )
+            session_manager.saveTokens(response.token,response.refresh_token)
+            Result.success(Unit)
+
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message?: "An error occurred"))
+        }catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
+        }
     }
 
 }
