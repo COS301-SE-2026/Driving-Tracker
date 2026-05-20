@@ -30,3 +30,41 @@ data class ContactDto(
     @SerializedName("consent_status")
     val consentStatus: ConsentStatus? = null
 )
+
+data class CreateContactRequest(
+    val identifier: String // email or username
+)
+
+data class CreateContactResponse(
+    val message: String? = null,
+    val data: CreateContactData
+)
+
+data class CreateContactData(
+    @SerializedName("contact_id")
+    val contactId: String,
+    val username: String
+)
+
+data class ContactIdWrapper(
+    @SerializedName("contact_id")
+    val contactId: String
+)
+
+data class AlertContactsRequest(
+    val event_type: String,
+    val event_id: String? = null,
+    val message: String? = null,
+    val contacts: List<ContactIdWrapper>
+)
+
+data class ShareLocationRequest(
+    @SerializedName("trip_id")
+    val tripId: String,
+    val contacts: List<ContactIdWrapper>
+)
+
+data class GenericResponse(
+    val message: String,
+    val data: Map<String, Any>? = null
+)
