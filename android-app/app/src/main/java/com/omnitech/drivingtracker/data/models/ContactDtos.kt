@@ -36,8 +36,14 @@ data class CreateContactRequest(
 )
 
 data class CreateContactResponse(
-    val message: String,
-    val data: ContactDto
+    val message: String? = null,
+    val data: CreateContactData
+)
+
+data class CreateContactData(
+    @SerializedName("contact_id")
+    val contactId: String,
+    val username: String
 )
 
 data class ContactIdWrapper(
@@ -53,9 +59,9 @@ data class AlertContactsRequest(
 )
 
 data class ShareLocationRequest(
-    val contacts: List<ContactIdWrapper>,
-    val lat: Double,
-    val lng: Double
+    @SerializedName("trip_id")
+    val tripId: String,
+    val contacts: List<ContactIdWrapper>
 )
 
 data class GenericResponse(
