@@ -2,6 +2,23 @@
 // not quite sure of the imports as yet 
 import prisma from '../db/prisma';
 
+// Helper function to safely convert Decimal or number values to number
+function to_number(value: any): number | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    // If it has a toNumber method (Prisma Decimal), use it
+    if (typeof value.toNumber === 'function') {
+        return value.toNumber();
+    }
+    // If it's already a number, return it
+    if (typeof value === 'number') {
+        return value;
+    }
+    // Otherwise try to convert to number
+    return Number(value);
+}
+
 export interface create_trip{
     user_id: string ;
     vehicle_id: string;
@@ -374,20 +391,20 @@ export const trips_services ={
                     status: trip.status,
                     data_source: data_source,
                     route_polyline: trip.route_polyline,
-                    distance_km: trip.distance_km?.toNumber(),
+                    distance_km: to_number(trip.distance_km),
                     duration_minutes: trip.duration_minutes,
-                    fuel_estimate: trip.fuel_estimate?.toNumber(),
+                    fuel_estimate: to_number(trip.fuel_estimate),
                     scores: trip.trip_scores?.[0] ? {
-                        safety_score: trip.trip_scores[0].safety_score?.toNumber(),
-                        eco_score: trip.trip_scores[0].eco_score?.toNumber(),
-                        overall_score: trip.trip_scores[0].overall_score?.toNumber()
+                        safety_score: to_number(trip.trip_scores[0].safety_score),
+                        eco_score: to_number(trip.trip_scores[0].eco_score),
+                        overall_score: to_number(trip.trip_scores[0].overall_score)
                     } : null,
                     events: trip.trip_events.map((event:any) => ({
                         event_id: event.event_id,
                         event_type: event.type,
-                        longitude: event.longitude?.toNumber(),
-                        latitude: event.latitude?.toNumber(),
-                        severity: event.severity?.toNumber(),
+                        longitude: to_number(event.longitude),
+                        latitude: to_number(event.latitude),
+                        severity: to_number(event.severity),
                         sensor_source: event.sensor_source,
                         time_stamp: event.recorded_at
                     }))
