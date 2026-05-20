@@ -6,8 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import com.omnitech.drivingtracker.R
 
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.Screen
+
 @Composable
-fun BottomNavBar() {
+fun BottomNavBar(navController: NavController? = null) {
 
     NavigationBar {
         //Home Item
@@ -20,7 +23,7 @@ fun BottomNavBar() {
             },
             label = { Text("Home") },
             selected = false,
-            onClick = { /*Navigates to home*/ }
+            onClick = { navController?.navigate(Screen.Dashboard.route) }
         )
 
         //Trips Item
@@ -33,7 +36,7 @@ fun BottomNavBar() {
             },
             label = { Text("Trips") },
             selected = false,
-            onClick = { /*Navigates to trips page*/ }
+            onClick = { navController?.navigate(Screen.Trips.route) }
         )
 
         //Achievements Item
@@ -46,7 +49,7 @@ fun BottomNavBar() {
             },
             label = { Text("Achieve") },
             selected = false,
-            onClick = { /*Navigates to achievements*/ }
+            onClick = { navController?.navigate(Screen.Achievements.route) }
         )
 
         //Alerts Item
@@ -72,7 +75,7 @@ fun BottomNavBar() {
             },
             label = { Text("More") },
             selected = false,
-            onClick = { /*Displays other selectable pages*/ }
+            onClick = { navController?.navigate(Screen.Contacts.route) }
         )
     }
 
