@@ -3,8 +3,11 @@ package com.omnitech.drivingtracker.ui.components
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.theme.Blue
 
 @Composable
 fun BottomNavBar() {
@@ -18,7 +21,9 @@ fun BottomNavBar() {
                     contentDescription = "Home"
                 )
             },
-            label = { Text("Home") },
+            label = { Text(
+                text = "Home"
+            ) },
             selected = false,
             onClick = { /*Navigates to home*/ }
         )
@@ -31,7 +36,7 @@ fun BottomNavBar() {
                     contentDescription = "Trips"
                 )
             },
-            label = { Text("Trips") },
+            label = { Text(text = "Trips") },
             selected = false,
             onClick = { /*Navigates to trips page*/ }
         )
@@ -44,7 +49,12 @@ fun BottomNavBar() {
                     contentDescription = "Achievements"
                 )
             },
-            label = { Text("Achievements") },
+            label = {
+                Text(
+                    text = "Achievements",
+                    fontSize = 10.sp
+                )
+            },
             selected = false,
             onClick = { /*Navigates to achievements*/ }
         )
@@ -57,7 +67,11 @@ fun BottomNavBar() {
                     contentDescription = "Alerts"
                 )
             },
-            label = { Text("Alerts") },
+            label = {
+                Text(
+                    text = "Alerts"
+                )
+            },
             selected = false,
             onClick = { /*Navigates to alerts*/ }
         )
@@ -70,7 +84,7 @@ fun BottomNavBar() {
                     contentDescription = "More"
                 )
             },
-            label = { Text("More") },
+            label = { Text(text = "More") },
             selected = false,
             onClick = { /*Displays other selectable pages*/ }
         )

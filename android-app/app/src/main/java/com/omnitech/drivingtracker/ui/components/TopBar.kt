@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //Reusable top bar component which will take in an icon as a parameter
@@ -35,14 +36,12 @@ fun TopBar(leftIcon: ImageVector, rightIcon: ImageVector, onLeftClick: () -> Uni
         Row{
             Text(
                 text = "Driving ",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineMedium,
+                color = Blue
             )
             Text(
                 text = "Tracker",
-                fontWeight = FontWeight.Normal,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }

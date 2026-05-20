@@ -1,5 +1,7 @@
 package com.omnitech.drivingtracker.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.Alignment
+import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //This function displays the Overal driving score with progress bar
@@ -25,7 +28,8 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0))
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
 
         Column(
@@ -36,7 +40,7 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
             Text(
                 text = "Overall Driving Score",
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.bodyLarge
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -51,8 +55,8 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
                     progress = { score / 100f },
                     modifier = Modifier.size(130.dp),
                     strokeWidth = 12.dp,
-                    color = Color.DarkGray,
-                    trackColor = Color.LightGray
+                    color = Green,
+                    trackColor = Gray
                 )
 
                 Column(

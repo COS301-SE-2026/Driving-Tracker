@@ -22,13 +22,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.theme.CardWhite
 
 @Composable
 fun RecentTripCard(startLoc: String, destination: String, distance: Int, drivingTime: Int, startTime: String, tripScore: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0))
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
 
         Row(
