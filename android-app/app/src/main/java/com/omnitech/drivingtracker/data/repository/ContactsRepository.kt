@@ -8,13 +8,13 @@ import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.ContactIdWrapper
 import com.omnitech.drivingtracker.data.models.CreateContactRequest
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
-import com.omnitech.drivingtracker.services.RetrofitClient
+import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
 
-class ContactsRepository{
+class ContactsRepository(private val api: ApiService){
     suspend fun fetchContacts(): Result<List<ContactDto>>{
         return try{
-            val response = RetrofitClient.apiService.getContacts() //call API
+            val response = api.getContacts() //call API
             Result.success(response.data.contacts) //extract contacts, wrap in success
         } catch(e: HttpException){
             val error = ApiErrorParser.parse(e) //parse HTTP error
@@ -33,7 +33,7 @@ class ContactsRepository{
 
     suspend fun createContact(identifier: String): Result<Unit> {
         return try{
-            RetrofitClient.apiService.createContact(
+            api.createContact(
                 CreateContactRequest(identifier = identifier)
             )
             Result.success(Unit)
@@ -52,7 +52,7 @@ class ContactsRepository{
         contactIds: List<String>
     ): Result<Unit> {
         return try{
-            RetrofitClient.apiService.alertContacts(
+            api.alertContacts(
                 AlertContactsRequest(
                     event_type = eventType,
                     event_id = eventId,
@@ -74,7 +74,7 @@ class ContactsRepository{
         contactIds: List<String>
     ): Result<Unit> {
         return try{
-            RetrofitClient.apiService.shareLocation(
+            api.shareLocation(
                 ShareLocationRequest(
                     tripId = tripId,
                     contacts = contactIds.map { ContactIdWrapper(it) }

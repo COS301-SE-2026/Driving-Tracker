@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.TripHistoryData
@@ -10,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class TripsViewModel(private val repository: TripRepository = TripRepository()) : ViewModel() {
+class TripsViewModel(private val repository: TripRepository) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -48,5 +49,11 @@ class TripsViewModel(private val repository: TripRepository = TripRepository()) 
 
     init {
         loadTripsHistory()
+    }
+
+    class TripsViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return TripsViewModel(repository) as T
+        }
     }
 }
