@@ -113,7 +113,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun validateLogin(identifier: String, password: String): UiState.Error?{
-        if (identifier.isBlank()) return UiState.Error("INVALID_EMAIL/Username","Email or Username is required")
+        if (identifier.isBlank()) return UiState.Error("INVALID_CREDENTIALS","Email or Username is required")
         if (password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
 
         return null

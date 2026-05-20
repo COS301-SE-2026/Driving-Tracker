@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 
 
@@ -233,19 +234,21 @@ fun SignUp(uiState: UiState = UiState.Idle,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                if(uiState is AuthViewModel.UiState.Error){
-                    Text(
-                        text=uiState.message,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                if(uiState is UiState.Error){
+                    Box(modifier = Modifier.fillMaxWidth().heightIn(min=10.dp, max=15.dp) ) {
+                        Text(
+                            text = uiState.message,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
                 Button(
                     onClick = {
-                        if(password.equals(confirmPassword)) {
+                        if(password==confirmPassword) {
                             onRegister(
                                 username,
                                 name,
@@ -293,5 +296,13 @@ fun SignUpScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={
 fun SignUpPreview(){
     DrivingTrackerTheme{
         SignUp()
+    }
+}
+
+@Preview(showBackground=true, name="Signup Error View")
+@Composable
+fun SignUpErrorPreview(){
+    DrivingTrackerTheme{
+        SignUp(uiState = UiState.Error(code="INVALID_EMAIL", message="Email field is required"))
     }
 }

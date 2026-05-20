@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
@@ -31,6 +32,8 @@ fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = {
 
     var identifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    val errorCode = (uiState as? UiState.Error)?.code
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -51,7 +54,7 @@ fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = {
                 .padding(horizontal = 32.dp) //Adds space between the card and screen edges
                 .padding(top = 10.dp), //Adds space between the card and logo
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFE0E0E0)), //lifght grey border
+            border = BorderStroke(1.dp, Color(0xFFE0E0E0)), //light grey border
             shape = RoundedCornerShape(8.dp)
 
         ) {
@@ -67,15 +70,16 @@ fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
                     Text(
-                        text = "Email",
+                        text = "Email or Username",
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
                     )
                     OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = identifier,
+                        onValueChange = { identifier=it },
+                        placeholder = { Text("Email or Username", color = Color(0xFFBDBDBD)) },
+                        isError = errorCode == "INVALID_CREDENTIALS",
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -91,19 +95,32 @@ fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = {
                         fontSize = 14.sp
                     )
                     OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = password,
+                        onValueChange = { password=it },
+                        isError = errorCode == "INVALID_PASSWORD",
+                        placeholder = { Text("Password", color = Color(0xFFBDBDBD)) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
 
                 }
 
+                if(uiState is UiState.Error){
+                    Text(
+                        text=uiState.message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
                 //Sign In Button
                 Button(
-                    onClick = {},
+                    onClick = {
+                        onLogin(identifier,password)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
@@ -145,5 +162,16 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={}
 fun LoginPreview(){
     DrivingTrackerTheme{
         Login()
+    }
+}
+
+@Preview(showBackground=true, name = "Login error state")
+@Composable
+fun LoginErrorPreview(){
+    DrivingTrackerTheme{
+        Login(uiState = UiState.Error(
+            code="INVALID_CREDENTIALS",
+            message="Email/Username field is required")
+        )
     }
 }
