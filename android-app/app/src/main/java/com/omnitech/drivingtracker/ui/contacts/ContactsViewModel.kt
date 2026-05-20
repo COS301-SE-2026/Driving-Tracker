@@ -49,6 +49,83 @@ class ContactsViewModel(private val repository: ContactsRepository = ContactsRep
             )
         }
     }
+
+    fun createContact(identifier: String){
+        viewModelScope.launch{
+            _uiState.value = UiState.Loading
+            repository.createContact(identifier).fold(
+                onSuccess = {
+                    loadContacts()
+                },
+                onFailure = { exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to add contact"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Failed to add contact"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun alertContacts(eventType: String, eventId: String?, message: String?, contactIds: List<String>){
+        viewModelScope.launch{
+            repository.alertContacts(eventType, eventId, message, contactIds).fold(
+                onSuccess = {
+                    loadContacts()
+                },
+                onFailure = { exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to alert contacts"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Failed to alert contacts"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun shareLocation(tripId: String, contactIds: List<String>){
+        viewModelScope.launch{
+            repository.shareLocation(tripId, contactIds).fold(
+                onSuccess = {
+                    loadContacts()
+                },
+                onFailure = { exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to share location"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Failed to share location"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
     //Autoload on creation
     init {
         loadContacts() // Fetch when ViewModel is created
