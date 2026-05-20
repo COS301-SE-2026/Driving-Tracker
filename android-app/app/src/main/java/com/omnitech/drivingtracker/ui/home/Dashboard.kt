@@ -52,7 +52,7 @@ fun Dashboard() {
             },
 
             bottomBar = {
-                BottomNavBar()
+                BottomNavBar(color = "home")
             }
 
         ) { innerPadding ->

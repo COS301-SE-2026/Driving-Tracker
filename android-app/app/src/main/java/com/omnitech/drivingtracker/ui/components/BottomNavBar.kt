@@ -10,7 +10,7 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.Blue
 
 @Composable
-fun BottomNavBar() {
+fun BottomNavBar(color: String) {
 
     NavigationBar {
         //Home Item
@@ -18,11 +18,13 @@ fun BottomNavBar() {
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_home),
-                    contentDescription = "Home"
+                    contentDescription = "Home",
+                    tint = if (color == "home") Blue else Color.Gray
                 )
             },
             label = { Text(
-                text = "Home"
+                text = "Home",
+                color = if (color == "home") Blue else Color.Gray
             ) },
             selected = false,
             onClick = { /*Navigates to home*/ }
@@ -33,10 +35,11 @@ fun BottomNavBar() {
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_road),
-                    contentDescription = "Trips"
+                    contentDescription = "Trips",
+                    tint = if (color == "trip") Blue else Color.Gray
                 )
             },
-            label = { Text(text = "Trips") },
+            label = { Text(text = "Trips", color = if (color == "trip") Blue else Color.Gray) },
             selected = false,
             onClick = { /*Navigates to trips page*/ }
         )
@@ -46,13 +49,15 @@ fun BottomNavBar() {
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_starfilled),
-                    contentDescription = "Achievements"
+                    contentDescription = "Achievements",
+                    tint = if (color == "ach") Blue else Color.Gray
                 )
             },
             label = {
                 Text(
                     text = "Achievements",
-                    fontSize = 10.sp
+                    fontSize = 10.sp,
+                    color = if (color == "ach") Blue else Color.Gray
                 )
             },
             selected = false,
@@ -64,12 +69,14 @@ fun BottomNavBar() {
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_bell),
-                    contentDescription = "Alerts"
+                    contentDescription = "Alerts",
+                    tint = if (color == "al") Blue else Color.Gray
                 )
             },
             label = {
                 Text(
-                    text = "Alerts"
+                    text = "Alerts",
+                    color = if (color == "al") Blue else Color.Gray
                 )
             },
             selected = false,

@@ -11,6 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.theme.Blue
+import com.omnitech.drivingtracker.ui.theme.CardWhite
+import com.omnitech.drivingtracker.ui.theme.Green
+import com.omnitech.drivingtracker.ui.theme.Purple
 
 @Composable
 //This function is the bar with your badges, user can scroll sideways to see more
@@ -31,8 +35,8 @@ fun BadgeSection() {
 
             Text(
                 "View more",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                style = MaterialTheme.typography.bodyMedium,
+                color = Blue
             )
 
         }
@@ -43,18 +47,19 @@ fun BadgeSection() {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFFF0F0F0)
+            color = CardWhite,
+            shadowElevation = 8.dp
         ) {
 
             Row(
                 modifier = Modifier.padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Icon(painterResource(id = R.drawable.badge_01), null)
-                Icon(painterResource(id = R.drawable.badge_02), null)
-                Icon(painterResource(id = R.drawable.badge_03), null)
-                Icon(painterResource(id = R.drawable.badge_04), null)
-                Icon(painterResource(id = R.drawable.badge_05), null)
+                Icon(painterResource(id = R.drawable.badge_01), null, tint = Purple)
+                Icon(painterResource(id = R.drawable.badge_02), null, tint = Green)
+                Icon(painterResource(id = R.drawable.badge_03), null, tint = Green)
+                Icon(painterResource(id = R.drawable.badge_04), null, tint = Purple)
+                Icon(painterResource(id = R.drawable.badge_05), null, tint = Purple)
             }
 
         }

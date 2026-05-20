@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.CardWhite
+import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 fun RecentTripCard(startLoc: String, destination: String, distance: Int, drivingTime: Int, startTime: String, tripScore: Int, modifier: Modifier = Modifier) {
@@ -43,7 +44,8 @@ fun RecentTripCard(startLoc: String, destination: String, distance: Int, driving
             Icon(
                 painter = painterResource(id = R.drawable.badge_01),
                 contentDescription = "Trip route icon",
-                modifier = Modifier.padding(end = 24.dp)
+                modifier = Modifier.padding(end = 24.dp),
+                tint = Purple
             )
 
             //2. Trip details

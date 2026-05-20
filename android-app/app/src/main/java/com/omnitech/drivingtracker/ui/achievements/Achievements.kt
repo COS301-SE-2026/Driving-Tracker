@@ -55,7 +55,7 @@ fun AchievemtsScreen(
         },
 
         bottomBar = {
-            BottomNavBar()
+            BottomNavBar(color = "ach")
         }
     ) { innerPadding ->
 
