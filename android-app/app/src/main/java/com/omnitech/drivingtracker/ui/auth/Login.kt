@@ -25,7 +25,7 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
-fun Login() {
+fun Login(onLoginSuccess: () -> Unit = {}, onBackClick: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -97,7 +97,7 @@ fun Login() {
 
                 //Sign In Button
                 Button(
-                    onClick = {},
+                    onClick = onLoginSuccess,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
