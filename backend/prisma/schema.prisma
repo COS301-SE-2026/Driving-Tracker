@@ -94,7 +94,7 @@ model trip_readings {
   reading_id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   trip_id           String   @db.Uuid
   recorded_at       DateTime @db.Timestamptz(6)
-  data_source       String?  @db.VarChar(25)
+  data_source       DataSource?  @default(OBD)
   longitude         Decimal? @db.Decimal(9, 6)
   latitude          Decimal? @db.Decimal(9, 6)
   speed_kmh         Decimal? @db.Decimal(6, 2)
@@ -135,7 +135,7 @@ model trips {
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
-  data_source      String?         @db.VarChar(20)
+  data_source      DataSource?     @default(OBD)
   status           String?         @default("IN_PROGRESS") @db.VarChar(20)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
   alerts           alerts[]
@@ -156,7 +156,7 @@ model trusted_contacts {
   relationship          String?               @db.VarChar(50)
   email                 String?               @db.VarChar(255)
   phone                 String?               @db.VarChar(20)
-  consent_status        String?               @default("PENDING") @db.VarChar(10)
+  consent_status        ConsentStatus?        @default(PENDING) 
   created_at            DateTime?             @default(now()) @db.Timestamptz(6)
   alert_notifications   alert_notifications[]
   alert_preferences     alert_preferences[]
@@ -189,6 +189,17 @@ enum UserStatus{
   DELETED
 }
 
+enum ConsentStatus{
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum DataSource {
+  PHONE
+  OBD
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
   user_id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -198,6 +209,9 @@ model users {
   email             String             @unique @db.VarChar(150)
   password_hash     String             @db.VarChar(255)
   role              SystemRole         @default(USER)
+  dob               DateTime           @db.Date
+  phone_number      String             @db.VarChar(20)
+  phone_verified    Boolean            @default(false)
   refresh_token     String?            @db.VarChar(512)
   refresh_token_exp DateTime?          @db.Timestamptz(6)
   consent_status    Boolean?           @default(false)

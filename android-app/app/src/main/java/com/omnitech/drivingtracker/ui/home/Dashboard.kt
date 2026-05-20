@@ -31,9 +31,60 @@ import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.components.RecentTripCard
 import androidx.compose.foundation.*
 
-@Composable
-fun Dashboard() {
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.MainActivity
 
+@Composable
+fun Dashboard(navController: NavController? = null) {
+
+    Scaffold(
+
+        topBar = {
+            TopBar(
+                leftIcon = Icons.Default.Menu,
+                rightIcon = Icons.Default.Settings,
+                onLeftClick = {/*Open menu*/},
+                onRightClick = {/*Open settings*/}
+            )
+        },
+
+        bottomBar = {
+            BottomNavBar(navController = navController)
+        }
+
+    ) { innerPadding -> 
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.Top
+        ){
+
+            //Overal driving score
+            Box(
+                modifier = Modifier
+                    .weight(1.3f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                ScoreCard(score = 85)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            //"This week..."
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    "This Week",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
     Box(
         modifier = Modifier
