@@ -2,8 +2,12 @@ package com.omnitech.drivingtracker.data.repository
 
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.AlertContactsRequest
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.ContactIdWrapper
+import com.omnitech.drivingtracker.data.models.CreateContactRequest
+import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.RetrofitClient
 import retrofit2.HttpException
 

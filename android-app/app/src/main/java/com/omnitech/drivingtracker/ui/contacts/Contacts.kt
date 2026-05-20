@@ -15,6 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +36,8 @@ import com.omnitech.drivingtracker.ui.theme.Green
 fun Contacts(viewModel: ContactsViewModel = viewModel()) {
 
     val state by viewModel.uiState.collectAsState()
+    var showAddContactDialog by remember { mutableStateOf(false) }
+    var contactIdentifier by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -110,7 +115,7 @@ fun Contacts(viewModel: ContactsViewModel = viewModel()) {
                             
                             // Add contact button
                             OutlinedButton(
-                                onClick = {},
+                                onClick = {showAddContactDialog = true},
                                 shape = RoundedCornerShape(50),
                                 border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                             ) {
@@ -144,6 +149,54 @@ fun Contacts(viewModel: ContactsViewModel = viewModel()) {
         }
 
         BottomNavBar()
+    }
+
+    if(showAddContactDialog){
+        AlertDialog(
+            onDismissRequest ={
+                showAddContactDialog = false
+                contactIdentifier = ""
+            },
+            title = { Text(text = "Add Contact") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)){
+                    Text(
+                        text = "Enter a username or email to add a trusted contact.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = contactIdentifier,
+                        onValueChange = { contactIdentifier = it },
+                        singleLine = true,
+                        label = { Text("Username or email") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(
+                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val identifier = contactIdentifier.trim()
+                    if(identifier.isNotEmpty()){
+                        viewModel.createContact(identifier)
+                        showAddContactDialog = false
+                        contactIdentifier = ""
+                    }
+                }){
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAddContactDialog = false
+                    contactIdentifier = ""
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
