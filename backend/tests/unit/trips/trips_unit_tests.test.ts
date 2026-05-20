@@ -1,8 +1,8 @@
-jest.mock('../../../../src/services/trips_services');
+jest.mock('../../../src/services/trips_services');
 
 import { describe, it, expect, jest ,beforeEach} from '@jest/globals';
-import * as trips_controller from '../../../../src/controllers/trips.controller';
-import { trips_services } from '../../../../src/services/trips_services';
+import * as trips_controller from '../../../src/controllers/trips.controller';
+import { trips_services } from '../../../src/services/trips_services';
 
 describe('Trips endpoints unit tests', ()=>{
     beforeEach(async () => jest.clearAllMocks());

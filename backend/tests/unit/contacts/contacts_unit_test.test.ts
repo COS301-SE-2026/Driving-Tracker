@@ -1,9 +1,9 @@
-jest.mock('../../../../src/services/contacts_services');
+jest.mock('../../../src/services/contacts_services');
 
 import { describe, it, expect, jest,beforeEach } from '@jest/globals';
-import contacts_controller from '../../../../src/controllers/contacts.controller';
+import contacts_controller from '../../../src/controllers/contacts.controller';
 const { create_contact, get_contacts, alert_contacts, share_location } = contacts_controller;
-import { contact_services } from '../../../../src/services/contacts_services';
+import { contact_services } from '../../../src/services/contacts_services';
 
 // jest.mock('../../../src/middleware/auth',()=>({}));//the auth
 

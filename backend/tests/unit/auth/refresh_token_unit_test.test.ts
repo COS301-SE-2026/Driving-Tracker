@@ -1,13 +1,13 @@
-jest.mock('../../../../src/services/auth_services');
-jest.mock('../../../../src/middleware/auth', () => ({
+jest.mock('../../../src/services/auth_services');
+jest.mock('../../../src/middleware/auth', () => ({
     generate_token: jest.fn(() => 'mocked-access-token'),
 }));
 
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import auth_controller from '../../../../src/controllers/auth.controller';
+import auth_controller from '../../../src/controllers/auth.controller';
 const { refresh } = auth_controller;
-import { auth_services } from '../../../../src/services/auth_services';
-import { ExtendedError} from '../../../../src/utils/errors';
+import { auth_services } from '../../../src/services/auth_services';
+import { ExtendedError} from '../../../src/utils/errors';
 
 
 describe('Auth refresh endpoint', () => {
@@ -27,7 +27,7 @@ describe('Auth refresh endpoint', () => {
 
     it('returns 200 and tokens on successful refresh', async () => {
         jest.spyOn(auth_services, 'refresh').mockResolvedValueOnce({
-        user: {  user_id: 'user-1', username: 'tester', name: 'Test', surname: 'User', email: 'test@example.com', password_hash: 'hash', role: 'USER', refresh_token: null, refresh_token_exp: null, consent_status: true, created_at: null, status: 'ACTIVE', deleted_at: null,dob: new Date('2000-01-15'),phone_number: '+27781234567',phone_verified: false,},
+        user: {  user_id: 'user-1', username: 'tester', name: 'Test', surname: 'User', email: 'test@example.com', password_hash: 'hash', role: 'USER', refresh_token: null, refresh_token_exp: null, consent_status: true, created_at: null, status: 'ACTIVE', deleted_at: null },
         new_refresh_token: 'new-refresh-1',
         });
         const req: any = { body: { refresh_token: 'old-refresh-1' } };

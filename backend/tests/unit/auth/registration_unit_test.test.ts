@@ -1,16 +1,16 @@
 import { describe, expect, it, jest,beforeEach } from '@jest/globals';
-import auth_controller from '../../../../src/controllers/auth.controller';
+import auth_controller from '../../../src/controllers/auth.controller';
 const { register,login } = auth_controller;
-import { auth_services } from '../../../../src/services/auth_services';
-import { ConflictError, ValidationError } from '../../../../src/utils/errors';
+import { auth_services } from '../../../src/services/auth_services';
+import { ConflictError, ValidationError } from '../../../src/utils/errors';
 
 
 
-jest.mock('../../../../src/services/auth_services');
-jest.mock('../../../../src/middleware/auth', () => ({
+jest.mock('../../../src/services/auth_services');
+jest.mock('../../../src/middleware/auth', () => ({
 generate_token: jest.fn(() => 'mocked-access-token'),
 }));
-jest.mock('../../../../src/db/prisma', () => ({
+jest.mock('../../../src/db/prisma', () => ({
   __esModule: true,
   default: {
     users: {
@@ -38,8 +38,6 @@ describe('Auth register endpoint',()=>{
                 name: 'Test',
                 surname: 'User',
                 consent_status: true,
-                phone_number: '+27781234567',
-                dob_date:'2000-01-15',
             },
         };
 
@@ -66,13 +64,6 @@ describe('Auth register endpoint',()=>{
                 name: 'Test',
                 surname: 'User',
                 consent_status: true,
-                phone_number: '+27781234567',
-                phone_verified: false,
-                refresh_token: null,
-                refresh_token_exp: null,
-                created_at: null,
-                status: 'ACTIVE',
-                deleted_at: null,    
             },
         };
         const json = jest.fn();
@@ -97,13 +88,6 @@ describe('Auth register endpoint',()=>{
                 name: '',
                 surname: 'User',
                 consent_status: true,
-                phone_number: '+27781234567',
-                phone_verified: false,
-                refresh_token: null,
-                refresh_token_exp: null,
-                created_at: null,
-                status: 'ACTIVE',
-                deleted_at: null,
             },
         };
         const json1 = jest.fn();
@@ -125,13 +109,6 @@ describe('Auth register endpoint',()=>{
                 name: 'Test',
                 surname: '',
                 consent_status: true,
-                phone_number: '+27781234567',
-                phone_verified: false,
-                refresh_token: null,
-                refresh_token_exp: null,
-                created_at: null,
-                status: 'ACTIVE',
-                deleted_at: null,
             },
         };
 
