@@ -17,11 +17,13 @@ class AuthRepository(
         surname: String,
         email: String,
         password: String,
-        consent_status: Boolean
+        phoneNumber: String,
+        dob: String,
+        consentStatus: Boolean
     ):Result<Unit>{
         return try{
             val response = api.register(
-                RegisterRequest(username,name,surname,email,password,consent_status)
+                RegisterRequest(username,name,surname,email,password,phoneNumber,dob,consentStatus)
             )
             session_manager.saveTokens(response.token,response.refresh_token)
             Result.success(Unit)

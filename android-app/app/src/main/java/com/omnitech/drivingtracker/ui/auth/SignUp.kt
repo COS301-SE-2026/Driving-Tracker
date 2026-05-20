@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.auth
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -17,11 +18,13 @@ import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 
 @Composable
 fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
-           onRegister: (String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _ -> }){
+           onRegister: (String, String, String, String, String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _-> }){
 
     var name by remember { mutableStateOf("") }
     var surname by remember { mutableStateOf("") }
@@ -29,7 +32,14 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("")}
+    var phoneNumber by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
+    var day by remember { mutableStateOf("") }
+    var month by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf("") }
     var consentStatus by remember { mutableStateOf(false) }
+
+    
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -114,8 +124,8 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
-                        value="",
-                        onValueChange={},
+                        value=phoneNumber,
+                        onValueChange={ phoneNumber=it },
                         placeholder = {Text("Phone Number", color=Color.LightGray)},
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
@@ -166,30 +176,53 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ){
                         OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
+                            value = day,
+                            onValueChange = {
+                                if (it.length<=2 && it.all{char -> char.isDigit()}) day=it
+                            },
                             placeholder = {Text("DD", color = Color.LightGray)},
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
+                            value = month,
+                            onValueChange = {
+                                if (it.length<=2 && it.all{char -> char.isDigit()}) day=it
+                            },
                             placeholder = {Text("MM", color = Color.LightGray)},
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
+                            value = year,
+                            onValueChange = {
+                                if (it.length<=4 && it.all{char -> char.isDigit()}) day=it
+                            },
                             placeholder = {Text("YYYY", color = Color.LightGray)},
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = consentStatus,
+                        onCheckedChange = { consentStatus = it }
+                    )
+                    Text(
+                        text = "I agree to the terms and conditions",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable { consentStatus = !consentStatus }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -202,6 +235,10 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                             surname,
                             email,
                             password,
+                            phoneNumber,
+                            day,
+                            month,
+                            year,
                             consentStatus
                         )
                     },
@@ -226,8 +263,8 @@ fun SignUpScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={
 
     SignUp(
         uiState = uiState,
-        onRegister = { username, name, surname, email, password, consent ->
-            viewModel.register(username, name, surname, email, password, consent)
+        onRegister = { username, name, surname, email, password, phoneNumber, day, month, year, consent ->
+            viewModel.register(username, name, surname, email, password, phoneNumber, day, month, year,consent)
         }
     )
 }
