@@ -1,88 +1,50 @@
-/*package com.omnitech.drivingtracker.ui.contacts
+package com.omnitech.drivingtracker.ui.contacts
+
 import androidx.compose.foundation.background
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.omnitech.drivingtracker.ui.theme.Green
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
-import com.omnitech.drivingtracker.data.models.ContactsResponse
-import com.omnitech.drivingtracker.services.RetrofitClient
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import com.omnitech.drivingtracker.ui.theme.Green
 
 @Composable
-fun Contacts(authToken: String = "") {
-    var contacts by remember {
-        mutableStateOf<List<ContactDto>>(emptyList())
-    }
-    var isLoading by remember {
-        mutableStateOf(false)
-    }
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
-    }
+fun Contacts(viewModel: ContactsViewModel = viewModel()) {
 
-    LaunchedEffect(authToken) {
-        //do not make network request if user not signed in
-        if (authToken.isBlank()) {
-            return@LaunchedEffect
-        }
-
-        isLoading = true
-        errorMessage = null
-
-        //fetch current user's contacts
-        RetrofitClient.apiService.getContacts()
-            .enqueue(object : Callback<ContactsResponse> {
-                override fun onResponse(
-                    call: Call<ContactsResponse>,
-                    response: Response<ContactsResponse>
-                ) {
-                    isLoading = false
-
-                    //on success, replace list with server response
-                    if (response.isSuccessful) {
-                        contacts = response.body()?.data?.contacts.orEmpty()
-                    } else {
-                        errorMessage = "Failed to load contacts"
-                    }
-                }
-
-                override fun onFailure(call: Call<ContactsResponse>, t: Throwable) {
-                    isLoading = false
-                    errorMessage = t.message ?: "Network error"
-                }
-            })
-    }
+    val state by viewModel.uiState.collectAsState()
+    var showAddContactDialog by remember { mutableStateOf(false) }
+    var contactIdentifier by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -113,7 +75,8 @@ fun Contacts(authToken: String = "") {
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
-        //Page title
+
+        // Page title
         Text(
             text = "Contacts",
             fontWeight = FontWeight.Bold,
@@ -122,64 +85,66 @@ fun Contacts(authToken: String = "") {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        when {
-            authToken.isBlank() -> {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Sign in to load your contacts.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            isLoading -> {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            errorMessage != null -> {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = errorMessage.orEmpty(),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            else -> {
-                //Contacts
-                Column(
-                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    contacts.forEach { contact ->
-                        ContactCard(contact = contact) //display contact card for each contact in the class
+        Box(modifier = Modifier.weight(1f)) {
+            when (state) {
+                is ContactsViewModel.UiState.Idle, is ContactsViewModel.UiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                    //Add contact button
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedButton(
-                        onClick = {},
-                        shape = RoundedCornerShape(50),
-                        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Add Contact")
+                }
+                is ContactsViewModel.UiState.Success -> {
+                    val contacts = (state as ContactsViewModel.UiState.Success).contacts
+                    if (contacts.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "No contacts yet",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            contacts.forEach { contact ->
+                                ContactCard(contact = contact)
+                            }
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // Add contact button
+                            OutlinedButton(
+                                onClick = {showAddContactDialog = true},
+                                shape = RoundedCornerShape(50),
+                                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "Add Contact")
+                            }
+                        }
+                    }
+                }
+                is ContactsViewModel.UiState.Error -> {
+                    val error = state as ContactsViewModel.UiState.Error
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = error.message ?: "Unknown error",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.loadContacts() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
             }
@@ -187,22 +152,69 @@ fun Contacts(authToken: String = "") {
 
         BottomNavBar()
     }
+
+    if(showAddContactDialog){
+        AlertDialog(
+            onDismissRequest ={
+                showAddContactDialog = false
+                contactIdentifier = ""
+            },
+            title = { Text(text = "Add Contact") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)){
+                    Text(
+                        text = "Enter a username or email to add a trusted contact.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedTextField(
+                        value = contactIdentifier,
+                        onValueChange = { contactIdentifier = it },
+                        singleLine = true,
+                        label = { Text("Username or email") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val identifier = contactIdentifier.trim()
+                    if(identifier.isNotEmpty()){
+                        viewModel.createContact(identifier)
+                        showAddContactDialog = false
+                        contactIdentifier = ""
+                    }
+                }){
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAddContactDialog = false
+                    contactIdentifier = ""
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-fun ContactCard(contact: ContactDto){
-    //only show trip sharing controls when backend says consent was approved
-    val isSharing = contact.consent_status == "APPROVED"
+fun ContactCard(contact: ContactDto) {
+    val isSharing = contact.consentStatus == ConsentStatus.APPROVED
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(5.dp),
-        colors = CardDefaults.cardColors(containerColor=Color(0xFFEEEEEE)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically){
-                //Name and Avatar
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Name and Avatar
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Avatar",
@@ -210,7 +222,7 @@ fun ContactCard(contact: ContactDto){
                     tint = MaterialTheme.colorScheme.outline
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column{
+                Column {
                     Text(
                         text = contact.name,
                         fontWeight = FontWeight.SemiBold,
@@ -225,16 +237,18 @@ fun ContactCard(contact: ContactDto){
                 }
             }
 
-            if(isSharing){
+            if (isSharing) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
-                ){
-                    Row(verticalAlignment = Alignment.CenterVertically){
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
-                            modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.error, CircleShape)
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(MaterialTheme.colorScheme.error, CircleShape)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -251,7 +265,9 @@ fun ContactCard(contact: ContactDto){
                             contentColor = Color.White
                         ),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                        modifier = Modifier.height(30.dp).padding(end=8.dp).padding(vertical=4.dp)
+                        modifier = Modifier
+                            .height(30.dp)
+                            .padding(end = 8.dp)
                     ) {
                         Text("See Activity", style = MaterialTheme.typography.bodyMedium)
                     }
@@ -261,10 +277,10 @@ fun ContactCard(contact: ContactDto){
     }
 }
 
-@Preview(showBackground=true)
+@Preview(showBackground = true)
 @Composable
-fun ContactsPreview(){
-    DrivingTrackerTheme{
+fun ContactsPreview() {
+    DrivingTrackerTheme {
         Contacts()
     }
-}*/
+}
