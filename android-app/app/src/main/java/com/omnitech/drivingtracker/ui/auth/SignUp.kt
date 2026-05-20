@@ -11,15 +11,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.ui.theme.Green
-import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 
@@ -39,6 +42,9 @@ fun SignUp(uiState: UiState = UiState.Idle,
     var month by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
     var consentStatus by remember { mutableStateOf(false) }
+
+    var passwordVisible by remember { mutableStateOf(false)}
+    var confirmPasswordVisible by remember { mutableStateOf(false)}
 
     val errorCode = (uiState as? UiState.Error)?.code
 
@@ -151,7 +157,21 @@ fun SignUp(uiState: UiState = UiState.Idle,
                         isError = errorCode == "INVALID_PASSWORD",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None
+                        else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
+
+                            val description = if (passwordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        }
                     )
                 }
                 Column{
@@ -165,9 +185,24 @@ fun SignUp(uiState: UiState = UiState.Idle,
                         value=confirmPassword,
                         onValueChange={ confirmPassword=it },
                         placeholder = {Text("Confirm Password", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_CONFIRM",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        singleLine = true,
+                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None
+                        else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (confirmPasswordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
+
+                            val description = if (confirmPasswordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        }
                     )
                 }
                 Column{

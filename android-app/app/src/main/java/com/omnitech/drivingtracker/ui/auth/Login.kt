@@ -1,6 +1,5 @@
 package com.omnitech.drivingtracker.ui.auth
 
-import android.R.attr.onClick
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
@@ -14,11 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -26,12 +23,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 import com.omnitech.drivingtracker.ui.theme.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
 fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = { _ , _ -> }) {
 
     var identifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    var passwordVisible by remember { mutableStateOf(false)}
 
     val errorCode = (uiState as? UiState.Error)?.code
 
@@ -101,7 +107,21 @@ fun Login(uiState: UiState = UiState.Idle, onLogin: (String, String) -> Unit = {
                         placeholder = { Text("Password", color = Color(0xFFBDBDBD)) },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
+
+                            val description = if (passwordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        }
                     )
 
                 }
