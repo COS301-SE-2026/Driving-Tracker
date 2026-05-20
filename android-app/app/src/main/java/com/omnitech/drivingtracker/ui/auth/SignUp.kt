@@ -20,11 +20,12 @@ import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 
 
 @Composable
-fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
-           onRegister: (String, String, String, String, String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _-> }){
+fun SignUp(uiState: UiState = UiState.Idle,
+           onRegister: (String, String, String, String, String, String, String, String,String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _, _-> }){
 
     var name by remember { mutableStateOf("") }
     var surname by remember { mutableStateOf("") }
@@ -33,13 +34,12 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("")}
     var phoneNumber by remember { mutableStateOf("") }
-    var dob by remember { mutableStateOf("") }
     var day by remember { mutableStateOf("") }
     var month by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
     var consentStatus by remember { mutableStateOf(false) }
 
-    
+    val errorCode = (uiState as? UiState.Error)?.code
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -79,6 +79,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         value=name,
                         onValueChange={ name=it },
                         placeholder = {Text("First Name", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_NAME",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -95,6 +96,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         value=surname,
                         onValueChange={ surname=it},
                         placeholder = {Text("Surname", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_SURNAME",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -111,6 +113,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         value=email,
                         onValueChange={ email=it },
                         placeholder = {Text("Email", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_EMAIL",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -127,6 +130,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         value=phoneNumber,
                         onValueChange={ phoneNumber=it },
                         placeholder = {Text("Phone Number", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_PHONE",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -143,6 +147,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         value=password,
                         onValueChange={ password=it },
                         placeholder = {Text("Password", color=Color.LightGray)},
+                        isError = errorCode == "INVALID_PASSWORD",
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
@@ -181,6 +186,7 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                                 if (it.length<=2 && it.all{char -> char.isDigit()}) day=it
                             },
                             placeholder = {Text("DD", color = Color.LightGray)},
+                            isError = errorCode == "INVALID_DAY",
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
@@ -189,9 +195,10 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         OutlinedTextField(
                             value = month,
                             onValueChange = {
-                                if (it.length<=2 && it.all{char -> char.isDigit()}) day=it
+                                if (it.length<=2 && it.all{char -> char.isDigit()}) month=it
                             },
                             placeholder = {Text("MM", color = Color.LightGray)},
+                            isError = errorCode == "INVALID_MONTH",
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
@@ -200,9 +207,10 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
                         OutlinedTextField(
                             value = year,
                             onValueChange = {
-                                if (it.length<=4 && it.all{char -> char.isDigit()}) day=it
+                                if (it.length<=4 && it.all{char -> char.isDigit()}) year=it
                             },
                             placeholder = {Text("YYYY", color = Color.LightGray)},
+                            isError = errorCode == "INVALID_YEAR",
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
@@ -227,20 +235,31 @@ fun SignUp(uiState: AuthViewModel.UiState = AuthViewModel.UiState.Idle,
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                if(uiState is AuthViewModel.UiState.Error){
+                    Text(
+                        text=uiState.message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
                 Button(
                     onClick = {
-                        onRegister(
-                            username,
-                            name,
-                            surname,
-                            email,
-                            password,
-                            phoneNumber,
-                            day,
-                            month,
-                            year,
-                            consentStatus
-                        )
+                        if(password.equals(confirmPassword)) {
+                            onRegister(
+                                username,
+                                name,
+                                surname,
+                                email,
+                                password,
+                                confirmPassword,
+                                phoneNumber,
+                                day,
+                                month,
+                                year,
+                                consentStatus
+                            )
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(8.dp),
@@ -259,12 +278,12 @@ fun SignUpScreen(viewModel: AuthViewModel = viewModel(), onSuccess: () -> Unit={
 
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState) { if (uiState is AuthViewModel.UiState.Success) onSuccess() }
+    LaunchedEffect(uiState) { if (uiState is UiState.Success) onSuccess() }
 
     SignUp(
         uiState = uiState,
-        onRegister = { username, name, surname, email, password, phoneNumber, day, month, year, consent ->
-            viewModel.register(username, name, surname, email, password, phoneNumber, day, month, year,consent)
+        onRegister = { username, name, surname, email, password, confirmPassword, phoneNumber, day, month, year, consent ->
+            viewModel.register(username, name, surname, email, password,confirmPassword,phoneNumber, day, month, year,consent)
         }
     )
 }

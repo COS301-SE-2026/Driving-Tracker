@@ -18,7 +18,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         object Success : UiState()
         data class Error(
             val code: String? = null,
-            val message: String? = null
+            val message: String
         ) : UiState()
     }
 
@@ -31,6 +31,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         surname: String,
         email: String,
         password: String,
+        confirmPassword: String,
         phoneNumber: String,
         day: String,
         month: String,
@@ -43,11 +44,18 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             val validationError = validate(username, name, surname, email, password, phoneNumber, day, month, year,consentStatus)
 
             if(validationError != null){
-                _uiState.value = UiState.Error(message = validationError)
+                _uiState.value = validationError
+                return@launch
+            }
+
+            if(password != confirmPassword){
+                _uiState.value = UiState.Error("INVALID_CONFIRM", message="Passwords do not match")
                 return@launch
             }
 
             val dob = "$year-$month-$day"
+
+
             repository.register(username, name, surname, email, password, phoneNumber, dob, consentStatus).fold(
                 onSuccess = {
                     _uiState.value = UiState.Success
@@ -80,34 +88,34 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
          month: String,
          year: String,
          consentStatus: Boolean
-    ): String?{
+    ): UiState.Error?{
 
-        if (username.isBlank()) return "Username is required"
-        if (name.isBlank()) return "First name is required"
-        if (surname.isBlank()) return "Surname is required"
-        if (email.isBlank()) return "Email is required"
-        if (password.isBlank()) return "Password is required"
-        if (phoneNumber.isBlank()) return "Phone number is required"
-        if (!consentStatus) return "You must accept the terms to register"
+        if (username.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
+        if (name.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
+        if (surname.isBlank()) return UiState.Error("INVALID_SURNAME","Surname is required")
+        if (email.isBlank()) return UiState.Error("INVALID_EMAIL","Email is required")
+        if (password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
+        if (phoneNumber.isBlank()) return UiState.Error("INVALID_PHONE","Phone number is required")
+        if (!consentStatus) return UiState.Error(message="You must accept the terms to register")
 
-        val d = day.toIntOrNull() ?: return "Invalid day"
-        val m = month.toIntOrNull() ?: return "Invalid month"
-        val y = year.toIntOrNull() ?: return "Invalid year"
+        val d = day.toIntOrNull() ?: return UiState.Error("INVALID_DAY","Invalid day")
+        val m = month.toIntOrNull() ?: return UiState.Error("INVALID_MONTH","Invalid month")
+        val y = year.toIntOrNull() ?: return UiState.Error("INVALID_YEAR","Invalid year")
 
-        if (d !in 1..31) return "Invalid day"
-        if (m !in 1..12) return "Invalid month"
-        if (y<1900) return "Invalid year"
+        if (d !in 1..31) return UiState.Error("INVALID_DAY","Invalid day")
+        if (m !in 1..12) return UiState.Error("INVALID_MONTH","Invalid month")
+        if (y<1900) return UiState.Error("INVALID_YEAR","Invalid year")
 
         val dob = try{
             LocalDate.of(y,m,d)
         } catch( e: Exception){
-            return "Invalid date of birth"
+            return UiState.Error(message="Invalid date of birth")
         }
 
-        if (dob.isAfter(LocalDate.now())) return "Date of birth cannot be in the future"
+        if (dob.isAfter(LocalDate.now())) return UiState.Error(message="Date of birth cannot be in the future")
 
         val age = Period.between(dob, LocalDate.now()).years
-        if (age < 18) return "You must be at least 18 years old to register"
+        if (age < 18) return UiState.Error(message="You must be at least 18 years old to register")
 
         return null
     }
