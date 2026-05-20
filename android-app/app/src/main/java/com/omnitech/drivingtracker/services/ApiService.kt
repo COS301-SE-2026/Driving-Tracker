@@ -43,4 +43,26 @@ interface ApiService{
         @Path("trip_id") tripId: String,
         @Body body: EndTripRequest
     ): StartTripResponse
+
+    //Achievements & Badges
+    @POST("badges/evaluate")
+    suspend fun evaluateBadges(
+        @Header("Authorization") token: String, //JWT token is required
+        @Body body: EvaluateBadgesRequest
+    ): EvaluateBadgesResponse
+
+    @GET("badges")
+    suspend fun getBadges(
+        @Header("Authorization") token: String
+    ): GetBadgesResponse
+
+    @GET("badges/definitions")
+    suspend fun getBadgeDefinitions(
+        @Header("Authorization") token: String
+    ): BadgeDefinitionsResponse
+
+    @GET("leaderboard")
+    suspend fun getLeaderboard(
+        @Header("Authorization") token: String
+    ): LeaderboardResponse
 }
