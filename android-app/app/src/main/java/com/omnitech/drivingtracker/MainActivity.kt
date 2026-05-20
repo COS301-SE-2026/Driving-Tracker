@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,7 +20,7 @@ import com.omnitech.drivingtracker.data.repository.AuthRepository
 import com.omnitech.drivingtracker.services.RetrofitClient
 import com.omnitech.drivingtracker.ui.auth.AuthViewModelFactory
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
-import com.omnitech.drivingtracker.ui.auth.Login
+import com.omnitech.drivingtracker.ui.auth.LoginScreen
 import com.omnitech.drivingtracker.ui.auth.SignUpScreen
 import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
@@ -34,29 +38,30 @@ sealed class Screen(val route: String){
     data object Achievements : Screen("achievements")
 }
 
-class MainActivity : ComponentActivity(){
-    override fun onCreate(savedInstanceState: Bundle?){
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent{
+        setContent {
             DrivingTrackerTheme{
                 val navController = rememberNavController()
-                
+
                 // Set up ViewModel with factory
                 val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as DrivingTrackerApp
                 val repository = AuthRepository(RetrofitClient.apiService, app.sessionManager)
                 val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(repository))
-                
+
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
                     composable(Screen.Welcome.route){
                         WelcomePage(
-                            onLoginClick = { navController.navigate(Screen.Login.route) }, 
+                            onLoginClick = { navController.navigate(Screen.Login.route) },
                             onSignUpClick = { navController.navigate(Screen.SignUp.route) }
                         )
                     }
                     composable(Screen.Login.route){
-                        Login(
-                            onLoginSuccess = { 
+                        LoginScreen(
+                            viewModel = authViewModel,
+                            onLoginSuccess = {
                                 navController.navigate(Screen.Dashboard.route){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
                                 }
@@ -66,7 +71,7 @@ class MainActivity : ComponentActivity(){
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            viewModel = authViewModel, 
+                            viewModel = authViewModel,
                             onSignUpSuccess = {
                                 navController.navigate(Screen.Dashboard.route){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
