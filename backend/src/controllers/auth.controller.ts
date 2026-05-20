@@ -7,11 +7,11 @@ const auth_controller={
     //Register controller method
     async register(req:Request, res: Response){
 
-        const {email, username, password, name, surname, consent_status}=req.body;
+        const {email, username, password, name, surname, phone_number, dob, consent_status}=req.body;
 
         try{
             //User and refresh token returned from service
-            const {user, refresh_token}=await auth_services.register(email,username,name,surname,password,consent_status);
+            const {user, refresh_token}=await auth_services.register(email,username,name,surname,password,phone_number,dob,consent_status);
 
             //Generating access token
             const access_token=generate_token({sub: user.user_id, role: user.role});

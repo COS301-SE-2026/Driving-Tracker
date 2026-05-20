@@ -204,6 +204,9 @@ model users {
   email             String             @unique @db.VarChar(150)
   password_hash     String             @db.VarChar(255)
   role              SystemRole         @default(USER)
+  dob               DateTime           @db.Date
+  phone_number      String             @db.VarChar(20)
+  phone_verified    Boolean            @default(false)
   refresh_token     String?            @db.VarChar(512)
   refresh_token_exp DateTime?          @db.Timestamptz(6)
   consent_status    Boolean?           @default(false)

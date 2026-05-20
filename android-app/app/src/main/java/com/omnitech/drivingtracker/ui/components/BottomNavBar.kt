@@ -41,10 +41,10 @@ fun BottomNavBar() {
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_starfilled),
-                    contentDescription = "Achievements"
+                    contentDescription = "Achieve"
                 )
             },
-            label = { Text("Achievements") },
+            label = { Text("Achieve") },
             selected = false,
             onClick = { /*Navigates to achievements*/ }
         )
