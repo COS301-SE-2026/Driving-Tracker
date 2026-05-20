@@ -9,7 +9,7 @@ interface ApiService{
     suspend fun getContacts(): ContactsResponse
 
     @POST("contacts")
-    suspend fun createContact(@Body body: CreateContactRequest): ContactCreateResponse
+    suspend fun createContact(@Body body: CreateContactRequest): CreateContactResponse
 
     @POST("contacts/alerts")
     suspend fun alertContacts(@Body body: AlertContactsRequest): GenericResponse
