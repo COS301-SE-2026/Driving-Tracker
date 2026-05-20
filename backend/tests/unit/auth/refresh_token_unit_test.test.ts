@@ -3,15 +3,15 @@ jest.mock('../../../src/middleware/auth', () => ({
     generate_token: jest.fn(() => 'mocked-access-token'),
 }));
 
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import auth_controller from '../../../src/controllers/auth.controller';
 const { refresh } = auth_controller;
 import { auth_services } from '../../../src/services/auth_services';
 import { ExtendedError} from '../../../src/utils/errors';
-import { beforeEach } from 'node:test';
+
 
 describe('Auth refresh endpoint', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(async() => jest.clearAllMocks());
 
     it('returns 400 when refresh_token missing', async () => {
         const req: any = { body: {} };
@@ -27,7 +27,7 @@ describe('Auth refresh endpoint', () => {
 
     it('returns 200 and tokens on successful refresh', async () => {
         jest.spyOn(auth_services, 'refresh').mockResolvedValueOnce({
-        user: { user_id: 'user-1', role: 'user' },
+        user: {  user_id: 'user-1', username: 'tester', name: 'Test', surname: 'User', email: 'test@example.com', password_hash: 'hash', role: 'USER', refresh_token: null, refresh_token_exp: null, consent_status: true, created_at: null, status: 'ACTIVE', deleted_at: null },
         new_refresh_token: 'new-refresh-1',
         });
         const req: any = { body: { refresh_token: 'old-refresh-1' } };

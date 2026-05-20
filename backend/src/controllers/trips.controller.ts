@@ -9,7 +9,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
     try{
         const user_id = req.user?.sub;
         if(!user_id){
-            throw new Error("user not found");
+            res.status(403).json({message: 'Unauthorized'});
             return ;
         }
         const { vehicle_id, start_date, data_source, start_location}= req.body;
@@ -80,8 +80,13 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
         if(error.message.includes("Trip not found")){
             res.status(404).json({ error: "Trip not found" });
         } else if(error.message.includes("You do not own this trip")){
-            res.status(403).json({ error: "You do not own this trip" });
-        } else{
+            res.status(403).json({
+                error: "You do not own this trip" 
+            });
+        }else if(error.message.includes("Cannot end a trip with status")){
+            res.status(409).json({ error: "Trip is already completed"});
+        } 
+        else{
             res.status(500).json({ error: "Internal server error" });
         }
     }

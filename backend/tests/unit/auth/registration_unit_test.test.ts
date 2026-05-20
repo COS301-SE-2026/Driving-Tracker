@@ -1,9 +1,9 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest,beforeEach } from '@jest/globals';
 import auth_controller from '../../../src/controllers/auth.controller';
 const { register,login } = auth_controller;
 import { auth_services } from '../../../src/services/auth_services';
 import { ConflictError, ValidationError } from '../../../src/utils/errors';
-import { beforeEach } from 'node:test';
+
 
 
 jest.mock('../../../src/services/auth_services');
@@ -22,11 +22,11 @@ jest.mock('../../../src/db/prisma', () => ({
 }));
 
 describe('Auth register endpoint',()=>{
-    beforeEach(()=> jest.clearAllMocks());
+    beforeEach(async()=> jest.clearAllMocks());
    
     it('returns 201 and tokens on successful registration', async () => {
         jest.spyOn(auth_services, 'register').mockResolvedValueOnce({
-            user: { user_id: 'user-1', role: 'user' },
+            user: {  user_id: 'user-1', username: 'tester', name: 'Test', surname: 'User', email: 'test@example.com', password_hash: 'hash', role: 'USER', refresh_token: null, refresh_token_exp: null, consent_status: true, created_at: null, status: 'ACTIVE', deleted_at: null },
             refresh_token: 'refresh-1',
         });
 

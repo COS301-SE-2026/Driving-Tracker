@@ -132,6 +132,9 @@ export const trips_services ={
              if (trip.user_id !== data.user_id) {
                 throw new Error("You do not own this trip");
             }
+            if(trip.status !== "IN_PROGRESS"){
+                throw new Error(`Cannot end a trip with status: ${trip.status}`);
+            }
 
             // Update the trip
             const updatedTrip = await prisma.trips.update({
