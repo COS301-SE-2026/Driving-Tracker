@@ -26,7 +26,7 @@ class AchievementsViewModel(private val repository: AchievementsRepository) : Vi
         getLeaderboard()
     }
 
-    fun getLeaderboard(category: String = "OVERALL", scope: String = "GLOBAL"){
+    fun getLeaderboard(category: String = "OVERALL", scope: String = "WEEKLY"){
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading

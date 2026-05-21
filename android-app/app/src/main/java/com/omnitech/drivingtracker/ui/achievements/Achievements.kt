@@ -139,9 +139,9 @@ fun AchievementsPreview() {
         category = "OVERALL",
         scope = "GLOBAL",
         entries = listOf(
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87),
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80),
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75)
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87.0),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80.0),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75.0)
         ),
         myRank = 2,
         myScore = 80
