@@ -1,6 +1,7 @@
 jest.mock('../../../src/db/prisma', () => ({
   __esModule: true,
   default: {
+    $transaction: jest.fn(),
     users: {
       findUnique: jest.fn(),
     },
