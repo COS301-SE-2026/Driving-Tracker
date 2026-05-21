@@ -19,9 +19,13 @@ import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 import com.omnitech.drivingtracker.ui.home.Dashboard
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import com.omnitech.drivingtracker.ui.trip.LiveTrip
+import com.omnitech.drivingtracker.ui.trip.TripSummaryViewModel
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.trip.TripsViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -31,6 +35,9 @@ sealed class Screen(val route: String){
     data object Trips : Screen("trips")
     data object Contacts : Screen("contacts")
     data object Achievements : Screen("achievements")
+    data object LiveTrip : Screen("live_trip/{trip_id}") {
+        fun createRoute(tripId: String) = "live_trip/$tripId"
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -115,6 +122,17 @@ class MainActivity : ComponentActivity() {
                             factory = AchievementsViewModel.AchievementsViewModelFactory(container.achievementsRepository)
                         )
                         AchievementsScreen(navController = navController, viewModel = achievementsViewModel)
+                    }
+                    composable(
+                        route = Screen.LiveTrip.route,
+                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                    ) { backStackEntry->
+                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+
+                        val viewModel: TripSummaryViewModel = viewModel(
+                            factory = TripSummaryViewModel.TripSummaryViewModelFactory(container.tripRepository)
+                        )
+                        LiveTrip(tripId = tripId, viewModel = viewModel, navController = navController)
                     }
                 }
             }

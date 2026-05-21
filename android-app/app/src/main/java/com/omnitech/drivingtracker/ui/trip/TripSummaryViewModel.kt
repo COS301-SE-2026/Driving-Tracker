@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
@@ -43,6 +44,12 @@ class TripSummaryViewModel(private val repository: TripRepository) : ViewModel()
                     }
                 }
             )
+        }
+    }
+
+    class TripSummaryViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return TripSummaryViewModel(repository) as T
         }
     }
 }

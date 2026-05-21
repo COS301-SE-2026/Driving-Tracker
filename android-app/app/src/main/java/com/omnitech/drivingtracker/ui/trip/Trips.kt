@@ -96,6 +96,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.omnitech.drivingtracker.Screen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -129,13 +130,22 @@ fun Trips(
     val tripStartState by tripViewModel.tripStartState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
 
-    val approvedContacts = when (contactsState) {
+    val approvedContacts = when (val state = contactsState) {
         is com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success -> {
-            (contactsState as com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success)
-                .contacts
-                .filter { it.consentStatus == ConsentStatus.APPROVED }
+            state.contacts.filter { it.consentStatus == ConsentStatus.APPROVED }
         }
         else -> emptyList()
+    }
+
+    LaunchedEffect(tripStartState){
+        val state = tripStartState
+        if (state is TripViewModel.UiState.Success) {
+            val tripId = state.data
+
+            if (tripId.isNotEmpty()){
+                navController?.navigate(Screen.LiveTrip.createRoute(tripId))
+            }
+        }
     }
 
     TripsContent(
