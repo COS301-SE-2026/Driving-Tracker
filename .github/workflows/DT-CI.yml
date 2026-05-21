@@ -22,6 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create .env for docker-compose
+        run: |
+          cat > .env <<EOF
+          POSTGRES_USER=${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ env.POSTGRES_DB }}
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          JWT_SECRET=${{ env.JWT_SECRET }}
+          JWT_REFRESH_SECRET=${{ env.JWT_REFRESH_SECRET }}
+          NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+          EOF
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
