@@ -307,7 +307,6 @@ fun SignUp(
 
                 Button(
                     onClick = {
-                        if(password==confirmPassword) {
                             username = "$name $surname"
                             onRegister(
                                 username,
@@ -322,7 +321,6 @@ fun SignUp(
                                 year,
                                 consentStatus
                             )
-                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
