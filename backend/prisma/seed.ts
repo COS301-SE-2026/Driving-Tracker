@@ -50,6 +50,8 @@ async function main() {
                 email: faker.internet.email({ firstName, lastName }),
                 password_hash: faker.internet.password(),
                 role: 'USER',
+                dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+                phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
                 consent_status: true,
                 status: 'ACTIVE'
             }
