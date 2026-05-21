@@ -1,6 +1,7 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
 import { faker } from '@faker-js/faker';
+import bcrypt from 'bcrypt'
 
 //SA coordinates (coordinates for SA only)
 const SACords = {
@@ -19,6 +20,27 @@ function getSAloc() {
 async function main() {
 
     console.log('Start seeding....');
+
+    //Our constant user
+    const plainTextPassword = 'password123';
+    const hashedPassword = bcrypt.hashSync(plainTextPassword, 10);
+
+    const myLoginUser = await prisma.users.upsert({
+        where: { email: 'omnitech@gmail.com' },
+        update: {},
+        create: {
+            username: 'Omn1t3ch',
+            name: 'Omnitech',
+            surname: 'Omnitech',
+            email : 'omnitech@gmail.com',
+            password_hash : hashedPassword,
+            role: 'USER',
+            consent_status: true,
+            status: 'ACTIVE',
+        }
+    });
+
+    console.log(`Seeded our login user: ${myLoginUser.email} (Password: ${plainTextPassword})`);
 
     //Creating 10 users
     const users = [];
