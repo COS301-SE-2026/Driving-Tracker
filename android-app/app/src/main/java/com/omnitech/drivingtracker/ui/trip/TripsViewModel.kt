@@ -22,10 +22,14 @@ class TripsViewModel(private val repository: TripRepository) : ViewModel() {
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
 
-    fun loadTripsHistory(){
-        viewModelScope.launch{
+    fun loadTripsHistory(
+        startDate: String? = null,
+        endDate: String? = null,
+        status: String? = null
+    ) {
+        viewModelScope.launch {
             _uiState.value = UiState.Loading
-            repository.getTripHistory()
+            repository.getTripHistory(startDate, endDate, status)
                 .onSuccess { data ->
                     _uiState.value = UiState.Success(data.trips)
                 }
