@@ -33,8 +33,9 @@ jobs:
       - run: yarn build
       - run: yarn test --coverage
       - name: Upload backend coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: backend/coverage/lcov.info
           flags: backend
           name: backend-coverage
