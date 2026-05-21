@@ -2,6 +2,7 @@ package com.omnitech.drivingtracker.data
 
 import android.content.Context
 import com.omnitech.drivingtracker.data.local.SessionManager
+import com.omnitech.drivingtracker.data.repository.AchievementsRepository
 import com.omnitech.drivingtracker.data.repository.AuthRepository
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
@@ -23,5 +24,9 @@ class AppContainer(context: Context) {
 
     val tripRepository: TripRepository by lazy {
         TripRepository(apiService)
+    }
+
+    val achievementsRepository: AchievementsRepository by lazy {
+        AchievementsRepository(apiService)
     }
 }
