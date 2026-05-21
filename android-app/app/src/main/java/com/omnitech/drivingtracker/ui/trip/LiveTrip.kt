@@ -24,11 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.compose.rememberNavController
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.Screen
+import androidx.navigation.NavController
 
 
 @Composable
-fun LiveTrip() {
+fun LiveTrip(navController:NavController) {
 
     Column (modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)){
         Row(
@@ -145,14 +148,14 @@ fun LiveTrip() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {navController.navigate(Screen.TripSummary.route)},
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
                 ) {
                     Text("End Trip", color = Color.White)
                 }
                 Button(
-                    onClick = {},
+                    onClick = {navController.navigate(Screen.Contacts.route)},
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
                 ) {
@@ -247,6 +250,6 @@ fun AlertItem(label: String, count: Int){
 @Composable
 fun LiveTripPreview(){
     DrivingTrackerTheme{
-        LiveTrip()
+        LiveTrip(navController = rememberNavController())
     }
 }
