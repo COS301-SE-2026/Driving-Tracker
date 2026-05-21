@@ -40,4 +40,21 @@ interface ApiService{
         @Path("trip_id") tripId: String,
         @Body body: EndTripRequest
     ): StartTripResponse
+
+    //Achievements & Badges
+    @POST("badges/evaluate")
+    suspend fun evaluateBadges(
+        @Body body: EvaluateBadgesRequest
+    ): EvaluateBadgesResponse
+
+    @GET("badges")
+    suspend fun getBadges(): GetBadgesResponse
+
+    @GET("badges/definitions")
+    suspend fun getBadgeDefinitions(): BadgeDefinitionsResponse
+
+    @GET("leaderboard")
+    suspend fun getLeaderboard(@Query("category") category: String, //added to url
+        @Query("scope") scope: String
+    ): LeaderboardResponse
 }
