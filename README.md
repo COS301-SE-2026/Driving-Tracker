@@ -5,6 +5,7 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Driving-Tracker/DT-CI.yml?style=plastic&logo=GitHub)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
+[![codecov](https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov)](https://codecov.io/gh/COS301-SE-2026/Driving-Tracker)
 
 **Client:** Gendac (Software, Innovations & IoT)
 
