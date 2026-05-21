@@ -101,10 +101,29 @@ fun Contacts(
                     val contacts = (state as ContactsViewModel.UiState.Success).contacts
                     if (contacts.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "No contacts yet",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ){
+                                Text(
+                                    text = "No contacts yet",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                // Add contact button
+                                OutlinedButton(
+                                    onClick = {showAddContactDialog = true},
+                                    shape = RoundedCornerShape(50),
+                                    border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Add",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = "Add Contact")
+                                }
+                            }
                         }
                     } else {
                         Column(
@@ -155,7 +174,7 @@ fun Contacts(
             }
         }
 
-        BottomNavBar(navController = navController)
+        BottomNavBar(navController = navController, color = "none")
     }
 
     if(showAddContactDialog){
