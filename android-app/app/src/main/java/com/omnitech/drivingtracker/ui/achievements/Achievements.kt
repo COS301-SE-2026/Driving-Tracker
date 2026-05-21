@@ -40,11 +40,9 @@ import androidx.navigation.NavController
 @Composable
 fun AchievemtsScreen(
     navController: NavController? = null,
-    //Compose will automatically find and create a viewmodel
     viewModel: AchievementsViewModel = viewModel()
 ) {
-
-    val ranks = viewModel.rankList //taking list from Viewmodel
+    val state by viewModel.uiState.collectAsState()
 
     Scaffold(
 
@@ -86,15 +84,39 @@ fun AchievemtsScreen(
                 )
             }
 
-            items(ranks) { person ->
-                RankCard(
-                    name = person.name,
-                    score = person.score,
-                    isUser = person.name == "You"
-                )
-                HorizontalDivider() //Thin line between rows
+            when (state) {
+                is AchievementsViewModel.UiState.Loading -> {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                is AchievementsViewModel.UiState.Error -> {
+                    item {
+                        Text(
+                            text = (state as AchievementsViewModel.UiState.Error).message ?: "Error loading leaderboard",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+                is AchievementsViewModel.UiState.Success -> {
+                    val leaderboard = (state as AchievementsViewModel.UiState.Success).leaderboard
+                    items(leaderboard.entries) { entry ->
+                        RankCard(
+                            name = entry.displayName,
+                            score = entry.score,
+                            isUser = entry.rank == leaderboard.myRank
+                        )
+                        HorizontalDivider()
+                    }
+                }
+                else -> {}
             }
-
         }
 
     }

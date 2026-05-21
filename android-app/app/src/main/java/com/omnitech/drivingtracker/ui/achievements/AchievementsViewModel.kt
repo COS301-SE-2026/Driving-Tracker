@@ -1,17 +1,62 @@
 package com.omnitech.drivingtracker.ui.achievements
 
-import  androidx.lifecycle.ViewModel
-import  com.omnitech.drivingtracker.ui.data.Rank
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.LeaderboardData
+import com.omnitech.drivingtracker.data.repository.AchievementsRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class AchievementsViewModel : ViewModel() {
-    //This holds data safely. Can be updated later to pull from actual DB
-    val rankList = listOf(
-        Rank(name = "Brayden B", score = 87),
-        Rank(name = "You", score = 80, isUser = true),
-        Rank(name = "Mosa L", score = 87),
-        Rank(name = "Sente P", score = 87),//had to include everyone
-        Rank(name = "Jack H", score = 87),
-        Rank(name = "Moses B", score = 87)
-    )
+class AchievementsViewModel(private val repository: AchievementsRepository) : ViewModel() {
 
+    sealed class UiState {
+        object Idle : UiState()
+        object Loading : UiState()
+        data class Success(val leaderboard: LeaderboardData) : UiState()
+        data class Error(val code: String? = null, val message: String? = null) : UiState()
+    }
+
+    private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
+    val uiState: StateFlow<UiState> = _uiState
+
+    init {
+        getLeaderboard()
+    }
+
+    fun getLeaderboard(category: String = "OVERALL", scope: String = "GLOBAL"){
+
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.getLeaderboard(category, scope).fold(
+                onSuccess = { data ->
+                    _uiState.value = UiState.Success(data)
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "An unknown error occurred"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    class AchievementsViewModelFactory(private val repository: AchievementsRepository):
+        ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return AchievementsViewModel(repository) as T
+        }
+    }
 }

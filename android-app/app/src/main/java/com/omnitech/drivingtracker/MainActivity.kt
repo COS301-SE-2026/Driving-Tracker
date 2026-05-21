@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.omnitech.drivingtracker.ui.achievements.AchievemtsScreen
+import com.omnitech.drivingtracker.ui.achievements.AchievementsViewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModelFactory
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.auth.LoginScreen
@@ -110,7 +111,10 @@ class MainActivity : ComponentActivity() {
                         Contacts(navController = navController, viewModel = viewModel)
                     }
                     composable(Screen.Achievements.route){
-                        AchievemtsScreen(navController = navController)
+                        val achievementsViewModel: AchievementsViewModel = viewModel(
+                            factory = AchievementsViewModel.AchievementsViewModelFactory(container.achievementsRepository)
+                        )
+                        AchievemtsScreen(navController = navController, viewModel = achievementsViewModel)
                     }
                 }
             }
