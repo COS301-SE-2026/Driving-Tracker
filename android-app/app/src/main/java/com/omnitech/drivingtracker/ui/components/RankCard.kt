@@ -17,7 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 
 @Composable
-fun RankCard(name: String, score: Int, isUser: Boolean = false) {
+fun RankCard(name: String, score: Double, isUser: Boolean = false) {
 
     Row(
         modifier = Modifier
