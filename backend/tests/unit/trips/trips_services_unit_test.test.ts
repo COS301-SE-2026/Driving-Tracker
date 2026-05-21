@@ -412,8 +412,8 @@ describe('Trips services.get_history', () => {
             status: 'COMPLETED',
         });
 
-        expect(result.data.total_trips).toBe(2);
-        expect(result.data.meta.mean_distance).toBeGreaterThan(0);
+        expect(result.total_trips).toBe(2);
+        expect(result.meta.mean_distance).toBeGreaterThan(0);
     });
 
     it('throws when user not found', async () => {

@@ -158,7 +158,7 @@ export const get_history = async (req:AuthRequest, res:Response)=>{
     try{
         const user_id = req.user?.sub;//jwt token 
         // Use req.query for GET requests
-        const {start_date, end_date, status} = req.query as any;
+        const {start_date, end_date, status} = (req.query || {}) as any;
 
         if(!user_id){
             res.status(400).json({

@@ -148,7 +148,7 @@ describe('Trips endpoints unit tests', ()=>{
             jest.spyOn(trips_services,'get_history').mockResolvedValueOnce(mock_history as any);
             const req: any = {
                 user: { sub: 'user-1' },
-                body: {
+                query: {
                     start_date: new Date('2026-01-01').toISOString(),
                     end_date: new Date('2026-05-20').toISOString(),
                     status: 'completed',
@@ -164,7 +164,7 @@ describe('Trips endpoints unit tests', ()=>{
         it('Returns 400 on invalid input', async () => {
             jest.spyOn(trips_services, 'get_history').mockRejectedValueOnce(new Error('Invalid date format'));
 
-            const req: any = { user: { sub: 'user-1' }, body: { start_date: 'invalid' } };
+            const req: any = { user: { sub: 'user-1' }, query: { start_date: 'invalid' } };
             const res: any = make_res();
 
             await trips_controller.get_history(req, res);
