@@ -96,6 +96,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
@@ -108,6 +113,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun Trips(
@@ -266,14 +275,13 @@ fun TripsContent(
                 }
             }
             is TripsViewModel.UiState.Error -> {
-                val error = tripsState
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = error.message ?: "Failed to load trips",
+                            text = tripsState.message ?: "Failed to load trips",
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -324,6 +332,7 @@ fun TripsContent(
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun StartTripDialog(
     approvedContacts: List<ContactDto>,
@@ -335,6 +344,30 @@ private fun StartTripDialog(
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
+
+    val context = LocalContext.current
+    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    LaunchedEffect(locationPermissionState.status.isGranted){
+
+        if (locationPermissionState.status.isGranted){
+            try {
+                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                    .addOnSuccessListener{ location ->
+                        if (location != null) {
+                            latitude = location.latitude.toString()
+                            longitude = location.longitude.toString()
+                        }
+                    }
+
+            } catch (_: SecurityException) {
+                //Permission revoked between check and call
+            }
+        } else {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
