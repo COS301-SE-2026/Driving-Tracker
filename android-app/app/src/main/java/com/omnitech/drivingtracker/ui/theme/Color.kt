@@ -8,7 +8,7 @@ val Purple = Color(0xFF7861FF)
 
 //Neutrals
 val Background = Color(0xFFFFFFFF)
-val CardWhite = Color(0xFFEAEEE3)
+val CardWhite = Color(0xFFFAFAFA)
 val Border = Color(0xFFE6EAF0)
 
 val Gray = Color.LightGray

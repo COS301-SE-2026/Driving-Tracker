@@ -37,7 +37,7 @@ import com.omnitech.drivingtracker.MainActivity
 @Composable
 fun Dashboard(navController: NavController? = null) {
 
-    Scaffold(
+    /*Scaffold(
 
         topBar = {
             TopBar(
@@ -85,7 +85,7 @@ fun Dashboard(navController: NavController? = null) {
                     "This Week",
                     style = MaterialTheme.typography.titleMedium
                 )
-
+    */
     Box(
         modifier = Modifier
             .fillMaxSize()
