@@ -39,9 +39,9 @@ fun Dashboard(navController: NavController? = null){
                 )
             },
             bottomBar = {
-                BottomNavBar(navController = navController)
+                BottomNavBar(navController = navController, color = "home")
             },
-            containerColor = Color.Transparent 
+            //containerColor = Color.Transparent 
         ) { innerPadding ->
             Column(
                 modifier = Modifier
