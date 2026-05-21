@@ -1,33 +1,108 @@
-jest.mock('../../../src/db/prisma', () => ({
-  __esModule: true,
-  default: {
-    $transaction: jest.fn(),
-    users: {
-      findUnique: jest.fn(),
-    },
-    trips: {
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      findMany: jest.fn(),
-    },
-    trip_scores: {
-      findFirst: jest.fn(),
-      upsert: jest.fn(),
-    },
-    trip_readings: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-    },
-    trip_events: {
-      create: jest.fn(),
-    },
-    trip_location_shares: {
+// jest.mock('../../../src/db/prisma', () => ({
+//   __esModule: true,
+//   default: {
+//     $transaction: jest.fn((callback:any) => callback({
+//         trips: {
+//             create: jest.fn(),
+//             update: jest.fn(),
+//             findUnique: jest.fn(),
+//             findFirst: jest.fn(),
+//             findMany: jest.fn(),
+//         },
+//         trip_location_shares: {
+//             create: jest.fn(),
+//             updateMany: jest.fn(),
+//         },
+//         trip_scores: {
+//             create: jest.fn(),
+//             upsert: jest.fn(),
+//             findFirst: jest.fn(),
+//         },
+//         trip_readings: {
+//             create: jest.fn(),
+//             findMany: jest.fn(),
+//         },
+//         trip_events: {
+//             create: jest.fn(),
+//         },
+//         users: {
+//             findUnique: jest.fn(),
+//         },
+//     })),
+//     users: {
+//       findUnique: jest.fn(),
+//     },
+//     trips: {
+//       findFirst: jest.fn(),
+//       findUnique: jest.fn(),
+//       create: jest.fn(),
+//       update: jest.fn(),
+//       findMany: jest.fn(),
+//     },
+//     trip_scores: {
+//       findFirst: jest.fn(),
+//       upsert: jest.fn(),
+//     },
+//     trip_readings: {
+//       findMany: jest.fn(),
+//       create: jest.fn(),
+//     },
+//     trip_events: {
+//       create: jest.fn(),
+//     },
+//     trip_location_shares: {
+//         updateMany: jest.fn(),
+//     },
+//   },
+// }));
+jest.mock('../../../src/db/prisma', () => {
+    const trips = {
+        create: jest.fn(),
+        update: jest.fn(),
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        findMany: jest.fn(),
+    };
+    const trip_location_shares = {
+        create: jest.fn(),
         updateMany: jest.fn(),
-    },
-  },
-}));
+    };
+    const trip_scores = {
+        create: jest.fn(),
+        upsert: jest.fn(),
+        findFirst: jest.fn(),
+    };
+    const trip_readings = {
+        create: jest.fn(),
+        findMany: jest.fn(),
+    };
+    const trip_events = {
+        create: jest.fn(),
+    };
+    const users = {
+        findUnique: jest.fn(),
+    };
+
+    return {
+        __esModule: true,
+        default: {
+        $transaction: jest.fn((callback: any) => callback({
+            trips,
+            trip_location_shares,
+            trip_scores,
+            trip_readings,
+            trip_events,
+            users,
+        })),
+        users,
+        trips,
+        trip_scores,
+        trip_readings,
+        trip_events,
+        trip_location_shares,
+        },
+    };
+});
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
@@ -117,7 +192,7 @@ describe('Trips services.create',()=>{
 });
 
 describe('Trips services end_trip',()=>{
-    beforeEach(async()=> jest.clearAllMocks);
+    beforeEach(async()=> jest.clearAllMocks());
     it('end trip accept', async()=>{
         (mock_prisma.trips.findUnique).mockResolvedValue({trip_id: 't1',
             user_id: 'u1',
