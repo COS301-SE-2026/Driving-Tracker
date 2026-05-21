@@ -36,12 +36,12 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         day: String,
         month: String,
         year: String,
-        consentStatus: Boolean
+        consent_status: Boolean
     ){
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
-            val validationError = validateRegister(username, name, surname, email, password, phoneNumber, day, month, year,consentStatus)
+            val validationError = validateRegister(username, name, surname, email, password, phoneNumber, day, month, year,consent_status)
 
             if(validationError != null){
                 _uiState.value = validationError
@@ -56,7 +56,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             val dob = "$year-$month-$day"
 
 
-            repository.register(username, name, surname, email, password, phoneNumber, dob, consentStatus).fold(
+            repository.register(username, name, surname, email, password, phoneNumber, dob, consent_status).fold(
                 onSuccess = {
                     _uiState.value = UiState.Success
                 },
@@ -129,7 +129,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
          day: String,
          month: String,
          year: String,
-         consentStatus: Boolean
+         consent_status: Boolean
     ): UiState.Error?{
 
         if (username.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
@@ -138,7 +138,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         if (email.isBlank()) return UiState.Error("INVALID_EMAIL","Email is required")
         if (password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
         if (phoneNumber.isBlank()) return UiState.Error("INVALID_PHONE","Phone number is required")
-        if (!consentStatus) return UiState.Error(message="You must accept the terms to register")
+        if (!consent_status) return UiState.Error(message="You must accept the terms to register")
 
         val d = day.toIntOrNull() ?: return UiState.Error("INVALID_DAY","Invalid day")
         val m = month.toIntOrNull() ?: return UiState.Error("INVALID_MONTH","Invalid month")
