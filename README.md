@@ -1,4 +1,15 @@
-# Driving Tracker - OmniTech
+<div align= "center">
+  <img src="docs/images/Logo.jpg" alt="Logo" width="280"/>
+  
+  <br/>
+  
+  <img src="https://readme-typing-svg.herokuapp.com?font=Montserrat&weight=700&size=42&duration=1&pause=999999&color=8A2BE2&center=true&vCenter=true&repeat=false&width=260&height=70&lines=Driving"/>
+  <img src="https://readme-typing-svg.herokuapp.com?font=Montserrat&weight=700&size=42&duration=1&pause=999999&color=32CD32&center=true&vCenter=true&repeat=false&width=260&height=70&lines=Tracker"/>
+
+<br/>
+
+<img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&weight=700&size=28&duration=1&pause=999999&color=00C2FF&center=true&vCenter=true&repeat=false&width=260&height=50&lines=OmniTech"/>
+</div>
 
 > An intelligent Android driving companion that unifies sensor fusion, vehicle diagnostics, behavioural analytics, and social engagement into one platform - making safer, more efficient driving accessible and rewarding for everyday drivers.
 
@@ -7,7 +18,10 @@
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
 [![codecov](https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov)](https://codecov.io/gh/COS301-SE-2026/Driving-Tracker)
 
-**Client:** Gendac (Software, Innovations & IoT)
+<h2>Client</h2>
+</br>
+<img src="docs/images/gendac.png" alt="Gendac" width="200"/> 
+Gendac (Software, Innovations & IoT)
 
 ---
 
