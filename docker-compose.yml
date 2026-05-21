@@ -59,6 +59,42 @@ services:
       prisma-migrate:
         condition: service_completed_successfully
 
+  studio:
+    build: ./backend
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+      prisma-migrate:
+        condition: service_completed_successfully
+    ports:
+      - "5556:5555"
+    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; exec ./node_modules/.bin/prisma studio --port 5555 --browser none --url "$DATABASE_URL"'
+    restart: "no"
+
+  migrate-dev:
+    build:
+      context: ./backend
+      target: builder
+    volumes:
+      - ./backend/prisma:/app/prisma
+    env_file:
+      - .env
+    environment:
+      - MIGRATION_NAME
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; yarn prisma migrate dev --name "${MIGRATION_NAME:-init}"'
+    restart: "no"
+
   frontend:
     build:
         context: ./frontend
