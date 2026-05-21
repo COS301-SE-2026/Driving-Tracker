@@ -35,8 +35,11 @@ import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.home.Dashboard
 
 
+import androidx.navigation.NavController
+
 @Composable
 fun AchievemtsScreen(
+    navController: NavController? = null,
     //Compose will automatically find and create a viewmodel
     viewModel: AchievementsViewModel = viewModel()
 ) {
@@ -55,7 +58,7 @@ fun AchievemtsScreen(
         },
 
         bottomBar = {
-            BottomNavBar()
+            BottomNavBar(navController = navController, color = "ach")
         }
     ) { innerPadding ->
 

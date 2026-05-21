@@ -3,11 +3,11 @@ package com.omnitech.drivingtracker.data.repository
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.*
-import com.omnitech.drivingtracker.services.RetrofitClient
+import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
 import java.time.Instant
 
-class TripRepository{
+class TripRepository(private val api: ApiService){
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,
@@ -24,7 +24,7 @@ class TripRepository{
                 shareWithContacts = selectedContactIds
             )
 
-            val response = RetrofitClient.apiService.startTrip(request)
+            val response = api.startTrip(request)
             Result.success(response.data.tripId)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
@@ -36,7 +36,7 @@ class TripRepository{
 
     suspend fun getTripHistory(): Result<TripHistoryData>{
         return try{
-            val response = RetrofitClient.apiService.getTripHistory(emptyMap())
+            val response = api.getTripHistory(emptyMap())
             Result.success(response.data)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
@@ -48,7 +48,7 @@ class TripRepository{
 
     suspend fun getTripSummary(tripId: String): Result<TripSummaryDto>{
         return try{
-            val response = RetrofitClient.apiService.getTripSummary(tripId)
+            val response = api.getTripSummary(tripId)
             Result.success(response.data)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
@@ -72,7 +72,7 @@ class TripRepository{
                 distanceKm = distanceKm,
                 durationMinutes = durationMinutes
             )
-            val response = RetrofitClient.apiService.endTrip(tripId, request)
+            val response = api.endTrip(tripId, request)
             Result.success(response.data.tripId)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)

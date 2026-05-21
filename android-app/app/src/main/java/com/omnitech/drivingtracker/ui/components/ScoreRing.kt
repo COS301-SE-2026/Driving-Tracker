@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.Alignment
-
+import com.omnitech.drivingtracker.ui.theme.*
 @Composable
 //This function displays the Overal driving score with progress bar
 fun ScoreRing(score: Int, modifier: Modifier = Modifier) {
@@ -30,9 +30,9 @@ fun ScoreRing(score: Int, modifier: Modifier = Modifier) {
         CircularProgressIndicator(
             progress = { score / 100f },
             strokeWidth = 4.dp,
-            color = Color.DarkGray,
-            trackColor = Color.LightGray,
-            modifier = Modifier.fillMaxSize()
+            color = Green,
+            trackColor = Gray,
+            modifier = Modifier.fillMaxSize(),
         )
 
         Text(

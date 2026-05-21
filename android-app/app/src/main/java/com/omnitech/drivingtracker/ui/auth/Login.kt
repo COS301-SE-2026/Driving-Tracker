@@ -14,18 +14,38 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 import com.omnitech.drivingtracker.ui.theme.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
-fun Login() {
+fun Login(
+    uiState: UiState = UiState.Idle,
+    onLogin: (String, String) -> Unit = { _, _ -> },
+    onBackClick: () -> Unit = {}
+) {
+
+    var identifier by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    var passwordVisible by remember { mutableStateOf(false)}
+
+    val errorCode = (uiState as? UiState.Error)?.code
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -49,7 +69,7 @@ fun Login() {
             shape = RoundedCornerShape(8.dp)
 
         ) {
-            Column (
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp),
@@ -61,15 +81,16 @@ fun Login() {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
                     Text(
-                        text = "Email",
+                        text = "Email or Username",
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
                     )
                     OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = identifier,
+                        onValueChange = { identifier=it },
+                        placeholder = { Text("Email or Username", color = Color(0xFFBDBDBD)) },
+                        isError = errorCode == "INVALID_CREDENTIALS",
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
@@ -85,19 +106,44 @@ fun Login() {
                         fontSize = 14.sp
                     )
                     OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        placeholder = { Text("Value", color = Color(0xFFBDBDBD)) },
-                        modifier = Modifier.fillMaxWidth(),
+                        value = password,
+                        onValueChange = { password=it },
+                        isError = errorCode == "INVALID_PASSWORD",
+                        placeholder = { Text("Password", color = Color(0xFFBDBDBD)) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(8.dp),
-                        singleLine = true
-                    )
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None
+                        else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        trailingIcon = {
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff
 
+                            val description = if (passwordVisible) "Hide password" else "Show password"
+
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        }
+                    )
+                }
+                if(uiState is UiState.Error){
+                    Text(
+                        text=uiState.message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
                 }
 
                 //Sign In Button
                 Button(
-                    onClick = {},
+                    onClick = {
+                        onLogin(identifier, password)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
@@ -121,10 +167,39 @@ fun Login() {
     }
 }
 
+@Composable
+fun LoginScreen(
+    viewModel: AuthViewModel = viewModel(),
+    onLoginSuccess: () -> Unit = {},
+    onBackClick: () -> Unit = {}
+) {
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) { if (uiState is UiState.Success) onLoginSuccess() }
+
+    Login(
+        uiState = uiState,
+        onLogin = { identifier, password -> viewModel.login(identifier, password) },
+        onBackClick = onBackClick
+    )
+}
+
 @Preview(showBackground=true, backgroundColor = 0xFFFFFFFF)
 @Composable
 fun LoginPreview(){
     DrivingTrackerTheme{
         Login()
+    }
+}
+
+@Preview(showBackground=true, name = "Login error state")
+@Composable
+fun LoginErrorPreview(){
+    DrivingTrackerTheme{
+        Login(uiState = UiState.Error(
+            code="INVALID_CREDENTIALS",
+            message="Email/Username field is required")
+        )
     }
 }

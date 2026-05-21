@@ -22,7 +22,7 @@ import androidx.compose.ui.res.painterResource
 import com.omnitech.drivingtracker.R
 
 @Composable
-fun WellcomePage() {
+fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -106,7 +106,7 @@ fun WellcomePage() {
         ) {
             //Sign in button
             OutlinedButton(
-                onClick = {/*Handle Sign in*/},
+                onClick = onLoginClick,
                 modifier = Modifier.weight(1f), //Takes half the space
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -115,7 +115,7 @@ fun WellcomePage() {
 
             //Register button
             Button(
-                onClick = {/*Handle Sign in*/},
+                onClick = onSignUpClick,
                 modifier = Modifier.weight(1f), //Takes half the space
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Green)
@@ -131,6 +131,6 @@ fun WellcomePage() {
 @Composable
 fun WelcomePreview(){
     DrivingTrackerTheme{
-        WellcomePage()
+        WelcomePage()
     }
 }

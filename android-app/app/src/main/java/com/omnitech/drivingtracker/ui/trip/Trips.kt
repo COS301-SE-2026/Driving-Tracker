@@ -118,8 +118,12 @@ import java.util.Locale
 //    val duration: String,
 //    val score: Int
 //)
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.MainActivity
+
 @Composable
 fun Trips(
+    navController: NavController? = null,
     tripsViewModel: TripsViewModel = viewModel(),
     tripViewModel: TripViewModel = viewModel(),
     contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = viewModel()
@@ -304,7 +308,7 @@ fun Trips(
                 }
             }
         }
-        BottomNavBar()
+        BottomNavBar(navController = navController)
     }
 
     if(showStartTripDialog){
