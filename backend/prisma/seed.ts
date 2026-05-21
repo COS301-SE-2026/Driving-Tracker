@@ -1,6 +1,6 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
-import { fakerEN_ZA as faker } from '@faker-js/faker'
+import { faker } from '@faker-js/faker';
 
 //SA coordinates (coordinates for SA only)
 const SACords = {
@@ -166,7 +166,7 @@ async function main() {
                     distance_km: faker.number.float({ min: 5, max: 150, fractionDigits: 2 }),
                     duration_minutes: faker.number.int({ min: 10, max: 180 }),
                     fuel_estimate: faker.number.float({ min: 1, max: 15, fractionDigits: 2 }),
-                    data_source: 'PHONE_SENSORS',
+                    data_source: 'PHONE',
                     status: 'COMPLETED',
 
                     trip_scores: {
@@ -196,7 +196,7 @@ async function main() {
                             const readLoc = getSAloc();
                             return {
                                 recorded_at: faker.date.recent(),
-                                data_source: 'PHONE_SENSORS',
+                                data_source: 'PHONE',
                                 latitude: readLoc.lat,
                                 longitude: readLoc.lng,
                                 speed_kmh: faker.number.float({ min: 0, max: 120, fractionDigits: 2 }),
@@ -210,7 +210,7 @@ async function main() {
             trips.push(trip);
         }
     }
-    console.log(`Seeding Vehicles, Trips, Scores, Events and rreadings`);
+    console.log(`Seeding Vehicles, Trips, Scores, Events and readings`);
 
     //Creating alerts, notifications and location shares
     for (let i = 0; i < 5; i++) {
