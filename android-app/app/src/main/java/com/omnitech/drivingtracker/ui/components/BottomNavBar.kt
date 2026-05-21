@@ -90,11 +90,11 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_menu),
+                    painter = painterResource(id = R.drawable.ic_nav_contacts),
                     contentDescription = "More"
                 )
             },
-            label = { Text(text = "More") },
+            label = { Text(text = "Contacts") },
             selected = false,
             onClick = { navController?.navigate(Screen.Contacts.route) }
         )
