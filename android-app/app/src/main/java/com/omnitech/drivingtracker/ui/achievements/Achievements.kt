@@ -38,20 +38,29 @@ import com.omnitech.drivingtracker.ui.home.Dashboard
 import androidx.navigation.NavController
 
 @Composable
-fun AchievemtsScreen(
+fun AchievementsScreen(
     navController: NavController? = null,
-    viewModel: AchievementsViewModel = viewModel()
+    viewModel: AchievementsViewModel
 ) {
     val state by viewModel.uiState.collectAsState()
+    AchievementsContent(
+        state = state,
+        navController = navController
+    )
+}
 
+@Composable
+fun AchievementsContent(
+    state: AchievementsViewModel.UiState,
+    navController: NavController? = null
+) {
     Scaffold(
-
         topBar = {
             TopBar(
                 leftIcon = Icons.Default.ArrowBackIosNew,
                 rightIcon = Icons.Default.Settings,
-                onLeftClick = {/*Open menu*/},
-                onRightClick = {/*Open settings*/}
+                onLeftClick = {/*Open menu*/ },
+                onRightClick = {/*Open settings*/ }
             )
         },
 
@@ -59,7 +68,6 @@ fun AchievemtsScreen(
             BottomNavBar(navController = navController, color = "ach")
         }
     ) { innerPadding ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -95,17 +103,19 @@ fun AchievemtsScreen(
                         }
                     }
                 }
+
                 is AchievementsViewModel.UiState.Error -> {
                     item {
                         Text(
-                            text = (state as AchievementsViewModel.UiState.Error).message ?: "Error loading leaderboard",
+                            text = state.message ?: "Error loading leaderboard",
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(16.dp)
                         )
                     }
                 }
+
                 is AchievementsViewModel.UiState.Success -> {
-                    val leaderboard = (state as AchievementsViewModel.UiState.Success).leaderboard
+                    val leaderboard = state.leaderboard
                     items(leaderboard.entries) { entry ->
                         RankCard(
                             name = entry.displayName,
@@ -115,17 +125,31 @@ fun AchievemtsScreen(
                         HorizontalDivider()
                     }
                 }
+
                 else -> {}
             }
         }
-
     }
 }
 
 @Preview(showBackground=true)
 @Composable
-fun AchievementsPreview(){
-    DrivingTrackerTheme{
-        AchievemtsScreen()
+fun AchievementsPreview() {
+    val mockLeaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
+        category = "OVERALL",
+        scope = "GLOBAL",
+        entries = listOf(
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75)
+        ),
+        myRank = 2,
+        myScore = 80
+    )
+
+    DrivingTrackerTheme {
+        AchievementsContent(
+            state = AchievementsViewModel.UiState.Success(mockLeaderboard)
+        )
     }
 }

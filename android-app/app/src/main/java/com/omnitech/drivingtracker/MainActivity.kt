@@ -8,7 +8,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.omnitech.drivingtracker.ui.achievements.AchievemtsScreen
+import com.omnitech.drivingtracker.ui.achievements.AchievementsScreen
 import com.omnitech.drivingtracker.ui.achievements.AchievementsViewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModelFactory
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
@@ -114,7 +114,7 @@ class MainActivity : ComponentActivity() {
                         val achievementsViewModel: AchievementsViewModel = viewModel(
                             factory = AchievementsViewModel.AchievementsViewModelFactory(container.achievementsRepository)
                         )
-                        AchievemtsScreen(navController = navController, viewModel = achievementsViewModel)
+                        AchievementsScreen(navController = navController, viewModel = achievementsViewModel)
                     }
                 }
             }

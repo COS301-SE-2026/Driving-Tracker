@@ -86,170 +86,115 @@ fun Dashboard(navController: NavController? = null) {
                     style = MaterialTheme.typography.titleMedium
                 )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-    ) {
-        Scaffold(
-
-            topBar = {
-                TopBar(
-                    leftIcon = Icons.Default.Menu,
-                    rightIcon = Icons.Default.Settings,
-                    onLeftClick = {/*Open menu*/},
-                    onRightClick = {/*Open settings*/}
+                Text(
+                    "vs Last Week",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
                 )
-            },
 
-            bottomBar = {
-                BottomNavBar(color = "home")
             }
 
-        ) { innerPadding ->
+            Spacer(modifier = Modifier.height(8.dp))
 
+            //This week cards
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.Top
-            ){
-
-                //Overal driving score
-                Box(
-                    modifier = Modifier
-                        .weight(1.3f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ScoreCard(score = 85)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                //"This week..."
+                    .weight(1.5f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-
-                    Text(
-                        "This Week",
-                        style = MaterialTheme.typography.titleMedium
+                    //Distance card
+                    StatCard(
+                        label = "Distance",
+                        value = 250,
+                        unit = "km",
+                        icon = painterResource(id = R.drawable.stats_distance),
+                        percentage = 5,
+                        modifier = Modifier.weight(1f),
+                        tint = Blue
                     )
-
-                    Text(
-                        "vs Last Week",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                    //Driving Time card
+                    StatCard(
+                        label = "Driving Time",
+                        value = 25,
+                        unit = "mins",
+                        icon = painterResource(id = R.drawable.stats_time),
+                        percentage = -5,
+                        modifier = Modifier.weight(1f),
+                        tint = Purple
                     )
 
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                //This week cards
-                Column(
-                    modifier = Modifier
-                        .weight(1.5f)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        //Distance card
-                        StatCard(
-                            label = "Distance",
-                            value = 250,
-                            unit = "km",
-                            icon = painterResource(id = R.drawable.stats_distance),
-                            percentage = 5,
-                            modifier = Modifier.weight(1f),
-                            tint = Blue
-                        )
-                        //Driving Time card
-                        StatCard(
-                            label = "Driving Time",
-                            value = 25,
-                            unit = "mins",
-                            icon = painterResource(id = R.drawable.stats_time),
-                            percentage = -5,
-                            modifier = Modifier.weight(1f),
-                            tint = Purple
-                        )
-
-                    }
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        //Fuel Efficiency
-                        StatCard(
-                            label = "Fuel Efficiency",
-                            value = 250,
-                            unit = "km/l",
-                            icon = painterResource(id = R.drawable.stats_fuel),
-                            percentage = 5,
-                            modifier = Modifier.weight(1f),
-                            tint = Green
-                        )
-                        //Trips
-                        StatCard(
-                            label = "Trips",
-                            value = 15,
-                            icon = painterResource(id = R.drawable.stats_trips),
-                            percentage = 5,
-                            modifier = Modifier.weight(1f),
-                            tint = Blue
-                        )
-
-                    }
-                }
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-
-                    Text(
-                        "Recent trip",
-                        style = MaterialTheme.typography.titleMedium
+                    //Fuel Efficiency
+                    StatCard(
+                        label = "Fuel Efficiency",
+                        value = 250,
+                        unit = "km/l",
+                        icon = painterResource(id = R.drawable.stats_fuel),
+                        percentage = 5,
+                        modifier = Modifier.weight(1f),
+                        tint = Green
                     )
-
-                    Text(
-                        "View more",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Blue
+                    //Trips
+                    StatCard(
+                        label = "Trips",
+                        value = 15,
+                        icon = painterResource(id = R.drawable.stats_trips),
+                        percentage = 5,
+                        modifier = Modifier.weight(1f),
+                        tint = Blue
                     )
 
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
 
-                //Recent trip card
+            Spacer(modifier = Modifier.height(16.dp))
 
-                RecentTripCard(
-                    startLoc = "Home",
-                    destination = "Office",
-                    distance = 40,
-                    drivingTime = 50,
-                    startTime = "08:15",
-                    tripScore = 78
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    "Recent trip",
+                    style = MaterialTheme.typography.titleMedium
                 )
 
-
+                Text(
+                    "View more",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Blue
+                )
 
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            //Recent trip card
+
+            RecentTripCard(
+                startLoc = "Home",
+                destination = "Office",
+                distance = 40,
+                drivingTime = 50,
+                startTime = "08:15",
+                tripScore = 78
+            )
+
+
+
         }
+
     }
 
 }
