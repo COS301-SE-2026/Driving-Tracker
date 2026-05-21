@@ -138,7 +138,7 @@ export const auth_services = {
                     dob: dob_date,
                     phone_number,
                     password_hash: hashedPassword,
-                    consent_status,
+                    consent_status: consent_status,
                     }
                 });
 
