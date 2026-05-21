@@ -301,14 +301,17 @@ export const trips_services ={
             throw new Error("Missing required fields: user_id");
         }
 
-        // Default to 30 days ago if no start_date is provided
-        const start_date = data.start_date && !isNaN(data.start_date.getTime())
-            ? data.start_date
-            : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        // Throw if a date was provided but it's not a valid date
+        if (data.start_date && isNaN(data.start_date.getTime())) {
+            throw new Error("Invalid start date");
+        }
+        if (data.end_date && isNaN(data.end_date.getTime())) {
+            throw new Error("Invalid end date");
+        }
 
-        const end_date = data.end_date && !isNaN(data.end_date.getTime())
-            ? data.end_date
-            : new Date();
+        // Default to 30 days ago if no start_date is provided
+        const start_date = data.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const end_date = data.end_date || new Date();
 
         try{
             const user = await prisma.users.findUnique({
