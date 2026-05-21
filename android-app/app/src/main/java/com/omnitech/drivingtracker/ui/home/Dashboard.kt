@@ -164,7 +164,7 @@ fun Dashboard(navController: NavController? = null,
                 Spacer(modifier = Modifier.height(8.dp))
                 recentTrip?.let { trip->
                     RecentTripCard(
-                        startLoc = trip.startTime,
+                        startLoc = "Office",
                         destination = "home",
                         distance = trip.distanceKm?.toInt()?:0,
                         drivingTime = trip.durationMinutes?.toInt()?:0,
