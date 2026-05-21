@@ -22,6 +22,8 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.trip.TripsViewModel
+import com.omnitech.drivingtracker.ui.trip.LiveTrip
+import com.omnitech.drivingtracker.ui.trip.TripSummary
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -31,6 +33,9 @@ sealed class Screen(val route: String){
     data object Trips : Screen("trips")
     data object Contacts : Screen("contacts")
     data object Achievements : Screen("achievements")
+
+    data object LiveTrip : Screen("live_trip")
+    data object TripSummary : Screen("trip_summary")
 }
 
 class MainActivity : ComponentActivity() {
@@ -116,6 +121,15 @@ class MainActivity : ComponentActivity() {
                         )
                         AchievementsScreen(navController = navController, viewModel = achievementsViewModel)
                     }
+
+                    composable(Screen.LiveTrip.route){
+                        LiveTrip(navController = navController)
+                    }
+
+                    composable(Screen.TripSummary.route){
+                        TripSummary()
+                    }
+
                 }
             }
         }
