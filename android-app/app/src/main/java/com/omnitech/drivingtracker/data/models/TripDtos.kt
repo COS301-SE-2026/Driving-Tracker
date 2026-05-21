@@ -46,13 +46,24 @@ data class TripHistoryResponse(
     val data: TripHistoryData
 )
 
+data class TripHistoryRequest(
+    @SerializedName("start_date")
+    val startDate: String? = null,
+    @SerializedName("end_date")
+    val endDate: String? = null,
+    val status: String? = null
+)
+
 data class TripHistoryData(
-    val username: String,
-    val start_date: String,
-    val end_date: String,
-    val total_trips: Int,
-    val trips: List<TripItemDto>,
-    val meta: TripMetaDto
+    val username: String? = null,
+    @SerializedName("start_date")
+    val startDate: String? = null,
+    @SerializedName("end_date")
+    val endDate: String? = null,
+    @SerializedName("total_trips")
+    val totalTrips: Int? = null,
+    val trips: List<TripItemDto> = emptyList(),
+    val meta: TripMetaDto? = null
 )
 
 data class TripItemDto(
@@ -81,8 +92,10 @@ data class TripItemDto(
 )
 
 data class TripMetaDto(
-    val mean_distance: Double,
-    val mean_minutes: Double
+    @SerializedName("mean_distance")
+    val meanDistance: Double? = null,
+    @SerializedName("mean_minutes")
+    val meanMinutes: Double? = null
 )
 
 data class TripScoreDto(
@@ -156,4 +169,14 @@ data class EndTripRequest(
     val ecoScore: Double? = null,
     @SerializedName("overall_score")
     val overallScore: Double? = null
+)
+
+data class EndTripResponse(
+    val message: String,
+    val data: EndTripData
+)
+
+data class EndTripData(
+    @SerializedName("trip_id")
+    val tripId: String
 )

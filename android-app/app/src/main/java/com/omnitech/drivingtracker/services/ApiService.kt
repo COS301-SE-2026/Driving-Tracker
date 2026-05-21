@@ -24,13 +24,17 @@ interface ApiService{
     suspend fun register(@Body body: RegisterRequest): AuthResponse
 
     @POST("api/auth/logout")
-    suspend fun logout(): Unit
+    suspend fun logout()
 
-    @POST("api/trips/start")
+    @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
 
     @GET("trips/history")
-    suspend fun getTripHistory(@QueryMap filters: Map<String, String>): TripHistoryResponse
+    suspend fun getTripHistory(
+        @Query("start_date") startDate: String?,
+        @Query("end_date") endDate: String?,
+        @Query("status") status: String?
+    ): TripHistoryResponse
 
     @GET("trips/{trip_id}/summary")
     suspend fun getTripSummary(@Path("trip_id") tripId: String): TripSummaryResponse
@@ -39,7 +43,7 @@ interface ApiService{
     suspend fun endTrip(
         @Path("trip_id") tripId: String,
         @Body body: EndTripRequest
-    ): StartTripResponse
+    ): EndTripResponse
 
     //Achievements & Badges
     @POST("badges/evaluate")

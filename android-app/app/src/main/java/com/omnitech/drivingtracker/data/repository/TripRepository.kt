@@ -34,14 +34,40 @@ class TripRepository(private val api: ApiService){
         }
     }
 
-    suspend fun getTripHistory(): Result<TripHistoryData>{
-        return try{
-            val response = api.getTripHistory(emptyMap())
+    suspend fun getTripHistory(
+        startDate: String? = null,
+        endDate: String? = null,
+        status: String? = null
+    ): Result<TripHistoryData> {
+        return try {
+            // Provide default values if not specified
+            val effectiveStartDate = startDate ?: Instant.now().minusSeconds(30 * 24 * 60 * 60).toString() // 30 days ago
+            val effectiveEndDate = endDate ?: Instant.now().toString()
+            
+            val response = api.getTripHistory(
+                startDate = effectiveStartDate,
+                endDate = effectiveEndDate,
+                status = status
+            )
             Result.success(response.data)
-        }catch(e: HttpException){
+        } catch (e: HttpException) {
             val error = ApiErrorParser.parse(e)
-            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch history"))
-        }catch(e: Exception){
+            // Handle case where server might throw 404 when no trips are found
+            if (error.error == "NO_TRIPS_FOUND" || e.code() == 404) {
+                Result.success(
+                    TripHistoryData(
+                        username = "",
+                        startDate = startDate ?: "",
+                        endDate = endDate ?: "",
+                        totalTrips = 0,
+                        trips = emptyList(),
+                        meta = TripMetaDto(0.0, 0.0)
+                    )
+                )
+            } else {
+                Result.failure(ApiException(error.error, error.message ?: "Failed to fetch history"))
+            }
+        } catch (e: Exception) {
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }
