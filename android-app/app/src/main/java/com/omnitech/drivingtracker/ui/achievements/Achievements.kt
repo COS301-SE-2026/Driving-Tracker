@@ -58,7 +58,7 @@ fun AchievemtsScreen(
         },
 
         bottomBar = {
-            BottomNavBar(navController = navController)
+            BottomNavBar(navController = navController, color = "ach")
         }
     ) { innerPadding ->
 
