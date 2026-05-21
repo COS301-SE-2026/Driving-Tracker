@@ -18,6 +18,7 @@ import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 import com.omnitech.drivingtracker.ui.home.Dashboard
+import com.omnitech.drivingtracker.ui.home.DashboardViewModel
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.trip.Trips
@@ -81,6 +82,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(Screen.Dashboard.route){
+                        val dashboardViewModel: DashboardViewModel =viewModel(
+                            factory = DashboardViewModel.DashboardViewModelFactory(container.tripRepository)
+                        )
                         Dashboard(navController = navController)
                     }
                     composable(Screen.Trips.route){

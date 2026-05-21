@@ -7,12 +7,15 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
@@ -23,7 +26,10 @@ import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
-fun Dashboard(navController: NavController? = null){
+fun Dashboard(navController: NavController? = null,
+              dashboardViewModel: DashboardViewModel = viewModel()
+){
+    val recentTrip by dashboardViewModel.recentTrip.collectAsState();
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -156,15 +162,26 @@ fun Dashboard(navController: NavController? = null){
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                RecentTripCard(
-                    startLoc = "Home",
-                    destination = "Office",
-                    distance = 40,
-                    drivingTime = 50,
-                    startTime = "08:15",
-                    tripScore = 78
-                )
+                recentTrip?.let { trip->
+                    RecentTripCard(
+                        startLoc = "Office",
+                        destination = "home",
+                        distance = trip.distanceKm?.toInt()?:0,
+                        drivingTime = trip.durationMinutes?.toInt()?:0,
+                        startTime = trip.startTime,
+                        tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt()?:0,
+                    )
+                }?: Text(text = "No recent trips found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp))
+//                RecentTripCard(
+//                    startLoc = "Home",
+//                    destination = "Office",
+//                    distance = 40,
+//                    drivingTime = 50,
+//                    startTime = "08:15",
+//                    tripScore = 78
+//                )
             }
         }
     }
