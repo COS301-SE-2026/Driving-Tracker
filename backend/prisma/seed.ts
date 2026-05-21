@@ -107,16 +107,18 @@ async function main() {
     console.log(`Seeded Leaderboards and User badges`);
 
     //Creating trusted contacts (linking random users together)
-    const contacts: any[] = [] ;
-    for (let i = 0; i < 8; i++) {
+    const contacts: any[] = [];
+    const seenContactPairs = new Set<string>();
+    while (contacts.length < 8) {
         //picking 2 diff users
-        let owner = faker.helpers.arrayElement(users);
+        const owner = faker.helpers.arrayElement(users);
         let contactUser = faker.helpers.arrayElement(users);
         while (owner.user_id === contactUser.user_id) contactUser = faker.helpers.arrayElement(users);
 
-        //ensurong combo does not exist yet
-        const exists = contacts.find(c => c.user_id === owner.user_id && c.contact_user_id === contactUser.user_id);
-        if (exists) continue;
+        const pairKey = `${owner.user_id}:${contactUser.user_id}`;
+        if (seenContactPairs.has(pairKey)) {
+            continue;
+        }
 
         const contact = await prisma.trusted_contacts.create({
             data: {
@@ -132,6 +134,9 @@ async function main() {
                 }
             }
         });
+
+        contacts.push(contact);
+        seenContactPairs.add(pairKey);
     }
     console.log(`Seeded Trusted Contacts and Alert Preferences`);
 
