@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
@@ -24,12 +25,13 @@ import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //This function displays the stat box on the dashboard (the grid of 4)
-fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int, modifier: Modifier = Modifier) {
+fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int, modifier: Modifier = Modifier, tint: Color) {
 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0))
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -43,11 +45,12 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {//for the icon and label
-                Icon(painter = icon, contentDescription = "Icon on stats card")
+                Icon(painter = icon, contentDescription = "Icon on stats card", tint = tint)
 
                 Text(
                     text = label,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 

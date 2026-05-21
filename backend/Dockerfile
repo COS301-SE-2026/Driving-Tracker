@@ -8,7 +8,7 @@ ARG DATABASE_URL=postgresql://user:pass@localhost:5432/db?schema=public
 ENV DATABASE_URL=$DATABASE_URL
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates postgresql-client \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare yarn@stable --activate
@@ -34,7 +34,7 @@ WORKDIR /app
 ENV NODE_ENV=development
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates postgresql-client \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable && corepack prepare yarn@stable --activate

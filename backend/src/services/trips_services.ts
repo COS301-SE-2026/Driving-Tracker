@@ -2,15 +2,33 @@
 // not quite sure of the imports as yet 
 import prisma from '../db/prisma';
 
+// Helper function to safely convert Decimal or number values to number
+function to_number(value: any): number | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    // If it has a toNumber method (Prisma Decimal), use it
+    if (typeof value.toNumber === 'function') {
+        return value.toNumber();
+    }
+    // If it's already a number, return it
+    if (typeof value === 'number') {
+        return value;
+    }
+    // Otherwise try to convert to number
+    return Number(value);
+}
+
 export interface create_trip{
     user_id: string ;
     vehicle_id: string;
-    data_source: string;
+    data_source: "OBD" | "PHONE";
     start_date: Date;
     start_location:{
         lat: number;
         lng: number;
     };
+    share_with_contacts?: string[]; //optional
 };
 export interface trip_summary_filter {
     trip_id: string;
@@ -51,7 +69,7 @@ export interface record_data{
 };
 export interface trip_history_filter {
     user_id: string;
-    start_date: Date;
+    start_date?: Date;
     end_date?: Date;
     status?: "COMPLETED" | "IN_PROGRESS" | "ABORTED";
 };
@@ -95,21 +113,56 @@ export const trips_services ={
             if (activeTrip) {
                 throw new Error("Trip already in progress");
             }
-            const newTrip = await prisma.trips.create({
-                data: {
-                    user_id: user.user_id,
-                    vehicle_id: data.vehicle_id,
-                    start_time: data.start_date,
-                    start_latitude: data.start_location.lat,
-                    start_longitude: data.start_location.lng,
-                    data_source: data.data_source,
-                    status: "IN_PROGRESS"
+
+            //create trip and shares atomically
+            const createdTrip =  await prisma.$transaction(async (tx) => {
+                const newTrip = await tx.trips.create({
+                    data: {
+                        user_id: user.user_id,
+                        vehicle_id: data.vehicle_id,
+                        start_time: data.start_date,
+                        start_latitude: data.start_location.lat,
+                        start_longitude: data.start_location.lng,
+                        data_source: data.data_source,
+                        status: "IN_PROGRESS"
+                    }
+                });
+
+                //create shares if user explicitly selected contacts
+                if(Array.isArray(data.share_with_contacts) && data.share_with_contacts.length){
+                    // validate all provided contact_ids are user's trusted contacts with APPROVED consent
+                    const valid = await tx.trusted_contacts.findMany({
+                        where: {
+                            user_id: data.user_id,
+                            contact_id: { in: data.share_with_contacts},
+                            consent_status: "APPROVED"
+                        },
+                        select: {contact_id: true}
+                    });
+
+                    const validIds = valid.map(v => v.contact_id);
+                    //if provided ids were invalid, throw error
+                    if(validIds.length !== data.share_with_contacts.length){
+                        throw new Error("Inavlid contacts selection: some contacts not found or have not given consent.");
+                    }
+
+                    //create share rows
+                    const shareRows = validIds.map(contact_id => ({
+                        trip_id: newTrip.trip_id,
+                        owner_user_id: data.user_id,
+                        contact_id
+                    }));
+                    await tx.trip_location_shares.createMany({
+                        data: shareRows,
+                        skipDuplicates: true
+                    });
                 }
+                return newTrip;
             });
 
             return {
-                trip_id: newTrip.trip_id,
-                data_source: newTrip.data_source
+                trip_id: createdTrip.trip_id,
+                data_source: createdTrip.data_source
             };
         }catch(error){
             throw error;
@@ -132,6 +185,9 @@ export const trips_services ={
              if (trip.user_id !== data.user_id) {
                 throw new Error("You do not own this trip");
             }
+            if(trip.status !== "IN_PROGRESS"){
+                throw new Error(`Cannot end a trip with status: ${trip.status}`);
+            }
 
             // Update the trip
             const updatedTrip = await prisma.trips.update({
@@ -145,6 +201,12 @@ export const trips_services ={
                     status: data.status
                 }
             });
+            // revoke any active shares for this trip
+            await prisma.trip_location_shares.updateMany({
+                where: { trip_id: data.trip_id, revoked_at: null },
+                data: { revoked_at: new Date() }
+            });
+
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
@@ -235,35 +297,40 @@ export const trips_services ={
     },
     
     async get_history(data: trip_history_filter){
-        if(!data.user_id || !data.start_date){
-            throw new Error("Missing required fields");
-        }
-        if (isNaN(data.start_date.getTime())) {
-            throw new Error("Invalid start date");
+        if(!data.user_id){
+            throw new Error("Missing required fields: user_id");
         }
 
-        const end_date = data.end_date || new Date();
-        if (isNaN(end_date.getTime())) {
+        // Throw if a date was provided but it's not a valid date
+        if (data.start_date && isNaN(data.start_date.getTime())) {
+            throw new Error("Invalid start date");
+        }
+        if (data.end_date && isNaN(data.end_date.getTime())) {
             throw new Error("Invalid end date");
         }
-        try {
+
+        // Default to 30 days ago if no start_date is provided
+        const start_date = data.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const end_date = data.end_date || new Date();
+
+        try{
             const user = await prisma.users.findUnique({
                 where:{ user_id: data.user_id}
             });
             if(!user){
-                throw new Error("User not found");//unauthorized 
+                throw new Error("User not found");
             }
 
             const date_conditions: any = {
                 user_id: data.user_id,
                 created_at:{
-                    gte: data.start_date,
+                    gte: start_date,
                     lte: end_date
                 }
             };
 
-            if(!data.status){
-                console.log("No status");
+            if(data.status){
+                date_conditions.status = data.status;
             }
 
              const trips = await prisma.trips.findMany({
@@ -280,36 +347,48 @@ export const trips_services ={
                 orderBy: { created_at: 'desc' }
             });
 
-            if(trips.length === 0){
-                throw new Error("No trips found");
-            }
             const total_trips = trips.length;
+
+            if(total_trips === 0){
+                return {
+                    username: user.username,
+                    start_date: start_date,
+                    end_date: end_date,
+                    total_trips: 0,
+                    trips: [],
+                    meta: {
+                        mean_distance: 0,
+                        mean_minutes: 0
+                    }
+                };
+            }
+
             let total_distance = 0;
             for (let n = 0; n < trips.length; n++) {
                 total_distance += Number(trips[n].distance_km || 0);
             }
-            const mean_distance = total_trips > 0 ? total_distance / total_trips : 0;
+            const mean_distance = total_distance / total_trips;
 
             let total_minutes = 0;
             for(let i = 0; i < trips.length; i++){
                 total_minutes += (trips[i].duration_minutes || 0);
             }
-            const mean_minutes = total_trips > 0 ? total_minutes / total_trips : 0;
-            return{
-                data:{
-                    username: user.username,
-                    start_date: data.start_date,
-                    end_date: end_date,
-                    total_trips:total_trips,
-                    trips: trips,
-                    meta:{
-                        mean_distance: parseFloat(mean_distance.toFixed(2)),
-                        mean_minutes: parseFloat(mean_minutes.toFixed(2))
-                    }
+            const mean_minutes = total_minutes / total_trips;
+
+            return {
+                username: user.username,
+                start_date: start_date,
+                end_date: end_date,
+                total_trips: total_trips,
+                trips: trips,
+                meta:{
+                    mean_distance: parseFloat(mean_distance.toFixed(2)),
+                    mean_minutes: parseFloat(mean_minutes.toFixed(2))
                 }
             };
 
         } catch (error) {
+            console.error("Database error in get_history:", error);
             throw error;
         }
 
@@ -371,20 +450,20 @@ export const trips_services ={
                     status: trip.status,
                     data_source: data_source,
                     route_polyline: trip.route_polyline,
-                    distance_km: trip.distance_km?.toNumber(),
+                    distance_km: to_number(trip.distance_km),
                     duration_minutes: trip.duration_minutes,
-                    fuel_estimate: trip.fuel_estimate?.toNumber(),
+                    fuel_estimate: to_number(trip.fuel_estimate),
                     scores: trip.trip_scores?.[0] ? {
-                        safety_score: trip.trip_scores[0].safety_score?.toNumber(),
-                        eco_score: trip.trip_scores[0].eco_score?.toNumber(),
-                        overall_score: trip.trip_scores[0].overall_score?.toNumber()
+                        safety_score: to_number(trip.trip_scores[0].safety_score),
+                        eco_score: to_number(trip.trip_scores[0].eco_score),
+                        overall_score: to_number(trip.trip_scores[0].overall_score)
                     } : null,
                     events: trip.trip_events.map((event:any) => ({
                         event_id: event.event_id,
                         event_type: event.type,
-                        longitude: event.longitude?.toNumber(),
-                        latitude: event.latitude?.toNumber(),
-                        severity: event.severity?.toNumber(),
+                        longitude: to_number(event.longitude),
+                        latitude: to_number(event.latitude),
+                        severity: to_number(event.severity),
                         sensor_source: event.sensor_source,
                         time_stamp: event.recorded_at
                     }))
@@ -447,4 +526,4 @@ export const trips_services ={
         }
 
     }
-};       
+};

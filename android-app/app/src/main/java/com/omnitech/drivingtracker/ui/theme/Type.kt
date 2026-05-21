@@ -15,7 +15,7 @@ val AppTypography = Typography(
     ),
     //section titles
     headlineMedium = TextStyle(
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         //color = TextPrimary
     ),
@@ -23,23 +23,23 @@ val AppTypography = Typography(
     titleMedium = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp,
-        //color = TextPrimary
+        color = TextPrimary
     ),
     //Body
     bodyLarge = TextStyle(
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         //color = TextSecondary
     ),
     bodyMedium = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        //color = TextSecondary
+        color = TextSecondary
     ),
     labelSmall = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         letterSpacing = 0.5.sp,
-        //color = TextMuted
+        color = TextMuted
     )
 )

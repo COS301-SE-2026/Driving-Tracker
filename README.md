@@ -198,6 +198,13 @@ This will:
 3. Start the backend API
 4. Start the frontend dashboard
 
+Seed mock data in Docker:
+```bash
+docker compose run --rm seed
+```
+
+This runs the Prisma seed script inside the backend container after PostgreSQL and migrations are ready.
+
 
 ## Daily Development
 
@@ -221,3 +228,9 @@ docker compose up --build
 # Use this if your database gets into a broken state
 docker compose down -v
 docker compose up --build
+
+#Run prisma studio to see DB tables and data
+docker compose up --build studio
+
+#Running migrations with docker-compose
+MIGRATION_NAME=example_name docker compose up --build migrate-dev

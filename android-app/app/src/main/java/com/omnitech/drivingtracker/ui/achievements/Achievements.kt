@@ -35,30 +35,39 @@ import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.home.Dashboard
 
 
+import androidx.navigation.NavController
+
 @Composable
-fun AchievemtsScreen(
-    //Compose will automatically find and create a viewmodel
-    viewModel: AchievementsViewModel = viewModel()
+fun AchievementsScreen(
+    navController: NavController? = null,
+    viewModel: AchievementsViewModel
 ) {
+    val state by viewModel.uiState.collectAsState()
+    AchievementsContent(
+        state = state,
+        navController = navController
+    )
+}
 
-    val ranks = viewModel.rankList //taking list from Viewmodel
-
+@Composable
+fun AchievementsContent(
+    state: AchievementsViewModel.UiState,
+    navController: NavController? = null
+) {
     Scaffold(
-
         topBar = {
             TopBar(
                 leftIcon = Icons.Default.ArrowBackIosNew,
                 rightIcon = Icons.Default.Settings,
-                onLeftClick = {/*Open menu*/},
-                onRightClick = {/*Open settings*/}
+                onLeftClick = {/*Open menu*/ },
+                onRightClick = {/*Open settings*/ }
             )
         },
 
         bottomBar = {
-            BottomNavBar()
+            BottomNavBar(navController = navController, color = "ach")
         }
     ) { innerPadding ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -83,24 +92,64 @@ fun AchievemtsScreen(
                 )
             }
 
-            items(ranks) { person ->
-                RankCard(
-                    name = person.name,
-                    score = person.score,
-                    isUser = person.name == "You"
-                )
-                HorizontalDivider() //Thin line between rows
+            when (state) {
+                is AchievementsViewModel.UiState.Loading -> {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                is AchievementsViewModel.UiState.Error -> {
+                    item {
+                        Text(
+                            text = state.message ?: "Error loading leaderboard",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+
+                is AchievementsViewModel.UiState.Success -> {
+                    val leaderboard = state.leaderboard
+                    items(leaderboard.entries) { entry ->
+                        RankCard(
+                            name = entry.displayName,
+                            score = entry.score,
+                            isUser = entry.rank == leaderboard.myRank
+                        )
+                        HorizontalDivider()
+                    }
+                }
+
+                else -> {}
             }
-
         }
-
     }
 }
 
 @Preview(showBackground=true)
 @Composable
-fun AchievementsPreview(){
-    DrivingTrackerTheme{
-        AchievemtsScreen()
+fun AchievementsPreview() {
+    val mockLeaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
+        category = "OVERALL",
+        scope = "GLOBAL",
+        entries = listOf(
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87.0),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80.0),
+            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75.0)
+        ),
+        myRank = 2,
+        myScore = 80
+    )
+
+    DrivingTrackerTheme {
+        AchievementsContent(
+            state = AchievementsViewModel.UiState.Success(mockLeaderboard)
+        )
     }
 }
