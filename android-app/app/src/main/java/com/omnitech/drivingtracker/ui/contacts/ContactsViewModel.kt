@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.contacts
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.ContactDto
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ContactsViewModel(private val repository: ContactsRepository = ContactsRepository()): ViewModel(){
+class ContactsViewModel(private val repository: ContactsRepository): ViewModel(){
     //define UI state machine
     sealed class UiState{
         object Idle : UiState() //initial state
@@ -123,6 +124,13 @@ class ContactsViewModel(private val repository: ContactsRepository = ContactsRep
                     }
                 }
             )
+        }
+    }
+
+    class ContactsViewModelFactory(private val repository: ContactsRepository) :
+        ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return ContactsViewModel(repository) as T
         }
     }
 

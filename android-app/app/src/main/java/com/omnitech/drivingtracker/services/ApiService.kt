@@ -23,9 +23,6 @@ interface ApiService{
     @POST("api/auth/register")
     suspend fun register(@Body body: RegisterRequest): AuthResponse
 
-    @POST("api/auth/refresh")
-    suspend fun refresh(@Body body: RefreshRequest): AuthResponse
-
     @POST("api/auth/logout")
     suspend fun logout(): Unit
 

@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class TripSummaryViewModel(private val repository: TripRepository = TripRepository()) : ViewModel() {
+class TripSummaryViewModel(private val repository: TripRepository) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()

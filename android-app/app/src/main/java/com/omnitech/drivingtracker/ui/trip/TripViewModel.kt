@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.data.api.ApiException
@@ -13,8 +14,8 @@ import kotlinx.coroutines.launch
 
 
 class TripViewModel(
-    private val tripRepository: TripRepository = TripRepository(),
-    private val contactsRepository: ContactsRepository = ContactsRepository()
+    private val tripRepository: TripRepository,
+    private val contactsRepository: ContactsRepository
 ) : ViewModel(){
 
     sealed class UiState{
@@ -94,6 +95,15 @@ class TripViewModel(
                     }
                 }
             )
+        }
+    }
+
+    class TripViewModelFactory(
+        private val tripRepository: TripRepository,
+        private val contactsRepository: ContactsRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return TripViewModel(tripRepository, contactsRepository) as T
         }
     }
 }
