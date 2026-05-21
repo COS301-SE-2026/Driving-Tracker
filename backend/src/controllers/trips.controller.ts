@@ -157,7 +157,9 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
 export const get_history = async (req:AuthRequest, res:Response)=>{
     try{
         const user_id = req.user?.sub;//jwt token 
-        const {start_date, end_date, status} = req.body;
+        // Use req.query for GET requests
+        const {start_date, end_date, status} = req.query as any;
+
         if(!user_id){
             res.status(400).json({
                 error:"UNAUTHORIZED",
@@ -165,22 +167,21 @@ export const get_history = async (req:AuthRequest, res:Response)=>{
             });
             return;
         }
+
         const history_results = await trips_services.get_history({
             user_id,
-            start_date: new Date(start_date),
-            end_date: end_date? new Date(end_date): undefined,
-            status
+            start_date: start_date ? new Date(start_date) : undefined,
+            end_date: end_date ? new Date(end_date) : undefined,
+            status: status as any
         });
+
          res.status(200).json({
             message: "Trip history retrieved successfully",
             data: history_results
         });
     }catch(error :any){
-        if (error.message.includes("Missing required fields")) {
-            res.status(400).json({
-                error: "Missing required fields"
-            });
-        } else if (error.message.includes("User not found")) {
+        console.error("Error in get_history:", error);
+        if (error.message.includes("User not found")) {
             res.status(404).json({
                 error: "User not found"
             });
@@ -193,7 +194,6 @@ export const get_history = async (req:AuthRequest, res:Response)=>{
                 error: "Internal server error"
             });
         }
-
     }
 };
 export const get_trip_summary = async (req: AuthRequest, res: Response) => {

@@ -69,7 +69,7 @@ export interface record_data{
 };
 export interface trip_history_filter {
     user_id: string;
-    start_date: Date;
+    start_date?: Date;
     end_date?: Date;
     status?: "COMPLETED" | "IN_PROGRESS" | "ABORTED";
 };
@@ -297,35 +297,37 @@ export const trips_services ={
     },
     
     async get_history(data: trip_history_filter){
-        if(!data.user_id || !data.start_date){
-            throw new Error("Missing required fields");
-        }
-        if (isNaN(data.start_date.getTime())) {
-            throw new Error("Invalid start date");
+        if(!data.user_id){
+            throw new Error("Missing required fields: user_id");
         }
 
-        const end_date = data.end_date || new Date();
-        if (isNaN(end_date.getTime())) {
-            throw new Error("Invalid end date");
-        }
-        try {
+        // Default to 30 days ago if no start_date is provided
+        const start_date = data.start_date && !isNaN(data.start_date.getTime())
+            ? data.start_date
+            : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+        const end_date = data.end_date && !isNaN(data.end_date.getTime())
+            ? data.end_date
+            : new Date();
+
+        try{
             const user = await prisma.users.findUnique({
                 where:{ user_id: data.user_id}
             });
             if(!user){
-                throw new Error("User not found");//unauthorized 
+                throw new Error("User not found");
             }
 
             const date_conditions: any = {
                 user_id: data.user_id,
                 created_at:{
-                    gte: data.start_date,
+                    gte: start_date,
                     lte: end_date
                 }
             };
 
-            if(!data.status){
-                console.log("No status");
+            if(data.status){
+                date_conditions.status = data.status;
             }
 
              const trips = await prisma.trips.findMany({
@@ -342,36 +344,48 @@ export const trips_services ={
                 orderBy: { created_at: 'desc' }
             });
 
-            if(trips.length === 0){
-                throw new Error("No trips found");
-            }
             const total_trips = trips.length;
+
+            if(total_trips === 0){
+                return {
+                    username: user.username,
+                    start_date: start_date,
+                    end_date: end_date,
+                    total_trips: 0,
+                    trips: [],
+                    meta: {
+                        mean_distance: 0,
+                        mean_minutes: 0
+                    }
+                };
+            }
+
             let total_distance = 0;
             for (let n = 0; n < trips.length; n++) {
                 total_distance += Number(trips[n].distance_km || 0);
             }
-            const mean_distance = total_trips > 0 ? total_distance / total_trips : 0;
+            const mean_distance = total_distance / total_trips;
 
             let total_minutes = 0;
             for(let i = 0; i < trips.length; i++){
                 total_minutes += (trips[i].duration_minutes || 0);
             }
-            const mean_minutes = total_trips > 0 ? total_minutes / total_trips : 0;
-            return{
-                data:{
-                    username: user.username,
-                    start_date: data.start_date,
-                    end_date: end_date,
-                    total_trips:total_trips,
-                    trips: trips,
-                    meta:{
-                        mean_distance: parseFloat(mean_distance.toFixed(2)),
-                        mean_minutes: parseFloat(mean_minutes.toFixed(2))
-                    }
+            const mean_minutes = total_minutes / total_trips;
+
+            return {
+                username: user.username,
+                start_date: start_date,
+                end_date: end_date,
+                total_trips: total_trips,
+                trips: trips,
+                meta:{
+                    mean_distance: parseFloat(mean_distance.toFixed(2)),
+                    mean_minutes: parseFloat(mean_minutes.toFixed(2))
                 }
             };
 
         } catch (error) {
+            console.error("Database error in get_history:", error);
             throw error;
         }
 
@@ -509,4 +523,4 @@ export const trips_services ={
         }
 
     }
-};       
+};
