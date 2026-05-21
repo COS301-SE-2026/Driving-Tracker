@@ -32,6 +32,12 @@ jobs:
       - run: yarn prisma:generate
       - run: yarn build
       - run: yarn test --coverage
+      - name: Upload backend coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
   
   frontend:
     runs-on: ubuntu-latest
