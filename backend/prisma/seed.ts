@@ -18,23 +18,6 @@ function getSAloc() {
 
 async function main() {
 
-    console.log('Cleaning database...');
-    await prisma.alert_notifications.deleteMany();
-    await prisma.alerts.deleteMany();
-    await prisma.trip_location_shares.deleteMany();
-    await prisma.alert_preferences.deleteMany();
-    await prisma.trusted_contacts.deleteMany();
-    await prisma.trip_readings.deleteMany();
-    await prisma.trip_events.deleteMany();
-    await prisma.trip_scores.deleteMany();
-    await prisma.trips.deleteMany();
-    await prisma.vehicles.deleteMany();
-    await prisma.leaderboard.deleteMany();
-    await prisma.user_badges.deleteMany();
-    await prisma.badge_criteria.deleteMany();
-    await prisma.badges.deleteMany();
-    await prisma.users.deleteMany();
-
     console.log('Start seeding....');
 
     //Creating 10 users
