@@ -5,6 +5,21 @@ export interface get_leaderboard_params{
   category: string;
   scope: string;
 }
+// Helper function to safely convert Decimal or number values to number
+function to_number(value: any): number | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    if (typeof value.toNumber === 'function') {
+        return value.toNumber();
+    }
+    // If it's already a number, return it
+    if (typeof value === 'number') {
+        return value;
+    }
+    // Otherwise try to convert to number
+    return Number(value);
+}
 
 export const leaderboard_services = {
   async get_leaderboard(params: get_leaderboard_params) {
@@ -38,12 +53,12 @@ export const leaderboard_services = {
       rank: idx + 1,
       user_id: row.user_id,
       display_name: `${row.users.name ?? row.users.username ?? ''} ${row.users.surname ?? ''}`.trim(),
-      score: Number(row.score ?? 0),
+      score: to_number(row.score ?? 0),
     }));
 
     const myIndex = rows.findIndex((r:any) => r.user_id === user_id);
     const my_rank = myIndex >= 0 ? myIndex + 1 : null;
-    const my_score = myIndex >= 0 ? Number(rows[myIndex].score ?? 0) : 0;
+    const my_score = myIndex >= 0 ? to_number(rows[myIndex].score ?? 0) : 0;
 
     return {
       data: {
