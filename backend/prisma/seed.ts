@@ -108,6 +108,46 @@ async function main() {
         console.log(`Verified 4+ Contacts exist for Omnitech`)
     }
 
+    //Ensuring user has at least 3 trips
+    const tripCount = await prisma.trips.count({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (tripCount < 3) {
+        const tripsNeeded = 3 - tripCount;
+        for (let i = 0; i < tripsNeeded; i++) {
+            const startLoc = getSAloc();
+            const endLoc = getSAloc();
+
+            await prisma.trips.create({
+                data: {
+                    user_id: myLoginUser.user_id,
+                    vehicle_id: myVehicle.vehicle_id,
+                    start_latitude: startLoc.lat,
+                    start_longitude: startLoc.lng,
+                    end_latitude: endLoc.lat,
+                    end_longitude: endLoc.lng,
+                    distance_km: faker.number.float({ min: 5, max: 150, fractionDigits: 2 }),
+                    duration_minutes: faker.number.int({ min: 10, max: 180 }),
+                    fuel_estimate: faker.number.float({ min: 1, max: 15, fractionDigits: 2 }),
+                    data_source: 'PHONE_SENSORS',
+                    status: 'COMPLETED',
+
+                    trip_scores: {
+                        create: {
+                            safety_score: faker.number.float({ min: 60, max: 100, fractionDigits: 2 }),
+                            eco_score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
+                            overall_score: faker.number.float({ min: 65, max: 100, fractionDigits: 2 })
+                        }
+                    }
+                }
+            });
+        }
+        console.log(`Seeded ${tripsNeeded} Trips for Omnitech`);
+    } else {
+        console.log(`Verified 3 + Trips exist for Login User`)
+    }
+
     //Creating 10 users
     const users = [];
     for (let i = 0; i < 10; i++){
