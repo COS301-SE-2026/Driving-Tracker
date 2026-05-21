@@ -47,24 +47,17 @@ interface ApiService{
     //Achievements & Badges
     @POST("badges/evaluate")
     suspend fun evaluateBadges(
-        @Header("Authorization") token: String, //JWT token is required
         @Body body: EvaluateBadgesRequest
     ): EvaluateBadgesResponse
 
     @GET("badges")
-    suspend fun getBadges(
-        @Header("Authorization") token: String
-    ): GetBadgesResponse
+    suspend fun getBadges(): GetBadgesResponse
 
     @GET("badges/definitions")
-    suspend fun getBadgeDefinitions(
-        @Header("Authorization") token: String
-    ): BadgeDefinitionsResponse
+    suspend fun getBadgeDefinitions(): BadgeDefinitionsResponse
 
     @GET("leaderboard")
-    suspend fun getLeaderboard(
-        @Header("Authorization") token: String,
-        @Query("category") category: String, //added to url
+    suspend fun getLeaderboard(@Query("category") category: String, //added to url
         @Query("scope") scope: String
     ): LeaderboardResponse
 }

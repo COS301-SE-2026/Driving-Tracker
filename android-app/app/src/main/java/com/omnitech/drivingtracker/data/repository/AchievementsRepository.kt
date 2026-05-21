@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.ContactIdWrapper
 import com.omnitech.drivingtracker.data.models.CreateContactRequest
+import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.RetrofitClient
 import retrofit2.HttpException
@@ -25,9 +26,9 @@ class AchievementsRepository{
 
     }
 
-    suspend fun getLeaderboard(category: String = "OVERALL",  scope: String = "GLOBAL") : Result<LeaderboardData>{ //idk man
+    suspend fun getLeaderboard(category: String = "OVERALL",  scope: String = "GLOBAL") : Result<LeaderboardData>{
         return try{
-            val response = RetrofitClient.apiService.getLeaderboard(token = getAuthHeader(), category = category, scope = scope)
+            val response = RetrofitClient.apiService.getLeaderboard(category = category, scope = scope)
             Result.success(response.data)
         }
         catch (e: Exception){
