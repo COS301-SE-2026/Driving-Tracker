@@ -41,7 +41,7 @@ fun SignUp(
     var day by remember { mutableStateOf("") }
     var month by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
-    var consentStatus by remember { mutableStateOf(false) }
+    var consent_status by remember { mutableStateOf(false) }
 
     var passwordVisible by remember { mutableStateOf(false)}
     var confirmPasswordVisible by remember { mutableStateOf(false)}
@@ -279,13 +279,13 @@ fun SignUp(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = consentStatus,
-                        onCheckedChange = { consentStatus = it }
+                        checked = consent_status,
+                        onCheckedChange = { consent_status = it }
                     )
                     Text(
                         text = "I agree to the terms and conditions",
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.clickable { consentStatus = !consentStatus }
+                        modifier = Modifier.clickable { consent_status = !consent_status }
                     )
                 }
 
@@ -319,7 +319,7 @@ fun SignUp(
                                 day,
                                 month,
                                 year,
-                                consentStatus
+                                consent_status
                             )
                     },
                     modifier = Modifier
