@@ -23,6 +23,9 @@ jest.mock('../../../src/db/prisma', () => ({
     trip_events: {
       create: jest.fn(),
     },
+    trip_location_shares: {
+        updateMany: jest.fn(),
+    },
   },
 }));
 
