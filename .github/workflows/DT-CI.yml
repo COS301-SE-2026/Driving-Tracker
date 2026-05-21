@@ -31,6 +31,7 @@ jobs:
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build
+      - run: yarn test --coverage
   
   frontend:
     runs-on: ubuntu-latest
