@@ -42,6 +42,72 @@ async function main() {
 
     console.log(`Seeded our login user: ${myLoginUser.email} (Password: ${plainTextPassword})`);
 
+    //making sure our user has a vehicle
+    let myVehicle = await prisma.vehicles.findFirst({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (!myVehicle) {
+        myVehicle = await prisma.vehicles.create({
+            data: {
+                user_id: myLoginUser.user_id,
+                registration: 'DRIVER1',
+                make: 'BMW',
+                model: 'M3',
+                year: 2024,
+                fuel_type: 'PETROL',
+            }
+        });
+        console.log(`Seeded vehicle for Omnitech`);
+    }
+
+    //making sure Omnitech has contacts
+    const contactCount = await prisma.trusted_contacts.count({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (contactCount < 4) {
+        const contactsNeeded = 4 - contactCount;
+        for (let i = 0; i < contactsNeeded; i++) {
+            const firstName = faker.person.firstName();
+            const lastName = faker.person.lastName();
+
+            const contactUser = await prisma.users.create({
+                data: {
+                    username: faker.internet.username({ firstName, lastName }) + faker.number.int(1000),
+                    name: firstName,
+                    surname: lastName,
+                    email: faker.internet.email({ firstName, lastName }),
+                    password_hash: hashedPassword,
+                    role: 'USER',
+                    dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+                    phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+                    consent_status: true,
+                    status: 'ACTIVE'
+                }
+            });
+
+            //linking as trusted contacts
+            await prisma.trusted_contacts.create({
+                data: {
+                    user_id: myLoginUser.user_id,
+                    contact_user_id: contactUser.user_id,
+                    name: `${contactUser.name} ${contactUser.surname}`,
+                    relationship: faker.helpers.arrayElement(['Family', 'Friend', 'Spouse', 'Sibling']),
+                    email: contactUser.email,
+                    phone: faker.phone.number({ style: 'national' }),//SA numbers
+                    consent_status: 'APPROVED',
+                    alert_preferences: {
+                        create: { on_crash: true, on_trip_end: false, on_unexpected_stop: true }
+                    }
+                }
+            });
+        }
+        console.log(`Seeded ${contactsNeeded} Contacts for Omnitech`);
+    } else{
+        console.log(`Verified 4+ Contacts exist for Omnitech`)
+    }
+
     //Creating 10 users
     const users = [];
     for (let i = 0; i < 10; i++){
