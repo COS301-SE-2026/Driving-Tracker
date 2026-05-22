@@ -1,6 +1,7 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
 import { faker } from '@faker-js/faker';
+import bcrypt from 'bcrypt'
 
 //SA coordinates (coordinates for SA only)
 const SACords = {
@@ -18,95 +19,224 @@ function getSAloc() {
 
 async function main() {
 
-    console.log('Cleaning database...');
-    await prisma.alert_notifications.deleteMany();
-    await prisma.alerts.deleteMany();
-    await prisma.trip_location_shares.deleteMany();
-    await prisma.alert_preferences.deleteMany();
-    await prisma.trusted_contacts.deleteMany();
-    await prisma.trip_readings.deleteMany();
-    await prisma.trip_events.deleteMany();
-    await prisma.trip_scores.deleteMany();
-    await prisma.trips.deleteMany();
-    await prisma.vehicles.deleteMany();
-    await prisma.leaderboard.deleteMany();
-    await prisma.user_badges.deleteMany();
-    await prisma.badge_criteria.deleteMany();
-    await prisma.badges.deleteMany();
-    await prisma.users.deleteMany();
-
     console.log('Start seeding....');
 
-    //Creating 10 users
-    const users = [];
-    for (let i = 0; i < 10; i++){
-        const firstName = faker.person.firstName();
-        const lastName = faker.person.lastName();
-        const user = await prisma.users.create({
+    //Our constant user
+    const plainTextPassword = process.env.SEED_USER_PASSWORD;
+
+    if (!plainTextPassword){
+        throw new Error("SEED_USER_PASSWORD is not set. Add to env");
+    }
+
+    const hashedPassword = bcrypt.hashSync(plainTextPassword, 10);
+
+    const myLoginUser = await prisma.users.upsert({
+        where: { email: 'omnitech@gmail.com' },
+        update: {},
+        create: {
+            username: 'Omn1t3ch',
+            name: 'Omnitech',
+            surname: 'Omnitech',
+            email : 'omnitech@gmail.com',
+            password_hash : hashedPassword,
+            role: 'USER',
+            dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+            phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+            consent_status: true,
+            status: 'ACTIVE',
+        }
+    });
+
+    console.log(`Seeded our login user: ${myLoginUser.email} (Password: ${plainTextPassword})`);
+
+    //making sure our user has a vehicle
+    let myVehicle = await prisma.vehicles.findFirst({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (!myVehicle) {
+        myVehicle = await prisma.vehicles.create({
             data: {
-                username: faker.internet.username({ firstName, lastName }) + faker.number.int(1000),
-                name: firstName,
-                surname: lastName,
-                email: faker.internet.email({ firstName, lastName }),
-                password_hash: faker.internet.password(),
-                role: 'USER',
-                dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
-                phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
-                consent_status: true,
-                status: 'ACTIVE'
+                user_id: myLoginUser.user_id,
+                registration: 'DRIVER1',
+                make: 'BMW',
+                model: 'M3',
+                year: 2024,
+                fuel_type: 'PETROL',
             }
         });
-        users.push(user);
+        console.log(`Seeded vehicle for Omnitech`);
     }
-    console.log(`Seeded 10 users`);
 
-    //Creating 5 badges with criteria
-    const badges = [];
-    const badgeCategories = ['MILESTONE', 'STEAK', 'SOCIAL', 'VARIETY'];
-    for (let i = 0; i < 5; i++){
-        const badge = await prisma.badges.create({
-            data: {
-                name: `${faker.word.adjective()} Driver ${i}`,
-                description: faker.lorem.sentence(),
-                category: faker.helpers.arrayElement(badgeCategories),
-                icon_url: faker.image.url(),
-                badge_criteria: {
-                    create: {
-                        metric: 'safety_score',
-                        operator: '>',
-                        threshold: faker.number.float({ min: 80, max: 95, fractionDigits: 2 }),
-                        target: faker.number.int({ min: 5, max: 50 })
+    //making sure Omnitech has contacts
+    const contactCount = await prisma.trusted_contacts.count({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (contactCount < 4) {
+        const contactsNeeded = 4 - contactCount;
+        for (let i = 0; i < contactsNeeded; i++) {
+            const firstName = faker.person.firstName();
+            const lastName = faker.person.lastName();
+
+            const contactUser = await prisma.users.create({
+                data: {
+                    username: faker.internet.username({ firstName, lastName }) + faker.number.int(1000),
+                    name: firstName,
+                    surname: lastName,
+                    email: faker.internet.email({ firstName, lastName }),
+                    password_hash: hashedPassword,
+                    role: 'USER',
+                    dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+                    phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+                    consent_status: true,
+                    status: 'ACTIVE'
+                }
+            });
+
+            //linking as trusted contacts
+            await prisma.trusted_contacts.create({
+                data: {
+                    user_id: myLoginUser.user_id,
+                    contact_user_id: contactUser.user_id,
+                    name: `${contactUser.name} ${contactUser.surname}`,
+                    relationship: faker.helpers.arrayElement(['Family', 'Friend', 'Spouse', 'Sibling']),
+                    email: contactUser.email,
+                    phone: faker.phone.number({ style: 'national' }),//SA numbers
+                    consent_status: 'APPROVED',
+                    alert_preferences: {
+                        create: { on_crash: true, on_trip_end: false, on_unexpected_stop: true }
                     }
                 }
-            }
-        });
-        badges.push(badge);
-    }
-    console.log(`Seeded 5 badges`);
-
-    //Creating leaderboard entries & user badges
-    for (const user of users) {
-        //Giving each user 1-5 random badges
-        const numBadges = faker.number.int({  min: 1, max: 5});
-        const userBadges = faker.helpers.arrayElements(badges, numBadges);
-        for (const b of userBadges){
-            await prisma.user_badges.create({
-                data: { user_id: user.user_id, badge_id: b.badge_id }
             });
         }
-
-        //Add to Leaderboard
-        await prisma.leaderboard.create({
-            data: {
-                user_id: user.user_id,
-                category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
-                scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
-                score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 })
-            }
-        });
-
+        console.log(`Seeded ${contactsNeeded} Contacts for Omnitech`);
+    } else{
+        console.log(`Verified 4+ Contacts exist for Omnitech`)
     }
-    console.log(`Seeded Leaderboards and User badges`);
+
+    //Ensuring the login user has a seeded trip set only once
+    const tripCount = await prisma.trips.count({
+        where: { user_id: myLoginUser.user_id }
+    });
+
+    if (tripCount === 0) {
+        for (let i = 0; i < 3; i++) {
+            const startLoc = getSAloc();
+            const endLoc = getSAloc();
+
+            await prisma.trips.create({
+                data: {
+                    user_id: myLoginUser.user_id,
+                    vehicle_id: myVehicle.vehicle_id,
+                    start_latitude: startLoc.lat,
+                    start_longitude: startLoc.lng,
+                    end_latitude: endLoc.lat,
+                    end_longitude: endLoc.lng,
+                    distance_km: faker.number.float({ min: 5, max: 150, fractionDigits: 2 }),
+                    duration_minutes: faker.number.int({ min: 10, max: 180 }),
+                    fuel_estimate: faker.number.float({ min: 1, max: 15, fractionDigits: 2 }),
+                    data_source: 'PHONE',
+                    status: 'COMPLETED',
+
+                    trip_scores: {
+                        create: {
+                            safety_score: faker.number.float({ min: 60, max: 100, fractionDigits: 2 }),
+                            eco_score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
+                            overall_score: faker.number.float({ min: 65, max: 100, fractionDigits: 2 })
+                        }
+                    }
+                }
+            });
+        }
+        console.log(`Seeded 3 Trips for Omnitech`);
+    } else {
+        console.log(`Verified seeded trips already exist for Login User`)
+    }
+
+    //Creating 10 users without duplication
+    let allUsersCount =  await prisma.users.count();
+    if (allUsersCount < 11) {//1 Omnitech + 10 Random
+        const usersNeeded = 11 - allUsersCount;
+        for (let i = 0; i < usersNeeded; i++){
+            const firstName = faker.person.firstName();
+            const lastName = faker.person.lastName();
+            await prisma.users.create({
+                data: {
+                    username: faker.internet.username({ firstName, lastName }) + faker.number.int(1000),
+                    name: firstName,
+                    surname: lastName,
+                    email: faker.internet.email({ firstName, lastName }),
+                    password_hash: faker.internet.password(),
+                    role: 'USER',
+                    dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+                    phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+                    consent_status: true,
+                    status: 'ACTIVE'
+                }
+            });
+
+        }
+        console.log(`Seeded ${usersNeeded} users`);
+    }
+
+    //Creating 5 badges with criteria
+    let badgeCount =  await prisma.badges.count();
+    if (badgeCount < 5) {
+        const badgesNeeded = 5 - badgeCount;
+        const badgeCategories = ['MILESTONE', 'STREAK', 'SOCIAL', 'VARIETY'];
+        for (let i = 0; i < badgesNeeded; i++){
+            await prisma.badges.create({
+                data: {
+                    name: `${faker.word.adjective()} Driver ${faker.number.int({ min: 1, max: 1_000_000 })}`,
+                    description: faker.lorem.sentence(),
+                    category: faker.helpers.arrayElement(badgeCategories),
+                    icon_url: faker.image.url(),
+                    badge_criteria: {
+                        create: {
+                            metric: 'safety_score',
+                            operator: '>',
+                            threshold: faker.number.float({ min: 80, max: 95, fractionDigits: 2 }),
+                            target: faker.number.int({ min: 5, max: 50 })
+                        }
+                    }
+                }
+            });
+        } 
+        console.log(`Seeded ${badgesNeeded} badges`);   
+    }
+    
+    const badges = await prisma.badges.findMany();
+    const users = await prisma.users.findMany();
+    //Creating leaderboard entries & user badges
+    const leaderboardCount = await prisma.leaderboard.count();
+    if (leaderboardCount < 10) {
+        for (const user of users) {
+            //Checking if user already has a leaderboard to avoid unique constraint crashes
+            const existingBoard = await prisma.leaderboard.findFirst({ where: { user_id: user.user_id }});
+            if (!existingBoard) {
+                await prisma.leaderboard.create({
+                    data: {
+                        user_id: user.user_id,
+                        category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
+                        scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
+                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 })
+                    }
+                });
+
+                //assigning random badges only they don't have
+                const userBadges = faker.helpers.arrayElements(badges, 2);
+                for (const b of userBadges) {
+                    await prisma.user_badges.create({
+                        data: { user_id: user.user_id, badge_id: b.badge_id }
+                    }).catch(() => {});
+                }
+            }
+        }
+        console.log(`Seeded Leaderboards and User badges`);
+    }
+    
+    
 
     //Creating trusted contacts (linking random users together)
     const contacts: any[] = [];
@@ -142,21 +272,35 @@ async function main() {
     }
     console.log(`Seeded Trusted Contacts and Alert Preferences`);
 
-    //Creating Vehicles, Trips, Scores, Events and rreadings
+    //Creating Vehicles, Trips, Scores, Events and readings
     const trips = [];
     for (const user of users) {
-        const vehicle = await prisma.vehicles.create({
-            data: {
-                user_id: user.user_id,
-                registration: faker.vehicle.vrm(),//license plates
-                make: faker.vehicle.manufacturer(),
-                model: faker.vehicle.model(),
-                year: faker.date.past({ years: 15 }).getFullYear(),
-                fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
-            }
+        const existingTripCount = await prisma.trips.count({
+            where: { user_id: user.user_id }
         });
 
-        //1-2 trips per vehicle
+        if(existingTripCount > 0){
+            continue;
+        }
+
+        let vehicle = await prisma.vehicles.findFirst({
+            where: { user_id: user.user_id }
+        });
+
+        if(!vehicle){
+            vehicle = await prisma.vehicles.create({
+                data: {
+                    user_id: user.user_id,
+                    registration: faker.vehicle.vrm(), // license plates
+                    make: faker.vehicle.manufacturer(),
+                    model: faker.vehicle.model(),
+                    year: faker.date.past({ years: 15 }).getFullYear(),
+                    fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                }
+            });
+        }
+
+        //1-2 trips per vehicle, only on the first seed for that user
         const numTrips = faker.number.int({ min: 1, max: 2 });
         for (let t = 0; t < numTrips; t++) {
             const startLoc = getSAloc();
@@ -219,9 +363,11 @@ async function main() {
     }
     console.log(`Seeding Vehicles, Trips, Scores, Events and readings`);
 
+    const allTrips = await prisma.trips.findMany();
+
     //Creating alerts, notifications and location shares
     for (let i = 0; i < 5; i++) {
-        const trip = faker.helpers.arrayElement(trips);
+        const trip = faker.helpers.arrayElement(allTrips);
         const alertLoc = getSAloc();
 
         //creating alert
@@ -269,6 +415,7 @@ async function main() {
     console.log('Seeding finished successfully');
 
 }
+
 
 main()
     .catch((e) => {

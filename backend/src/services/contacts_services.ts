@@ -23,8 +23,8 @@ export const contact_services ={
      * disallow duplicates
     */
     async create_trusted_contact(user_id: string, identifier: string){
-        //look up the target user either by uuid or username
-        const where = is_uuid(identifier) ? {user_id: identifier} : {username: identifier};
+        //look up the target user either by uuid, email or username
+        const where = is_uuid(identifier) ? {user_id: identifier} : (identifier.includes('@') ? {email: identifier} : {username: identifier});
 
         const target_user = await prisma.users.findFirst({
             where,
