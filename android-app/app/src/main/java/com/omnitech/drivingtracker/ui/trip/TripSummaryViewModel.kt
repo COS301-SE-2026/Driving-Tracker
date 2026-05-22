@@ -15,7 +15,10 @@ class TripSummaryViewModel(private val repository: TripRepository) : ViewModel()
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
-        data class Success(val trip: TripSummaryDto) : UiState()
+        data class Success(
+            val trip: TripSummaryDto,
+            val isFirstTrip: Boolean = false
+        ) : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
 
@@ -75,9 +78,9 @@ class TripSummaryViewModel(private val repository: TripRepository) : ViewModel()
                 ecoScore = mockEco,
                 overallScore = mockOverall
             ).fold(
-                onSuccess = {
+                onSuccess = { data ->
                     _endTripState.value = UiState.Success(
-                        TripSummaryDto(
+                        trip = TripSummaryDto(
                             tripId = tripId,
                             vehicleId = null,
                             startedAt = "",
@@ -90,7 +93,8 @@ class TripSummaryViewModel(private val repository: TripRepository) : ViewModel()
                             fuelEstimate = mockFuel,
                             scores = null,
                             events = emptyList()
-                        )
+                        ),
+                        isFirstTrip = data.isFirstTrip ?: false
                     )
                 },
                 onFailure = { exception ->

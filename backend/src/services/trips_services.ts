@@ -143,7 +143,7 @@ export const trips_services ={
                     const validIds = valid.map(v => v.contact_id);
                     //if provided ids were invalid, throw error
                     if(validIds.length !== data.share_with_contacts.length){
-                        throw new Error("Inavlid contacts selection: some contacts not found or have not given consent.");
+                        throw new Error("Invalid contacts selection: some contacts not found or have not given consent.");
                     }
 
                     //create share rows
@@ -211,26 +211,38 @@ export const trips_services ={
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
-            const tripScore = await prisma.trip_scores.upsert({
-                where: { score_id: existing_score?.score_id || "" },
-                update: {
-                    safety_score: data.safety_score,
-                    eco_score: data.eco_score,
-                    overall_score: data.overall_score
-                },
-                create: {
-                    trip_id: data.trip_id,
-                    safety_score: data.safety_score,
-                    eco_score: data.eco_score,
-                    overall_score: data.overall_score
-                }
-            });
+
+            let tripScore;
+            if (existing_score) {
+                tripScore = await prisma.trip_scores.update({
+                    where: { score_id: existing_score.score_id },
+                    data: {
+                        safety_score: data.safety_score,
+                        eco_score: data.eco_score,
+                        overall_score: data.overall_score
+                    }
+                });
+            } else {
+                tripScore = await prisma.trip_scores.create({
+                    data: {
+                        trip_id: data.trip_id,
+                        safety_score: data.safety_score,
+                        eco_score: data.eco_score,
+                        overall_score: data.overall_score
+                    }
+                });
+            }
 
             //getting the user info
              const user = await prisma.users.findUnique({
                 where: { user_id: data.user_id },
                 select: { username: true }
             });
+            // Count completed trips to see if this is the first one
+            const completedTripCount = await prisma.trips.count({
+                where: { user_id: data.user_id, status: "COMPLETED" }
+            });
+
             return {
                 trip_id: updatedTrip.trip_id,
                 username: user?.username,
@@ -242,7 +254,8 @@ export const trips_services ={
                     safety_score: tripScore.safety_score,
                     eco_score: tripScore.eco_score,
                     overall_score: tripScore.overall_score
-                }
+                },
+                is_first_trip: completedTripCount === 1
             };
 
         }catch(error){

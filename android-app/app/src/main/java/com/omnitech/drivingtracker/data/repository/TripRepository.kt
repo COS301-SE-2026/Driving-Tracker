@@ -94,7 +94,7 @@ class TripRepository(private val api: ApiService){
         safetyScore: Double? = null,
         ecoScore: Double? = null,
         overallScore: Double? = null
-    ): Result<String>{
+    ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(
                 endTime = endTime,
@@ -107,7 +107,7 @@ class TripRepository(private val api: ApiService){
                 overallScore = overallScore
             )
             val response = api.endTrip(tripId, request)
-            Result.success(response.data.tripId)
+            Result.success(response.data)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to end trip"))

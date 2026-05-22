@@ -48,18 +48,58 @@ fun LiveTrip(
         }
     }
 
-    LaunchedEffect(endTripState) {
-        val state = endTripState
-        if (state is TripSummaryViewModel.UiState.Success || state is TripSummaryViewModel.UiState.Error) {
-            navController?.navigate(Screen.Trips.route) {
-                popUpTo(Screen.Dashboard.route)
+    val currentEndTripState = endTripState
+    
+    if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
+        if (currentEndTripState.isFirstTrip) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Badge Awarded!", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Text("Congratulations! You've earned the \"First Trip\" badge.", textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("You completed your very first drive with Driving Tracker!", style = MaterialTheme.typography.bodySmall)
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        navController?.navigate(Screen.Trips.route) {
+                            popUpTo(Screen.Dashboard.route)
+                        }
+                    }) {
+                        Text("Awesome!")
+                    }
+                }
+            )
+        } else {
+            // If not first trip, navigate away immediately
+            LaunchedEffect(Unit) {
+                navController?.navigate(Screen.Trips.route) {
+                    popUpTo(Screen.Dashboard.route)
+                }
             }
         }
+    } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Error") },
+            text = { Text(currentEndTripState.message ?: "Failed to end trip") },
+            confirmButton = {
+                Button(onClick = {
+                    navController?.navigate(Screen.Trips.route) {
+                        popUpTo(Screen.Dashboard.route)
+                    }
+                }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     LiveTripContent(
         uiState = uiState,
-        endTripState = endTripState,
+        endTripState = currentEndTripState,
         onEndTrip = { viewModel.endTrip(tripId) },
         navController = navController
     )
@@ -98,7 +138,8 @@ fun LiveTripContent(
             )
         }
 
-        when (uiState){
+        val currentUiState = uiState
+        when (currentUiState){
             is TripSummaryViewModel.UiState.Loading ->{
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -107,12 +148,12 @@ fun LiveTripContent(
 
             is TripSummaryViewModel.UiState.Error ->{
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message ?: "Failed to load trip", color = MaterialTheme.colorScheme.error)
+                    Text(text = currentUiState.message ?: "Failed to load trip", color = MaterialTheme.colorScheme.error)
                 }
             }
             is TripSummaryViewModel.UiState.Success -> {
                 TripDetails(
-                    trip = uiState.trip,
+                    trip = currentUiState.trip,
                     endTripState = endTripState,
                     onEndTrip = onEndTrip,
                     navController = navController
@@ -200,7 +241,7 @@ private fun TripDetails(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("♻\uFE0F", fontSize = 16.sp)
+                        Text("♻️", fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
@@ -296,8 +337,8 @@ private fun TripDetails(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 //Counting alerts from trip events
-                val hardBrakingCount = trip.events.count { it.eventType=="HARD_BRAKING" }
-                val hardAccelCount = trip.events.count { it.eventType=="HARD_ACCELERATION" }
+                val hardBrakingCount = trip.events.count { it.eventType=="HARSH_BRAKE" }
+                val hardAccelCount = trip.events.count { it.eventType=="HARSH_ACCELERATION" }
 
                 AlertItem("Hard Braking", hardBrakingCount)
                 Spacer(modifier = Modifier.height(4.dp))
