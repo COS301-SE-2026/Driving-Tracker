@@ -62,6 +62,7 @@ jest.mock('../../../src/db/prisma', () => {
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
     };
     const trip_location_shares = {
         create: jest.fn(),
@@ -203,7 +204,7 @@ describe('Trips services end_trip',()=>{
             status: 'COMPLETED',
         });
         (mock_prisma.trip_scores.findFirst).mockResolvedValue(null);
-        (mock_prisma.trip_scores.upsert).mockResolvedValue({
+        (mock_prisma.trip_scores.create).mockResolvedValue({
             safety_score: 95,
             eco_score: 88,
             overall_score: 91,
@@ -211,6 +212,7 @@ describe('Trips services end_trip',()=>{
         (mock_prisma.users.findUnique).mockResolvedValue({
             username: 'testuser',
         });
+        (mock_prisma.trips.count).mockResolvedValue(1);
         const result = await trips_services.end_trip({
             trip_id: 't1',
             user_id: 'u1',
