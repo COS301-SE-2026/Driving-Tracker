@@ -14,9 +14,13 @@
 > An intelligent Android driving companion that unifies sensor fusion, vehicle diagnostics, behavioural analytics, and social engagement into one platform - making safer, more efficient driving accessible and rewarding for everyday drivers.
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Driving-Tracker/DT-CI.yml?style=plastic&logo=GitHub)
+[![codecov](https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov)](https://codecov.io/gh/COS301-SE-2026/Driving-Tracker)
+
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
-[![codecov](https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov)](https://codecov.io/gh/COS301-SE-2026/Driving-Tracker)
+
+![Static Badge](https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs)
+![Static Badge](https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin)
 
 <h2>Client</h2>
 </br>
