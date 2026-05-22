@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -39,6 +40,7 @@ fun LiveTrip(
     navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val endTripState by viewModel.endTripState.collectAsState()
 
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
@@ -46,8 +48,19 @@ fun LiveTrip(
         }
     }
 
+    LaunchedEffect(endTripState) {
+        val state = endTripState
+        if (state is TripSummaryViewModel.UiState.Success || state is TripSummaryViewModel.UiState.Error) {
+            navController?.navigate(Screen.Trips.route) {
+                popUpTo(Screen.Dashboard.route)
+            }
+        }
+    }
+
     LiveTripContent(
         uiState = uiState,
+        endTripState = endTripState,
+        onEndTrip = { viewModel.endTrip(tripId) },
         navController = navController
     )
 }
@@ -55,6 +68,8 @@ fun LiveTrip(
 @Composable
 fun LiveTripContent(
     uiState: TripSummaryViewModel.UiState,
+    endTripState: TripSummaryViewModel.UiState = TripSummaryViewModel.UiState.Idle,
+    onEndTrip: () -> Unit = {},
     navController: NavController? = null
 ) {
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -95,10 +110,13 @@ fun LiveTripContent(
                     Text(text = uiState.message ?: "Failed to load trip", color = MaterialTheme.colorScheme.error)
                 }
             }
-
             is TripSummaryViewModel.UiState.Success -> {
-                val trip = uiState.trip
-                TripDetails(trip = trip, navController = navController)
+                TripDetails(
+                    trip = uiState.trip,
+                    endTripState = endTripState,
+                    onEndTrip = onEndTrip,
+                    navController = navController
+                )
             }
             else -> {}
         }
@@ -108,6 +126,8 @@ fun LiveTripContent(
 @Composable
 private fun TripDetails(
     trip: TripSummaryDto,
+    endTripState: TripSummaryViewModel.UiState,
+    onEndTrip: () -> Unit,
     navController: NavController?
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -201,13 +221,16 @@ private fun TripDetails(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
-                onClick = {
-
-                },
+                onClick = onEndTrip,
+                enabled = endTripState !is TripSummaryViewModel.UiState.Loading,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {
-                Text("End Trip", color = Color.White)
+                if (endTripState is TripSummaryViewModel.UiState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("End Trip", color = Color.White)
+                }
             }
             Button(
                 onClick = {},

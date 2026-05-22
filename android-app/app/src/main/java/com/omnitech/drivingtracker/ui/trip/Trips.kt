@@ -579,9 +579,10 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
+                val vehicle = "VW Polo"
 //                Text(trip.from, style = MaterialTheme.typography.bodyMedium)
 //                Text(trip.to, style = MaterialTheme.typography.bodyMedium)
-                Text(trip.vehicleId ?: "Vehicle not set", style = MaterialTheme.typography.bodyMedium)
+                Text(vehicle?: "Vehicle not set", style = MaterialTheme.typography.bodyMedium)
                 Text(trip.status, style = MaterialTheme.typography.bodyMedium)
             }
 
