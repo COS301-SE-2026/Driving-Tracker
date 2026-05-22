@@ -95,6 +95,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.Screen
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
@@ -107,19 +114,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-//trip class
-//data class Trip(
-//    val date: String,
-//    val time: String,
-//    val from: String,
-//    val to: String,
-//    val distance: String,
-//    val duration: String,
-//    val score: Int
-//)
-import androidx.navigation.NavController
-import com.omnitech.drivingtracker.MainActivity
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun Trips(
@@ -127,42 +125,72 @@ fun Trips(
     tripsViewModel: TripsViewModel = viewModel(),
     tripViewModel: TripViewModel = viewModel(),
     contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = viewModel()
-){
-
-//    val trips = listOf(
-//        Trip("Today","17:00","Office","Home","40 km","45 min", 80),
-//        Trip("Today","08:15","Home","Office","40 km","50 min", 78),
-//        Trip("Yesterday","14:05","Home","Spar","20 km","20 min", 35),
-//        Trip("10 May","17:00","Office","Home","40 km","45 min", 80)
-//    )
+) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
-    var showStartTripDialog by remember { mutableStateOf(false) }
 
-    val approvedContacts = when (contactsState){
+    val approvedContacts = when (val state = contactsState) {
         is com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success -> {
-            (contactsState as com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success)
-                .contacts
-                .filter { it.consentStatus == ConsentStatus.APPROVED }
+            state.contacts.filter { it.consentStatus == ConsentStatus.APPROVED }
         }
         else -> emptyList()
     }
 
+    LaunchedEffect(tripStartState){
+        val state = tripStartState
+        if (state is TripViewModel.UiState.Success) {
+            val tripId = state.data
+
+            if (tripId.isNotEmpty()){
+                navController?.navigate(Screen.LiveTrip.createRoute(tripId))
+            }
+        }
+    }
+
+    TripsContent(
+        tripsState = tripsState,
+        tripStartState = tripStartState,
+        approvedContacts = approvedContacts,
+        onRetryTrips = { tripsViewModel.loadTripsHistory() },
+        onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
+            tripViewModel.startTrip(
+                vehicleId = vehicleId,
+                dataSource = dataSource,
+                latitude = latitude,
+                longitude = longitude,
+                selectedContactIds = contactIds.ifEmpty { null }
+            )
+        },
+        navController = navController
+    )
+}
+
+@Composable
+fun TripsContent(
+    tripsState: TripsViewModel.UiState,
+    tripStartState: TripViewModel.UiState,
+    approvedContacts: List<ContactDto>,
+    onRetryTrips: () -> Unit,
+    onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
+    navController: NavController? = null
+) {
+    var showStartTripDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ){
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-        ){
+        ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
-            Row{
+            Row {
                 Text(
                     text = "Driving ",
                     fontWeight = FontWeight.Bold,
@@ -200,12 +228,15 @@ fun Trips(
             Column(modifier = Modifier.padding(16.dp)){
                 Text("On the move again?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {showStartTripDialog = true}, colors = ButtonDefaults.buttonColors(containerColor = Green)){
-                    Icon(Icons.Default.Add, contentDescription = null, modifier=Modifier.size(16.dp))
+                Button(
+                    onClick = { showStartTripDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Green)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Start new trip")
                 }
-                when(tripStartState){
+                when (tripStartState) {
                     is TripViewModel.UiState.Loading -> {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -217,7 +248,7 @@ fun Trips(
                     is TripViewModel.UiState.Error -> {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = (tripStartState as TripViewModel.UiState.Error).message ?: "Failed to start trip",
+                            text = tripStartState.message ?: "Failed to start trip",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -239,68 +270,56 @@ fun Trips(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
-        ){
+        ) {
             Text("Past", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
         }
 
-        //Trips
-//        Column(
-//            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
-//                .padding(horizontal=16.dp),
-//            verticalArrangement = Arrangement.spacedBy(12.dp)
-//        ){
-//            trips.forEachIndexed {
-//                    index,trip -> TripCard(trip=trip, isLatest = index == 0) //display trip card for each trip in the class
-//            }
-//        }
-
-        when(tripsState){
+        when (tripsState) {
             is TripsViewModel.UiState.Loading, is TripsViewModel.UiState.Idle -> {
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
-                ){
+                ) {
                     CircularProgressIndicator()
                 }
             }
             is TripsViewModel.UiState.Error -> {
-                val error = tripsState as TripsViewModel.UiState.Error
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
-                ){
-                    Column(horizontalAlignment = Alignment.CenterHorizontally){
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = error.message ?: "Failed to load trips",
+                            text = tripsState.message ?: "Failed to load trips",
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { tripsViewModel.loadTripsHistory() }){
+                        Button(onClick = onRetryTrips) {
                             Text("Retry")
                         }
                     }
                 }
             }
             is TripsViewModel.UiState.Success -> {
-                val trips = (tripsState as TripsViewModel.UiState.Success).trips
-                if (trips.isEmpty()){
+                val trips = tripsState.trips
+                if (trips.isEmpty()) {
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center
-                    ){
+                    ) {
                         Text(
                             text = "No trips yet",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }else{
+                } else {
                     Column(
                         modifier = Modifier.weight(1f)
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ){
+                    ) {
                         trips.forEachIndexed { index, trip ->
                             TripCard(trip = trip, isLatest = index == 0)
                         }
@@ -311,24 +330,19 @@ fun Trips(
         BottomNavBar(navController = navController)
     }
 
-    if(showStartTripDialog){
+    if (showStartTripDialog) {
         StartTripDialog(
             approvedContacts = approvedContacts,
             onDismiss = { showStartTripDialog = false },
             onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
-                tripViewModel.startTrip(
-                    vehicleId = vehicleId,
-                    dataSource = dataSource,
-                    latitude = latitude,
-                    longitude = longitude,
-                    selectedContactIds = contactIds.ifEmpty { null }
-                )
+                onStartTrip(vehicleId, dataSource, latitude, longitude, contactIds)
                 showStartTripDialog = false
             }
         )
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun StartTripDialog(
     approvedContacts: List<ContactDto>,
@@ -340,6 +354,30 @@ private fun StartTripDialog(
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
+
+    val context = LocalContext.current
+    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    LaunchedEffect(locationPermissionState.status.isGranted){
+
+        if (locationPermissionState.status.isGranted){
+            try {
+                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                    .addOnSuccessListener{ location ->
+                        if (location != null) {
+                            latitude = location.latitude.toString()
+                            longitude = location.longitude.toString()
+                        }
+                    }
+
+            } catch (_: SecurityException) {
+                //Permission revoked between check and call
+            }
+        } else {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -420,8 +458,16 @@ private fun StartTripDialog(
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
-                                    Text(contact.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                    Text(contact.username, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        contact.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        contact.username,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
@@ -434,7 +480,13 @@ private fun StartTripDialog(
                 val lat = latitude.toDoubleOrNull()
                 val lng = longitude.toDoubleOrNull()
                 if (vehicleId.isNotBlank() && lat != null && lng != null) {
-                    onStartTrip(vehicleId.trim(), dataSource.trim(), lat, lng, selectedContactIds.toList())
+                    onStartTrip(
+                        vehicleId.trim(),
+                        dataSource.trim(),
+                        lat,
+                        lng,
+                        selectedContactIds.toList()
+                    )
                 }
             }) {
                 Text("Start")
@@ -453,7 +505,8 @@ private fun formatTripDate(value: String?): String {
         if (value.isNullOrBlank()) {
             "Unknown"
         } else {
-            Instant.parse(value).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd MMM"))
+            Instant.parse(value).atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("dd MMM"))
         }
     }.getOrDefault("Unknown")
 }
@@ -463,13 +516,14 @@ private fun formatTripTime(value: String?): String {
         if (value.isNullOrBlank()) {
             "Unknown"
         } else {
-            Instant.parse(value).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
+            Instant.parse(value).atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("HH:mm"))
         }
     }.getOrDefault("Unknown")
 }
 
 private fun formatTripDistance(value: Double?): String {
-    return value?.let { "${String.format(Locale.getDefault(), "%.1f", it)} km" } ?: "-- km"
+    return value?.let { String.format(Locale.getDefault(), "%.1f", it) + " km" } ?: "-- km"
 }
 
 private fun formatTripDuration(value: Int?): String {
@@ -489,9 +543,9 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ){
-        Column{
-            if (isLatest){ //expands the details (map) of the latest trip
+    ) {
+        Column {
+            if (isLatest) { //expands the details (map) of the latest trip
                 /*Box(
                     modifier = Modifier.fillMaxWidth().height(160.dp).background(Color(0xFF9CA3AF))
                 )*/
@@ -525,9 +579,10 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
+                val vehicle = "VW Polo"
 //                Text(trip.from, style = MaterialTheme.typography.bodyMedium)
 //                Text(trip.to, style = MaterialTheme.typography.bodyMedium)
-                Text(trip.vehicleId ?: "Vehicle not set", style = MaterialTheme.typography.bodyMedium)
+                Text(vehicle?: "Vehicle not set", style = MaterialTheme.typography.bodyMedium)
                 Text(trip.status, style = MaterialTheme.typography.bodyMedium)
             }
 
@@ -569,10 +624,47 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
     }
 }
 
-@Preview(showBackground=true)
+@Preview(showBackground = true)
 @Composable
-fun TripsPreview(){
-    DrivingTrackerTheme{
-        Trips()
+fun TripsPreview() {
+    val mockTrips = listOf(
+        TripItemDto(
+            tripId = "1",
+            userId = "user1",
+            vehicleId = "VW Golf 7",
+            startTime = "2023-10-27T17:00:00Z",
+            endTime = "2023-10-27T17:45:00Z",
+            distanceKm = 40.0,
+            durationMinutes = 45,
+            fuelEstimate = null,
+            dataSource = "PHONE",
+            status = "COMPLETED",
+            createdAt = "2023-10-27T17:00:00Z",
+            trip_scores = emptyList()
+        ),
+        TripItemDto(
+            tripId = "2",
+            userId = "user1",
+            vehicleId = "VW Golf 7",
+            startTime = "2023-10-27T08:15:00Z",
+            endTime = "2023-10-27T09:05:00Z",
+            distanceKm = 40.0,
+            durationMinutes = 50,
+            fuelEstimate = null,
+            dataSource = "PHONE",
+            status = "COMPLETED",
+            createdAt = "2023-10-27T08:15:00Z",
+            trip_scores = emptyList()
+        )
+    )
+
+    DrivingTrackerTheme {
+        TripsContent(
+            tripsState = TripsViewModel.UiState.Success(mockTrips),
+            tripStartState = TripViewModel.UiState.Idle,
+            approvedContacts = emptyList(),
+            onRetryTrips = {},
+            onStartTrip = { _, _, _, _, _ -> }
+        )
     }
 }

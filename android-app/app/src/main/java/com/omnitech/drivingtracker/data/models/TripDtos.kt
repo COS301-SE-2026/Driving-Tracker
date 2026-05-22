@@ -178,5 +178,9 @@ data class EndTripResponse(
 
 data class EndTripData(
     @SerializedName("trip_id")
-    val tripId: String
+    val tripId: String,
+    @SerializedName("new_badges")
+    val newBadges: List<NewBadge>? = null,
+    @SerializedName("is_first_trip")
+    val isFirstTrip: Boolean? = false
 )

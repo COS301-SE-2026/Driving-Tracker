@@ -18,12 +18,17 @@ import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 import com.omnitech.drivingtracker.ui.home.Dashboard
+import com.omnitech.drivingtracker.ui.home.DashboardViewModel
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import com.omnitech.drivingtracker.ui.trip.LiveTrip
+import com.omnitech.drivingtracker.ui.trip.TripSummaryViewModel
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.trip.TripsViewModel
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.TripSummary
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -34,8 +39,10 @@ sealed class Screen(val route: String){
     data object Contacts : Screen("contacts")
     data object Achievements : Screen("achievements")
 
-    data object LiveTrip : Screen("live_trip")
     data object TripSummary : Screen("trip_summary")
+    data object LiveTrip : Screen("live_trip/{trip_id}") {
+        fun createRoute(tripId: String) = "live_trip/$tripId"
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -86,6 +93,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(Screen.Dashboard.route){
+                        val dashboardViewModel: DashboardViewModel =viewModel(
+                            factory = DashboardViewModel.DashboardViewModelFactory(container.tripRepository)
+                        )
                         Dashboard(navController = navController)
                     }
                     composable(Screen.Trips.route){
@@ -121,15 +131,17 @@ class MainActivity : ComponentActivity() {
                         )
                         AchievementsScreen(navController = navController, viewModel = achievementsViewModel)
                     }
+                    composable(
+                        route = Screen.LiveTrip.route,
+                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                    ) { backStackEntry->
+                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
 
-                    composable(Screen.LiveTrip.route){
-                        LiveTrip(navController = navController)
+                        val viewModel: TripSummaryViewModel = viewModel(
+                            factory = TripSummaryViewModel.TripSummaryViewModelFactory(container.tripRepository)
+                        )
+                        LiveTrip(tripId = tripId, viewModel = viewModel, navController = navController)
                     }
-
-                    composable(Screen.TripSummary.route){
-                        TripSummary()
-                    }
-
                 }
             }
         }
