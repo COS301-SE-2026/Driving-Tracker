@@ -136,9 +136,9 @@ fun Contacts(
                             contacts.forEach { contact ->
                                 ContactCard(contact = contact)
                             }
-                            
+
                             Spacer(modifier = Modifier.height(4.dp))
-                            
+
                             // Add contact button
                             OutlinedButton(
                                 onClick = {showAddContactDialog = true},
