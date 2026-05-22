@@ -67,10 +67,12 @@ jest.mock('../../../src/db/prisma', () => {
     const trip_location_shares = {
         create: jest.fn(),
         updateMany: jest.fn(),
+        createMany: jest.fn(),
     };
     const trip_scores = {
         create: jest.fn(),
         upsert: jest.fn(),
+        update: jest.fn(),
         findFirst: jest.fn(),
     };
     const trip_readings = {
@@ -83,6 +85,9 @@ jest.mock('../../../src/db/prisma', () => {
     const users = {
         findUnique: jest.fn(),
     };
+    const trusted_contacts = {
+        findMany: jest.fn(),
+    };
 
     return {
         __esModule: true,
@@ -94,6 +99,7 @@ jest.mock('../../../src/db/prisma', () => {
             trip_readings,
             trip_events,
             users,
+            trusted_contacts,
         })),
         users,
         trips,
@@ -101,6 +107,7 @@ jest.mock('../../../src/db/prisma', () => {
         trip_readings,
         trip_events,
         trip_location_shares,
+        trusted_contacts,
         },
     };
 });
@@ -190,6 +197,23 @@ describe('Trips services.create',()=>{
             })
         ).rejects.toThrow('Trip already in progress');
     });
+
+    it('throws when selected contacts are invalid', async()=>{
+        (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
+        (mock_prisma.trips.findFirst ).mockResolvedValue(null);
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+
+        await expect(
+            trips_services.create({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+                data_source: 'PHONE',
+                start_date: new Date('2026-05-20'),
+                start_location: { lat: -25.7461, lng: 28.2313 },
+                share_with_contacts: ['c1'],
+            })
+        ).rejects.toThrow('Invalid contacts selection');
+    });
 });
 
 describe('Trips services end_trip',()=>{
@@ -229,6 +253,44 @@ describe('Trips services end_trip',()=>{
 
         expect(result.trip_id).toBe('t1');
         expect(result.status).toBe('COMPLETED');
+    });
+
+    it('end trip updates existing score', async()=>{
+        (mock_prisma.trips.findUnique).mockResolvedValue({trip_id: 't1',
+            user_id: 'u1',
+            status: 'IN_PROGRESS',
+        });
+        (mock_prisma.trips.update).mockResolvedValue({trip_id: 't1',
+            distance_km: 45.5,
+            status: 'COMPLETED',
+        });
+        (mock_prisma.trip_scores.findFirst).mockResolvedValue({ score_id: 's1' });
+        (mock_prisma.trip_scores.update).mockResolvedValue({
+            safety_score: 90,
+            eco_score: 87,
+            overall_score: 89,
+        });
+        (mock_prisma.users.findUnique).mockResolvedValue({
+            username: 'testuser',
+        });
+        (mock_prisma.trips.count).mockResolvedValue(2);
+
+        const result = await trips_services.end_trip({
+            trip_id: 't1',
+            user_id: 'u1',
+            end_time: new Date(),
+            route_polyline: 'polyline',
+            distance_km: 45.5,
+            duration_minutes: 60,
+            fuel_estimate: 3.2,
+            status: 'COMPLETED',
+            safety_score: 90,
+            eco_score: 87,
+            overall_score: 89,
+        });
+
+        expect(result.trip_id).toBe('t1');
+        expect(mock_prisma.trip_scores.update).toHaveBeenCalled();
     });
     it('throws when trip not found', async()=>{
         (mock_prisma.trips.findUnique).mockResolvedValue(null);
