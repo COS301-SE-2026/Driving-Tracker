@@ -55,7 +55,9 @@ The system operates across three layers:
 ---
 
 ## Documentation
-[Software Requirement Specification](docs/SRS.pdf)\
+[Software Requirement Specification](Documentation-%20Demo%201/OmniTech%20SRS.pdf)\
+[Wireframes](Documentation-%20Demo%201/Wireframes.pdf)\
+[Brand style guide](Documentation-%20Demo%201/Brand%20Style%20Guide.pdf)\
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)
 
 ---
