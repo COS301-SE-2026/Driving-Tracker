@@ -30,6 +30,8 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
