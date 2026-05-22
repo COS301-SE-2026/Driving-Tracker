@@ -252,6 +252,17 @@ async function main() {
             continue;
         }
 
+        // Avoid creating a duplicate pair that may already exist in the DB
+        const existingPair = await prisma.trusted_contacts.findFirst({
+            where: { user_id: owner.user_id, contact_user_id: contactUser.user_id }
+        });
+
+        if (existingPair) {
+            // record that we've seen this pair in this run and skip creating it
+            seenContactPairs.add(pairKey);
+            continue;
+        }
+
         const contact = await prisma.trusted_contacts.create({
             data: {
                 user_id: owner.user_id,
