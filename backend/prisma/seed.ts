@@ -115,14 +115,13 @@ async function main() {
         console.log(`Verified 4+ Contacts exist for Omnitech`)
     }
 
-    //Ensuring user has at least 3 trips
+    //Ensuring the login user has a seeded trip set only once
     const tripCount = await prisma.trips.count({
         where: { user_id: myLoginUser.user_id }
     });
 
-    if (tripCount < 3) {
-        const tripsNeeded = 3 - tripCount;
-        for (let i = 0; i < tripsNeeded; i++) {
+    if (tripCount === 0) {
+        for (let i = 0; i < 3; i++) {
             const startLoc = getSAloc();
             const endLoc = getSAloc();
 
@@ -137,7 +136,7 @@ async function main() {
                     distance_km: faker.number.float({ min: 5, max: 150, fractionDigits: 2 }),
                     duration_minutes: faker.number.int({ min: 10, max: 180 }),
                     fuel_estimate: faker.number.float({ min: 1, max: 15, fractionDigits: 2 }),
-                    data_source: 'PHONES',
+                    data_source: 'PHONE',
                     status: 'COMPLETED',
 
                     trip_scores: {
@@ -150,9 +149,9 @@ async function main() {
                 }
             });
         }
-        console.log(`Seeded ${tripsNeeded} Trips for Omnitech`);
+        console.log(`Seeded 3 Trips for Omnitech`);
     } else {
-        console.log(`Verified 3 + Trips exist for Login User`)
+        console.log(`Verified seeded trips already exist for Login User`)
     }
 
     //Creating 10 users without duplication
@@ -273,21 +272,35 @@ async function main() {
     }
     console.log(`Seeded Trusted Contacts and Alert Preferences`);
 
-    //Creating Vehicles, Trips, Scores, Events and rreadings
+    //Creating Vehicles, Trips, Scores, Events and readings
     const trips = [];
     for (const user of users) {
-        const vehicle = await prisma.vehicles.create({
-            data: {
-                user_id: user.user_id,
-                registration: faker.vehicle.vrm(),//license plates
-                make: faker.vehicle.manufacturer(),
-                model: faker.vehicle.model(),
-                year: faker.date.past({ years: 15 }).getFullYear(),
-                fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
-            }
+        const existingTripCount = await prisma.trips.count({
+            where: { user_id: user.user_id }
         });
 
-        //1-2 trips per vehicle
+        if(existingTripCount > 0){
+            continue;
+        }
+
+        let vehicle = await prisma.vehicles.findFirst({
+            where: { user_id: user.user_id }
+        });
+
+        if(!vehicle){
+            vehicle = await prisma.vehicles.create({
+                data: {
+                    user_id: user.user_id,
+                    registration: faker.vehicle.vrm(), // license plates
+                    make: faker.vehicle.manufacturer(),
+                    model: faker.vehicle.model(),
+                    year: faker.date.past({ years: 15 }).getFullYear(),
+                    fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                }
+            });
+        }
+
+        //1-2 trips per vehicle, only on the first seed for that user
         const numTrips = faker.number.int({ min: 1, max: 2 });
         for (let t = 0; t < numTrips; t++) {
             const startLoc = getSAloc();
@@ -350,9 +363,11 @@ async function main() {
     }
     console.log(`Seeding Vehicles, Trips, Scores, Events and readings`);
 
+    const allTrips = await prisma.trips.findMany();
+
     //Creating alerts, notifications and location shares
     for (let i = 0; i < 5; i++) {
-        const trip = faker.helpers.arrayElement(trips);
+        const trip = faker.helpers.arrayElement(allTrips);
         const alertLoc = getSAloc();
 
         //creating alert
@@ -400,6 +415,7 @@ async function main() {
     console.log('Seeding finished successfully');
 
 }
+
 
 main()
     .catch((e) => {
