@@ -25,6 +25,8 @@ import com.omnitech.drivingtracker.ui.trip.TripSummaryViewModel
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.trip.TripsViewModel
+import com.omnitech.drivingtracker.ui.trip.LiveTrip
+import com.omnitech.drivingtracker.ui.trip.TripSummary
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
@@ -36,6 +38,8 @@ sealed class Screen(val route: String){
     data object Trips : Screen("trips")
     data object Contacts : Screen("contacts")
     data object Achievements : Screen("achievements")
+
+    data object TripSummary : Screen("trip_summary")
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
