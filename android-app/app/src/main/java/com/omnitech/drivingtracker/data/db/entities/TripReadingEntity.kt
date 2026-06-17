@@ -2,9 +2,20 @@ package com.omnitech.drivingtracker.data.db.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "trip_readings")
+@Entity(tableName = "trip_readings",
+    foreignKeys=[ForeignKey(
+        entity = TripEntity::class,
+        parentColumns = ["trip_id"],
+        childColumns = ["trip_id"],
+        onDelete = ForeignKey.CASCADE
+    )
+    ],
+    indices=[Index("trip_id")]
+)
 data class TripReadingEntity(
     @ColumnInfo(name="reading_id") @PrimaryKey(autoGenerate = true) val readingId: Int=0,
     @ColumnInfo(name="trip_id") val tripId: String,
