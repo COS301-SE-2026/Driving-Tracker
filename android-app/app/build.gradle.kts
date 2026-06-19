@@ -86,4 +86,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.play.services.location)
     implementation(libs.accompanist.permissions)
+
+    //OBD library
+    implementation("com.github.pires:obd-java-api:1.0")
 }
