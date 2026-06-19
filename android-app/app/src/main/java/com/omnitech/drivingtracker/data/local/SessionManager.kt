@@ -34,5 +34,7 @@ class SessionManager(context: Context) {
         prefs.edit{putString("last_obd_address", address)}
     }
 
-    fun getLastObdAddress(): String? = prefs.getString("last_obd_address", null)
+    fun getLastObdAddress(): String? {
+        return prefs.getString("last_obd_address", null)
+    }
 }
