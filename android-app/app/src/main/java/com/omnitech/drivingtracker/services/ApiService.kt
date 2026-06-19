@@ -17,6 +17,9 @@ interface ApiService{
     @POST("contacts/share_location")
     suspend fun shareLocation(@Body body: ShareLocationRequest): GenericResponse
 
+    @GET("vehicle/get_all_vehicles/")
+    suspend fun getVehicles(): VehiclesResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 

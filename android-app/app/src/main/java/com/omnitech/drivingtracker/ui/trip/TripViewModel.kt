@@ -21,7 +21,8 @@ class TripViewModel(
     sealed class UiState{
         object Idle : UiState()
         object Loading : UiState()
-        data class Success(val data: String = "") : UiState() // trip_id
+        data class Success(val data: String = "") : UiState() // trip_id or context data
+        data class SuccessVehicles(val vehicles: List<com.omnitech.drivingtracker.data.models.VehicleDto>) : UiState()
         data class Error(
             val code: String? = null,
             val message: String? = null
@@ -34,8 +35,39 @@ class TripViewModel(
     private val _tripStartState = MutableStateFlow<UiState>(UiState.Idle)
     val tripStartState: StateFlow<UiState> = _tripStartState
 
+    private val _vehiclesState = MutableStateFlow<UiState>(UiState.Idle)
+    val vehiclesState: StateFlow<UiState> = _vehiclesState
+
     init{
         loadApprovedContacts()
+        loadVehicles()
+    }
+
+    fun loadVehicles() {
+        viewModelScope.launch {
+            _vehiclesState.value = UiState.Loading
+            
+            tripRepository.getVehicles().fold(
+                onSuccess = { vehicles ->
+                    _vehiclesState.value = UiState.SuccessVehicles(vehicles)
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _vehiclesState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to load vehicles"
+                            )
+                        }
+                        else -> {
+                            _vehiclesState.value = UiState.Error(
+                                message = exception.message ?: "Unknown error"
+                            )
+                        }
+                    }
+                }
+            )
+        }
     }
 
     fun loadApprovedContacts(){

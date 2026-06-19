@@ -34,6 +34,18 @@ class TripRepository(private val api: ApiService){
         }
     }
 
+    suspend fun getVehicles(): Result<List<VehicleDto>> {
+        return try {
+            val response = api.getVehicles()
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch vehicles"))
+        } catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+
     suspend fun getTripHistory(
         startDate: String? = null,
         endDate: String? = null,
