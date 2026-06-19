@@ -4,6 +4,12 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
+import android.util.Log
+import com.github.pires.obd.commands.protocol.EchoOffCommand
+import com.github.pires.obd.commands.protocol.LineFeedOffCommand
+import com.github.pires.obd.commands.protocol.SelectProtocolCommand
+import com.github.pires.obd.commands.protocol.TimeoutCommand
+import com.github.pires.obd.enums.ObdProtocols
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,10 +50,30 @@ class ObdManager(private val context: Context){
     }
 
     private fun initializeObd(){
-        val inputStream = socket?.inputStream
-        val outputStream = socket?.outputStream
+        try{
+            val out = socket?.outputStream ?: return
+            val `in` = socket?.inputStream ?: return
 
-        //send AT commands to reset and setup protocol
+            //send AT commands to reset and setup protocol
+            //prelim commands
+
+            //stop repeating commands back
+            EchoOffCommand().run(`in`, out)
+
+            //stop adding extra empty lines
+            LineFeedOffCommand().run(`in`, out)
+
+            //millisecond wait time for answers
+            TimeoutCommand(125).run(`in`, out)
+
+            //scan cars computer to figure out language used
+            SelectProtocolCommand(ObdProtocols.AUTO).run(`in`, out)
+
+            Log.d("OBD_LOG", "OBD Protocol Initialized Successfully")
+        }catch(e: Exception){
+            Log.e("OBD_LOG", "Failed to initialize OBD protocol", e)
+        }
+
     }
 
     //get already paired devices
