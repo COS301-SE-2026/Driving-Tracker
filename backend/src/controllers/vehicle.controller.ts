@@ -11,8 +11,7 @@ export const get_all_vehicles = async(req: AuthRequest, res: Response)=>{
             return ;
         };
         const vehicles = await vehicle_services.get_all_vehicles({user_id});
-         
-        res.status(201);
+        res.status(200).json(vehicles);
     }catch(error : any){
         if(error.message.includes("Missing required fields")){
             res.status(403).json({

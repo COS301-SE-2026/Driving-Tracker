@@ -8,6 +8,7 @@ import contacts_router from "./routes/contacts.route";
 import trip_router from "./routes/trips.routes";
 import badges_leaderBoard_router from './routes/badges_leaderbord.routes';
 import leaderboard_router from './routes/leaderboard.routes';
+import vehicle_router from './routes/vehicle.routes';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/contacts", contacts_router);
 app.use("/trips", trip_router);
 app.use("/badges",badges_leaderBoard_router);
 app.use('/leaderboard', leaderboard_router);
+app.use('/vehicle',vehicle_router);
 
 const PORT = process.env.PORT || 3000;
 

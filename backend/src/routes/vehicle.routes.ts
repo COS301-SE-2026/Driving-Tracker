@@ -9,7 +9,7 @@ const vehicle_router = Router();
 //Create 
 
 //read basically get 
-vehicle_router.get("/get_all_vehicles/:user_id",verify_token,vehicle.get_all_vehicles);
+vehicle_router.get("/get_all_vehicles",verify_token,vehicle.get_all_vehicles);
 //delete 
 
 //Update 

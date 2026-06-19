@@ -22,7 +22,7 @@ export const vehicle_services={
                 throw new Error("user not found");
             }//checks if the user exists 
             const vehicles = await prisma.vehicles.findMany({
-                where: {user_id:user.id}
+                where: {user_id:user.user_id}
             });
             return vehicles
         }catch(error){
