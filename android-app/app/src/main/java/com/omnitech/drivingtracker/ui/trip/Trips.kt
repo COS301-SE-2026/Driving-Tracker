@@ -407,7 +407,7 @@ private fun StartTripDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = selectedVehicle?.name ?: "Select Vehicle",
+                        value = if (selectedVehicle != null) "${selectedVehicle?.make} ${selectedVehicle?.model}" else "Select Vehicle",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Vehicle") },
@@ -421,7 +421,7 @@ private fun StartTripDialog(
                     ) {
                         vehicles.forEach { vehicle ->
                             DropdownMenuItem(
-                                text = { Text(vehicle.name) },
+                                text = { Text("${vehicle.make} ${vehicle.model} (${vehicle.registration})") },
                                 onClick = {
                                     selectedVehicle = vehicle
                                     expanded = false

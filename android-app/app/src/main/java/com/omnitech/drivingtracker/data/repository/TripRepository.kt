@@ -37,7 +37,7 @@ class TripRepository(private val api: ApiService){
     suspend fun getVehicles(): Result<List<VehicleDto>> {
         return try {
             val response = api.getVehicles()
-            Result.success(response.data)
+            Result.success(response)
         } catch (e: HttpException) {
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch vehicles"))
