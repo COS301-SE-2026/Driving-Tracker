@@ -49,4 +49,12 @@ class ObdManager(private val context: Context){
 
         //send AT commands to reset and setup protocol
     }
+
+    fun getPairedDevices(): List<android.bluetooth.BluetoothDevice>{
+        return try{
+            bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
+        }catch(e: SecurityException){
+            emptyList()
+        }
+    }
 }
