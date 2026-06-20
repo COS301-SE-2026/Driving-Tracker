@@ -29,5 +29,6 @@ data class TripEntity(
     val distanceKm: Double?,
     val durationMinutes: Int?,
     val status: String?,
-    val routeGeoJson: String?
+    val routeGeoJson: String?,
+    val synced: Boolean = false
 )
