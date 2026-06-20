@@ -55,11 +55,4 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
             )
         }
     }
-
-    class AchievementsViewModelFactory(private val repository: AchievementsRepository):
-        ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return AchievementsViewModel(repository) as T
-        }
-    }
 }

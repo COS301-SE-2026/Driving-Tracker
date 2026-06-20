@@ -16,7 +16,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
@@ -30,7 +29,7 @@ import com.omnitech.drivingtracker.ui.theme.*
 fun Dashboard(navController: NavController? = null,
               dashboardViewModel: DashboardViewModel = hiltViewModel()
 ){
-    val recentTrip by dashboardViewModel.recentTrip.collectAsState();
+    val recentTrip by dashboardViewModel.recentTrip.collectAsState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -168,7 +167,7 @@ fun Dashboard(navController: NavController? = null,
                         startLoc = "Office",
                         destination = "home",
                         distance = trip.distanceKm?.toInt()?:0,
-                        drivingTime = trip.durationMinutes?.toInt()?:0,
+                        drivingTime = trip.durationMinutes?:0,
                         startTime = trip.startTime,
                         tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt()?:0,
                     )

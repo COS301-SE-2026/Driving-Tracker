@@ -1,7 +1,6 @@
 package com.omnitech.drivingtracker.ui.contacts
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.ContactDto
@@ -127,13 +126,6 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
                     }
                 }
             )
-        }
-    }
-
-    class ContactsViewModelFactory(private val repository: ContactsRepository) :
-        ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ContactsViewModel(repository) as T
         }
     }
 

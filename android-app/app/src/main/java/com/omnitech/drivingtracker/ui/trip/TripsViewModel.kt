@@ -1,7 +1,6 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.TripHistoryData
@@ -56,11 +55,5 @@ class TripsViewModel @Inject constructor(private val repository: TripRepository)
 
     init {
         loadTripsHistory()
-    }
-
-    class TripsViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return TripsViewModel(repository) as T
-        }
     }
 }

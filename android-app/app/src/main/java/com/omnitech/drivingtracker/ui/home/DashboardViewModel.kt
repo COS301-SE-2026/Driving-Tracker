@@ -1,7 +1,6 @@
 package com.omnitech.drivingtracker.ui.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.models.TripItemDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
@@ -26,11 +25,6 @@ class DashboardViewModel @Inject constructor(private val repository: TripReposit
             repository.getTripHistory().onSuccess { historyData ->
                 _recentTrip.value = historyData.trips.firstOrNull()
             }
-        }
-    }
-    class DashboardViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DashboardViewModel(repository) as T
         }
     }
 }
