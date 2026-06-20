@@ -9,8 +9,9 @@ import com.omnitech.drivingtracker.services.RetrofitClient
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import javax.inject.Inject
 
-class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor {
+class AuthInterceptor @Inject constructor (private val sessionManager: SessionManager) : Interceptor {
     private val gson = Gson()
     private val client = OkHttpClient()
 
