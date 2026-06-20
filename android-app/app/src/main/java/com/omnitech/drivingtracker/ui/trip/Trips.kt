@@ -123,13 +123,14 @@ import android.content.pm.PackageManager
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun Trips(
     navController: NavController? = null,
-    tripsViewModel: TripsViewModel = viewModel(),
-    tripViewModel: TripViewModel = viewModel(),
-    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = viewModel()
+    tripsViewModel: TripsViewModel = hiltViewModel(),
+    tripViewModel: TripViewModel = hiltViewModel(),
+    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()

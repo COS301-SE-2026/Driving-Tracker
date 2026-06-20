@@ -1,19 +1,19 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class TripViewModel(
+@HiltViewModel
+class TripViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val contactsRepository: ContactsRepository
 ) : ViewModel(){
@@ -127,15 +127,6 @@ class TripViewModel(
                     }
                 }
             )
-        }
-    }
-
-    class TripViewModelFactory(
-        private val tripRepository: TripRepository,
-        private val contactsRepository: ContactsRepository
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return TripViewModel(tripRepository, contactsRepository) as T
         }
     }
 }

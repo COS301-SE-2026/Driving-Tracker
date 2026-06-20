@@ -2,15 +2,15 @@ package com.omnitech.drivingtracker.ui.obd
 
 import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.obd.ObdManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ObdViewModel(
+class ObdViewModel @Inject constructor(
     private val obdManager: ObdManager,
     private val sessionManager: SessionManager
 ): ViewModel(){
@@ -56,18 +56,5 @@ class ObdViewModel(
                 sessionManager.saveLastObdAddress(address)
             }
         }
-    }
-}
-
-class ObdViewModelFactory(
-    private val obdManager: ObdManager,
-    private val sessionManager: SessionManager
-): ViewModelProvider.Factory{
-    override fun <T: ViewModel> create(modelClass: Class<T>): T{
-        if(modelClass.isAssignableFrom(ObdViewModel::class.java)){
-            @Suppress("UNCHECKED_CAST")
-            return ObdViewModel(obdManager, sessionManager) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel Class")
     }
 }

@@ -7,8 +7,9 @@ import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.LoginRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
+import javax.inject.Inject
 
-class AuthRepository(
+class AuthRepository @Inject constructor(
     private val api: ApiService,
     private val session_manager: SessionManager
 ) {

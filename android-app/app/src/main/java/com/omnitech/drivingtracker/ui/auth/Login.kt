@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun Login(
@@ -169,7 +170,7 @@ fun Login(
 
 @Composable
 fun LoginScreen(
-    viewModel: AuthViewModel = viewModel(),
+    viewModel: AuthViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {

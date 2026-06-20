@@ -1,14 +1,7 @@
 package com.omnitech.drivingtracker
 
 import android.app.Application
-import com.omnitech.drivingtracker.data.AppContainer
+import dagger.hilt.android.HiltAndroidApp
 
-class DrivingTrackerApp : Application() {
-    lateinit var container: AppContainer
-        private set
-
-    override fun onCreate() {
-        super.onCreate()
-        container = AppContainer(this)
-    }
-}
+@HiltAndroidApp
+class DrivingTrackerApp : Application()

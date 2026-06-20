@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
@@ -36,7 +37,7 @@ import java.util.Locale
 @Composable
 fun LiveTrip(
     tripId: String,
-    viewModel: TripSummaryViewModel,
+    viewModel: TripSummaryViewModel = hiltViewModel(),
     navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()

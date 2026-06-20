@@ -1,17 +1,19 @@
 package com.omnitech.drivingtracker.ui.trip
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
+import javax.inject.Inject
 
-class TripSummaryViewModel(private val repository: TripRepository) : ViewModel() {
+@HiltViewModel
+class TripSummaryViewModel @Inject constructor(private val repository: TripRepository) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -106,11 +108,6 @@ class TripSummaryViewModel(private val repository: TripRepository) : ViewModel()
                     _endTripState.value = UiState.Error(message = errorMessage)
                 }
             )
-        }
-    }
-    class TripSummaryViewModelFactory(private val repository: TripRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return TripSummaryViewModel(repository) as T
         }
     }
 }
