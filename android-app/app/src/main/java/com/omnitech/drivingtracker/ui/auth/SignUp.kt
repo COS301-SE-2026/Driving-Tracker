@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -338,7 +339,7 @@ fun SignUp(
 
 @Composable
 fun SignUpScreen(
-    viewModel: AuthViewModel = viewModel(),
+    viewModel: AuthViewModel = hiltViewModel(),
     onSignUpSuccess: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ){
