@@ -130,7 +130,7 @@ fun Trips(
     navController: NavController? = null,
     tripsViewModel: TripsViewModel = hiltViewModel(),
     tripViewModel: TripViewModel = hiltViewModel(),
-    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = viewModel()
+    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()

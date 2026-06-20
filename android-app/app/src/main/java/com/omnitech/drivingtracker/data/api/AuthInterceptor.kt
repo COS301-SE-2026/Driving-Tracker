@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Named
 
 class AuthInterceptor @Inject constructor (private val sessionManager: SessionManager,
-    @Named("baseUrl") private val baseUrl: String) : Interceptor {
+    @param:Named("baseUrl") private val baseUrl: String) : Interceptor {
     private val gson = Gson()
     private val client = OkHttpClient()
 

@@ -21,7 +21,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ObdManager @Inject constructor(@ApplicationContext private val context: Context){
+class ObdManager @Inject constructor(@param:ApplicationContext private val context: Context){
     private val bluetoothAdapter: BluetoothAdapter? =
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     private var socket: BluetoothSocket? = null
