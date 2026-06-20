@@ -10,14 +10,18 @@ import com.github.pires.obd.commands.protocol.LineFeedOffCommand
 import com.github.pires.obd.commands.protocol.SelectProtocolCommand
 import com.github.pires.obd.commands.protocol.TimeoutCommand
 import com.github.pires.obd.enums.ObdProtocols
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ObdManager(private val context: Context){
+@Singleton
+class ObdManager @Inject constructor(@ApplicationContext private val context: Context){
     private val bluetoothAdapter: BluetoothAdapter? =
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     private var socket: BluetoothSocket? = null

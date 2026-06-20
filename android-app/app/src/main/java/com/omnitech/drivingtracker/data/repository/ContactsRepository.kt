@@ -10,8 +10,9 @@ import com.omnitech.drivingtracker.data.models.CreateContactRequest
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
+import javax.inject.Inject
 
-class ContactsRepository(private val api: ApiService){
+class ContactsRepository @Inject constructor(private val api: ApiService){
     suspend fun fetchContacts(): Result<List<ContactDto>>{
         return try{
             val response = api.getContacts() //call API

@@ -9,8 +9,9 @@ import com.omnitech.drivingtracker.data.obd.ObdManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ObdViewModel(
+class ObdViewModel @Inject constructor(
     private val obdManager: ObdManager,
     private val sessionManager: SessionManager
 ): ViewModel(){

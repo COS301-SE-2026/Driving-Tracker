@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.models.TripItemDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-
-class DashboardViewModel(private val repository: TripRepository): ViewModel() {
+@HiltViewModel
+class DashboardViewModel @Inject constructor(private val repository: TripRepository): ViewModel() {
 
     private val _recentTrip = MutableStateFlow<TripItemDto?>(null)
     val recentTrip: StateFlow<TripItemDto?> = _recentTrip

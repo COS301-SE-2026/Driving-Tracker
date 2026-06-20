@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
@@ -39,7 +39,7 @@ import androidx.navigation.NavController
 @Composable
 fun Contacts(
     navController: NavController? = null,
-    viewModel: ContactsViewModel = viewModel()
+    viewModel: ContactsViewModel = hiltViewModel()
 ) {
 
     val state by viewModel.uiState.collectAsState()

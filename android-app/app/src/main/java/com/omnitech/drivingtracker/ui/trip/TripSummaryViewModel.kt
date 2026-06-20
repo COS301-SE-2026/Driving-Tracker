@@ -6,12 +6,15 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
+import javax.inject.Inject
 
-class TripSummaryViewModel(private val repository: TripRepository) : ViewModel() {
+@HiltViewModel
+class TripSummaryViewModel @Inject constructor(private val repository: TripRepository) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()

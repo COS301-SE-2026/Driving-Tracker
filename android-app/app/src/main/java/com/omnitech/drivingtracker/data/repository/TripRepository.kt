@@ -6,8 +6,9 @@ import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
 import java.time.Instant
+import javax.inject.Inject
 
-class TripRepository(private val api: ApiService){
+class TripRepository @Inject constructor(private val api: ApiService){
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,

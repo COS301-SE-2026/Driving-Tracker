@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ContactsViewModel(private val repository: ContactsRepository): ViewModel(){
+@HiltViewModel
+class ContactsViewModel @Inject constructor(private val repository: ContactsRepository): ViewModel(){
     //define UI state machine
     sealed class UiState{
         object Idle : UiState() //initial state

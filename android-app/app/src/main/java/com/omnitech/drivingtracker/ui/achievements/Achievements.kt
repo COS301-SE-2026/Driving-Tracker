@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.res.painterResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.BadgeSection
@@ -40,7 +41,7 @@ import androidx.navigation.NavController
 @Composable
 fun AchievementsScreen(
     navController: NavController? = null,
-    viewModel: AchievementsViewModel
+    viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     AchievementsContent(

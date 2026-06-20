@@ -13,10 +13,10 @@ import com.omnitech.drivingtracker.data.models.GetBadgesResponse
 import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.ApiService
-import com.omnitech.drivingtracker.services.RetrofitClient
 import retrofit2.HttpException
+import javax.inject.Inject
 
-class AchievementsRepository(private val api: ApiService){
+class AchievementsRepository @Inject constructor(private val api: ApiService){
 
     suspend fun evaluateBages(){
 
