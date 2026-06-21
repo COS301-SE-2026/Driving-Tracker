@@ -43,8 +43,23 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 
+data class Device(
+    val name: String,
+    val isConnected: Boolean,
+    val adapter: String,
+    val signalStrength: String? = null,
+    val lastUsed: String? = null
+
+)
 @Composable
 fun OBDConnect(navController: NavController? =null){
+
+    val devices = listOf(
+        Device("OBD 1", isConnected = true, adapter = "ELM327", signalStrength="Good"),
+        Device("OBD 2", isConnected = false, adapter = "ELM327", lastUsed="31 May 2026"),
+        Device("OBD 3", isConnected = false, adapter = "ELM327", lastUsed="12 January 2025")
+    )
+
     Scaffold(
         topBar = {
             TopBar(
@@ -71,9 +86,9 @@ fun OBDConnect(navController: NavController? =null){
         )
         //Page Description
         Text(
-            text = "Connect your OBD-|| adapter via Bluetooth to establish communication\n" +
+            text = "Connect your OBD-|| adapter via Bluetooth to establish communication " +
                     "and access real-time vehicle diagnostic data.",
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -87,29 +102,19 @@ fun OBDConnect(navController: NavController? =null){
         )
         //Add Device Button
         OutlinedButton(
-            onClick = {},
+            onClick = {/* pair */},
             shape = RoundedCornerShape(50),
+            modifier = Modifier.padding(horizontal = 16.dp),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
         ) {
             Text(text = "Add Device")
         }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(5.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ){
-            Column(modifier = Modifier.padding(18.dp)){
 
-                Spacer(modifier = Modifier.width(12.dp))
-                Column{
-                    Text(
-                        text = ""
-                    )
-                }
-            }
+        Spacer(modifier = Modifier.height(16.dp))
 
-    }
+
+
+
     }
 
     }
