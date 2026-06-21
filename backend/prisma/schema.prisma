@@ -226,7 +226,7 @@ model users {
   //where a user is someone elses contact
   trusted_contacts_of_user  trusted_contacts[]  @relation("TrustedContactsContactUser")
   user_badges      user_badges[]
-  user_vehicles     user_vehicles[]
+  users_vehicles     users_vehicles[]
   trip_location_shares  trip_location_shares[]  @relation("TripSharesOwner")
 }
 
@@ -243,7 +243,7 @@ model trip_location_shares {
 
   @@unique([trip_id, contact_id])
 }
-model user_vehicles {
+model users_vehicles {
   assignment_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id       String   @db.Uuid
   vehicle_id    String   @db.Uuid
@@ -265,5 +265,5 @@ model vehicles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   trips        trips[]
-  users_vehicles        user_vehicles[]
+  users_vehicles        users_vehicles[]
 }

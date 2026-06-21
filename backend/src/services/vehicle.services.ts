@@ -26,7 +26,7 @@ export interface assign_vehicle{
     vehicle_id: string,
     registration: string,
     model: string,
-    year: Number,
+    year: number,
     fuel_type: string
 }
 export const vehicle_services={
@@ -45,7 +45,7 @@ export const vehicle_services={
             }//checks if the user exists 
             const vehicles = await prisma.vehicles.findMany({
                 where: {
-                    user_vehicles: {
+                    users_vehicles: {
                         some: {user_id: data.user_id}
                     }
                 }
@@ -79,7 +79,7 @@ export const vehicle_services={
             }
             //if the vehicle exist already in the database
              // Check if assignment already exists
-            const existing_assignment = await prisma.user_vehicles.findUnique({
+            const existing_assignment = await prisma.users_vehicles.findUnique({
                 where: {
                     user_id_vehicle_id: {
                     user_id: data.user_id,
@@ -114,6 +114,13 @@ export const vehicle_services={
                     }
                 });
             }
+            // Assign user to vehicle if vehicle exists in database
+            await prisma.users_vehicles.create({
+                data: {
+                    user_id: data.user_id,
+                    vehicle_id: data.vehicle_id
+                }
+            });
 
     
             return {
