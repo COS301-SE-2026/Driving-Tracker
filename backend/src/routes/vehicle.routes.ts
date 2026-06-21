@@ -6,8 +6,8 @@ const vehicle_router = Router();
 //the way the route is called in the front end for example rout.__(what ever it is post,patch...)("/trips/...", ...)look at mp for reference
 //will structure in crud operations 
 
-//Create 
-
+//Create
+ vehicle_router.post("/assign_vehicle",verify_token,vehicle.assign_vehicle);
 //read basically get 
 vehicle_router.get("/get_all_vehicles",verify_token,vehicle.get_all_vehicles);
 //delete 

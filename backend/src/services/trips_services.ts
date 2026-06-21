@@ -448,12 +448,15 @@ export const trips_services ={
             // Determine data source (MIXED if both OBD and PHONE exist)
             const readings = await prisma.trip_readings.findMany({
                 where: { trip_id: data.trip_id },
-                select: { data_source: true },
-                distinct: ['data_source']
+                select: { data_source: true,
+                        dtc_codes:true,
+                        recorded_at: true
+                }
             });
             const data_sources = readings.map((r :any) => r.data_source).filter(Boolean);
             const data_source = data_sources.length > 1 ? "MIXED" : data_sources[0] || trip.data_source;
 
+            const all_dtc_codes = [ ...new Set(readings.flatMap(r => r.dtc_codes))];
               return {
                 data: {
                     trip_id: trip.trip_id,
@@ -471,6 +474,7 @@ export const trips_services ={
                         eco_score: to_number(trip.trip_scores[0].eco_score),
                         overall_score: to_number(trip.trip_scores[0].overall_score)
                     } : null,
+                    dtc_codes: all_dtc_codes,
                     events: trip.trip_events.map((event:any) => ({
                         event_id: event.event_id,
                         event_type: event.type,
