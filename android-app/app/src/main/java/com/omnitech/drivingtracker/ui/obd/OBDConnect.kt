@@ -10,10 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
-import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -42,6 +42,8 @@ import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.Bluetooth
 
 data class Device(
     val name: String,
@@ -112,11 +114,95 @@ fun OBDConnect(navController: NavController? =null){
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
+        //for each device that is available, show a card
+        devices.forEach{
+            device -> DeviceCard(device)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
 
     }
 
+    }
+}
+
+@Composable
+fun DeviceCard(device: Device){
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ){
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp)){
+            Icon(
+                imageVector = Icons.Default.Bluetooth,
+                contentDescription = null,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Text(text = device.name, fontWeight = FontWeight.Bold)
+
+                    //only disconnected devices have a connect button
+                    if (!device.isConnected){
+                        Button(
+                            onClick = {/*pair*/},
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green)
+                        ){
+                            Text("Connect")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+
+                //Connected or not
+                Row(verticalAlignment = Alignment.CenterVertically){
+                    Box(
+                        modifier = Modifier.size(8.dp).clip(CircleShape)
+                            .background(if (device.isConnected) Green else Color(0xFFC62828))
+                    )
+                    Spacer (modifier = Modifier.width(6.dp))
+                    Text(text = if (device.isConnected)
+                        "Connected"
+                        else "Disconnected")
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Adapter: ${device.adapter}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                //only show signal strength if the device is connected
+                device.signalStrength?.let{
+                    Text(
+                        text = "Signal Strength: $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                //only show last used when the device is not connected
+                device.lastUsed?.let{
+                    Text(
+                        text = "Last Used: $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 @Preview(showBackground = true)
