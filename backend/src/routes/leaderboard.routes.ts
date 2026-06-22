@@ -6,5 +6,6 @@ const leaderboard_router = Router();
 
 
 leaderboard_router.get('/', verify_token, leaderboard_controller.get_leaderboard);
+leaderboard_router.get('/categories', verify_token, leaderboard_controller.get_categories);
 
 export default leaderboard_router;

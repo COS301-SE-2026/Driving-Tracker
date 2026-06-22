@@ -70,6 +70,25 @@ export const leaderboard_services = {
       },
     };
   },
+
+  async get_categories(){
+
+    const categories = await prisma.leaderboard.findMany({
+      distinct: ['category'],
+      select: {
+        category: true
+      }
+    });
+
+  const category_list = categories.map(item => item.category)
+    .filter((category): category is string => category!== null)
+
+    return {
+      data: {
+        categories: category_list
+        }
+      };
+  }
 };
 
 export default leaderboard_services;

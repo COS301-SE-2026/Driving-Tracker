@@ -28,6 +28,23 @@ const leaderboard_controller = {
       return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not retrieve leaderboard' });
     }
   },
+
+  async get_categories(req: AuthRequest, res: Response) {
+    try{
+
+      const user_id = get_user_id(req);
+
+      if(!user_id) return res.status(401).json({error: "UNAUTHORIZED" });
+
+      const result = await leaderboard_services.get_categories();
+
+      return res.status(200).json(result);
+
+    } catch(e: any) {
+
+      return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not retrieve categories"});
+    }
+  },
 };
 
 export default leaderboard_controller;
