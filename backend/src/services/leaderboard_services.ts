@@ -88,7 +88,26 @@ export const leaderboard_services = {
         categories: category_list
         }
       };
-  }
+  },
+
+  async get_scopes(){
+
+    const categories = await prisma.leaderboard.findMany({
+      distinct: ['scope'],
+      select: {
+        scope: true
+      }
+    });
+
+  const scopes_list = categories.map(item => item.scope)
+    .filter((scope): scope is string => scope!== null)
+
+    return {
+      data: {
+        scopes: scopes_list
+        }
+      };
+  },
 };
 
 export default leaderboard_services;
