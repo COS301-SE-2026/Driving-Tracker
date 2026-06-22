@@ -64,4 +64,10 @@ interface ApiService{
     suspend fun getLeaderboard(@Query("category") category: String, //added to url
         @Query("scope") scope: String
     ): LeaderboardResponse
+
+    @GET("leaderboard/categories")
+    suspend fun getLeaderboardCategories(): LeaderboardCategoryResponse
+
+    @GET("leaderboard/scopes")
+    suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
 }
