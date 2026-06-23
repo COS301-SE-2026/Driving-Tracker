@@ -18,7 +18,11 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
-        data class Success(val leaderboard: LeaderboardData) : UiState()
+        data class Success(
+            val leaderboard: LeaderboardData,
+            val categories: List<String> = emptyList(),
+            val scopes: List<String> = emptyList()
+        ) : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
 
@@ -27,15 +31,91 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
 
     init {
         getLeaderboard()
+        getCategories()
+        getScopes()
     }
 
     fun getLeaderboard(category: String = "OVERALL", scope: String = "WEEKLY"){
 
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+
+            if(_uiState.value !is UiState.Success){
+                _uiState.value = UiState.Loading
+            }
+
             repository.getLeaderboard(category, scope).fold(
                 onSuccess = { data ->
-                    _uiState.value = UiState.Success(data)
+                    val currentState = _uiState.value
+                    if(currentState is UiState.Success) {
+                        _uiState.value = currentState.copy(leaderboard = data)
+                    }
+                    else {
+                        _uiState.value = UiState.Success(leaderboard = data)
+                    }
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "An unknown error occurred"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun getCategories(){
+
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.getCategories().fold(
+                onSuccess = { data ->
+                    val currentState = _uiState.value
+
+                    if(currentState is UiState.Success){
+                        _uiState.value = currentState.copy(categories = data.categories)
+                    }
+
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "An unknown error occurred"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun getScopes(){
+
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.getScopes().fold(
+                onSuccess = { data ->
+                    val currentState = _uiState.value
+
+                    if(currentState is UiState.Success){
+                        _uiState.value = currentState.copy(scopes = data.scopes)
+                    }
+
                 },
                 onFailure = { exception ->
                     when (exception) {
