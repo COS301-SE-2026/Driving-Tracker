@@ -50,14 +50,17 @@ async function main() {
     console.log(`Seeded our login user: ${myLoginUser.email} (Password: ${plainTextPassword})`);
 
     //making sure our user has a vehicle
-    let myVehicle = await prisma.vehicles.findFirst({
-        where: { user_id: myLoginUser.user_id }
+    let myVehicle = null ;
+    const myAssignment = await prisma.users_vehicles.findFirst({
+        where: { user_id: myLoginUser.user_id},
+        include:{ vehicles: true}
     });
-
-    if (!myVehicle) {
+    if(myAssignment){
+        myVehicle = myAssignment.vehicles;
+    }
+    if(!myVehicle){
         myVehicle = await prisma.vehicles.create({
             data: {
-                user_id: myLoginUser.user_id,
                 registration: 'DRIVER1',
                 make: 'BMW',
                 model: 'M3',
@@ -65,8 +68,31 @@ async function main() {
                 fuel_type: 'PETROL',
             }
         });
+        await prisma.users_vehicles.create({
+            data: {
+                user_id: myLoginUser.user_id,
+                vehicle_id: myVehicle.vehicle_id
+            }
+        });
         console.log(`Seeded vehicle for Omnitech`);
     }
+    // let myVehicle = await prisma.vehicles.findFirst({
+    //     where: { user_id: myLoginUser.user_id }
+    // });
+
+    // if (!myVehicle) {
+    //     myVehicle = await prisma.vehicles.create({
+    //         data: {
+    //             user_id: myLoginUser.user_id,
+    //             registration: 'DRIVER1',
+    //             make: 'BMW',
+    //             model: 'M3',
+    //             year: 2024,
+    //             fuel_type: 'PETROL',
+    //         }
+    //     });
+    //     console.log(`Seeded vehicle for Omnitech`);
+    // }
 
     //making sure Omnitech has contacts
     const contactCount = await prisma.trusted_contacts.count({
@@ -241,7 +267,11 @@ async function main() {
     //Creating trusted contacts (linking random users together)
     const contacts: any[] = [];
     const seenContactPairs = new Set<string>();
-    while (contacts.length < 8) {
+    let attemptCount = 0;
+    const maxAttempts = 50; 
+
+    while (contacts.length < 8 && attemptCount <maxAttempts) {
+        attemptCount++;
         //picking 2 diff users
         const owner = faker.helpers.arrayElement(users);
         let contactUser = faker.helpers.arrayElement(users);
@@ -294,22 +324,48 @@ async function main() {
             continue;
         }
 
-        let vehicle = await prisma.vehicles.findFirst({
-            where: { user_id: user.user_id }
+        let vehicle = null; 
+        const userAssignment = await prisma.users_vehicles.findFirst({
+            where: { user_id: user.user_id },
+            include: { vehicles: true }
         });
-
+        if(userAssignment){
+            vehicle = userAssignment.vehicles;
+        }
         if(!vehicle){
             vehicle = await prisma.vehicles.create({
-                data: {
-                    user_id: user.user_id,
-                    registration: faker.vehicle.vrm(), // license plates
+                data:{
+                    registration: faker.vehicle.vrm(),
                     make: faker.vehicle.manufacturer(),
                     model: faker.vehicle.model(),
                     year: faker.date.past({ years: 15 }).getFullYear(),
                     fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
                 }
             });
+
+            await prisma.users_vehicles.create({
+                data: {
+                    user_id: user.user_id,
+                    vehicle_id: vehicle.vehicle_id
+                }
+            });
         }
+        // let vehicle = await prisma.vehicles.findFirst({
+        //     where: { user_id: user.user_id }
+        // });
+
+        // if(!vehicle){
+        //     vehicle = await prisma.vehicles.create({
+        //         data: {
+        //             user_id: user.user_id,
+        //             registration: faker.vehicle.vrm(), // license plates
+        //             make: faker.vehicle.manufacturer(),
+        //             model: faker.vehicle.model(),
+        //             year: faker.date.past({ years: 15 }).getFullYear(),
+        //             fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+        //         }
+        //     });
+        // }
 
         //1-2 trips per vehicle, only on the first seed for that user
         const numTrips = faker.number.int({ min: 1, max: 2 });
