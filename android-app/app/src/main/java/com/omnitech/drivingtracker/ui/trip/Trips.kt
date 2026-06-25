@@ -335,7 +335,9 @@ fun TripsContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         trips.forEachIndexed { index, trip ->
-                            TripCard(trip = trip, isLatest = index == 0)
+                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {navController?.navigate(
+                                Screen.TripSummary.createRoute(trip.tripId))}
+                            )
                         }
                     }
                 }
@@ -564,7 +566,7 @@ private fun formatTripScore(trip: TripItemDto): Int {
 
 
 @Composable
-fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
+fun TripCard(trip: TripItemDto, isLatest: Boolean = false, onSeeMoreClick: () -> Unit) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -635,7 +637,7 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
-                    onClick = {},
+                    onClick = onSeeMoreClick,
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(containerColor = Green),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
