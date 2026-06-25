@@ -53,7 +53,7 @@ class DrivingTrackerApp : Application() {
 
             manager.createNotificationChannel(
                 NotificationChannel(
-                    NotificationChannels.TRIP_ALERTS,
+                    NotificationChannels.TRIP_SERVICE,
                     "Trip Tracking",
                     NotificationManager.IMPORTANCE_LOW
                 ).apply {

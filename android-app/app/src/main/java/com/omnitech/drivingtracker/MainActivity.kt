@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -43,6 +44,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             DrivingTrackerTheme{
                 val navController = rememberNavController()
+
+                //Navigation through notifications
+                LaunchedEffect(intent) {
+                    val destination = intent.getStringExtra("navigate_to")
+                    //If navigate_to extra exists (added by notifications)
+                    if(destination != null) {
+                        navController.navigate(destination)
+                    }
+                }
 
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
                     composable(Screen.Welcome.route){
