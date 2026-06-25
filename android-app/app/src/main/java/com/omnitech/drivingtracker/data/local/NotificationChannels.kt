@@ -1,0 +1,8 @@
+package com.omnitech.drivingtracker.data.local
+
+object NotificationChannels {
+    const val TRIP_ALERTS = "trip_alerts"
+    const val CONTACT_ALERTS = "contact_alerts"
+    const val TRIP_SERVICE = "trip_service"
+    const val GAMIFICATION = "gamification"
+}
