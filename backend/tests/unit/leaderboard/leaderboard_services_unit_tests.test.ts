@@ -23,121 +23,189 @@ class MockDecimal{
     }
 }
 
-describe('Leaderboard services get leaderboard',()=>{
+describe('Leaderboard servies', () => {
+
     beforeEach(async()=>{jest.clearAllMocks()});
 
-    it('returns leaderboard with the user rank when user exists in leaderboard', async()=>{
-        mock_prisma.leaderboard.findMany.mockResolvedValue([
-            {
-                leaderboard_id: 'lb1',
-                user_id: 'u1',
-                category: 'safety',
-                scope: 'global',
-                score: new MockDecimal(95.5),
-                users: {
-                user_id: 'u1',
-                name: 'John',
-                surname: 'Doe',
-                username: 'johndoe',
-                },
-            },
-            {
-                leaderboard_id: 'lb2',
-                user_id: 'u2',
-                category: 'safety',
-                scope: 'global',
-                score: new MockDecimal(90.0),
-                users: {
-                user_id: 'u2',
-                name: 'Jane',
-                surname: 'Smith',
-                username: 'janesmith',
-                },
-            },
-            {
-                leaderboard_id: 'lb3',
-                user_id: 'u3',
-                category: 'safety',
-                scope: 'global',
-                score: new MockDecimal(85.5),
-                users: {
-                user_id: 'u3',
-                name: null,
-                surname: 'Brown',
-                username: 'brownie',
-                },
-            },
-        ]);
-
-        const result = await leaderboard_services.get_leaderboard({
-            user_id: 'u2',
-            category:'safety',
-            scope:'global',
-        });
-
-        expect(result.data.category).toBe('safety');
-        expect(result.data.scope).toBe('global');
-        expect(result.data.entries.length).toBe(3);
-        expect(result.data.my_rank).toBe(2);
-        expect(result.data.my_score).toBe(90);
-    });
-    it('returns null rank when the user not in leaderboard', async()=>{
-        mock_prisma.leaderboard.findMany.mockResolvedValue([
-            {
-                leaderboard_id: 'lb1',
-                user_id: 'u1',
-                category: 'eco',
-                scope: 'regional',
-                score: new MockDecimal(88.0),
-                users: {
+    describe('Leaderboard services get leaderboard',()=>{
+        
+        it('returns leaderboard with the user rank when user exists in leaderboard', async()=>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {
+                    leaderboard_id: 'lb1',
                     user_id: 'u1',
-                    name: 'Alice',
-                    surname: 'Johnson',
-                    username: 'alice',
+                    category: 'safety',
+                    scope: 'global',
+                    score: new MockDecimal(95.5),
+                    users: {
+                    user_id: 'u1',
+                    name: 'John',
+                    surname: 'Doe',
+                    username: 'johndoe',
+                    },
                 },
-            },
-        ]);
+                {
+                    leaderboard_id: 'lb2',
+                    user_id: 'u2',
+                    category: 'safety',
+                    scope: 'global',
+                    score: new MockDecimal(90.0),
+                    users: {
+                    user_id: 'u2',
+                    name: 'Jane',
+                    surname: 'Smith',
+                    username: 'janesmith',
+                    },
+                },
+                {
+                    leaderboard_id: 'lb3',
+                    user_id: 'u3',
+                    category: 'safety',
+                    scope: 'global',
+                    score: new MockDecimal(85.5),
+                    users: {
+                    user_id: 'u3',
+                    name: null,
+                    surname: 'Brown',
+                    username: 'brownie',
+                    },
+                },
+            ]);
 
-        const result = await leaderboard_services.get_leaderboard({
-            user_id: 'u999',
-            category:'eco',
-            scope:'reginal',
+            const result = await leaderboard_services.get_leaderboard({
+                user_id: 'u2',
+                category:'safety',
+                scope:'global',
+            });
+
+            expect(result.data.category).toBe('safety');
+            expect(result.data.scope).toBe('global');
+            expect(result.data.entries.length).toBe(3);
+            expect(result.data.my_rank).toBe(2);
+            expect(result.data.my_score).toBe(90);
+        });
+        it('returns null rank when the user not in leaderboard', async()=>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {
+                    leaderboard_id: 'lb1',
+                    user_id: 'u1',
+                    category: 'eco',
+                    scope: 'regional',
+                    score: new MockDecimal(88.0),
+                    users: {
+                        user_id: 'u1',
+                        name: 'Alice',
+                        surname: 'Johnson',
+                        username: 'alice',
+                    },
+                },
+            ]);
+
+            const result = await leaderboard_services.get_leaderboard({
+                user_id: 'u999',
+                category:'eco',
+                scope:'reginal',
+            });
+
+            expect(result.data.entries.length).toBe(1);
+            expect(result.data.my_rank).toBeNull();
+            expect(result.data.my_score).toBe(0);
+        });
+        it('throws when category is missing', async () => {
+            await expect(
+            leaderboard_services.get_leaderboard({
+                user_id: 'u1',
+                category: '',
+                scope: 'global',
+            })
+            ).rejects.toThrow('Missing required fields');
+        });
+        it('throws when scope is missing', async () => {
+            await expect(
+            leaderboard_services.get_leaderboard({
+                user_id: 'u1',
+                category: 'safety',
+                scope: '',
+            })
+            ).rejects.toThrow('Missing required fields');
         });
 
-        expect(result.data.entries.length).toBe(1);
-        expect(result.data.my_rank).toBeNull();
-        expect(result.data.my_score).toBe(0);
-    });
-    it('throws when category is missing', async () => {
-        await expect(
-        leaderboard_services.get_leaderboard({
-            user_id: 'u1',
-            category: '',
-            scope: 'global',
-        })
-        ).rejects.toThrow('Missing required fields');
-    });
-    it('throws when scope is missing', async () => {
-        await expect(
-        leaderboard_services.get_leaderboard({
-            user_id: 'u1',
-            category: 'safety',
-            scope: '',
-        })
-        ).rejects.toThrow('Missing required fields');
+        it('returns empty leaderboard when no entries', async () => {
+            mock_prisma.leaderboard.findMany.mockResolvedValue([]);
+
+            const result = await leaderboard_services.get_leaderboard({
+                user_id: 'u1',
+                category: 'safety',
+                scope: 'global',
+            });
+
+            expect(result.data.entries.length).toBe(0);
+            expect(result.data.my_rank).toBeNull();
+            expect(result.data.my_score).toBe(0);
+        });
     });
 
-    it('returns empty leaderboard when no entries', async () => {
-        mock_prisma.leaderboard.findMany.mockResolvedValue([]);
+    describe('get categories', () =>{
 
-        const result = await leaderboard_services.get_leaderboard({
-            user_id: 'u1',
-            category: 'safety',
-            scope: 'global',
+        it('returns list of categories', async () =>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {category: 'safety'},
+                {category: 'eco'},
+                {category: 'overrall'},
+            ]);
+
+            const result = await leaderboard_services.get_categories();
+
+            expect(result.data.categories).toEqual(['safety', 'eco', 'overrall']);
+            expect(result.data.categories.length).toBe(3);
+
         });
 
-        expect(result.data.entries.length).toBe(0);
-        expect(result.data.my_rank).toBeNull();
-        expect(result.data.my_score).toBe(0);
+        it('filters out null categories', async () =>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {category: 'safety'},
+                {category: null},
+                {category: 'overrall'},
+            ]);
+
+            const result = await leaderboard_services.get_categories();
+
+            expect(result.data.categories).toEqual(['safety', 'overrall']);
+            expect(result.data.categories.length).toBe(2);
+        });
+
     });
-})
+
+    describe('get scopes', () =>{
+
+        it('returns list of scopes', async () =>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {scope: 'weekly'},
+                {scope: 'all_time'},
+                {scope: 'monthly'},
+            ]);
+
+            const result = await leaderboard_services.get_scopes();
+
+            expect(result.data.scopes).toEqual(['weekly', 'all_time', 'monthly']);
+            expect(result.data.scopes.length).toBe(3);
+
+        });
+
+        it('filters out null scopes', async () =>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {scope: 'weekly'},
+                {scope: 'all_time'},
+                {scope: null},
+            ]);
+
+            const result = await leaderboard_services.get_scopes();
+
+            expect(result.data.scopes).toEqual(['weekly', 'all_time']);
+            expect(result.data.scopes.length).toBe(2);
+
+        });
+
+    });
+
+});
