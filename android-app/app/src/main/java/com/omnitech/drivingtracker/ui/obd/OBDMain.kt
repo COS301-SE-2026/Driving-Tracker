@@ -75,9 +75,10 @@ fun OBDMain(navController: NavController? =null){
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
-
+            //Different page options
+            //Fix Colors
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -85,9 +86,25 @@ fun OBDMain(navController: NavController? =null){
             ){
                 Column{
                     MRow("OBD Adapters"){navController?.navigate("OBDConnect")}
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ){
+                Column{
                     MRow("Live Warnings"){navController?.navigate("OBDConnect")}
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ){
+                Column{
                     MRow("Key OBD data"){navController?.navigate("OBDConnect")}
                 }
             }
