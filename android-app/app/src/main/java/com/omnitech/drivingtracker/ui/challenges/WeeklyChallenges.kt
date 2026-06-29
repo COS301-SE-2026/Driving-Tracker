@@ -2,28 +2,38 @@ package com.omnitech.drivingtracker.ui.challenges
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.achievements.AchievementsViewModel
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.components.RankCard
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.home.Dashboard
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import androidx.compose.foundation.lazy.LazyRow
 
 @Composable
-fun WeeklyChallenges(navController: NavController? = null) {
+fun WeeklyChallenges(navController: NavController? = null, viewModel: AchievementsViewModel = hiltViewModel()) {
+
+    val state by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -57,7 +67,54 @@ fun WeeklyChallenges(navController: NavController? = null) {
                        shape = RoundedCornerShape(12.dp),
                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                    ) {
-                        //Content for rank layout
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Ranks",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+
+                            when (val currentState = state) {
+
+                                is AchievementsViewModel.UiState.Loading -> {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+
+                                is AchievementsViewModel.UiState.Error -> {
+                                    Text(
+                                        text = currentState.message ?: "Error loading",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+
+                                is AchievementsViewModel.UiState.Success -> {
+                                    val leaderboard = currentState.leaderboard
+                                    //We take top 3 entries
+                                    leaderboard.entries.take(3).forEach { entry ->
+                                        RankCard(
+                                            name = entry.displayName,
+                                            score = entry.score,
+                                            isUser = entry.rank == leaderboard.myRank
+                                        )
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                                    }
+
+                                }
+                                else -> {}
+                            }
+
+                        }
                    }
 
                     Card(//Sore
