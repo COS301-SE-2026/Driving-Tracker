@@ -2,19 +2,24 @@ package com.omnitech.drivingtracker.ui.challenges
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.home.Dashboard
+import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 
 @Composable
@@ -41,7 +46,41 @@ fun WeeklyChallenges(navController: NavController? = null) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                //Rank and score cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+
+                   Card(//Ranks
+                       modifier = Modifier.weight(1f),
+                       colors = CardDefaults.cardColors(containerColor = CardWhite),
+                       shape = RoundedCornerShape(12.dp),
+                       elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                   ) {
+                        //Content for rank layout
+                   }
+
+                    Card(//Sore
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+
+                        ) {
+                            /*Text(
+                                text = "Score",
+                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium
+                            )*/
+                            ScoreRing(score = 85, modifier = Modifier.size(100.dp))
+                        }
+                    }
+
+                }
             }
 
             item{
