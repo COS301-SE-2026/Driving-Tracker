@@ -52,7 +52,15 @@ sealed class Screen(val route: String){
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    override fun onNewIntent(intent: android.content.Intent) {
+    private fun checkNotificationPermission(): Boolean {
+        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            ContextCompat
+                .checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)==
+                    PackageManager.PERMISSION_GRANTED
+        } else true
+    }
+
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
     }
@@ -95,7 +103,11 @@ class MainActivity : ComponentActivity() {
 
                         LoginScreen(
                             onLoginSuccess = {
-                                navController.navigate(Screen.NotificationRationale.route){
+                                val destination = if(checkNotificationPermission()){
+                                    Screen.Dashboard.route
+                                } else { Screen.NotificationRationale.route}
+
+                                navController.navigate(destination){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
                                 }
                             },
@@ -105,7 +117,11 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.SignUp.route){
                         SignUpScreen(
                             onSignUpSuccess = {
-                                navController.navigate(Screen.NotificationRationale.route){
+                                val destination = if(checkNotificationPermission()){
+                                    Screen.Dashboard.route
+                                } else { Screen.NotificationRationale.route}
+
+                                navController.navigate(destination){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
                                 }
                             },
