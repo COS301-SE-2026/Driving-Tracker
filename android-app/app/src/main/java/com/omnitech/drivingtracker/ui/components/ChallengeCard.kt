@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +40,15 @@ fun ChallengeCard(
     modifier: Modifier = Modifier
 ) {
 
-    //Color logic
+    //Calculating progress percentage
+    val progressFactor = current.toFloat() / target.toFloat()
+
+    //Determining if the challenge is finished
+    val isCompleted = current >= target
+
+    //Picking the color based on completion state
+    val progressBarColor = if (isCompleted) Green else Blue
+
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -54,8 +63,45 @@ fun ChallengeCard(
         ) {
 
             //Row for title and description
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-            //LinearProgressIndicator
+                //Left side (Title & decrip)
+                Column(modifier = Modifier.weight(1f)) {
+
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+
+                }
+
+                //Right side (Progress Ratio)
+                Text(
+                    text = "$current/$target",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+
+            }
+
+            //LinearProgressIndicator(bar)
+            LinearProgressIndicator(
+                progress = { progressFactor },
+                modifier = Modifier.fillMaxWidth(),
+                color = progressBarColor,
+                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+            )
 
         }
 
