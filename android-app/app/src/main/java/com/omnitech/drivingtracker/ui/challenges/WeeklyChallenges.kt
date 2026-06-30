@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.challenges
 
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,9 +30,22 @@ import com.omnitech.drivingtracker.ui.home.Dashboard
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.ui.graphics.Color
+import com.omnitech.drivingtracker.ui.components.ChallengeCard
 
+data class Challenge(
+    val id: String,
+    val title: String,
+    val description: String,
+    val currentProgress: Int,
+    val targetProgress: Int
+)
 @Composable
-fun WeeklyChallenges(navController: NavController? = null, viewModel: AchievementsViewModel = hiltViewModel()) {
+fun WeeklyChallenges(
+    navController: NavController? = null,
+    viewModel: AchievementsViewModel = hiltViewModel(),
+    previewChallenges: List<Challenge>? = null //optional param to allow previewing mock data easily
+) {
 
     val state by viewModel.uiState.collectAsState()
 
@@ -61,12 +75,12 @@ fun WeeklyChallenges(navController: NavController? = null, viewModel: Achievemen
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
-                   Card(//Ranks
-                       modifier = Modifier.weight(1f),
-                       colors = CardDefaults.cardColors(containerColor = CardWhite),
-                       shape = RoundedCornerShape(12.dp),
-                       elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                   ) {
+                    Card(//Ranks
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = CardWhite),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
                         Column(
                             modifier = Modifier
                                 .padding(16.dp)
@@ -107,15 +121,20 @@ fun WeeklyChallenges(navController: NavController? = null, viewModel: Achievemen
                                             score = entry.score,
                                             isUser = entry.rank == leaderboard.myRank
                                         )
-                                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.1f
+                                            )
+                                        )
                                     }
 
                                 }
+
                                 else -> {}
                             }
 
                         }
-                   }
+                    }
 
                     Card(//Sore
                         modifier = Modifier.weight(1f),
@@ -140,10 +159,43 @@ fun WeeklyChallenges(navController: NavController? = null, viewModel: Achievemen
                 }
             }
 
-            item{
-                //This weeks challenges
-            }
+            item {//This weeks challenges
 
+                Text(
+                    text = "This Week's Challenges",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+            }
+            item {
+
+                Card(//container holding challenge cards
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0)),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Use either production data from state or backup mock list
+                        val activeList =
+                            previewChallenges ?: emptyList() // Map to VM state list in production
+
+                        activeList.forEach { challenge ->
+                            ChallengeCard(
+                                title = challenge.title,
+                                description = challenge.description,
+                                current = challenge.currentProgress,
+                                target = challenge.targetProgress
+                            )
+                        }
+
+                    }
+                }
+            }
         }
     }
 
@@ -152,7 +204,33 @@ fun WeeklyChallenges(navController: NavController? = null, viewModel: Achievemen
 @Preview(showBackground = true)
 @Composable
 fun ChallengesPreview() {
+    //list of mock challenges
+    val mockChallenges = listOf(
+        Challenge(
+            id = "1",
+            title = "Safety Officer",
+            description = "Go 4 days without bad driving habits",
+            currentProgress = 2,
+            targetProgress = 4
+        ),
+        Challenge(
+            id = "2",
+            title = "Speed Angel",
+            description = "Complete 2 trips without going above speed limit",
+            currentProgress = 2,
+            targetProgress = 2
+        ),
+        Challenge(
+            id = "1",
+            title = "Throttle Goat",
+            description = "Complete 5 trips without a hard acceleration alert",
+            currentProgress = 4,
+            targetProgress = 5
+        )
+    )
+
     DrivingTrackerTheme {
-        WeeklyChallenges()
+        WeeklyChallenges(previewChallenges = mockChallenges)
     }
+
 }
