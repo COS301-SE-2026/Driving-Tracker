@@ -65,7 +65,21 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
         }
     }
 
+    suspend fun clearTroubleCodes() = withContext(Dispatchers.IO){
+        val out = socket?.outputStream?: return@withContext
+        val inputStream = socket?.inputStream?: return@withContext
 
+        try{
+            //Mode 04 reset
+            ResetTroubleCodesCommand().run(inputStream, out)
+            //clear local list in state so UI updates immediately
+            _metrics.value = _metrics.value.copy(faultCodes = emptyList())
+
+            Log.d("OBD_LOG", "Trouble codes cleared successfully")
+        }catch(e: Exception){
+            Log.e("OBD_LOG", "Failed to clear codes", e)
+        }
+    }
 
     //create stateflow for metrics
     private val _metrics = MutableStateFlow(VehicleMetrics())

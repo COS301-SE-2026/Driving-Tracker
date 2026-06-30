@@ -62,4 +62,16 @@ class ObdViewModel @Inject constructor(
             }
         }
     }
+
+    fun readFaultCodes(){
+        viewModelScope.launch{
+            obdManager.fetchTroubleCodes()
+        }
+    }
+
+    fun clearFaultCodes(){
+        viewModelScope.launch{
+            obdManager.clearTroubleCodes()
+        }
+    }
 }
