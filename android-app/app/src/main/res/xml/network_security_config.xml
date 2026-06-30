@@ -4,6 +4,6 @@
         <!-- Android emulator address -->
         <domain includeSubdomains="true">10.0.2.2</domain>
         <!--local network IP for physical device testing -->
-        <domain includeSubdomains="true">192.168.0.118</domain>
+        <!--<domain includeSubdomains="true">192.168.x.x</domain>-->
     </domain-config>
 </network-security-config>
