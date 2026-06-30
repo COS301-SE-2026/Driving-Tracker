@@ -1,10 +1,18 @@
 package com.omnitech.drivingtracker
 
+import android.app.ComponentCaller
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +29,8 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.notification.NotificationRationale
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.lifecycle.Lifecycle
+import java.util.jar.Manifest
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -41,19 +51,36 @@ sealed class Screen(val route: String){
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             DrivingTrackerTheme{
                 val navController = rememberNavController()
+                val lifecycleOwner = LocalLifecycleOwner.current
 
                 //Navigation through notifications
-                LaunchedEffect(intent) {
-                    val destination = intent.getStringExtra("navigate_to")
-                    //If navigate_to extra exists (added by notifications)
-                    if(destination != null) {
-                        navController.navigate(destination)
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+
+                        if(event == Lifecycle.Event.ON_RESUME){
+                            val destination = intent.getStringExtra("navigate_to")
+
+                            if (destination != null){
+                                navController.navigate(destination)
+                                intent.removeExtra("navigate_to")
+                            }
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
                     }
                 }
 

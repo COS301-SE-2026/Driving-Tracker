@@ -34,7 +34,7 @@ class DrivingTrackerApp : Application() {
             manager.createNotificationChannel(
                 NotificationChannel(
                     NotificationChannels.GAMIFICATION,
-                    "Acheivements and Rewards",
+                    "Achievements and Rewards",
                     NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
                     description = "Badge unlocks, score changes and leaderboard updates"
