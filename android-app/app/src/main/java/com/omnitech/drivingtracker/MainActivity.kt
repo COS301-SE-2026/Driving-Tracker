@@ -19,6 +19,7 @@ import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.omnitech.drivingtracker.ui.notification.NotificationRationale
 import dagger.hilt.android.AndroidEntryPoint
 
 sealed class Screen(val route: String){
@@ -34,6 +35,8 @@ sealed class Screen(val route: String){
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
+
+    data object NotificationRationale: Screen("notification_rationale")
 }
 
 @AndroidEntryPoint
@@ -101,6 +104,14 @@ class MainActivity : ComponentActivity() {
                         val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
 
                         LiveTrip(tripId = tripId, navController = navController)
+                    }
+                    composable(Screen.NotificationRationale.route) {
+                        NotificationRationale(
+                            onPermissionHandled = {
+                                navController.navigate("home") {
+                                    popUpTo("notification_rationale") { inclusive = true }
+                                }
+                        })
                     }
                 }
             }
