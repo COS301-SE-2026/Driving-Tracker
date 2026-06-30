@@ -19,9 +19,63 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.github.pires.obd.commands.engine.RPMCommand
+import com.github.pires.obd.commands.SpeedCommand
+import com.github.pires.obd.commands.temperature.EngineCoolantTemperatureCommand
+import com.github.pires.obd.commands.fuel.FuelTrimCommand
+import com.github.pires.obd.enums.FuelTrim
+import kotlinx.coroutines.delay
+
+//data class representing live state of vehicle
+data class VehicleMetrics(
+    val rpm: Int = 0,
+    val speed: Int = 0,
+    val coolantTemp: Int = 0,
+    val fuelTrim: Double = 0.0,
+    val isDataLive: Boolean = false
+)
 
 @Singleton
 class ObdManager @Inject constructor(@param:ApplicationContext private val context: Context){
+
+    //create stateflow for metrics
+    private val _metrics = MutableStateFlow(VehicleMetrics())
+    val metrics: StateFlow<VehicleMetrics> = _metrics.asStateFlow()
+
+    //start continuous loop to poll data from vehicle
+    suspend fun startLiveDataLoop() = withContext(Dispatchers.IO) {
+        val out = socket?.outputStream ?: return@withContext
+        val inputStream = socket?.inputStream ?: return@withContext
+
+        //initialize commands
+        val rpmCmd = RPMCommand()
+        val speedCmd = SpeedCommand()
+        val coolantCmd = EngineCoolantTemperatureCommand()
+        val fuelTrimCmd = FuelTrimCommand(FuelTrim.LONG_TERM_BANK_1)
+
+        while (_connectionState.value == ConnectionState.CONNECTED) {
+            try {
+                rpmCmd.run(inputStream, out)
+                speedCmd.run(inputStream, out)
+                coolantCmd.run(inputStream, out)
+                fuelTrimCmd.run(inputStream, out)
+
+                _metrics.value = VehicleMetrics(
+                    rpm = rpmCmd.rpm,
+                    speed = speedCmd.metricSpeed,
+                    coolantTemp = coolantCmd.temperature.toInt(),
+                    fuelTrim = fuelTrimCmd.value.toDouble(),
+                    isDataLive = true
+                )
+                delay(500)
+            } catch (e: Exception) {
+                Log.e("OBD_LOOP", "Failed to fetch metrics", e)
+                _metrics.value = _metrics.value.copy(isDataLive = false)
+                break
+            }
+        }
+    }
+
     private val bluetoothAdapter: BluetoothAdapter? =
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     private var socket: BluetoothSocket? = null
