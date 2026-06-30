@@ -25,6 +25,8 @@ import com.github.pires.obd.commands.temperature.EngineCoolantTemperatureCommand
 import com.github.pires.obd.commands.fuel.FuelTrimCommand
 import com.github.pires.obd.enums.FuelTrim
 import kotlinx.coroutines.delay
+import com.github.pires.obd.commands.control.TroubleCodesCommand
+import com.github.pires.obd.commands.protocol.ResetTroubleCodesCommand
 
 //data class representing live state of vehicle
 data class VehicleMetrics(
@@ -32,11 +34,38 @@ data class VehicleMetrics(
     val speed: Int = 0,
     val coolantTemp: Int = 0,
     val fuelTrim: Double = 0.0,
+    val faultCodes: List<String> = emptyList(),
     val isDataLive: Boolean = false
 )
 
 @Singleton
 class ObdManager @Inject constructor(@param:ApplicationContext private val context: Context){
+
+    //get fault codes (DTCs)
+    suspend fun fetchTroubleCodes() = withContext(Dispatchers.IO){
+        val out = socket?.outputStream?:return@withContext
+        val inputStream = socket?.inputStream?:return@withContext
+
+        val codesCmd = TroubleCodesCommand()
+
+        try{
+            codesCmd.run(inputStream, out)
+            //the library returns a raw String code
+            //split it into a list
+            val result = codesCmd.formattedResult
+            val codeList = if(result.isNullOrBlank()){
+                emptyList()
+            }else{
+                result.split("\n", ",").map{it.trim()}.filter{it.isNotEmpty()}
+            }
+            _metrics.value = _metrics.value.copy(faultCodes = codeList)
+            Log.d("OBD_LOG", "Found ${codeList.size} trouble codes")
+        }catch(e: Exception){
+            Log.e("OBD_LOG", "Failed to fetch trouble codes", e)
+        }
+    }
+
+
 
     //create stateflow for metrics
     private val _metrics = MutableStateFlow(VehicleMetrics())
