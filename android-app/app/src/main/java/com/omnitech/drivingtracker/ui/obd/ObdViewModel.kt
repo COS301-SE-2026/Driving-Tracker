@@ -49,6 +49,7 @@ class ObdViewModel @Inject constructor(
         }
     }
 
+    val vehicleMetrics = obdManager.metrics
     fun connectToObd(address: String){
         viewModelScope.launch{
             obdManager.connectToDevice(address)
@@ -56,6 +57,8 @@ class ObdViewModel @Inject constructor(
             //if connection successful, save for next time
             if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
                 sessionManager.saveLastObdAddress(address)
+
+                obdManager.startLiveDataLoop()
             }
         }
     }
