@@ -40,7 +40,10 @@ import com.omnitech.drivingtracker.ui.home.DashboardViewModel
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 
 @Composable
-fun NotificationRationale(onPermissionHandled: () -> Unit) {
+fun NotificationRationale(
+    onPermissionHandled: () -> Unit,
+    viewModel: NotificationViewModel = hiltViewModel()
+) {
 
     val context = LocalContext.current
 
@@ -90,16 +93,18 @@ fun NotificationRationale(onPermissionHandled: () -> Unit) {
                 ) {
                     Button(onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            val shouldShowRationale = (context as Activity)
+
+                            val isDeniedOnce = (context as Activity)
                                 .shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
 
-                            if( !shouldShowRationale) {
+                            if( !isDeniedOnce && viewModel.hasRequestedBefore()) {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                     data = Uri.fromParts("package", context.packageName, null)
                                 }
 
                                 context.startActivity(intent)
                             }else {
+                                viewModel.markAsRequested()
                                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         } else {

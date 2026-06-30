@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
 
                         LoginScreen(
                             onLoginSuccess = {
-                                navController.navigate(Screen.Dashboard.route){
+                                navController.navigate(Screen.NotificationRationale.route){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
                                 }
                             },
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.SignUp.route){
                         SignUpScreen(
                             onSignUpSuccess = {
-                                navController.navigate(Screen.Dashboard.route){
+                                navController.navigate(Screen.NotificationRationale.route){
                                     popUpTo(Screen.Welcome.route) { inclusive = true }
                                 }
                             },
@@ -108,8 +108,8 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.NotificationRationale.route) {
                         NotificationRationale(
                             onPermissionHandled = {
-                                navController.navigate("home") {
-                                    popUpTo("notification_rationale") { inclusive = true }
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.NotificationRationale.route) { inclusive = true }
                                 }
                         })
                     }
