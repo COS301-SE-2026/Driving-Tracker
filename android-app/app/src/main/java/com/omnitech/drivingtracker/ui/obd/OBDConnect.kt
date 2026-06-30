@@ -46,6 +46,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.Bluetooth
 //import androidx.glance.appwidget.compose
 import com.omnitech.drivingtracker.data.obd.ObdManager
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 
 data class Device(
     val name: String,
@@ -60,6 +63,7 @@ data class Device(
 fun OBDConnect(navController: NavController? =null,
                viewModel: ObdViewModel = hiltViewModel()){
 
+    val context = LocalContext.current
     val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
     val connectionState by viewModel.connectionState.collectAsState() //real status
 
@@ -115,7 +119,10 @@ fun OBDConnect(navController: NavController? =null,
         )
         //Add Device Button
         OutlinedButton(
-            onClick = {/* pair */},
+            onClick = {
+                val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                context.startActivity(intent)
+            },
             shape = RoundedCornerShape(50),
             modifier = Modifier.padding(horizontal = 16.dp),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
