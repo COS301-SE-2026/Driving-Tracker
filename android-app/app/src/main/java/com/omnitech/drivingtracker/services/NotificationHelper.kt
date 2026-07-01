@@ -104,4 +104,21 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         }
     }
 
+    fun showGeneralNotification(title: String, message: String){
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.FCM_DEFAULT)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_bell) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(buildMainActivityIntent("dashboard")) //To be changed
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException){
+            //permission not granted by user
+        }
+    }
+
 }

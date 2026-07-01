@@ -60,6 +60,16 @@ class DrivingTrackerApp : Application() {
                     description = "Shown while a trip is active and being recorded"
                 }
             )
+
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    NotificationChannels.FCM_DEFAULT,
+                    "General Notifications",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "General notifications from Driving Tracker"
+                }
+            )
         }
     }
 
