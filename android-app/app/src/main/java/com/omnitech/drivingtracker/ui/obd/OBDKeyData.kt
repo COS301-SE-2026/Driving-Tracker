@@ -51,7 +51,7 @@ import androidx.compose.material.icons.filled.LocalGasStation
 data class KData(
     val name: String,
     val pid: String, //added this in case backend needs it (
-    val value: String = "0" //has to be fetched at runtime
+    val value: String = "0", //has to be fetched at runtime
     val measurement: String,
     val pic: ImageVector
 )
@@ -64,12 +64,15 @@ data class ErrorCode(
 fun OBDKeyData(navController: NavController? =null) {
 
     //mock data for ui
-    val dat = mutableStateListOf( //because our values can be changed
-        KData("Engine RPM","010C", "RPM", Icons.Default.Speed),
-        KData("Engine RPM","0105", "*C", Icons.Default.Thermostat),
-        KData("Engine RPM","0103", "", Icons.Default.LocalGasStation),
-        KData("Engine RPM","010D", "km/h", Icons.Default.DirectionsCar),
-    )
+    val dat = remember {
+        mutableStateListOf(
+            //because our values can be changed
+            KData("Engine RPM", "010C","0", "RPM", Icons.Default.Speed),
+            KData("Coolant Temp", "0105","0", "*C", Icons.Default.Thermostat),
+            KData("Fuel System Status", "0103","0", "", Icons.Default.LocalGasStation),
+            KData("Vehicle Speed", "010D","0", "km/h", Icons.Default.DirectionsCar),
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -97,30 +100,63 @@ fun OBDKeyData(navController: NavController? =null) {
             )
             //Page Description
             Text(
-                text = "View essential vehicle metrics such as engine RPM, coolant \n" +
+                text = "View essential vehicle metrics such as engine RPM, coolant " +
                         "temperature, fuel trim, and diagnostic trouble codes.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
+            Spacer(modifier = Modifier.height(12.dp))
             //Data (2 cards per row)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ){
-                DataCard(metric = dat[0], modifier = Modifier.weight(1f)) //still need to make the actual card
-                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
+                DataCard(dat = dat[0], modifier = Modifier.weight(1f)) //still need to make the actual card
+                DataCard(dat = dat[1], modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ){
-                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
-                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
+                DataCard(dat = dat[2], modifier = Modifier.weight(1f))
+                DataCard(dat = dat[3], modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(14.dp))
             //diagnostic codes card
+        }
+    }
+}
+
+@Composable
+fun DataCard(dat: KData, modifier: Modifier = Modifier){
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ){
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(
+                imageVector = dat.pic,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(9.dp))
+            Text(
+                text = dat.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = dat.value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
