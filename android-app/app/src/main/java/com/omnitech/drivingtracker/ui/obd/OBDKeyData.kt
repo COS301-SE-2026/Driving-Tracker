@@ -74,6 +74,11 @@ fun OBDKeyData(navController: NavController? =null) {
         )
     }
 
+    val ErrorCodes = listOf(
+        ErrorCode("P0300", "Randome Cyliner Misfire Detected"),
+        ErrorCode("P0300", "Multiple Cyliner Misfire Detected")
+    )
+
     Scaffold(
         topBar = {
             TopBar(
@@ -124,7 +129,8 @@ fun OBDKeyData(navController: NavController? =null) {
                 DataCard(dat = dat[3], modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(14.dp))
-            //diagnostic codes card
+
+            DiagnosticsCard(codes = ErrorCodes)
         }
     }
 }
@@ -159,6 +165,66 @@ fun DataCard(dat: KData, modifier: Modifier = Modifier){
             )
         }
     }
+}
+
+@Composable
+fun DiagnosticsCard(codes: List<ErrorCode>){
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ){
+        Column(modifier = Modifier.padding(16.dp)){
+            Row(verticalAlignment = Alignment.CenterVertically){
+                Box(
+                    modifier = Modifier.size(width = 80.dp, height =56.dp),
+                    contentAlignment = Alignment.Center
+                ){
+                    Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = "Diagnostic Trouble Codes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            codes.forEach{ code->
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)){
+                    Text(
+                        text = "!",
+                        color = Color.Red,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = code.code,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = code.code,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                }
+            }
+        }
+    }
+
 }
 
 @Preview(showBackground = true)
