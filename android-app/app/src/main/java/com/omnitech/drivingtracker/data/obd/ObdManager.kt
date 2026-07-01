@@ -59,7 +59,10 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
                 result.split("\n", ",").map{it.trim()}.filter{it.isNotEmpty()}
             }
             _metrics.value = _metrics.value.copy(faultCodes = codeList)
+
             Log.d("OBD_LOG", "Found ${codeList.size} trouble codes")
+            // testing log
+            Log.d("OBD_TEST", "FAULT CODES FOUND: $codeList")
         }catch(e: Exception){
             Log.e("OBD_LOG", "Failed to fetch trouble codes", e)
         }
@@ -98,21 +101,25 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
 
         while (_connectionState.value == ConnectionState.CONNECTED) {
             try {
-                rpmCmd.run(inputStream, out)
-                speedCmd.run(inputStream, out)
-                coolantCmd.run(inputStream, out)
-                fuelTrimCmd.run(inputStream, out)
+                runCatching{ rpmCmd.run(inputStream, out) }
+                runCatching { speedCmd.run(inputStream, out) }
+                val coolantResult = runCatching{ coolantCmd.run(inputStream, out) }
+                val fuelResult = runCatching{ fuelTrimCmd.run(inputStream, out) }
 
                 _metrics.value = VehicleMetrics(
                     rpm = rpmCmd.rpm,
                     speed = speedCmd.metricSpeed,
-                    coolantTemp = coolantCmd.temperature.toInt(),
-                    fuelTrim = fuelTrimCmd.value.toDouble(),
+                    coolantTemp = if(coolantResult.isSuccess) coolantCmd.temperature.toInt() else 0,
+                    fuelTrim = if (fuelResult.isSuccess) fuelTrimCmd.value.toDouble() else 0.0,
+                    faultCodes = _metrics.value.faultCodes,
                     isDataLive = true
                 )
+                // testing logs
+                //Log.d("OBD_TEST", "LIVE DATA -> RPM: ${rpmCmd.rpm}, Speed: ${speedCmd.metricSpeed}")
+
                 delay(500)
             } catch (e: Exception) {
-                Log.e("OBD_LOOP", "Failed to fetch metrics", e)
+                Log.e("OBD_LOOP", "Failed to fetch metrics. Critical error", e)
                 _metrics.value = _metrics.value.copy(isDataLive = false)
                 break
             }
