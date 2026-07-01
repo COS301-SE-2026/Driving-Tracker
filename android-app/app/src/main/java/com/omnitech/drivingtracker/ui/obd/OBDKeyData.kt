@@ -39,10 +39,90 @@ import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.TopBar
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.LocalGasStation
 
+
+//key data class
+data class KData(
+    val name: String,
+    val pid: String, //added this in case backend needs it (
+    val value: String = "0" //has to be fetched at runtime
+    val measurement: String,
+    val pic: ImageVector
+)
+//key data class for the diagnostic codes
+data class ErrorCode(
+    val code: String,
+    val description: String
+)
 @Composable
-fun OBDKeyData(navController: NavController? =null){
+fun OBDKeyData(navController: NavController? =null) {
 
+    //mock data for ui
+    val dat = mutableStateListOf( //because our values can be changed
+        KData("Engine RPM","010C", "RPM", Icons.Default.Speed),
+        KData("Engine RPM","0105", "*C", Icons.Default.Thermostat),
+        KData("Engine RPM","0103", "", Icons.Default.LocalGasStation),
+        KData("Engine RPM","010D", "km/h", Icons.Default.DirectionsCar),
+    )
+
+    Scaffold(
+        topBar = {
+            TopBar(
+                leftIcon = Icons.Default.ArrowBackIosNew,
+                rightIcon = Icons.Default.Settings,
+                onLeftClick = {},
+                onRightClick = {}
+            )
+        },
+        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+        ) {
+            //Page Title
+            Text(
+                text = "OBD Diagnostics",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            //Page Description
+            Text(
+                text = "View essential vehicle metrics such as engine RPM, coolant \n" +
+                        "temperature, fuel trim, and diagnostic trouble codes.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            //Data (2 cards per row)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ){
+                DataCard(metric = dat[0], modifier = Modifier.weight(1f)) //still need to make the actual card
+                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ){
+                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
+                DataCard(metric = dat[0], modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            //diagnostic codes card
+        }
+    }
 }
 
 @Preview(showBackground = true)
