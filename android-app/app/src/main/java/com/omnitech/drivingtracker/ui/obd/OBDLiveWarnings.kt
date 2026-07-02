@@ -112,7 +112,7 @@ fun OBDLiveWarnings(navController: NavController? =null){
                     Text(
                         text = "No Live Warnings available",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -140,7 +140,7 @@ fun WarningCard(warning: LiveWarning){
             Text(
                 text = warning.title,
                 fontWeight = FontWeight.Bold,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -154,7 +154,7 @@ fun WarningCard(warning: LiveWarning){
                 Text(
                     text = warning.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f)
                 )
 

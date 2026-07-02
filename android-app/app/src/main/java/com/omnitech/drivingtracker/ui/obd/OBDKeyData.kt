@@ -69,7 +69,7 @@ fun OBDKeyData(navController: NavController? =null) {
         mutableStateListOf(
             //because our values can be changed
             KData("Engine RPM", "010C","0", "RPM", Icons.Default.Speed),
-            KData("Coolant Temp", "0105","0", "*C", Icons.Default.Thermostat),
+            KData("Coolant Temp", "0105","0", "°C", Icons.Default.Thermostat),
             KData("Fuel System Status", "0103","0", "", Icons.Default.LocalGasStation),
             KData("Vehicle Speed", "010D","0", "km/h", Icons.Default.DirectionsCar),
         )
@@ -118,16 +118,16 @@ fun OBDKeyData(navController: NavController? =null) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ){
-                DataCard(dat = dat[0], modifier = Modifier.weight(1f)) //still need to make the actual card
-                DataCard(dat = dat[1], modifier = Modifier.weight(1f))
+                DataCard(dat = dat[0], iconTint = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(1f)) //still need to make the actual card
+                DataCard(dat = dat[1],iconTint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ){
-                DataCard(dat = dat[2], modifier = Modifier.weight(1f))
-                DataCard(dat = dat[3], modifier = Modifier.weight(1f))
+                DataCard(dat = dat[2], iconTint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.weight(1f))
+                DataCard(dat = dat[3], iconTint = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -137,7 +137,7 @@ fun OBDKeyData(navController: NavController? =null) {
 }
 
 @Composable
-fun DataCard(dat: KData, modifier: Modifier = Modifier){
+fun DataCard(dat: KData, iconTint: Color, modifier: Modifier = Modifier){
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -151,18 +151,20 @@ fun DataCard(dat: KData, modifier: Modifier = Modifier){
                 imageVector = dat.pic,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = iconTint
             )
             Spacer(modifier = Modifier.height(9.dp))
             Text(
                 text = dat.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = dat.value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -178,17 +180,12 @@ fun DiagnosticsCard(codes: List<ErrorCode>){
     ){
         Column(modifier = Modifier.padding(16.dp)){
             Row(verticalAlignment = Alignment.CenterVertically){
-                Box(
-                    modifier = Modifier.size(width = 80.dp, height =56.dp),
-                    contentAlignment = Alignment.Center
-                ){
                     Icon(
                         imageVector = Icons.Default.BugReport,
                         contentDescription = null,
                         modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -206,19 +203,20 @@ fun DiagnosticsCard(codes: List<ErrorCode>){
                     modifier = Modifier.padding(vertical = 4.dp)){
                     Text(
                         text = "!",
-                        color = Color.Red,
+                        color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
                         text = code.code,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 8.dp),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = code.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                 }
