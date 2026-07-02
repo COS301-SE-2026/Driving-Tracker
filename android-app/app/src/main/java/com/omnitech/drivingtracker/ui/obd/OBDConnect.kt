@@ -80,7 +80,7 @@ fun OBDConnect(navController: NavController? =null){
         ){
         //Page Title
         Text(
-            text = "OBD Diagnostics",
+            text = "OBD Connections",
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground,

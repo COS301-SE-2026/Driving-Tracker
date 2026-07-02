@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.BugReport
 
 
 //key data class
@@ -97,7 +98,7 @@ fun OBDKeyData(navController: NavController? =null) {
         ) {
             //Page Title
             Text(
-                text = "OBD Diagnostics",
+                text = "Key Data",
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -182,7 +183,7 @@ fun DiagnosticsCard(codes: List<ErrorCode>){
                     contentAlignment = Alignment.Center
                 ){
                     Icon(
-                        imageVector = Icons.Default.DirectionsCar,
+                        imageVector = Icons.Default.BugReport,
                         contentDescription = null,
                         modifier = Modifier.size(40.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -215,7 +216,7 @@ fun DiagnosticsCard(codes: List<ErrorCode>){
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = code.code,
+                        text = code.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
