@@ -48,4 +48,12 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
     fun hasRequestedNotification(): Boolean {
         return prefs.getBoolean("notification_requested", false)
     }
+
+    fun saveFcmToken(token: String) {
+        prefs.edit { putString("fcm_token", token) }
+    }
+
+    fun getFcmToken(): String? {
+        return prefs.getString("fcm_token", null)
+    }
 }
