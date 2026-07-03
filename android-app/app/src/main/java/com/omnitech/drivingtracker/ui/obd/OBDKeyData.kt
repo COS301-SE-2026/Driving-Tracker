@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,43 +76,17 @@ fun OBDKeyData(navController: NavController? =null) {
         )
     }
 
-    val ErrorCodes = listOf(
+    val errorCodes = listOf(
         ErrorCode("P0300", "Randome Cyliner Misfire Detected"),
         ErrorCode("P0300", "Multiple Cyliner Misfire Detected")
     )
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                leftIcon = Icons.Default.ArrowBackIosNew,
-                rightIcon = Icons.Default.Settings,
-                onLeftClick = {},
-                onRightClick = {}
-            )
-        },
-        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            //Page Title
-            Text(
-                text = "Key Data",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            //Page Description
-            Text(
-                text = "View essential vehicle metrics such as engine RPM, coolant " +
-                        "temperature, fuel trim, and diagnostic trouble codes.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+    StandardScreen(
+        navController = navController,
+        title = "Key Data",
+        description = "View essential vehicle metrics such as engine RPM, coolant " +
+        "temperature, fuel trim, and diagnostic trouble codes."
+    ) {
             Spacer(modifier = Modifier.height(12.dp))
             //Data (2 cards per row)
             Row(
@@ -131,10 +106,10 @@ fun OBDKeyData(navController: NavController? =null) {
             }
             Spacer(modifier = Modifier.height(14.dp))
 
-            DiagnosticsCard(codes = ErrorCodes)
+            DiagnosticsCard(codes = errorCodes)
         }
     }
-}
+
 
 @Composable
 fun DataCard(dat: KData, iconTint: Color, modifier: Modifier = Modifier){

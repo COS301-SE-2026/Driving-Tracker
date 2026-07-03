@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -68,39 +69,11 @@ fun OBDLiveWarnings(navController: NavController? =null){
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                leftIcon = Icons.Default.ArrowBackIosNew,
-                rightIcon = Icons.Default.Settings,
-                onLeftClick = {},
-                onRightClick = {}
-            )
-        },
-        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            //Page Title
-            Text(
-                text = "Live Warnings",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            //Page Description
-            Text(
-                text = "Monitor incoming diagnostic data and receive instant alerts when " +
-                        "potential mechanical or performance issues arise.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
+    StandardScreen(
+        navController = navController,
+        title = "Live Warnings",
+        description = "Monitor incoming diagnostics"
+    ) {
             Spacer(modifier = Modifier.height(14.dp))
 
             //No warnings
@@ -123,7 +96,6 @@ fun OBDLiveWarnings(navController: NavController? =null){
                 }
             }
         }
-    }
 }
 
 @Composable

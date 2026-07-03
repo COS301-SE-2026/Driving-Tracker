@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,30 +17,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.omnitech.drivingtracker.data.models.ConsentStatus
-import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.TopBar
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
-import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import androidx.compose.ui.draw.clip
@@ -62,38 +47,12 @@ fun OBDConnect(navController: NavController? =null){
         Device("OBD 3", isConnected = false, adapter = "ELM327", lastUsed="12 January 2025")
     )
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                leftIcon = Icons.Default.ArrowBackIosNew,
-                rightIcon = Icons.Default.Settings,
-                onLeftClick = {},
-                onRightClick = {}
-            )
-        },
-        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
+    StandardScreen(
+        navController = navController,
+        title = "OBD Connections",
+        description = "Connect your OBD-|| Adapter via bluetooth to establish communication and access real-time vehicle diagnostic data."
     ){
-        innerPadding->Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ){
-        //Page Title
-        Text(
-            text = "OBD Connections",
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        //Page Description
-        Text(
-            text = "Connect your OBD-|| adapter via Bluetooth to establish communication " +
-                    "and access real-time vehicle diagnostic data.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+
         //Devices
         Text(
             text = "My Devices",
@@ -120,10 +79,8 @@ fun OBDConnect(navController: NavController? =null){
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-
     }
 
-    }
 }
 
 @Composable

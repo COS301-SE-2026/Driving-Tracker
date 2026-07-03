@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,72 +43,32 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 
 @Composable
 fun OBDMain(navController: NavController? =null){
-    Scaffold(
-        topBar = {
-            TopBar(
-                leftIcon = Icons.Default.ArrowBackIosNew,
-                rightIcon = Icons.Default.Settings,
-                onLeftClick = {},
-                onRightClick = {}
-            )
-        },
-        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            //Page Title
-            Text(
-                text = "OBD Diagnostics",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            //Page Description
-            Text(
-                text = "Connect your OBD-|| adapter to view your vehicle health, " +
-                        "fault codes, and live diagnostics.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+    StandardScreen(
+        navController = navController,
+        title = "OBD Diagnostics",
+        description = "Connect your OBD-|| adapter to view your vehicle health, fault codes, and live diagnostics."
+    ) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
             //Different page options
-            //Fix Colors
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ){
-                Column{
-                    MRow("OBD Adapters"){navController?.navigate("OBDConnect")}
-                }
-            }
+            MenuCard("OBD Adapters") {navController?.navigate("OBDConnect") }
             Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ){
-                Column{
-                    MRow("Live Warnings"){navController?.navigate("OBDConnect")}
-                }
-            }
+            MenuCard("Live Warnings") {navController?.navigate("OBDLiveWarnings") }
             Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ){
-                Column{
-                    MRow("Key OBD data"){navController?.navigate("OBDConnect")}
-                }
-            }
+            MenuCard("Key OBD data") {navController?.navigate("OBDKeyData") }
+        }
+}
+
+@Composable
+fun MenuCard(label: String, onClick:()->Unit){
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ){
+        Column{
+            MRow(label, onClick)
         }
     }
 }
