@@ -54,8 +54,19 @@ fun WeeklyChallenges(
         Challenge("3", "Throttle Goat", "Complete 5 trips without a hard acceleration alert", 2, 5)
     )
 
-    val activeList = previewChallenges ?: mockChallenges
+    WeeklyChallengesContent(
+        state = state,
+        challenges = mockChallenges,
+        navController = navController
+    )
+}
 
+@Composable
+fun WeeklyChallengesContent(
+    state: AchievementsViewModel.UiState,
+    challenges: List<Challenge>,
+    navController: NavController? = null
+) {
     Scaffold(
         topBar = {
             TopBar(
@@ -83,7 +94,9 @@ fun WeeklyChallenges(
                 ) {
 
                     Card(//Ranks
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(200.dp),
                         colors = CardDefaults.cardColors(containerColor = CardWhite),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -144,7 +157,9 @@ fun WeeklyChallenges(
                     }
 
                     Card(//Sore
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(200.dp),
                         colors = CardDefaults.cardColors(containerColor = CardWhite),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -154,12 +169,20 @@ fun WeeklyChallenges(
                             contentAlignment = Alignment.Center
 
                         ) {
-                            /*Text(
-                                text = "Score",
-                                fontSize = 14.sp,
-                                style = MaterialTheme.typography.bodyMedium
-                            )*/
-                            ScoreRing(score = 85, modifier = Modifier.size(100.dp))
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Score",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+
+                                ScoreRing(score = 85, modifier = Modifier.size(100.dp))
+                            }
                         }
                     }
 
@@ -188,7 +211,7 @@ fun WeeklyChallenges(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
-                        activeList.forEach { challenge ->
+                        challenges.forEach { challenge ->
                             ChallengeCard(
                                 title = challenge.title,
                                 description = challenge.description,
@@ -234,7 +257,22 @@ fun ChallengesPreview() {
     )
 
     DrivingTrackerTheme {
-        WeeklyChallenges(previewChallenges = mockChallenges)
+        WeeklyChallengesContent(
+            state = AchievementsViewModel.UiState.Success(
+                leaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
+                   category = "OVERALL",
+                    scope = "WEEKLY",
+                    entries = listOf(
+                        com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Lesedi", 95.0),
+                        com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "Mosa", 88.0),
+                        com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "YOU", 85.0)
+                    ),
+                    myRank = 3,
+                    myScore = 85
+                )
+            ),
+            challenges = mockChallenges
+        )
     }
 
 }
