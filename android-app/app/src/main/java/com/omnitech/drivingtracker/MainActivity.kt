@@ -13,6 +13,7 @@ import com.omnitech.drivingtracker.ui.auth.SignUpScreen
 import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.home.Dashboard
+import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
@@ -33,6 +34,8 @@ sealed class Screen(val route: String){
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
+    data object WeeklyChallenges : Screen("weekly_challenges")
+
 }
 
 @AndroidEntryPoint
@@ -44,7 +47,7 @@ class MainActivity : ComponentActivity() {
             DrivingTrackerTheme{
                 val navController = rememberNavController()
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                NavHost(navController = navController, startDestination = Screen.Dashboard.route){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -76,8 +79,13 @@ class MainActivity : ComponentActivity() {
                         Dashboard(navController = navController)
                     }
                     composable(Screen.Trips.route){
-                        Trips(navController = navController,)
+                        Trips(navController = navController)
                     }
+
+                    composable(Screen.WeeklyChallenges.route){
+                        WeeklyChallenges(navController = navController)
+                    }
+
                     composable(Screen.Contacts.route){
                         Contacts(navController = navController)
                     }

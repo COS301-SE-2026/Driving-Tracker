@@ -1,6 +1,5 @@
 package com.omnitech.drivingtracker.ui.challenges
 
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +47,14 @@ fun WeeklyChallenges(
 ) {
 
     val state by viewModel.uiState.collectAsState()
+
+    val mockChallenges = listOf(
+        Challenge("1", "Safety Officer", "Go 4 days without bad driving habits", 2, 4),
+        Challenge("2", "Speed Angel", "Complete 3 trips without going above the speed limit", 3, 3),
+        Challenge("3", "Throttle Goat", "Complete 5 trips without a hard acceleration alert", 2, 5)
+    )
+
+    val activeList = previewChallenges ?: mockChallenges
 
     Scaffold(
         topBar = {
@@ -180,9 +187,6 @@ fun WeeklyChallenges(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Use either production data from state or backup mock list
-                        val activeList =
-                            previewChallenges ?: emptyList() // Map to VM state list in production
 
                         activeList.forEach { challenge ->
                             ChallengeCard(
