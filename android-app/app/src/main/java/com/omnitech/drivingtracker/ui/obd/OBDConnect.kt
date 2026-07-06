@@ -34,7 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.TopBar
@@ -49,6 +49,8 @@ import com.omnitech.drivingtracker.data.obd.ObdManager
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
+import androidx.compose.runtime.collectAsState
+import android.bluetooth.BluetoothDevice
 
 data class Device(
     val name: String,
@@ -68,7 +70,7 @@ fun OBDConnect(navController: NavController? =null,
     val connectionState by viewModel.connectionState.collectAsState() //real status
 
     //transform bluetoothDevice since viewModel provides list but UI expects Device objects
-    val uiDevices = bluetoothDevices.map{btDevice ->
+    val uiDevices = bluetoothDevices.map{btDevice: BluetoothDevice ->
         Device(
             name = try { btDevice.name } catch (e: SecurityException) { null } ?: "Unknown Device",
             address = btDevice.address, //this is MAC address
