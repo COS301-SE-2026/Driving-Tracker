@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import com.omnitech.drivingtracker.ui.theme.TextSecondary
+import androidx.compose.ui.graphics.Color
 
 
 
@@ -20,6 +21,7 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = Purple,
     background = Background,
     surface = CardWhite,
+    surfaceVariant = Color(0xFF1E2438),
     outline = Border,
     onPrimary = CardWhite,
     onSecondary = CardWhite,
@@ -35,6 +37,7 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Purple,
     background = Background,
     surface = CardWhite,
+    surfaceVariant = Color(0xFFF0F4FF),
     outline = Border,
     onPrimary = CardWhite,
     onSecondary = CardWhite,
@@ -48,7 +51,7 @@ private val LightColorScheme = lightColorScheme(
 fun DrivingTrackerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, //so we dont use the phone's "mode" yet
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
