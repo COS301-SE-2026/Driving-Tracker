@@ -77,8 +77,8 @@ fun OBDKeyData(navController: NavController? =null) {
     }
 
     val errorCodes = listOf(
-        ErrorCode("P0300", "Randome Cyliner Misfire Detected"),
-        ErrorCode("P0300", "Multiple Cyliner Misfire Detected")
+        ErrorCode("P0300", "Random Cylinder Misfire Detected"),
+        ErrorCode("P0300", "Multiple Cylinder Misfire Detected")
     )
 
     StandardScreen(
