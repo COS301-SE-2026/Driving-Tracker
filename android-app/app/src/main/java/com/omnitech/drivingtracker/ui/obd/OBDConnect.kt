@@ -39,6 +39,7 @@ import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import android.bluetooth.BluetoothDevice
 
 data class Device(
@@ -98,7 +99,7 @@ fun OBDConnect(navController: NavController? =null,
         Spacer(modifier = Modifier.height(16.dp))
 
         //for each device that is available, show a card
-        uiDevices.forEach { device ->
+        uiDevices.forEach { device: Device ->
             DeviceCard(
                 device = device,
                 onConnect = { viewModel.connectToObd(device.address) }
