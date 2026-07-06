@@ -19,6 +19,7 @@ import com.omnitech.drivingtracker.ui.trip.Trips
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
+import com.omnitech.drivingtracker.ui.trip.TripSummary
 import dagger.hilt.android.AndroidEntryPoint
 
 sealed class Screen(val route: String){
@@ -30,7 +31,11 @@ sealed class Screen(val route: String){
     data object Contacts : Screen("contacts")
     data object Achievements : Screen("achievements")
 
-    data object TripSummary : Screen("trip_summary")
+//    data object TripSummary : Screen("trip_summary")
+    data object TripSummary : Screen("trip_summary/{trip_id}") {
+        fun createRoute(tripId: String) = "trip_summary/$tripId"
+    }
+
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
@@ -78,13 +83,20 @@ class MainActivity : ComponentActivity() {
                         Dashboard(navController = navController)
                     }
                     composable(Screen.Trips.route){
-                        Trips(navController = navController,)
+                        Trips(navController = navController)
                     }
                     composable(Screen.Contacts.route){
                         Contacts(navController = navController)
                     }
                     composable(Screen.Achievements.route){
                         AchievementsScreen(navController = navController)
+                    }
+                    composable(
+                        route = Screen.TripSummary.route,
+                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                    ) { backStackEntry->
+                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+                        TripSummary(tripId = tripId, navController = navController)
                     }
                     composable(
                         route = Screen.LiveTrip.route,

@@ -10,7 +10,9 @@ import com.omnitech.drivingtracker.data.models.ContactIdWrapper
 import com.omnitech.drivingtracker.data.models.CreateContactRequest
 import com.omnitech.drivingtracker.data.models.GetBadgesData
 import com.omnitech.drivingtracker.data.models.GetBadgesResponse
+import com.omnitech.drivingtracker.data.models.LeaderboardCategoryData
 import com.omnitech.drivingtracker.data.models.LeaderboardData
+import com.omnitech.drivingtracker.data.models.LeaderboardScopesData
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
@@ -29,6 +31,30 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get badges"))
+        } catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun getCategories(): Result<LeaderboardCategoryData>{
+        return try {
+            val response = api.getLeaderboardCategories()
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get categories"))
+        } catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun getScopes(): Result<LeaderboardScopesData>{
+        return try {
+            val response = api.getLeaderboardScopes()
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get scopes"))
         } catch (e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
