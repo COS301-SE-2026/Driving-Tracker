@@ -1,4 +1,6 @@
 import prisma from '../db/prisma';
+import {notification_services} from  "../services/notification_service";
+import {user_devices_services} from  "../services/user_devices_services";
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -11,6 +13,19 @@ function coded_error(code: string){
     const err: any = new Error(code);
     err.code = code;
     return err;
+}
+
+async function get_user_fullname(user_id: string){
+
+    const user = await prisma.users.findFirst({
+        where: { user_id }
+    });
+
+    if(!user) return null;
+
+    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+    return full_name;
 }
 
 
@@ -64,7 +79,19 @@ export const contact_services ={
             },
             select: {contact_id: true},
         });
+        
+        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(created.contact_id);
 
+        const sent_by = await get_user_fullname(user_id);
+
+        if(!sent_by) {
+            throw coded_error("USER_NOT_FOUND")
+        }
+
+        if(fcm_tokens.length > 0){
+            await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by);
+        }
+        
         // Controller expects to return contact_id + username
         return {
             contact_id: created.contact_id,

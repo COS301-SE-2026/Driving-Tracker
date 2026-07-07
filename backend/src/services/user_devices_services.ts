@@ -21,5 +21,25 @@ export const user_devices_services={
             throw new ExtendedError("Cannot register token","INTERNAL_SERVER_ERROR");
         }
 
-    },    
+    },
+    //Gets a user's fcm_tokens (One for each device the user has the app on)
+    async get_user_fcm_tokens(user_id: string){
+
+        try{
+
+            const tokens = await prisma.user_devices.findMany({
+                where: { user_id },
+                select: { fcm_token: true }
+            });
+
+            const user_tokens = tokens.map( item=>item.fcm_token);
+
+            return user_tokens;
+
+        } catch(err: any){
+
+            throw new ExtendedError("Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
+            
+        }
+    }    
 };
