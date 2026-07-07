@@ -18,6 +18,7 @@ import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.omnitech.drivingtracker.ui.obd.OBDConnect
 import com.omnitech.drivingtracker.ui.trip.TripSummary
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -38,6 +39,7 @@ sealed class Screen(val route: String){
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
+    data object  OBDConnect : Screen("obd_connect")
 }
 
 @AndroidEntryPoint
@@ -103,6 +105,9 @@ class MainActivity : ComponentActivity() {
                         val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
 
                         LiveTrip(tripId = tripId, navController = navController)
+                    }
+                    composable(Screen.OBDConnect.route) {
+                        OBDConnect(navController = navController)
                     }
                 }
             }

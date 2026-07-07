@@ -39,10 +39,16 @@ app.use("/badges",badges_leaderBoard_router);
 app.use('/leaderboard', leaderboard_router);
 app.use('/vehicle',vehicle_router);
 
-const PORT = process.env.PORT || 3000;
+// const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log("Server running on port", PORT)
+// app.listen(PORT, () => {
+//     console.log("Server running on port", PORT)
+// });
+
+const PORT = Number(process.env.port?? 3000);
+
+//bind to all interfaces so app is reachable from multiple devices/platforms
+app.listen(PORT, '0.0.0.0', () =>{
+	console.log(`Server running on port ${PORT}`);
 });
-
 

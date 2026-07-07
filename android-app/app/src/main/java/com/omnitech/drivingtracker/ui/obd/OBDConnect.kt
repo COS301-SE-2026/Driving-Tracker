@@ -24,28 +24,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.omnitech.drivingtracker.data.models.ConsentStatus
+import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.Bluetooth
+//import androidx.glance.appwidget.compose
+import com.omnitech.drivingtracker.data.obd.ObdManager
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import android.bluetooth.BluetoothDevice
 
 data class Device(
     val name: String,
     val isConnected: Boolean,
+    val address: String,
     val adapter: String,
     val signalStrength: String? = null,
     val lastUsed: String? = null
 
 )
 @Composable
-fun OBDConnect(navController: NavController? =null){
+fun OBDConnect(navController: NavController? =null,
+               viewModel: ObdViewModel = hiltViewModel()){
 
-    val devices = listOf(
-        Device("OBD 1", isConnected = true, adapter = "ELM327", signalStrength="Good"),
-        Device("OBD 2", isConnected = false, adapter = "ELM327", lastUsed="31 May 2026"),
-        Device("OBD 3", isConnected = false, adapter = "ELM327", lastUsed="12 January 2025")
-    )
+    val context = LocalContext.current
+    val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
+    val connectionState by viewModel.connectionState.collectAsState() //real status
+
+    //transform bluetoothDevice since viewModel provides list but UI expects Device objects
+    val uiDevices = bluetoothDevices.map{btDevice: BluetoothDevice ->
+        Device(
+            name = try { btDevice.name } catch (e: SecurityException) { null } ?: "Unknown Device",
+            address = btDevice.address, //this is MAC address
+            isConnected = connectionState == ObdManager.ConnectionState.CONNECTED,
+            adapter = "ELM327"
+        )
+    }
 
     StandardScreen(
         navController = navController,
@@ -63,7 +85,10 @@ fun OBDConnect(navController: NavController? =null){
         )
         //Add Device Button
         OutlinedButton(
-            onClick = {/* pair */},
+            onClick = {
+                val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                context.startActivity(intent)
+            },
             shape = RoundedCornerShape(50),
             modifier = Modifier.padding(horizontal = 16.dp),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
@@ -74,8 +99,11 @@ fun OBDConnect(navController: NavController? =null){
         Spacer(modifier = Modifier.height(16.dp))
 
         //for each device that is available, show a card
-        devices.forEach{
-            device -> DeviceCard(device)
+        uiDevices.forEach { device: Device ->
+            DeviceCard(
+                device = device,
+                onConnect = { viewModel.connectToObd(device.address) }
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
 
@@ -84,7 +112,7 @@ fun OBDConnect(navController: NavController? =null){
 }
 
 @Composable
-fun DeviceCard(device: Device){
+fun DeviceCard(device: Device, onConnect: () -> Unit){
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -113,7 +141,7 @@ fun DeviceCard(device: Device){
                     //only disconnected devices have a connect button
                     if (!device.isConnected){
                         Button(
-                            onClick = {/*pair*/},
+                            onClick = onConnect,
                             shape = RoundedCornerShape(50),
                             colors = ButtonDefaults.buttonColors(containerColor = Green)
                         ){
