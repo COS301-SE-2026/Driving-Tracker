@@ -3,6 +3,7 @@ package com.omnitech.drivingtracker.ui.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -70,7 +71,31 @@ fun VehicleCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             //Vehicle text Info
-            Column(){
+            Column(modifier = Modifier.weight(1.0f)){
+
+                Text(
+                    text = vehicle.alias,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+
+                    Text(text = vehicle.brand, style = MaterialTheme.typography.bodyMedium)
+
+                    //Formatting mileage with spaces as thousands separator
+                    Text(
+                        text = "${String.format("%,d", vehicle.mileage).replace(',', ' ')}km",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                }
+
+                Text(text = vehicle.model, style = MaterialTheme.typography.bodyMedium)
 
             }
 
