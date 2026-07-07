@@ -38,6 +38,7 @@ import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.graphics.Color
+import com.omnitech.drivingtracker.ui.components.VehicleInfoCard
 import kotlin.collections.forEach
 
 
@@ -117,7 +118,7 @@ fun Vehicles(
 
     //Stats Popup (Driving Info)
     selectedVehicleForStats?.let { vehicle ->
-        DrivingInfoDialog(
+        VehicleInfoCard(
             vehicle = vehicle,
             onDismiss = { selectedVehicleForStats = null }
         )
