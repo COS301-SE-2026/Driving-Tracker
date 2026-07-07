@@ -8,6 +8,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.Blue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
@@ -97,6 +99,13 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
             label = { Text(text = "More") },
             selected = false,
             onClick = { navController?.navigate(Screen.WeeklyChallenges.route) }
+        )
+
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Bluetooth, contentDescription = "OBD") },
+            label = { Text("OBD") },
+            selected = false,
+            onClick = { navController?.navigate(Screen.OBDConnect.route) }
         )
     }
 

@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,84 +17,64 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.TopBar
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
-import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.Bluetooth
+//import androidx.glance.appwidget.compose
+import com.omnitech.drivingtracker.data.obd.ObdManager
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import android.bluetooth.BluetoothDevice
 
 data class Device(
     val name: String,
     val isConnected: Boolean,
+    val address: String,
     val adapter: String,
     val signalStrength: String? = null,
     val lastUsed: String? = null
 
 )
 @Composable
-fun OBDConnect(navController: NavController? =null){
+fun OBDConnect(navController: NavController? =null,
+               viewModel: ObdViewModel = hiltViewModel()){
 
-    val devices = listOf(
-        Device("OBD 1", isConnected = true, adapter = "ELM327", signalStrength="Good"),
-        Device("OBD 2", isConnected = false, adapter = "ELM327", lastUsed="31 May 2026"),
-        Device("OBD 3", isConnected = false, adapter = "ELM327", lastUsed="12 January 2025")
-    )
+    val context = LocalContext.current
+    val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
+    val connectionState by viewModel.connectionState.collectAsState() //real status
 
-    Scaffold(
-        topBar = {
-            TopBar(
-                leftIcon = Icons.Default.ArrowBackIosNew,
-                rightIcon = Icons.Default.Settings,
-                onLeftClick = {},
-                onRightClick = {}
-            )
-        },
-        bottomBar = { BottomNavBar(navController = navController, color = "ach") }
+    //transform bluetoothDevice since viewModel provides list but UI expects Device objects
+    val uiDevices = bluetoothDevices.map{btDevice: BluetoothDevice ->
+        Device(
+            name = try { btDevice.name } catch (e: SecurityException) { null } ?: "Unknown Device",
+            address = btDevice.address, //this is MAC address
+            isConnected = connectionState == ObdManager.ConnectionState.CONNECTED,
+            adapter = "ELM327"
+        )
+    }
+
+    StandardScreen(
+        navController = navController,
+        title = "OBD Connections",
+        description = "Connect your OBD-|| Adapter via bluetooth to establish communication and access real-time vehicle diagnostic data."
     ){
-        innerPadding->Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-        ){
-        //Page Title
-        Text(
-            text = "OBD Diagnostics",
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        //Page Description
-        Text(
-            text = "Connect your OBD-|| adapter via Bluetooth to establish communication " +
-                    "and access real-time vehicle diagnostic data.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+
         //Devices
         Text(
             text = "My Devices",
@@ -104,7 +85,10 @@ fun OBDConnect(navController: NavController? =null){
         )
         //Add Device Button
         OutlinedButton(
-            onClick = {/* pair */},
+            onClick = {
+                val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                context.startActivity(intent)
+            },
             shape = RoundedCornerShape(50),
             modifier = Modifier.padding(horizontal = 16.dp),
             border = ButtonDefaults.outlinedButtonBorder(enabled = true),
@@ -115,19 +99,20 @@ fun OBDConnect(navController: NavController? =null){
         Spacer(modifier = Modifier.height(16.dp))
 
         //for each device that is available, show a card
-        devices.forEach{
-            device -> DeviceCard(device)
+        uiDevices.forEach { device: Device ->
+            DeviceCard(
+                device = device,
+                onConnect = { viewModel.connectToObd(device.address) }
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-
     }
 
-    }
 }
 
 @Composable
-fun DeviceCard(device: Device){
+fun DeviceCard(device: Device, onConnect: () -> Unit){
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -156,7 +141,7 @@ fun DeviceCard(device: Device){
                     //only disconnected devices have a connect button
                     if (!device.isConnected){
                         Button(
-                            onClick = {/*pair*/},
+                            onClick = onConnect,
                             shape = RoundedCornerShape(50),
                             colors = ButtonDefaults.buttonColors(containerColor = Green)
                         ){

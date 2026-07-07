@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dagger.hilt.android.lifecycle.HiltViewModel
 
+@HiltViewModel
 class ObdViewModel @Inject constructor(
     private val obdManager: ObdManager,
     private val sessionManager: SessionManager
@@ -47,6 +49,7 @@ class ObdViewModel @Inject constructor(
         }
     }
 
+    val vehicleMetrics = obdManager.metrics
     fun connectToObd(address: String){
         viewModelScope.launch{
             obdManager.connectToDevice(address)
@@ -54,7 +57,21 @@ class ObdViewModel @Inject constructor(
             //if connection successful, save for next time
             if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
                 sessionManager.saveLastObdAddress(address)
+
+                obdManager.startLiveDataLoop()
             }
+        }
+    }
+
+    fun readFaultCodes(){
+        viewModelScope.launch{
+            obdManager.fetchTroubleCodes()
+        }
+    }
+
+    fun clearFaultCodes(){
+        viewModelScope.launch{
+            obdManager.clearTroubleCodes()
         }
     }
 }
