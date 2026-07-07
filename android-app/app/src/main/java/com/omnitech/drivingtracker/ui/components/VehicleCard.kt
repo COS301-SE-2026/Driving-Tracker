@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.obd.Vehicle
 
@@ -101,6 +103,40 @@ fun VehicleCard(
 
             //Three dots menu
             Box{
+
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(imageVector = Icons.Default.MoreHoriz, contentDescription = "Options")
+                }
+
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(Color.White).clip(RoundedCornerShape(8.dp))
+                ) {
+
+                    DropdownMenuItem(
+                        text = { Text("Edit Alias", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        onClick = { showMenu = false }//Need to work on this
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                    DropdownMenuItem(
+                        text = { Text("Driving Info", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        onClick = {
+                            showMenu = false
+                            onDrivingInfoClick()
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                    DropdownMenuItem(
+                        text = { Text("Disconnect", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        onClick = { showMenu = false }//Need to work on this
+                    )
+
+                }
 
             }
 
