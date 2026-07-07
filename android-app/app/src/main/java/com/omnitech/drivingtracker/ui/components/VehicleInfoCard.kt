@@ -19,6 +19,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
+import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.components.VehicleStatItem
 @Composable
 fun VehicleInfoCard(
     vehicle: Vehicle,
@@ -70,6 +72,49 @@ fun VehicleInfoCard(
                             modifier = Modifier.size(64.dp),
                             tint = Color.LightGray
                         )
+                    }
+
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                //Stats Grid Layout
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+
+                        VehicleStatItem(//Mileage
+                            iconPainter = painterResource(id = R.drawable.stats_distance),
+                            label = "Mileage",
+                            value = "${vehicle.mileage} km",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        VehicleStatItem(//trips
+                            iconPainter = painterResource(id = R.drawable.stats_trips),
+                            label = "Trips",
+                            value = "${vehicle.trips}",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+
+                        VehicleStatItem(//Efficiency
+                            iconPainter = painterResource(id = R.drawable.stats_fuel),
+                            label = "Fuel Efficiency",
+                            value = "${vehicle.fuelEfficiency} km/l",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        VehicleStatItem(//Needs service?
+                            iconPainter = painterResource(id = R.drawable.stats_trips),
+                            label = "Needs Service?",
+                            value = if (vehicle.needsService) "YES" else "No",
+                            modifier = Modifier.weight(1f)
+                        )
+
                     }
 
                 }
