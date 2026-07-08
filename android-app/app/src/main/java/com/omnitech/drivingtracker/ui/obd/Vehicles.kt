@@ -86,6 +86,7 @@ fun Vehicles(
         LazyColumn(
             modifier =  Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
@@ -98,20 +99,20 @@ fun Vehicles(
                     horizontalArrangement = Arrangement.Center
                 ){
                     Text("Your ", style = MaterialTheme.typography.titleMedium )
-                    Text("Vehicle", style = MaterialTheme.typography.titleLarge, color = Blue)
+                    Text("Vehicles", style = MaterialTheme.typography.titleLarge, color = Blue)
                 }
             }
 
-            item(vehicleList) {
+            items(vehicleList) { vehicle ->
                 VehicleCard(
                     vehicle = vehicle,
                     onDrivingInfoClick = { selectedVehicleForStats = vehicle }
                 )
             }
 
-            item {
+            /*item {
                 AddVehicleButton(onClick = { /*Handle add vehicle logic*/ })
-            }
+            }*/
 
         }
     }

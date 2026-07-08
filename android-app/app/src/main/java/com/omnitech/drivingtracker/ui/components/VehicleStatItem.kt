@@ -45,14 +45,14 @@ fun VehicleStatItem(
             Icon(
                 painter = iconPainter,
                 contentDescription = null,
-                mofifier = Modifier.size(32.dp),
+                modifier = Modifier.size(32.dp),
                 tint = Color.DarkGray
             )
         } else if (iconVector != null) {
             Icon(
                 imageVector = iconVector,
                 contentDescription = null,
-                mofifier = Modifier.size(32.dp),
+                modifier = Modifier.size(32.dp),
                 tint = Color.DarkGray
             )
         }
