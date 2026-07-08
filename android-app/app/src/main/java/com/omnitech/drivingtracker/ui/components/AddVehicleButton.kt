@@ -36,9 +36,9 @@ fun AddVehicleDialog(
     onConfirm: (String, String, String) -> Unit
 ) {
 
-    var alias by remember { mutableStateSetOf("") }
-    var brand by remember { mutableStateSetOf("") }
-    var model by remember { mutableStateSetOf("") }
+    var alias by remember { mutableStateOf("") }
+    var brand by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf("") }
 
     AlertDialog(
 
