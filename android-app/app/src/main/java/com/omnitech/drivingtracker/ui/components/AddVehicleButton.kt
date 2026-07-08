@@ -38,7 +38,7 @@ fun AddVehicleButton(onClick: () -> Unit) {
 @Composable
 fun AddVehicleDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit,
+    onConfirm: (String, String, String, String?) -> Unit,
     onPickImage: () -> Unit,
     selectedImageUri: String?
 ) {
