@@ -96,4 +96,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    //Coil for loading images from URLs
+    implementation(libs.coil.compose)
 }
