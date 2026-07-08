@@ -149,3 +149,32 @@ fun VehicleCard(
 
 }
 
+@Composable
+fun EditAliasDialog(
+    vehicle: Vehicle,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+){
+
+    var text by remember { mutableStateOf(vehicle.alias) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Alias") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("New Alias") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+
+}

@@ -33,7 +33,9 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.VehicleCard
-import com.omnitech.drivingtracker.ui.components.AddVehicle
+import com.omnitech.drivingtracker.ui.components.AddVehicleButton
+import com.omnitech.drivingtracker.ui.components.EditAliasDialog
+import com.omnitech.drivingtracker.ui.components.AddVehicleDialog
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import com.omnitech.drivingtracker.ui.components.VehicleInfoCard
 import kotlin.collections.forEach
+import java.util.UUID
 
 
 //Data model for vehicle UI
@@ -63,6 +66,7 @@ fun Vehicles(
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleToEditAlias by remember { mutableStateOf<Vehicle?>(null) }
+    var showAddVehicleDialog by remember { mutableStateOf(false) }
 
     //sample data
     val vehicleList = remember {
@@ -143,34 +147,20 @@ fun Vehicles(
         )
     }
 
-}
-
-@Composable
-fun EditAliasDialog(
-    vehicle: Vehicle,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-){
-
-    var text by remember { mutableStateOf(vehicle.alias) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Alias") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("New Alias") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
+    //Add Vehicle
+    if (showAddVehicleDialog) {
+        AddVehicleDialog(
+            onDismiss = { showAddVehicleDialog = false },
+            onConfirm = { alias, brand, model ->
+                vehicleList.add(Vehicle(UUID.randomUUID().toString(), alias, brand, model, 0, 0, 0.0, false))
+                showAddVehicleDialog = false
+            }
+        ) 
+    }
 
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
