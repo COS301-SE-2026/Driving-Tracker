@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.VehicleCard
+import com.omnitech.drivingtracker.ui.components.AddVehicle
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
@@ -168,26 +169,6 @@ fun EditAliasDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
-
-}
-
-@Composable
-fun AddVehicleButton(onClick: () -> Unit) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp)
-        )
-        Text(text = "Add Vehicle", style = MaterialTheme.typography.bodyMedium)
-    }
 
 }
 
