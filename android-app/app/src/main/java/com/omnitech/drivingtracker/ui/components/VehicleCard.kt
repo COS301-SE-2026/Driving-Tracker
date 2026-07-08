@@ -28,7 +28,8 @@ import com.omnitech.drivingtracker.ui.obd.Vehicle
 @Composable
 fun VehicleCard(
     vehicle: Vehicle,
-    onDrivingInfoClick: () -> Unit
+    onDrivingInfoClick: () -> Unit,
+    onEditAliasClick: () -> Unit
 ) {
 
     var showMenu by remember { mutableStateOf(false) }
@@ -116,7 +117,10 @@ fun VehicleCard(
 
                     DropdownMenuItem(
                         text = { Text("Edit Alias", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = { showMenu = false }//Need to work on this
+                        onClick = {
+                            showMenu = false
+                            onEditAliasClick()
+                        }
                     )
 
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
@@ -129,12 +133,12 @@ fun VehicleCard(
                         }
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                    /*HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
                     DropdownMenuItem(
                         text = { Text("Disconnect", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
                         onClick = { showMenu = false }//Need to work on this
-                    )
+                    )*/
 
                 }
 

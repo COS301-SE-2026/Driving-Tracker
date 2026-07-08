@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
@@ -37,6 +36,7 @@ import com.omnitech.drivingtracker.ui.components.VehicleCard
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import com.omnitech.drivingtracker.ui.components.VehicleInfoCard
 import kotlin.collections.forEach
@@ -61,10 +61,11 @@ fun Vehicles(
 ) {
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
+    var vehicleToEditAlias by remember { mutableStateOf<Vehicle?>(null) }
 
     //sample data
     val vehicleList = remember {
-        listOf(
+        mutableStatelistOf(
             Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, false),
             Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 10.1, true)
         )
@@ -103,16 +104,17 @@ fun Vehicles(
                 }
             }
 
-            items(vehicleList) { vehicle ->
+            items(vehicleList, key = { it.id }) { vehicle ->
                 VehicleCard(
                     vehicle = vehicle,
                     onDrivingInfoClick = { selectedVehicleForStats = vehicle }
+                    onEditAliasClick = { vehicleToEditAlias = vehicle }
                 )
             }
 
-            /*item {
+            item {
                 AddVehicleButton(onClick = { /*Handle add vehicle logic*/ })
-            }*/
+            }
 
         }
     }
@@ -123,6 +125,68 @@ fun Vehicles(
             vehicle = vehicle,
             onDismiss = { selectedVehicleForStats = null }
         )
+    }
+
+    //Edit Alias Dialog
+    vehicleToEditAlias?.let { vehicle ->
+        EditAliasDialog(
+            vehicle = vehicle,
+            onDismiss = { vehicleToEditAlias = null },
+            onConfirm = { newAlias ->
+                val index = vehicleList.indexOfFirst { it.id == vehicle.id }
+                if (index != -1) {
+                    vehicleList[index] = vehicleList[index].copy(alias = newAlias)
+                }
+                vehicleToEditAlias = null
+            }
+        )
+    }
+
+}
+
+@Composable
+fun EditAliasDialog(
+    vehicle: Vehicle,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+){
+
+    var text by remember { mutableStateOf(vehicle.alias) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Alias") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("New Alias") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+
+}
+
+@Composable
+fun AddVehicleButton(onClick: () -> Unit) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp)
+        )
+        Text(text = "Add Vehicle", style = MaterialTheme.typography.bodyMedium)
     }
 
 }
