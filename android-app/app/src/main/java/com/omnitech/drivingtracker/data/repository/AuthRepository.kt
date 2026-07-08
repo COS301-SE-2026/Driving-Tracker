@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.data.repository
 
+import android.util.Log
 import retrofit2.HttpException
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
@@ -53,7 +54,8 @@ class AuthRepository @Inject constructor(
             session_manager.saveTokens(response.token,response.refresh_token)
 
             session_manager.getFcmToken()?.let{
-                api.registerFcmToken(RegisterFcmRequest(it))
+                val response = api.registerFcmToken(RegisterFcmRequest(it))
+                Log.d("FCM_SENT", response.message)
             }
 
             Result.success(Unit)

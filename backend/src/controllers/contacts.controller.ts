@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../middleware/auth";
 import { contact_services } from "../services/contacts_services";
+import { ExtendedError } from "../utils/errors";
 
 
 function get_user_id(req: AuthRequest): string | null {
@@ -38,6 +39,14 @@ const contacts_controller = {
             });
         }catch(e: any){
             //map service error codes to API responses
+            if((e instanceof ExtendedError)){
+                
+                return res.status(500).json({
+                    error: e.errorCode,
+                    message: e.message,
+                });
+            }
+
             if(e?.code === "ALREADY_TRUSTED_CONTACT"){
                 return res.status(409).json({
                     error: "ALREADY_TRUSTED_CONTACT",

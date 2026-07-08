@@ -30,10 +30,44 @@ class MessagingService: FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         //Handle incoming messages
-        val title = message.notification?.title ?: "Driving Tracker"
-        val body = message.notification?.body ?: "You have a new update"
-        
-        notificationHelper.showGeneralNotification(title, body)
+
+        if(message.data.isNotEmpty()){
+            val type = message.data["type"]
+
+            when(type){
+                "TRUSTED_CONTACT_REQUEST" -> {
+
+                    notificationHelper.showGeneralNotification(
+                        message.notification?.title ?: "Trusted Contact Request",
+                        message.notification?.body ?: "You have been requested to be a trusted contact")
+                }
+                "SHARED_TRIP" -> {
+                    val sharedBy = message.data["shared_by"]
+
+                    notificationHelper.showContactAlert(
+                        message.notification?.title ?: "Trip Shared With You",
+                        message.notification?.body ?: "$sharedBy is sharing their live trip with you")
+                }
+                "TRIP_ALERT" -> {
+                    val tripId = message.data["trip_id"]
+                    notificationHelper.showTripAlert(
+                        message.notification?.title ?: "Trip Alert",
+                        message.notification?.body ?: "Check your driving status",
+                        tripId ?: ""
+                    )
+                }
+                else -> {
+                    val title = message.notification?.title ?: "Driving Tracker"
+                    val body = message.notification?.body ?: "You have a new update"
+                    notificationHelper.showContactAlert(title, body)
+                }
+            }
+        }else {
+            val title = message.notification?.title ?: "Driving Tracker"
+            val body = message.notification?.body ?: "You have a new update"
+            notificationHelper.showGeneralNotification(title, body)
+        }
+
     }
 
     @Deprecated("Use onRegistered instead", ReplaceWith("onRegistered(token)"))
@@ -45,6 +79,10 @@ class MessagingService: FirebaseMessagingService() {
         // Handle new registration/token changes
         // Send id to the backend
         sessionManager.saveFcmToken(installationId)
+
+        sessionManager.getFcmToken()?.let{
+            Log.d("FCM_SAVED", it)
+        }
 
         sessionManager.getRefreshToken()?.let {
             serviceScope.launch{

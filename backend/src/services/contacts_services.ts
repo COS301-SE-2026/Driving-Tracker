@@ -80,7 +80,7 @@ export const contact_services ={
             select: {contact_id: true},
         });
         
-        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(created.contact_id);
+        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(target_user.user_id);
 
         const sent_by = await get_user_fullname(user_id);
 
@@ -88,10 +88,8 @@ export const contact_services ={
             throw coded_error("USER_NOT_FOUND")
         }
 
-        if(fcm_tokens.length > 0){
-            await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by);
-        }
-        
+        await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by);   
+
         // Controller expects to return contact_id + username
         return {
             contact_id: created.contact_id,

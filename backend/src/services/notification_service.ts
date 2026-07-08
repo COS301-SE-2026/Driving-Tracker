@@ -7,6 +7,10 @@ export const notification_services= {
     //Sends notification to user to request them to be a trusted contact
     async send_trusted_contact_request_notification(fcm_tokens: string[], sent_by: string) {
 
+        if(fcm_tokens.length === 0){
+            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+        }
+
         await getMessaging().sendEachForMulticast({
             fids: fcm_tokens,
             notification: {
@@ -16,6 +20,10 @@ export const notification_services= {
             data: {
                 type: "TRUSTED_CONTACT_REQUEST"
             }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to send trusted contact request noti: ", errorMessage)
+            throw new ExtendedError("Could not send trusted contact request notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
     },
 
