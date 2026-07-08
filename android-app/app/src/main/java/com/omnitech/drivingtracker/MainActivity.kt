@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
             DrivingTrackerTheme{
                 val navController = rememberNavController()
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                NavHost(navController = navController, startDestination = Screen.Vehicles.route){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },

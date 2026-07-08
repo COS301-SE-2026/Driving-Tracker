@@ -118,7 +118,7 @@ fun Vehicles(
             }
 
             item {
-                AddVehicleButton(onClick = { /*Handle add vehicle logic*/ })
+                AddVehicleButton(onClick = { showAddVehicleDialog = true })
             }
 
         }
