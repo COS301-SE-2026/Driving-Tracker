@@ -56,7 +56,8 @@ data class Vehicle(
     val trips: Int,
     val fuelEfficiency: Double,
     val needsService: Boolean,
-    val imageRes: Int? = null
+    val imageRes: Int? = null,
+    val imageUri: String? = null
 )
 
 @Composable
