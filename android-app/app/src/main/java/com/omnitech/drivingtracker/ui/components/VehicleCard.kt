@@ -24,12 +24,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.obd.Vehicle
+import com.omnitech.drivingtracker.ui.components.VehicleImage
 
 @Composable
 fun VehicleCard(
     vehicle: Vehicle,
     onDrivingInfoClick: () -> Unit,
-    onEditAliasClick: () -> Unit
+    onEditAliasClick: () -> Unit,
+    onEditImageClick: () -> Unit
 ) {
 
     var showMenu by remember { mutableStateOf(false) }
@@ -53,21 +55,11 @@ fun VehicleCard(
                 contentAlignment = Alignment.Center
             ){//Vehicle image box
 
-                if (vehicle.imageRes != null) {
-                    Image(
-                        painter = painterResource(id = vehicle.imageRes),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else{
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color.LightGray
-                    )
-                }
+                VehicleImage(
+                    imageRes = vehicle.imageRes,
+                    imageUri = vehicle.imageUri,
+                    modifier = Modifier.fillMaxSize()
+                )
 
             }
 
@@ -120,6 +112,16 @@ fun VehicleCard(
                         onClick = {
                             showMenu = false
                             onEditAliasClick()
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                    DropdownMenuItem(
+                        text = { Text("Edit Image", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        onClick = {
+                            showMenu = false
+                            onEditImageClick()
                         }
                     )
 

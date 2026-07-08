@@ -35,6 +35,7 @@ import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.VehicleCard
 import com.omnitech.drivingtracker.ui.components.AddVehicleButton
 import com.omnitech.drivingtracker.ui.components.EditAliasDialog
+import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import com.omnitech.drivingtracker.ui.components.AddVehicleDialog
 import com.omnitech.drivingtracker.ui.theme.*
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -67,7 +68,10 @@ fun Vehicles(
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleToEditAlias by remember { mutableStateOf<Vehicle?>(null) }
+    var vehicleToEditImage by remember { mutableStateOf<Vehicle?>(null) }
     var showAddVehicleDialog by remember { mutableStateOf(false) }
+    var showImagePicker by remember { mutableStateOf(false) }
+    var tempNewVehicleImage by remember { mutableStateOf<String?>(null) }
 
     //sample data
     val vehicleList = remember {
@@ -114,7 +118,11 @@ fun Vehicles(
                 VehicleCard(
                     vehicle = vehicle,
                     onDrivingInfoClick = { selectedVehicleForStats = vehicle },
-                    onEditAliasClick = { vehicleToEditAlias = vehicle }
+                    onEditAliasClick = { vehicleToEditAlias = vehicle },
+                    onEditImageClick = {
+                        vehicleToEditImage = vehicle
+                        showImagePicker = true
+                    }
                 )
             }
 
@@ -148,13 +156,43 @@ fun Vehicles(
         )
     }
 
+    //Image Picker Logic
+    if (showImagePicker) {
+
+        ImagePickerSheet(
+            onImageSelected = { uri ->
+                if (vehicleToEditImage != null) {
+                    //Updating existing vehicle image
+                    val index = vehicleList.indexOfFirst { it.id == vehicleToEditImage!!.id }
+                    if (index != -1) vehicleList[index] = vehicleList[index].copy(imageUri = uri.toString())
+                    vehicleToEditImage = null
+                } else {
+                    //Setting image for new vehicle
+                    tempNewVehicleImage = uri.toString()
+                }
+                showImagePicker = false
+            },
+            onDismiss = {
+                showImagePicker = false
+                vehicleToEditImage = null
+            }
+        )
+
+    }
+
     //Add Vehicle
     if (showAddVehicleDialog) {
         AddVehicleDialog(
-            onDismiss = { showAddVehicleDialog = false },
-            onConfirm = { alias, brand, model ->
-                vehicleList.add(Vehicle(UUID.randomUUID().toString(), alias, brand, model, 0, 0, 0.0, false))
+            selectedImageUri = tempNewVehicleImage,
+            onPickImage = { showImagePicker = true },
+            onDismiss = {
                 showAddVehicleDialog = false
+                tempNewVehicleImage = null
+            },
+            onConfirm = { alias, brand, model, uri ->
+                vehicleList.add(Vehicle(UUID.randomUUID().toString(), alias, brand, model, 0, 0, 0.0, false, imageUri = uri))
+                showAddVehicleDialog = false
+                tempNewVehicleImage = null
             }
         ) 
     }
