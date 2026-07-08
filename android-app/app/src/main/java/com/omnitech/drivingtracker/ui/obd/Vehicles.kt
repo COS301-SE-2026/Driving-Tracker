@@ -65,7 +65,7 @@ fun Vehicles(
 
     //sample data
     val vehicleList = remember {
-        mutableStatelistOf(
+        mutableStateListOf(
             Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, false),
             Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 10.1, true)
         )
@@ -107,7 +107,7 @@ fun Vehicles(
             items(vehicleList, key = { it.id }) { vehicle ->
                 VehicleCard(
                     vehicle = vehicle,
-                    onDrivingInfoClick = { selectedVehicleForStats = vehicle }
+                    onDrivingInfoClick = { selectedVehicleForStats = vehicle },
                     onEditAliasClick = { vehicleToEditAlias = vehicle }
                 )
             }
