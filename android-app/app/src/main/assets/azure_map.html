@@ -14,11 +14,11 @@
     <script type="text/javascript">
         var map = null;
         var mapReady = false;
+        var userMarker = null;
         var lastLat, lastLng, lastZoom;
 
         console.log("JS: Script loaded and waiting for initialization...");
 
-        // Defensive: Wait until the container has a real height before initializing
         function waitForDimensions(callback) {
             var el = document.getElementById("map");
             if (!el) {
@@ -28,23 +28,30 @@
             }
             var h = el.clientHeight || el.offsetHeight;
             var w = el.clientWidth || el.offsetWidth;
-            console.log("JS: waitForDimensions - height: " + h + ", width: " + w);
-
             if (h > 0 && w > 0) {
                 callback();
             } else {
-                // If we are stuck at 0, try to nudge the layout
-                setTimeout(function() {
-                    waitForDimensions(callback);
-                }, 100);
+                setTimeout(function() { waitForDimensions(callback); }, 100);
+            }
+        }
+
+        function updateMarker(lat, lng) {
+            if (!map) return;
+            var pos = [parseFloat(lng), parseFloat(lat)];
+            if (!userMarker) {
+                userMarker = new atlas.HtmlMarker({
+                    htmlContent: '<div style="background-color:Red;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+                    position: pos,
+                    pixelOffset: [0, 0]
+                });
+                map.markers.add(userMarker);
+            } else {
+                userMarker.setOptions({ position: pos });
             }
         }
 
         window.initializeMap = function(subscriptionKey, lat, lng, zoom) {
-            console.log("JS: initializeMap triggered with: [" + lng + ", " + lat + "]");
-
             waitForDimensions(function() {
-                console.log("JS: Dimensions verified, creating atlas.Map instance");
                 try {
                     map = new atlas.Map("map", {
                         center: [parseFloat(lng), parseFloat(lat)],
@@ -56,26 +63,23 @@
                     });
 
                     map.events.add("ready", function () {
-                        console.log("JS: Map READY event");
                         map.resize();
+                        updateMarker(lat, lng);
                         if (window.Android) { window.Android.onMapReady(); }
                     });
 
                     map.events.add('idle', function () {
                         if (!mapReady) {
                             mapReady = true;
-                            console.log("JS: Map is IDLE (fully stable)");
                             if (window.Android) { window.Android.onMapStable(); }
                         }
                     });
 
                     map.events.add('error', function (e) {
                         var msg = e.error ? e.error.message : 'Unknown map error';
-                        console.error("JS: Map Error: " + msg);
                         if (window.Android) { window.Android.onMapError(msg); }
                     });
                 } catch (e) {
-                    console.error("JS: Exception during init: " + e.message);
                     if (window.Android) { window.Android.onMapError('Init exception: ' + e.message); }
                 }
             });
@@ -85,6 +89,9 @@
             if (!map || !mapReady) return;
             var latN = parseFloat(lat), lngN = parseFloat(lng), zoomN = parseFloat(zoom);
             if (isNaN(latN) || isNaN(lngN) || isNaN(zoomN)) return;
+
+            updateMarker(latN, lngN);
+
             if (latN === lastLat && lngN === lastLng && zoomN === lastZoom) return;
 
             try {
