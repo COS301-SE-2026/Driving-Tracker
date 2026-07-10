@@ -31,7 +31,8 @@ fun VehicleCard(
     vehicle: Vehicle,
     onDrivingInfoClick: () -> Unit,
     onEditAliasClick: () -> Unit,
-    onEditImageClick: () -> Unit
+    onEditImageClick: () -> Unit,
+    onRemoveClick: () -> Unit
 ) {
 
     var showMenu by remember { mutableStateOf(false) }
@@ -135,12 +136,15 @@ fun VehicleCard(
                         }
                     )
 
-                    /*HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
                     DropdownMenuItem(
-                        text = { Text("Disconnect", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = { showMenu = false }//Need to work on this
-                    )*/
+                        text = { Text("Remove Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        onClick = {
+                            showMenu = false
+                            onRemoveClick()
+                        }
+                    )
 
                 }
 

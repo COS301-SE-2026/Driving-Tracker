@@ -72,6 +72,7 @@ fun Vehicles(
     var showAddVehicleDialog by remember { mutableStateOf(false) }
     var showImagePicker by remember { mutableStateOf(false) }
     var tempNewVehicleImage by remember { mutableStateOf<String?>(null) }
+    var vehicleToRemove by remember { mutableStateOf<Vehicle?>(null) }
 
     //sample data
     val vehicleList = remember {
@@ -122,7 +123,8 @@ fun Vehicles(
                     onEditImageClick = {
                         vehicleToEditImage = vehicle
                         showImagePicker = true
-                    }
+                    },
+                    onRemoveClick = { vehicleToRemove = vehicle }
                 )
             }
 
@@ -152,6 +154,31 @@ fun Vehicles(
                     vehicleList[index] = vehicleList[index].copy(alias = newAlias)
                 }
                 vehicleToEditAlias = null
+            }
+        )
+    }
+
+    //Remove Vehicle Confirm dialog
+    vehicleToRemove?.let { vehicle ->
+        AlertDialog(
+            onDismissRequest = { vehicleToRemove = null },
+            title = { Text("Remove Vehicle") },
+            text = { Text("Are you sure you want to remove ${vehicle.alias}? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vehicleList.remove(vehicle)
+                        vehicleToRemove = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vehicleToRemove = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
