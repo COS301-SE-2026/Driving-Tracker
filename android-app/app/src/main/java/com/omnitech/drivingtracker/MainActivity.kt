@@ -17,6 +17,7 @@ import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
+import com.omnitech.drivingtracker.ui.obd.Vehicles
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
@@ -41,6 +42,8 @@ sealed class Screen(val route: String){
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
     data object WeeklyChallenges : Screen("weekly_challenges")
+
+    data object Vehicles : Screen("vehicles")
 
     data object  OBDConnect : Screen("obd_connect")
 }
@@ -116,6 +119,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.OBDConnect.route) {
                         OBDConnect(navController = navController)
+                    }
+                    composable(Screen.Vehicles.route) {
+                        Vehicles(navController = navController)
                     }
                 }
             }
