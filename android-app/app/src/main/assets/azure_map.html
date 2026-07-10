@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Azure Maps</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" type="text/css">
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+    <style>
+        html, body, #myMap { width: 100%; height: 100%; padding: 0; margin: 0; background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div id="myMap"></div>
+    <script type="text/javascript">
+        var map = null;
+        var mapReady = false;
+        var lastLat, lastLng, lastZoom;
+        var pendingCamera = null;
+
+        function initializeMap(subscriptionKey, lat, lng, zoom) {
+            console.log("JS: Initializing Map with center: [" + lng + ", " + lat + "]");
+            try {
+                map = new atlas.Map('myMap', {
+                    center: [lng, lat],
+                    zoom: zoom,
+                    authOptions: {
+                        authType: 'subscriptionKey',
+                        subscriptionKey: subscriptionKey
+                    }
+                });
+
+                map.events.add('ready', function () {
+                    console.log("JS: Map READY");
+                    map.resize();
+                });
+
+                map.events.add('idle', function () {
+                    if (!mapReady) {
+                        mapReady = true;
+                        console.log("JS: Map is IDLE and stable");
+                        if (window.Android) { window.Android.onMapStable(); }
+                        if (pendingCamera) {
+                            applyCamera(pendingCamera.lat, pendingCamera.lng, pendingCamera.zoom);
+                            pendingCamera = null;
+                        }
+                    }
+                });
+
+                map.events.add('error', function (e) {
+                    var msg = e.error ? e.error.message : 'Unknown map error';
+                    if (window.Android) { window.Android.onMapError(msg); }
+                });
+            } catch (e) {
+                if (window.Android) { window.Android.onMapError('Init exception: ' + e.message); }
+            }
+        }
+
+        function applyCamera(lat, lng, zoom) {
+            try {
+                map.setCamera({ center: [lng, lat], zoom: zoom, type: 'jump' });
+                lastLat = lat; lastLng = lng; lastZoom = zoom;
+            } catch (e) {
+                if (window.Android) { window.Android.onMapError('setCamera failed: ' + e.message); }
+            }
+        }
+
+        window.updateCamera = function(lat, lng, zoom) {
+            var latN = Number(lat), lngN = Number(lng), zoomN = Number(zoom);
+            if (isNaN(latN) || isNaN(lngN) || isNaN(zoomN)) return;
+            if (latN === lastLat && lngN === lastLng && zoomN === lastZoom) return;
+
+            if (!map || !mapReady) {
+                pendingCamera = { lat: latN, lng: lngN, zoom: zoomN };
+                return;
+            }
+            applyCamera(latN, lngN, zoomN);
+        }
+    </script>
+</body>
+</html>
