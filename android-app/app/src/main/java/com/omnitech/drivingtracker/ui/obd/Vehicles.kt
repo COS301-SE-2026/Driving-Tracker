@@ -164,7 +164,9 @@ fun Vehicles(
                 if (vehicleToEditImage != null) {
                     //Updating existing vehicle image
                     val index = vehicleList.indexOfFirst { it.id == vehicleToEditImage!!.id }
-                    if (index != -1) vehicleList[index] = vehicleList[index].copy(imageUri = uri.toString())
+                    if (index != -1) {
+                        vehicleList[index] = vehicleList[index].copy(imageUri = uri.toString())
+                    }
                     vehicleToEditImage = null
                 } else {
                     //Setting image for new vehicle

@@ -72,11 +72,7 @@ fun ImagePickerSheet(
                 headlineContent = { Text("Gallery") },
                 leadingContent = { Icon(Icons.Default.PhotoLibrary, null) },
                 modifier = Modifier.clickable {
-                    if (storagePermission.status.isGranted) {
-                        galleryLauncher.launch("image/*")
-                    } else {
-                        cameraPermission.launchPermissionRequest()
-                    }
+                    galleryLauncher.launch("image/*")
                 }
             )
 
