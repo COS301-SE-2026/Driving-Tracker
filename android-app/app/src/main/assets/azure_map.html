@@ -2,80 +2,105 @@
 <html>
 <head>
     <title>Azure Maps</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" type="text/css">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" type="text/css"/>
     <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
     <style>
-        html, body, #myMap { width: 100%; height: 100%; padding: 0; margin: 0; background-color: #f0f0f0; }
+        html, body, #map { margin: 0; height: 100%; width: 100%; background-color: #f0f0f0; }
+        body { display: flex; flex-direction: column; }
+        main { flex: 1 1 auto; }
     </style>
-</head>
-<body>
-    <div id="myMap"></div>
     <script type="text/javascript">
         var map = null;
         var mapReady = false;
         var lastLat, lastLng, lastZoom;
-        var pendingCamera = null;
 
-        function initializeMap(subscriptionKey, lat, lng, zoom) {
-            console.log("JS: Initializing Map with center: [" + lng + ", " + lat + "]");
-            try {
-                map = new atlas.Map('myMap', {
-                    center: [lng, lat],
-                    zoom: zoom,
-                    authOptions: {
-                        authType: 'subscriptionKey',
-                        subscriptionKey: subscriptionKey
-                    }
-                });
+        console.log("JS: Script loaded and waiting for initialization...");
 
-                map.events.add('ready', function () {
-                    console.log("JS: Map READY");
-                    map.resize();
-                });
+        // Defensive: Wait until the container has a real height before initializing
+        function waitForDimensions(callback) {
+            var el = document.getElementById("map");
+            if (!el) {
+                console.error("JS: Element 'map' not found in DOM");
+                setTimeout(function() { waitForDimensions(callback); }, 100);
+                return;
+            }
+            var h = el.clientHeight || el.offsetHeight;
+            var w = el.clientWidth || el.offsetWidth;
+            console.log("JS: waitForDimensions - height: " + h + ", width: " + w);
 
-                map.events.add('idle', function () {
-                    if (!mapReady) {
-                        mapReady = true;
-                        console.log("JS: Map is IDLE and stable");
-                        if (window.Android) { window.Android.onMapStable(); }
-                        if (pendingCamera) {
-                            applyCamera(pendingCamera.lat, pendingCamera.lng, pendingCamera.zoom);
-                            pendingCamera = null;
+            if (h > 0 && w > 0) {
+                callback();
+            } else {
+                // If we are stuck at 0, try to nudge the layout
+                setTimeout(function() {
+                    waitForDimensions(callback);
+                }, 100);
+            }
+        }
+
+        window.initializeMap = function(subscriptionKey, lat, lng, zoom) {
+            console.log("JS: initializeMap triggered with: [" + lng + ", " + lat + "]");
+
+            waitForDimensions(function() {
+                console.log("JS: Dimensions verified, creating atlas.Map instance");
+                try {
+                    map = new atlas.Map("map", {
+                        center: [parseFloat(lng), parseFloat(lat)],
+                        zoom: parseFloat(zoom),
+                        authOptions: {
+                            authType: "subscriptionKey",
+                            subscriptionKey: subscriptionKey
                         }
-                    }
-                });
+                    });
 
-                map.events.add('error', function (e) {
-                    var msg = e.error ? e.error.message : 'Unknown map error';
-                    if (window.Android) { window.Android.onMapError(msg); }
-                });
-            } catch (e) {
-                if (window.Android) { window.Android.onMapError('Init exception: ' + e.message); }
-            }
-        }
+                    map.events.add("ready", function () {
+                        console.log("JS: Map READY event");
+                        map.resize();
+                        if (window.Android) { window.Android.onMapReady(); }
+                    });
 
-        function applyCamera(lat, lng, zoom) {
-            try {
-                map.setCamera({ center: [lng, lat], zoom: zoom, type: 'jump' });
-                lastLat = lat; lastLng = lng; lastZoom = zoom;
-            } catch (e) {
-                if (window.Android) { window.Android.onMapError('setCamera failed: ' + e.message); }
-            }
-        }
+                    map.events.add('idle', function () {
+                        if (!mapReady) {
+                            mapReady = true;
+                            console.log("JS: Map is IDLE (fully stable)");
+                            if (window.Android) { window.Android.onMapStable(); }
+                        }
+                    });
+
+                    map.events.add('error', function (e) {
+                        var msg = e.error ? e.error.message : 'Unknown map error';
+                        console.error("JS: Map Error: " + msg);
+                        if (window.Android) { window.Android.onMapError(msg); }
+                    });
+                } catch (e) {
+                    console.error("JS: Exception during init: " + e.message);
+                    if (window.Android) { window.Android.onMapError('Init exception: ' + e.message); }
+                }
+            });
+        };
 
         window.updateCamera = function(lat, lng, zoom) {
-            var latN = Number(lat), lngN = Number(lng), zoomN = Number(zoom);
+            if (!map || !mapReady) return;
+            var latN = parseFloat(lat), lngN = parseFloat(lng), zoomN = parseFloat(zoom);
             if (isNaN(latN) || isNaN(lngN) || isNaN(zoomN)) return;
             if (latN === lastLat && lngN === lastLng && zoomN === lastZoom) return;
 
-            if (!map || !mapReady) {
-                pendingCamera = { lat: latN, lng: lngN, zoom: zoomN };
-                return;
+            try {
+                map.setCamera({
+                    center: [lngN, latN],
+                    zoom: zoomN,
+                    type: 'jump'
+                });
+                lastLat = latN; lastLng = lngN; lastZoom = zoomN;
+            } catch (e) {
+                if (window.Android) { window.Android.onMapError('setCamera failed: ' + e.message); }
             }
-            applyCamera(latN, lngN, zoomN);
-        }
+        };
     </script>
+</head>
+<body>
+    <main><div id="map"></div></main>
 </body>
 </html>
