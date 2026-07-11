@@ -1,11 +1,12 @@
 import { ExtendedError } from '../utils/errors';
 import { getMessaging } from '../utils/firebase';
+import { ConsentStatus } from '@prisma/client';
 
 
 export const notification_services= {
 
     //Sends notification to user to request them to be a trusted contact
-    async send_trusted_contact_request_notification(fcm_tokens: string[], sent_by: string) {
+    async send_trusted_contact_request_notification(fcm_tokens: string[], sent_by: string, contact_id: string) {
 
         if(fcm_tokens.length === 0){
             throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
@@ -18,7 +19,32 @@ export const notification_services= {
                 body: `${sent_by} wants to add you as a trusted contact`
             },
             data: {
-                type: "TRUSTED_CONTACT_REQUEST"
+                type: "TRUSTED_CONTACT_REQUEST",
+                contact_id
+            }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to send trusted contact request notification: ", errorMessage)
+            throw new ExtendedError("Could not send trusted contact request notification","COULD_NOT_SEND_NOTIFICATION"); 
+        })
+    },
+    //Sends notification to user to respond to trusted contact request
+    async send_trusted_contact_response_notification(fcm_tokens: string[], sent_by: string, status: ConsentStatus) {
+
+        if(fcm_tokens.length === 0){
+            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+        }
+
+        const statusStr = (status === "APPROVED")? "accepted" : "declined";
+
+        await getMessaging().sendEachForMulticast({
+            fids: fcm_tokens,
+            notification: {
+                title: "Trusted Contact",
+                body: `${sent_by} has ${statusStr} your Trusted Contact Request`
+            },
+            data: {
+                type: "TRUSTED_CONTACT_RESPONSE"
             }
         }).catch( err => {
             const errorMessage = err instanceof Error? err.message: String(err);

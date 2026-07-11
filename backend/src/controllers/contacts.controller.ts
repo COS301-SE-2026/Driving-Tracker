@@ -268,6 +268,10 @@ const contacts_controller = {
     async respond_to_contact_request(req: AuthRequest, res: Response){
         const user_id = get_user_id(req);
 
+        if(!user_id){
+            return res.status(409).json({error: "UNAUTHORIZED"});
+        }
+
         const {status} = req.body;
 
         const {contact_id} = req.params;
@@ -277,7 +281,7 @@ const contacts_controller = {
         }
 
         try{
-            const response = await contact_services.respond_to_contact_request(status, contact_id);
+            const response = await contact_services.respond_to_contact_request(status, contact_id, user_id);
 
             return res.status(200).json({
                 message: response.message,

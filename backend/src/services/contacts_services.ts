@@ -89,7 +89,7 @@ export const contact_services ={
             throw coded_error("USER_NOT_FOUND")
         }
 
-        await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by);   
+        await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by, created.contact_id);   
 
         // Controller expects to return contact_id + username
         return {
@@ -229,15 +229,32 @@ export const contact_services ={
         };
     },
     //Updates pending trusted contact request to APPROVED or DENIED
-    async respond_to_contact_request(status: string, contact_id: string){
+    async respond_to_contact_request(status: string, contact_id: string, user_id: string){
 
         //ensure status falls within enum values
         if(!Object.values(ConsentStatus).includes(status as ConsentStatus)){
             throw coded_error("INVALID_STATUS");
         }
 
+        const target_contact = await prisma.trusted_contacts.findFirst({
+            where: { 
+                contact_id,
+                contact_user_id: user_id
+            }
+        });
+
+        if(!target_contact){
+            throw coded_error("CONTACT_REQUEST_NOT_FOUND");
+        }
+
+        const target_user_id = target_contact?.user_id;
+
+        if(!target_user_id){
+            throw coded_error("CONTACT_REQUEST_NOT_FOUND");
+        }
+
         //update status
-        prisma.trusted_contacts.update({
+        await prisma.trusted_contacts.update({
             data: {
                 consent_status: status as ConsentStatus
             },
@@ -245,6 +262,16 @@ export const contact_services ={
                 contact_id
             }
         });
+
+        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(target_user_id);
+
+        const sent_by = await get_user_fullname(user_id);
+
+        if(!sent_by) {
+            throw coded_error("USER_NOT_FOUND")
+        }
+
+        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus)
 
         return {
             contact_id,
