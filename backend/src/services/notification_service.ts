@@ -101,6 +101,53 @@ export const notification_services= {
             console.error("Failed to trip alert: ", errorMessage)
             throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
+    },
+    //Sends general notifications
+    async send_general_notification(fcm_tokens: string[], title: string, message: string){
+
+        if(fcm_tokens.length === 0){
+            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+        }
+
+        await getMessaging().sendEachForMulticast({
+            fids: fcm_tokens,
+            notification: {
+                title,
+                body: message
+            },
+            data: {
+                type: "GENERAL",
+            }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to trip alert: ", errorMessage)
+            throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
+        })
+
+    },
+    async send_badge_notification(fcm_tokens: string[], title: string = "New Badge Unlocked", message: string, badge_id: string, icon_url: string){
+
+        if(fcm_tokens.length === 0){
+            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+        }
+
+        await getMessaging().sendEachForMulticast({
+            fids: fcm_tokens,
+            notification: {
+                title,
+                body: message
+            },
+            data: {
+                type: "GAMIFICATION",
+                icon_url,
+                badge_id
+            }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to trip alert: ", errorMessage)
+            throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
+        })
+
     }
 
 }
