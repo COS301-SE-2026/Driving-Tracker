@@ -22,7 +22,7 @@ export const notification_services= {
             }
         }).catch( err => {
             const errorMessage = err instanceof Error? err.message: String(err);
-            console.error("Failed to send trusted contact request noti: ", errorMessage)
+            console.error("Failed to send trusted contact request notification: ", errorMessage)
             throw new ExtendedError("Could not send trusted contact request notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
     },
@@ -45,6 +45,10 @@ export const notification_services= {
                 trip_id,
                 shared_by
             }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to send share trip notification: ", errorMessage)
+            throw new ExtendedError("Could not send share trip notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
 
     },
@@ -66,6 +70,10 @@ export const notification_services= {
                 alert_type,
                 trip_id
             }
+        }).catch( err => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to trip alert: ", errorMessage)
+            throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
     }
 

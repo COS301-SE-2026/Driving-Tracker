@@ -1,6 +1,7 @@
 import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
+import { ConsentStatus } from '@prisma/client';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -227,4 +228,28 @@ export const contact_services ={
             })),
         };
     },
+    //Updates pending trusted contact request to APPROVED or DENIED
+    async respond_to_contact_request(status: string, contact_id: string){
+
+        //ensure status falls within enum values
+        if(!Object.values(ConsentStatus).includes(status as ConsentStatus)){
+            throw coded_error("INVALID_STATUS");
+        }
+
+        //update status
+        prisma.trusted_contacts.update({
+            data: {
+                consent_status: status as ConsentStatus
+            },
+            where: {
+                contact_id
+            }
+        });
+
+        return {
+            contact_id,
+            message: "Status updated successfully"
+        };
+    }
+    
 };
