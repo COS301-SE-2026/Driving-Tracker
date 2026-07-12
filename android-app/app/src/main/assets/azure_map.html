@@ -15,6 +15,8 @@
         var map = null;
         var mapReady = false;
         var userMarker = null;
+        var datasource = null;
+        var routePath = [];
         var lastLat, lastLng, lastZoom;
 
         console.log("JS: Script loaded and waiting for initialization...");
@@ -50,6 +52,22 @@
             }
         }
 
+        function updateRoute(lat, lng) {
+            if (!datasource) return;
+            var pos = [parseFloat(lng), parseFloat(lat)];
+
+            // Add point to route path if it's different from the last point
+            if (routePath.length === 0 ||
+                (routePath[routePath.length - 1][0] !== pos[0] || routePath[routePath.length - 1][1] !== pos[1])) {
+                routePath.push(pos);
+
+                if (routePath.length > 1) {
+                    datasource.clear();
+                    datasource.add(new atlas.data.LineString(routePath));
+                }
+            }
+        }
+
         window.initializeMap = function(subscriptionKey, lat, lng, zoom) {
             waitForDimensions(function() {
                 try {
@@ -64,7 +82,22 @@
 
                     map.events.add("ready", function () {
                         map.resize();
+
+                        // Create a data source and add it to the map.
+                        datasource = new atlas.source.DataSource();
+                        map.sources.add(datasource);
+
+                        // Add a layer for rendering the route line.
+                        map.layers.add(new atlas.layer.LineLayer(datasource, null, {
+                            strokeColor: '#2D8CFF',
+                            strokeWidth: 5,
+                            lineJoin: 'round',
+                            lineCap: 'round'
+                        }));
+
                         updateMarker(lat, lng);
+                        updateRoute(lat, lng);
+
                         if (window.Android) { window.Android.onMapReady(); }
                     });
 
@@ -91,6 +124,7 @@
             if (isNaN(latN) || isNaN(lngN) || isNaN(zoomN)) return;
 
             updateMarker(latN, lngN);
+            updateRoute(latN, lngN);
 
             if (latN === lastLat && lngN === lastLng && zoomN === lastZoom) return;
 
