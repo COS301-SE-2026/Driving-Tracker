@@ -15,26 +15,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShieldMoon
 import androidx.compose.material.icons.filled.StarRate
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-
+import com.omnitech.drivingtracker.Screen
 import androidx.compose.material3.Switch
-import androidx.compose.ui.graphics.Color
+
 
 @Composable
-fun Settings(navController: NavController? =null){
+fun Settings(navController: NavController? =null,
+             darkMode: Boolean,
+             onDarkModeChange: (Boolean) -> Unit
+             )
+{
     StandardScreen(
         navController = navController,
         title = "Settings",
@@ -53,7 +54,7 @@ fun Settings(navController: NavController? =null){
         SettingOption(
             icon = Icons.Default.ShieldMoon,
             label = "Dark Mode",
-            rightSide = {Switch(checked = false, onCheckedChange = {})}
+            rightSide = {Switch(checked = darkMode, onCheckedChange = onDarkModeChange)}
         )
 
         HLine()
@@ -89,7 +90,9 @@ fun Settings(navController: NavController? =null){
         SettingOption(
             icon = Icons.AutoMirrored.Filled.Logout,
             label = "Logout",
-            onClick = {navController?.navigate("SignUp")}
+            onClick = {navController?.navigate(Screen.Login.route){
+                popUpTo(0) {inclusive = true}
+            } }
         )
 
     }
@@ -134,6 +137,6 @@ fun LeftSide( //Inner Row (icon + label)
 @Composable
 fun SettingsPreview(){
     DrivingTrackerTheme {
-        Settings(navController = rememberNavController())
+        Settings(navController = rememberNavController(), darkMode = false, onDarkModeChange = {})
     }
 }

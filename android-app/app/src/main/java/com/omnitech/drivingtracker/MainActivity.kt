@@ -18,11 +18,16 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.obd.Vehicles
+import com.omnitech.drivingtracker.ui.other.Settings
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
 import com.omnitech.drivingtracker.ui.trip.TripSummary
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -46,6 +51,8 @@ sealed class Screen(val route: String){
     data object Vehicles : Screen("vehicles")
 
     data object  OBDConnect : Screen("obd_connect")
+
+    data object Settings : Screen("settings")
 }
 
 @AndroidEntryPoint
@@ -54,7 +61,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DrivingTrackerTheme{
+
+            var darkMode by remember {mutableStateOf(false)}
+            val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
+
+            DrivingTrackerTheme(darkTheme = darkMode){
+
                 val navController = rememberNavController()
 
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
@@ -122,6 +134,13 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.Vehicles.route) {
                         Vehicles(navController = navController)
+                    }
+                    composable(Screen.Settings.route){
+                        Settings(
+                            navController = navController,
+                            darkMode = darkMode,
+                            onDarkModeChange = onDarkModeChange
+                        )
                     }
                 }
             }
