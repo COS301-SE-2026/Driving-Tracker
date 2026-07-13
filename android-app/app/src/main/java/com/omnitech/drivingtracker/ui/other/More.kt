@@ -3,7 +3,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.components.TopBar
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import android.R.attr
 
 @Composable
 fun More(navController: NavController){
@@ -40,10 +42,15 @@ fun More(navController: NavController){
                 modifier = Modifier.padding(innerPadding)
             ){
                 ContentCard("Weekly Challenges"){navController.navigate("WeeklyChallenges")}
+                HLine()
                 ContentCard("OBD"){navController.navigate("OBDMain")}
+                HLine()
                 ContentCard("Vehicles"){navController.navigate("Vehicles")}
+                HLine()
                 ContentCard("Notifications"){navController.navigate("Notifications")}
+                HLine()
                 ContentCard("Profile"){navController.navigate("Profile")}
+                HLine()
                 ContentCard("Help"){navController.navigate("Help")}
             }
 
@@ -68,6 +75,14 @@ fun ContentCard(name: String, onClick:()->Unit){
             )
         }
     }
+}
+
+@Composable
+fun HLine(){
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = Color.Gray
+    )
 }
 
 @Preview(showBackground = true)
