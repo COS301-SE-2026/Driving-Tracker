@@ -35,4 +35,4 @@ export const cleanTripsData = async () => {
 	await prisma.trip_scores.deleteMany;
 	await prisma.trips.delete;
 	await prisma.users.delete;
-}
+};
