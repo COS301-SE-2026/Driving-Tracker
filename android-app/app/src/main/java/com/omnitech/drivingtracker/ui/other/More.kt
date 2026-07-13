@@ -24,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
-import android.R.attr
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ColumnScope
 
 @Composable
 fun More(navController: NavController){
@@ -41,6 +43,7 @@ fun More(navController: NavController){
             Column(
                 modifier = Modifier.padding(innerPadding)
             ){
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Weekly Challenges"){navController.navigate("WeeklyChallenges")}
                 HLine()
                 ContentCard("OBD"){navController.navigate("OBDMain")}
@@ -62,7 +65,8 @@ fun More(navController: NavController){
 fun ContentCard(name: String, onClick:()->Unit){
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
     ){
         Row(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 20.dp),
@@ -78,9 +82,10 @@ fun ContentCard(name: String, onClick:()->Unit){
 }
 
 @Composable
-fun HLine(){
+fun ColumnScope.HLine(){
     HorizontalDivider(
-        thickness = 1.dp,
+        modifier = Modifier.fillMaxWidth(0.85f).align(Alignment.CenterHorizontally),
+        thickness = 2.dp,
         color = Color.Gray
     )
 }
