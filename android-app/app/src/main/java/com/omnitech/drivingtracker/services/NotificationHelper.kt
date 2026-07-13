@@ -87,19 +87,19 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
     }
 
     //when trip is shared to user
-    fun showContactAlert(title: String, message: String){
+    fun showContactAlert(title: String, message: String) {
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.CONTACT_ALERTS)
             .setContentTitle(title)
             .setContentText(message)
             .setSmallIcon(R.drawable.ic_nav_contacts) //To be changed
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(buildMainActivityIntent("")) //To be changed
+            .setContentIntent(buildMainActivityIntent("contacts"))
             .setAutoCancel(true)
 
         try {
             notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
-        } catch (e: SecurityException){
+        } catch (e: SecurityException) {
             //permission not granted by user
         }
     }

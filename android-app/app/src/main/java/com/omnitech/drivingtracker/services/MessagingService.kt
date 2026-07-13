@@ -41,6 +41,11 @@ class MessagingService: FirebaseMessagingService() {
                         message.notification?.title ?: "Trusted Contact Request",
                         message.notification?.body ?: "You have been requested to be a trusted contact")
                 }
+                "TRUSTED_CONTACT_RESPONSE" -> {
+                    notificationHelper.showContactAlert(
+                        message.notification?.title ?: "Trusted Contact",
+                        message.notification?.body ?: "Your Trusted Contact Request has been responded to")
+                }
                 "SHARED_TRIP" -> {
                     val sharedBy = message.data["shared_by"]
 
