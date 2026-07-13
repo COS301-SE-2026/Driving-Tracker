@@ -43,7 +43,7 @@ fun AddVehicleDialog(
     selectedImageUri: String?
 ) {
 
-    var alias by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
 
@@ -67,15 +67,15 @@ fun AddVehicleDialog(
                     if (selectedImageUri == null) Icon(Icons.Default.AddAPhoto, null)
                 }
 
-                OutlinedTextField(value = alias, onValueChange = { alias = it }, label = { Text("Alias") })
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
                 OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text("Brand") })
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(alias, brand, model, selectedImageUri) },
-                enabled = alias.isNotBlank() && brand.isNotBlank() && model.isNotBlank()
+                onClick = { onConfirm(name, brand, model, selectedImageUri) },
+                enabled = name.isNotBlank() && brand.isNotBlank() && model.isNotBlank()
             ) {
                 Text("Add")
             }
