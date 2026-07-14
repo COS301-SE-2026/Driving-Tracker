@@ -124,6 +124,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.services.TripTrackingService
 
 @Composable
 fun Trips(
@@ -149,12 +150,16 @@ fun Trips(
         else -> emptyList()
     }
 
+    val context = LocalContext.current
+
     LaunchedEffect(tripStartState){
         val state = tripStartState
         if (state is TripViewModel.UiState.Success) {
             val tripId = state.data
 
             if (tripId.isNotEmpty()){
+                TripTrackingService.startTrip(context, tripId)
+
                 navController?.navigate(Screen.LiveTrip.createRoute(tripId))
             }
         }
