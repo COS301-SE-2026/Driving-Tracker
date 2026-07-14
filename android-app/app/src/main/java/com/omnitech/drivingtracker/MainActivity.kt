@@ -26,11 +26,11 @@ import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
 import com.omnitech.drivingtracker.ui.trip.TripSummary
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.omnitech.drivingtracker.ui.obd.OBDMain
+import androidx.compose.runtime.saveable.*
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -79,14 +79,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
-            var darkMode by remember {mutableStateOf(false)}
+            var darkMode by rememberSaveable {mutableStateOf(false)}
             val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
 
             DrivingTrackerTheme(darkTheme = darkMode){
 
                 val navController = rememberNavController()
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                NavHost(navController = navController, startDestination = Screen.Dashboard.route){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },

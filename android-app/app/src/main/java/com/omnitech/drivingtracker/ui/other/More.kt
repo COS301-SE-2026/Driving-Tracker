@@ -37,7 +37,7 @@ fun More(navController: NavController){
             leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
             rightIcon = Icons.Default.Settings,
             onLeftClick = {navController?.popBackStack()},
-            onRightClick = {/*Go to settings*/},
+            onRightClick = {navController.navigate(Screen.Settings.route)}
         )}
     ){
         innerPadding ->

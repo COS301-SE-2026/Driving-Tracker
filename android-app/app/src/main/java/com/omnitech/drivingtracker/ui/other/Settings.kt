@@ -39,7 +39,9 @@ fun Settings(navController: NavController? =null,
     StandardScreen(
         navController = navController,
         title = "Settings",
-        showBottomBar = false
+        showBottomBar = false,
+        onLeftClick = {navController?.popBackStack()},
+        onRightClick = {navController?.navigate(Screen.Settings.route)}
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
