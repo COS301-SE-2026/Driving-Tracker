@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { AuthRequest } from "../middleware/auth";
 import { trips_services } from "../services/trips_services";
 import { error } from "console";
+import { ExtendedError } from "../utils/errors";
 
 //trips controllers will go here, so what is served by the api back to the frontend  
 
@@ -43,6 +44,15 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             res.status(409).json({
                 error: "Trip already in progress"
             });
+        }
+
+        if((error instanceof ExtendedError)){
+
+            if(error.errorCode=="NO_TOKENS_PROVIDED"){
+               return res.status(422).json({error: error.errorCode, message: error.message});
+            }
+
+            res.status(500).json({error: error.errorCode, message: error.message});
         }
     }
 };
