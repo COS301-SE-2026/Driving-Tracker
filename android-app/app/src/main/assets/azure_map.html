@@ -18,6 +18,9 @@
         var datasource = null;
         var routePath = [];
         var lastLat, lastLng, lastZoom;
+        var lastRouteUpdateTime = 0;
+        var minDistanceThreshold = 5;
+
 
         console.log("JS: Script loaded and waiting for initialization...");
 
@@ -36,7 +39,15 @@
                 setTimeout(function() { waitForDimensions(callback); }, 100);
             }
         }
-
+        function calculateDistance(pos1, pos2) {
+            var R = 6371e3; // Earth radius in meters
+            var dLat = (pos2[1] - pos1[1]) * Math.PI / 180;
+            var dLon = (pos2[0] - pos1[0]) * Math.PI / 180;
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(pos1[1] * Math.PI / 180) * Math.cos(pos2[1] * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
         function updateMarker(lat, lng) {
             if (!map) return;
             var pos = [parseFloat(lng), parseFloat(lat)];
@@ -56,14 +67,17 @@
             if (!datasource) return;
             var pos = [parseFloat(lng), parseFloat(lat)];
 
-            // Add point to route path if it's different from the last point
-            if (routePath.length === 0 ||
-                (routePath[routePath.length - 1][0] !== pos[0] || routePath[routePath.length - 1][1] !== pos[1])) {
-                routePath.push(pos);
+            // Only add point if it's the first point or we've moved > 5 meters
+            var shouldAddPoint = routePath.length === 0 ||
+                                calculateDistance(routePath[routePath.length - 1], pos) > minDistanceThreshold;
 
-                if (routePath.length > 1) {
-                    datasource.clear();
-                    datasource.add(new atlas.data.LineString(routePath));
+            if (shouldAddPoint) {
+                routePath.push(pos);
+                var now = Date.now();
+                if (routePath.length > 1 && (now - lastRouteUpdateTime > 1000)) {
+                    // Use setShapes for better performance than clear/add
+                    datasource.setShapes([new atlas.data.LineString(routePath)]);
+                    lastRouteUpdateTime = now;
                 }
             }
         }
@@ -96,7 +110,7 @@
                         }));
 
                         updateMarker(lat, lng);
-<!--                        updateRoute(lat, lng);-->
+                        updateRoute(lat, lng);
 
                         if (window.Android) { window.Android.onMapReady(); }
                     });
