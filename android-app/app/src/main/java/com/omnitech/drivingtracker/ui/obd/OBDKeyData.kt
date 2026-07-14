@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.runtime.LaunchedEffect
 
 
 //key data class
@@ -66,6 +67,10 @@ data class ErrorCode(
 fun OBDKeyData(
     navController: NavController? =null,
     viewModel: ObdViewModel = hiltViewModel()) {
+
+    LaunchedEffect(Unit){
+        viewModel.loadPairedDevices()
+    }
 
     val metrics by viewModel.vehicleMetrics.collectAsState()
 

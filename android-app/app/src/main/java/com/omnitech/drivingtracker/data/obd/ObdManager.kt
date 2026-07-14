@@ -27,6 +27,8 @@ import com.github.pires.obd.enums.FuelTrim
 import kotlinx.coroutines.delay
 import com.github.pires.obd.commands.control.TroubleCodesCommand
 import com.github.pires.obd.commands.protocol.ResetTroubleCodesCommand
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 //data class representing live state of vehicle
 data class VehicleMetrics(
@@ -41,30 +43,34 @@ data class VehicleMetrics(
 @Singleton
 class ObdManager @Inject constructor(@param:ApplicationContext private val context: Context){
 
+    private val socketMutex = Mutex() // Prevents command collisions
+    private var isLoopRunning = false
     //get fault codes (DTCs)
     suspend fun fetchTroubleCodes() = withContext(Dispatchers.IO){
-        val out = socket?.outputStream?:return@withContext
-        val inputStream = socket?.inputStream?:return@withContext
+        socketMutex.withLock{
+            val out = socket?.outputStream?:return@withContext
+            val inputStream = socket?.inputStream?:return@withContext
 
-        val codesCmd = TroubleCodesCommand()
+            try{
+                val codesCmd = TroubleCodesCommand()
+                codesCmd.run(inputStream, out)
+                //the library returns a raw String code
+                //split it into a list
+                val result = codesCmd.formattedResult
 
-        try{
-            codesCmd.run(inputStream, out)
-            //the library returns a raw String code
-            //split it into a list
-            val result = codesCmd.formattedResult
-            val codeList = if(result.isNullOrBlank()){
-                emptyList()
-            }else{
-                result.split("\n", ",").map{it.trim()}.filter{it.isNotEmpty()}
+                val codeList = if(result.isNullOrBlank() || result.contains("No data", ignoreCase = true)){
+                    emptyList()
+                }else{
+                    result.split("\n", ",").map{it.trim()}.filter{it.length>=4 && it!="NODATA"}
+                }
+                _metrics.value = _metrics.value.copy(faultCodes = codeList)
+
+                Log.d("OBD_LOG", "Found ${codeList.size} trouble codes")
+                // testing log
+                Log.d("OBD_TEST", "FAULT CODES FOUND: $codeList")
+            }catch(e: Exception){
+                Log.e("OBD_LOG", "Failed to fetch trouble codes", e)
             }
-            _metrics.value = _metrics.value.copy(faultCodes = codeList)
-
-            Log.d("OBD_LOG", "Found ${codeList.size} trouble codes")
-            // testing log
-            Log.d("OBD_TEST", "FAULT CODES FOUND: $codeList")
-        }catch(e: Exception){
-            Log.e("OBD_LOG", "Failed to fetch trouble codes", e)
         }
     }
 
@@ -90,39 +96,51 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
 
     //start continuous loop to poll data from vehicle
     suspend fun startLiveDataLoop() = withContext(Dispatchers.IO) {
-        val out = socket?.outputStream ?: return@withContext
-        val inputStream = socket?.inputStream ?: return@withContext
+        //prevent multiple instances of the loop from running simultaneously
+        if(isLoopRunning) return@withContext
+        isLoopRunning = true
 
-        //initialize commands
-        val rpmCmd = RPMCommand()
-        val speedCmd = SpeedCommand()
-        val coolantCmd = EngineCoolantTemperatureCommand()
-        val fuelTrimCmd = FuelTrimCommand(FuelTrim.LONG_TERM_BANK_1)
+        try{
+            //initialize commands
+            val rpmCmd = RPMCommand()
+            val speedCmd = SpeedCommand()
+            val coolantCmd = EngineCoolantTemperatureCommand()
+            val fuelTrimCmd = FuelTrimCommand(FuelTrim.LONG_TERM_BANK_1)
 
-        while (_connectionState.value == ConnectionState.CONNECTED) {
-            try {
-                runCatching{ rpmCmd.run(inputStream, out) }
-                runCatching { speedCmd.run(inputStream, out) }
-                val coolantResult = runCatching{ coolantCmd.run(inputStream, out) }
-                val fuelResult = runCatching{ fuelTrimCmd.run(inputStream, out) }
+            while (_connectionState.value == ConnectionState.CONNECTED) {
+                val out = socket?.outputStream ?: return@withContext
+                val inputStream = socket?.inputStream ?: return@withContext
+                try {
+                    //use mutex to prevent collision with fetchTroubleCodes or clearTroubleCodes
+                    socketMutex.withLock {
+                        runCatching{ rpmCmd.run(inputStream, out) }
+                        runCatching { speedCmd.run(inputStream, out) }
+                        runCatching{ coolantCmd.run(inputStream, out) }
+                        runCatching{ fuelTrimCmd.run(inputStream, out) }
+                    }
+                    //update metrics while preserving existing fault codes
+                    _metrics.value = _metrics.value.copy(
+                        rpm = rpmCmd.rpm,
+                        speed = speedCmd.metricSpeed,
+                        coolantTemp = try{ coolantCmd.temperature.toInt() }catch(e: Exception){ _metrics.value.coolantTemp},
+                        fuelTrim = try{ fuelTrimCmd.value.toDouble()}catch(e: Exception){ _metrics.value.fuelTrim },
+                        //faultCodes = _metrics.value.faultCodes,
+                        isDataLive = true
+                    )
+                    // testing logs
+                    //Log.d("OBD_TEST", "LIVE DATA -> RPM: ${rpmCmd.rpm}, Speed: ${speedCmd.metricSpeed}")
 
-                _metrics.value = VehicleMetrics(
-                    rpm = rpmCmd.rpm,
-                    speed = speedCmd.metricSpeed,
-                    coolantTemp = if(coolantResult.isSuccess) coolantCmd.temperature.toInt() else 0,
-                    fuelTrim = if (fuelResult.isSuccess) fuelTrimCmd.value.toDouble() else 0.0,
-                    faultCodes = _metrics.value.faultCodes,
-                    isDataLive = true
-                )
-                // testing logs
-                //Log.d("OBD_TEST", "LIVE DATA -> RPM: ${rpmCmd.rpm}, Speed: ${speedCmd.metricSpeed}")
-
-                delay(500)
-            } catch (e: Exception) {
-                Log.e("OBD_LOOP", "Failed to fetch metrics. Critical error", e)
-                _metrics.value = _metrics.value.copy(isDataLive = false)
-                break
+                    delay(500)
+                } catch (e: Exception) {
+                    Log.e("OBD_LOOP", "Failed to fetch metrics, retrying...", e)
+//                    _metrics.value = _metrics.value.copy(isDataLive = false)
+//                    break
+                    delay(1000)
+                }
             }
+        }finally{
+            isLoopRunning = false
+            _metrics.value = _metrics.value.copy(isDataLive = false)
         }
     }
 
@@ -187,8 +205,10 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
     //get already paired devices
     fun getPairedDevices(): List<android.bluetooth.BluetoothDevice>{
         return try{
+            //Log.d("OBD Load", "Get paired devices")
             bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
         }catch(e: SecurityException){
+            //Log.d("OBD Load", e.message?:"Paired devices error OBD")
             emptyList()
         }
     }
