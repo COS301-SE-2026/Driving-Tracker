@@ -20,19 +20,36 @@ export const seedUserAndLogin = async (unique: number) => {
 		},
 	});
 
+	const vehicle = await prisma.vehicles.create({
+		data:{
+			registration: `TEST-${unique}`,
+			make: 'BMW',
+			model: 'M3',
+			year: 2022,
+			fuel_type: 'PETROL',
+		},
+	});
+
+	await prisma.users_vehicles.create({
+		data: {
+			user_id: user.user_id,
+			vehicle_id: vehicle.vehicle_id,
+		},
+	});
+
 	const loginRes = await request(app).post('/api/auth/login').send({
 		identifier: `trips_user_${unique}`, 
 		password,
 	});
 
-	return { user, token: loginRes.body.token as string };
+	return { user, vehicle: vehicle.vehicle_id, token: loginRes.body.token as string };
 };
 
 export const cleanTripsData = async () => {
-	await prisma.trip_events.deleteMany;
-	await prisma.trip_location_shares.deleteMany;
-	await prisma.trip_readings.deleteMany;
-	await prisma.trip_scores.deleteMany;
-	await prisma.trips.delete;
-	await prisma.users.delete;
+	await prisma.trip_events.deleteMany();
+	await prisma.trip_location_shares.deleteMany();
+	await prisma.trip_readings.deleteMany();
+	await prisma.trip_scores.deleteMany();
+	await prisma.trips.deleteMany();
+	await prisma.users.deleteMany();
 };
