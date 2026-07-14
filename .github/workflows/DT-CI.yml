@@ -22,6 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Firebase service account file
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -77,6 +81,11 @@ jobs:
       NEXT_PUBLIC_API_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create Firebase service account file
+        run: |
+          mkdir -p backend
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - name: Create .env for docker compose
         run: |
