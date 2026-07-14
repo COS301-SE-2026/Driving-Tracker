@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 
 
 
-private val DarkColorScheme = darkColorScheme(
+private val LightColorScheme = lightColorScheme(
     primary = Blue,
     secondary = Green,
     tertiary = Purple,
@@ -31,20 +31,20 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = TextSecondary
 )
 
-private val LightColorScheme = lightColorScheme(
+private val DarkColorScheme = darkColorScheme(
     primary = Blue,
     secondary = Green,
     tertiary = Purple,
-    background = Background,
-    surface = CardWhite,
-    surfaceVariant = Color(0xFFF0F4FF),
-    outline = Border,
+    background = DarkBackground,
+    surface = DarkSurface,
+    surfaceVariant = Color(0xFF334155),
+    outline = Color(0xFF475569),
     onPrimary = CardWhite,
     onSecondary = CardWhite,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
+    onBackground = DarkTextPrimary,
+    onSurface = DarkTextPrimary,
     error = Error,
-    onSurfaceVariant = TextSecondary
+    onSurfaceVariant = DarkTextSecondary
 )
 
 @Composable

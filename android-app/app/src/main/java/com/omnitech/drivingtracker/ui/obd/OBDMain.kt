@@ -10,11 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,6 +35,7 @@ import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.TopBar
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import com.omnitech.drivingtracker.Screen
 
 @Composable
 fun OBDMain(navController: NavController? =null){
@@ -52,11 +48,11 @@ fun OBDMain(navController: NavController? =null){
             Spacer(modifier = Modifier.height(25.dp))
 
             //Different page options
-            MenuCard("OBD Adapters") {navController?.navigate("OBDConnect") }
+            MenuCard("OBD Adapters") {navController?.navigate(Screen.OBDConnect.route) }
             Spacer(modifier = Modifier.height(16.dp))
-            MenuCard("Live Warnings") {navController?.navigate("OBDLiveWarnings") }
+            MenuCard("Live Warnings") {navController?.navigate(Screen.OBDLiveWarnings.route) }
             Spacer(modifier = Modifier.height(16.dp))
-            MenuCard("Key OBD data") {navController?.navigate("OBDKeyData") }
+            MenuCard("Key OBD data") {navController?.navigate(Screen.OBDKeyData.route) }
         }
 }
 

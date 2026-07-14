@@ -18,11 +18,19 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
 import com.omnitech.drivingtracker.ui.obd.Vehicles
+import com.omnitech.drivingtracker.ui.other.Settings
+import com.omnitech.drivingtracker.ui.other.*
+import com.omnitech.drivingtracker.ui.obd.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
 import com.omnitech.drivingtracker.ui.trip.TripSummary
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.omnitech.drivingtracker.ui.obd.OBDMain
+import androidx.compose.runtime.saveable.*
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -45,7 +53,23 @@ sealed class Screen(val route: String){
 
     data object Vehicles : Screen("vehicles")
 
+    data object OBDMain : Screen("obd_main")
+
+    data object OBDKeyData : Screen("obd_key_data")
+
+    data object OBDLiveWarnings : Screen("obd_live_warnings")
+
     data object  OBDConnect : Screen("obd_connect")
+
+    data object Settings : Screen("settings")
+
+    data object Help : Screen("help")
+
+    data object Notifications : Screen("notifications")
+
+    data object Profile : Screen("profile")
+
+    data object More : Screen("more")
 }
 
 @AndroidEntryPoint
@@ -54,7 +78,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DrivingTrackerTheme{
+
+            var darkMode by rememberSaveable {mutableStateOf(false)}
+            val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
+
+            DrivingTrackerTheme(darkTheme = darkMode){
+
                 val navController = rememberNavController()
 
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
@@ -122,6 +151,25 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.Vehicles.route) {
                         Vehicles(navController = navController)
+                    }
+                    composable(Screen.Settings.route){
+                        Settings(
+                            navController = navController,
+                            darkMode = darkMode,
+                            onDarkModeChange = onDarkModeChange
+                        )
+                    }
+                    composable(Screen.OBDMain.route){
+                        OBDMain(navController = navController)
+                    }
+                    composable(Screen.More.route){
+                        More(navController = navController)
+                    }
+                    composable(Screen.OBDKeyData.route){
+                        OBDKeyData(navController = navController)
+                    }
+                    composable(Screen.OBDLiveWarnings.route){
+                        OBDLiveWarnings(navController = navController)
                     }
                 }
             }
