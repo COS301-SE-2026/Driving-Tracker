@@ -24,6 +24,8 @@ class ObdViewModel @Inject constructor(
     //expose connection state from manager to UI
     val connectionState = obdManager.connectionState
 
+    val connectedDeviceAddress = obdManager.connectedDeviceAddress
+
     init{
         loadPairedDevices()
         attemptAutoConnect()

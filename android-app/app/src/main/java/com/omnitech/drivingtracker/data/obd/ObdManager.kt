@@ -155,6 +155,9 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState = _connectionState.asStateFlow()
 
+    private val _connectedDeviceAddress = MutableStateFlow<String?>(null)
+    val connectedDeviceAddress = _connectedDeviceAddress.asStateFlow()
+
     enum class ConnectionState {DISCONNECTED, CONNECTING, CONNECTED, ERROR}
 
     suspend fun connectToDevice(address: String) = withContext(Dispatchers.IO){
@@ -168,9 +171,11 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
             //initialize commands for ELM
             initializeObd()
 
+            _connectedDeviceAddress.value = address
             _connectionState.value = ConnectionState.CONNECTED
         }catch(e: Exception) {
             _connectionState.value = ConnectionState.ERROR
+            _connectedDeviceAddress.value = null
             socket?.close()
         }
     }
