@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ColumnScope
+import com.omnitech.drivingtracker.Screen
 
 @Composable
 fun More(navController: NavController){
@@ -44,17 +45,17 @@ fun More(navController: NavController){
                 modifier = Modifier.padding(innerPadding)
             ){
                 Spacer(modifier = Modifier.height(25.dp))
-                ContentCard("Weekly Challenges"){navController.navigate("WeeklyChallenges")}
+                ContentCard("Weekly Challenges"){navController.navigate(Screen.WeeklyChallenges.route)}
                 HLine()
-                ContentCard("OBD"){navController.navigate("OBDMain")}
+                ContentCard("OBD"){navController.navigate(Screen.OBDMain.route)}
                 HLine()
-                ContentCard("Vehicles"){navController.navigate("Vehicles")}
+                ContentCard("Vehicles"){navController.navigate(Screen.Vehicles.route)}
                 HLine()
-                ContentCard("Notifications"){navController.navigate("Notifications")}
+                ContentCard("Notifications"){navController.navigate(Screen.Notifications.route)}
                 HLine()
-                ContentCard("Profile"){navController.navigate("Profile")}
+                ContentCard("Profile"){navController.navigate(Screen.Profile.route)}
                 HLine()
-                ContentCard("Help"){navController.navigate("Help")}
+                ContentCard("Help"){navController.navigate(Screen.Help.route)}
             }
 
     }

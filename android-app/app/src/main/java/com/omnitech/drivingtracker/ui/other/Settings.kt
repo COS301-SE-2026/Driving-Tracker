@@ -32,7 +32,7 @@ import androidx.compose.material3.Switch
 
 @Composable
 fun Settings(navController: NavController? =null,
-             darkMode: Boolean,
+             darkMode: Boolean = false,
              onDarkModeChange: (Boolean) -> Unit
              )
 {
