@@ -255,6 +255,17 @@ const contacts_controller = {
                 });
             }
 
+            if (e?.code === "USER_NOT_FOUND") {
+                return res.status(409).json({
+                error: "USER_NOT_FOUND",
+                message: "Could not find user",
+                });
+            }
+
+            if((e instanceof ExtendedError)){
+                return res.status(500).json({error: e.errorCode, message: e.message});
+            }
+
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR" }); 
         }
     },

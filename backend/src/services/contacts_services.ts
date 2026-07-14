@@ -2,6 +2,7 @@ import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
 import { ConsentStatus } from '@prisma/client';
+import { ExtendedError } from '../utils/errors';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -205,6 +206,7 @@ export const contact_services ={
             select: {
                 contact_id: true,
                 contact_user: { select: { username: true } },
+                contact_user_id: true
             },
         });
         if(trusted.length !== contact_ids.length) throw coded_error("NOT_TRUSTED_CONTACT");
@@ -220,6 +222,19 @@ export const contact_services ={
             })),
             skipDuplicates: true,
         });
+
+        const contact_user_ids = trusted.map(t => t.contact_user_id);
+
+        const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+        const full_name = await get_user_fullname(user_id);
+
+        if(!full_name){
+
+            throw coded_error("USER_NOT_FOUND");
+        }
+
+        await notification_services.send_trip_shared_notification(fcm_tokens, full_name, trip_id);
 
         //return data in format of endpoint
         return {
