@@ -22,7 +22,8 @@ import androidx.compose.foundation.verticalScroll
 fun StandardScreen(
     navController: NavController?,
     title: String,
-    description: String,
+    description: String = "",
+    showBottomBar: Boolean = true,
     bottomBarColor: String = "ach",
     onLeftClick: ()-> Unit = {},
     onRightClick: ()-> Unit = {},
@@ -37,7 +38,11 @@ fun StandardScreen(
                 onRightClick = onRightClick
             )
         },
-        bottomBar = {BottomNavBar(navController = navController, color = bottomBarColor)}
+        bottomBar = {
+            if (showBottomBar) {
+                BottomNavBar(navController = navController, color = bottomBarColor)
+            }
+        }
     ){
         innerPadding -> Column(
             modifier = Modifier.fillMaxSize().padding(innerPadding).verticalScroll(

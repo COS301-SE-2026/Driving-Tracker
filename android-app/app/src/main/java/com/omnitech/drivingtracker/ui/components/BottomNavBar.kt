@@ -98,15 +98,9 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
             },
             label = { Text(text = "More") },
             selected = false,
-            onClick = { navController?.navigate(Screen.WeeklyChallenges.route) }
+            onClick = { navController?.navigate(Screen.More.route) }
         )
 
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Bluetooth, contentDescription = "OBD") },
-            label = { Text("OBD") },
-            selected = false,
-            onClick = { navController?.navigate(Screen.OBDConnect.route) }
-        )
     }
 
 }
