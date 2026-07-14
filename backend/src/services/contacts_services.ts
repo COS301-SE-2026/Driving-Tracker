@@ -101,7 +101,10 @@ export const contact_services ={
     //Returns the user's trusted contacts.
     async list_trusted_contacts(user_id: string){
         const contacts = await prisma.trusted_contacts.findMany({
-            where: {user_id},
+            where: {
+                user_id,
+                consent_status: "APPROVED"
+            },
             select: {
                 contact_id: true,
                 name: true,

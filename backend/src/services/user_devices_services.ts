@@ -32,7 +32,7 @@ export const user_devices_services={
                 select: { fcm_token: true }
             });
 
-            const user_tokens = tokens.map( item=>item.fcm_token);
+            const user_tokens = tokens.map(item=>item.fcm_token);
 
             return user_tokens;
 
@@ -41,5 +41,27 @@ export const user_devices_services={
             throw new ExtendedError("Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
             
         }
-    }    
+    },
+    //Gets multiple users' fcm_tokens
+    async get_multiple_users_fcm_tokens(user_ids: string[]){
+
+         try{
+
+            const tokens = await prisma.user_devices.findMany({
+                where: { 
+                    user_id: { in: user_ids } 
+                    },
+                select: { fcm_token: true }
+            });
+
+            const user_tokens = tokens.map(item=>item.fcm_token);
+
+            return user_tokens;
+
+        } catch(err: any){
+
+            throw new ExtendedError("Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
+            
+        }
+    }     
 };

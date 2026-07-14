@@ -125,23 +125,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.services.TripTrackingService
+import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 
 @Composable
 fun Trips(
     navController: NavController? = null,
     tripsViewModel: TripsViewModel = hiltViewModel(),
     tripViewModel: TripViewModel = hiltViewModel(),
-    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = hiltViewModel()
+    contactsViewModel: ContactsViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()
     val vehiclesState by tripViewModel.vehiclesState.collectAsState()
-    val contactsState by contactsViewModel.uiState.collectAsState()
+    val approvedContactsState by tripViewModel.approvedContactsState.collectAsState()
 
-    val approvedContacts = when (val state = contactsState) {
-        is com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success -> {
-            state.contacts.filter { it.consentStatus == ConsentStatus.APPROVED }
-        }
+    val approvedContacts = when (val state = approvedContactsState) {
+        is TripViewModel.UiState.SuccessApprovedContacts -> state.data
         else -> emptyList()
     }
 
@@ -180,6 +179,10 @@ fun Trips(
                 selectedContactIds = contactIds.ifEmpty { null }
             )
         },
+        onRefreshContacts = {
+            tripViewModel.loadVehicles()
+            tripViewModel.loadApprovedContacts()
+        },
         navController = navController
     )
 }
@@ -192,6 +195,7 @@ fun TripsContent(
     vehicles: List<VehicleDto>,
     onRetryTrips: () -> Unit,
     onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
+    onRefreshContacts: () -> Unit,
     navController: NavController? = null
 ) {
     var showStartTripDialog by remember { mutableStateOf(false) }
@@ -248,7 +252,10 @@ fun TripsContent(
                 Text("On the move again?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { showStartTripDialog = true },
+                    onClick = {
+                        onRefreshContacts()
+                        showStartTripDialog = true
+                              },
                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -698,7 +705,8 @@ fun TripsPreview() {
             approvedContacts = emptyList(),
             vehicles = emptyList(),
             onRetryTrips = {},
-            onStartTrip = { _, _, _, _, _ -> }
+            onStartTrip = { _, _, _, _, _ -> },
+            onRefreshContacts = {}
         )
     }
 }

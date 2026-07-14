@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
@@ -22,6 +23,7 @@ class TripViewModel @Inject constructor(
         object Idle : UiState()
         object Loading : UiState()
         data class Success(val data: String = "") : UiState() // trip_id or context data
+        data class SuccessApprovedContacts(val data: List<ContactDto>): UiState()
         data class SuccessVehicles(val vehicles: List<com.omnitech.drivingtracker.data.models.VehicleDto>) : UiState()
         data class Error(
             val code: String? = null,
@@ -76,7 +78,8 @@ class TripViewModel @Inject constructor(
 
             contactsRepository.fetchApprovedContacts().fold(
                 onSuccess = {contacts ->
-                    _approvedContactsState.value = UiState.Success(contacts.toString())
+                    _approvedContactsState.value = UiState.SuccessApprovedContacts(contacts)
+                    Log.d("ApprovedContacts",contacts.toString())
                 },
                 onFailure = {exception ->
                     when{

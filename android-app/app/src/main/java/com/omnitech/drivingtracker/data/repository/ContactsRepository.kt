@@ -25,11 +25,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
         }
     }
     suspend fun fetchApprovedContacts(): Result<List<ContactDto>> {
-        return fetchContacts().map{
-            contacts -> contacts.filter{ //filter approved
-                it.consentStatus == ConsentStatus.APPROVED
-            }
-        }
+        return fetchContacts()
     }
 
     suspend fun createContact(identifier: String): Result<Unit> {
