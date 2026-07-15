@@ -2,6 +2,7 @@ package com.omnitech.drivingtracker.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -81,6 +82,56 @@ private fun ContactRequestCardContent(
     onIgnore: () -> Unit
 ) {
 
+    Column(modifier = Modifier.fillMaxWidth()) {
 
+        Text(
+            text = "$name wants you to be their trusted contact",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            //
+            TextButton(
+                onClick = onIgnore,
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Text(
+                    text = "Ignore",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            //Accept Button: Blue outline, blue text, same background as card
+            OutlinedButton(
+                onClick = onAccept,
+                border = BorderStroke(1.dp, Blue),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = Blue
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                Text(
+                    text = "Accept",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+        }
+
+    }
 
 }
