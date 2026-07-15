@@ -74,4 +74,7 @@ interface ApiService{
     //Notifications
     @POST("devices/fcm_token")
     suspend fun registerFcmToken(@Body body: RegisterFcmRequest): RegisterFcmResponse
+  
+    @GET("map/token")
+    suspend fun getMapToken(): MapTokenResponse
 }
