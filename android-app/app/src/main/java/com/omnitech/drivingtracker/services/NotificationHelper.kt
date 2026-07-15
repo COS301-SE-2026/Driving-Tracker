@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.omnitech.drivingtracker.MainActivity
@@ -50,6 +51,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
         } catch (e: SecurityException){
             //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show trip alert error")
         }
     }
 
@@ -68,6 +70,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
         } catch (e: SecurityException){
             //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show gamification notification error")
         }
     }
 
@@ -101,6 +104,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
         } catch (e: SecurityException) {
             //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show contact alert error")
         }
     }
 
@@ -118,6 +122,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
         } catch (e: SecurityException){
             //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show general notification error")
         }
     }
 

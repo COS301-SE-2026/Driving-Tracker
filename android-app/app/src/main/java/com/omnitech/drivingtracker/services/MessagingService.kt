@@ -27,7 +27,7 @@ class MessagingService: FirebaseMessagingService() {
         super.onDestroy()
         serviceScope.cancel()
     }
-
+    //Dictates actions taken when notification is received
     override fun onMessageReceived(message: RemoteMessage) {
         //Handle incoming messages
 

@@ -125,6 +125,7 @@ export const notification_services= {
         })
 
     },
+    //Sends badge unlock or update notifications
     async send_badge_notification(fcm_tokens: string[], title: string = "New Badge Unlocked", message: string, badge_id: string, icon_url: string){
 
         if(fcm_tokens.length === 0){
