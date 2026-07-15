@@ -31,6 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.omnitech.drivingtracker.ui.obd.OBDMain
 import androidx.compose.runtime.saveable.*
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.ui.notification.Notifications
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -50,6 +52,7 @@ sealed class Screen(val route: String){
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
     data object WeeklyChallenges : Screen("weekly_challenges")
+
 
     data object Vehicles : Screen("vehicles")
 
@@ -130,6 +133,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.Achievements.route){
                         AchievementsScreen(navController = navController)
+                    }
+                    composable(Screen.Notifications.route){
+                        Notifications(navController = navController)
                     }
                     composable(
                         route = Screen.TripSummary.route,
