@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
                     composable(Screen.Welcome.route){
                         WelcomePage(
-                            onLoginClick = { navController.navigate(Screen.Login.route) },
+                            onLoginClick = { navController.navigate(Screen.Dashboard.route) },
                             onSignUpClick = { navController.navigate(Screen.SignUp.route) }
                         )
                     }
