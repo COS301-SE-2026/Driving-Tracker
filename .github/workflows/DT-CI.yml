@@ -96,6 +96,7 @@ jobs:
             cat > backend/.env <<EOF
             DATABASE_URL=${{ env.DATABASE_URL }}
             SEED_USER_PASSWORD=ci-seed-password
+            AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
             EOF
 
       - run: docker compose build
