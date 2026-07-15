@@ -11,6 +11,7 @@ jest.mock('../../../src/db/prisma', () => ({
         findFirst: jest.fn(),
         findMany: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
         },
         trip_events: {
         findUnique: jest.fn(),
@@ -42,6 +43,7 @@ jest.mock('../../../src/services/notification_service', () => ({
     notification_services: {
         send_trusted_contact_request_notification: jest.fn(),
         send_trip_shared_notification: jest.fn(),
+        send_trusted_contact_response_notification: jest.fn(),
     },
 }));
 
@@ -56,7 +58,7 @@ const mock_user_devices_services = user_devices_services as any;
 const mock_notification_services = notification_services as any;
 
 describe('Contact services . create_trusted_contact',()=>{
-    beforeEach(async()=>{jest.clearAllMocks});
+    beforeEach(async()=>{jest.clearAllMocks()});
 
     it('creates when valid username provided', async()=>{
         mock_prisma.users.findFirst.mockResolvedValue({
@@ -110,7 +112,7 @@ describe('Contact services . create_trusted_contact',()=>{
 });
 
 describe('contact services.list_trusted_contacts',()=>{
-    beforeEach(async()=>{jest.clearAllMocks});
+    beforeEach(async()=>{jest.clearAllMocks()});
 
     it('returns list of trusted contacts', async () => {
         mock_prisma.trusted_contacts.findMany.mockResolvedValue([
@@ -139,7 +141,7 @@ describe('contact services.list_trusted_contacts',()=>{
 });
 
 describe('alert contacts for event',()=>{
-    beforeEach(async()=>{jest.clearAllMocks});
+    beforeEach(async()=>{jest.clearAllMocks()});
 
     it('creates alerts and notifications ',async() =>{
         mock_prisma.trip_events.findUnique.mockResolvedValue({
@@ -215,4 +217,86 @@ describe('share trip location',()=>{
         })
         ).rejects.toMatchObject({ code: 'TRIP_NOT_FOUND' });
     });
-})
+});
+
+describe('contact services.respond_to_contact_request', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('updates status and sends response notification', async () => {
+        mock_prisma.trusted_contacts.findFirst.mockResolvedValue({
+            contact_id: 'c1',
+            user_id: 'owner-1',
+            contact_user_id: 'responder-1'
+        });
+
+        mock_prisma.trusted_contacts.update.mockResolvedValue({
+            contact_id: 'c1',
+            consent_status: 'APPROVED',
+        });
+        mock_user_devices_services.get_user_fcm_tokens.mockResolvedValue(['token-1']);
+        mock_prisma.users.findFirst.mockResolvedValue({
+            user_id: 'responder-1',
+            username: 'janeD',
+            name: 'Jane',
+            surname: 'Doe',
+        });
+        mock_notification_services.send_trusted_contact_response_notification.mockResolvedValue(undefined);
+
+        const result = await contact_services.respond_to_contact_request(
+            'APPROVED',
+            'c1',
+            'responder-1'
+        );
+
+        expect(result).toEqual({
+            contact_id: 'c1',
+            message: 'Status updated successfully',
+        });
+
+        expect(mock_prisma.trusted_contacts.update).toHaveBeenCalledWith({
+            data: { consent_status: 'APPROVED' },
+            where:  { contact_id: 'c1' } 
+        });
+
+        expect(mock_user_devices_services.get_user_fcm_tokens).toHaveBeenCalledWith('owner-1');
+        expect(mock_notification_services.send_trusted_contact_response_notification).toHaveBeenCalledWith(
+            ['token-1'],
+            'Jane Doe',
+            'APPROVED'
+        );
+
+    });
+
+    it('throws when status is invalid', async() => {
+        await expect(
+            contact_services.respond_to_contact_request('DESTROYED', 'c1', 'responder-1')
+        ).rejects.toMatchObject({ code: 'INVALID_STATUS' });
+    });
+
+    it('throws when contact reqquest is not found', async() => {
+        mock_prisma.trusted_contacts.findFirst.mockResolvedValue(null);
+
+        await expect(
+            contact_services.respond_to_contact_request('APPROVED', 'c1', 'responder-1')
+        ).rejects.toMatchObject({ code: 'CONTACT_REQUEST_NOT_FOUND' });
+    });
+
+    it('throws when sender full name cannot be found', async() => {
+        mock_prisma.trusted_contacts.findFirst.mockResolvedValue({
+            contact_id: 'c1',
+            user_id: 'owner-1',
+            contact_user_id: 'responder-1'
+        });
+
+        mock_prisma.trusted_contacts.update.mockResolvedValue({contact_id: 'c1'});
+        mock_user_devices_services.get_user_fcm_tokens.mockResolvedValue(['token-1']);
+        mock_prisma.users.findFirst.mockResolvedValue(null);
+
+        await expect(
+            contact_services.respond_to_contact_request('APPROVED', 'c1', 'responder-1')
+        ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
+    });
+
+});
