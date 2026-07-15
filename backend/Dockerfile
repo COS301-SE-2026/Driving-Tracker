@@ -58,4 +58,4 @@ COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.
 
 USER node
 EXPOSE 3000
-CMD ["yarn", "start"]
+CMD ["yarn", "dev"]
