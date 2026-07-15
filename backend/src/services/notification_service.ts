@@ -132,7 +132,7 @@ export const notification_services= {
             throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
         }
 
-        if(title.trim.length == 0){ 
+        if(title.trim().length === 0){
             title = "New Badge Unlocked";
         }
 
