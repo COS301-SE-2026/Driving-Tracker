@@ -12,6 +12,7 @@ drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 .pnp.*
 
 /coverage
+backend/coverage
 
 **/.next/
 **/out/
