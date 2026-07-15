@@ -16,6 +16,7 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.Arrangement
 
 @Composable
 fun Help(navController: NavController?=null){
@@ -76,19 +77,35 @@ fun RowOne(selectedTab: Int, onTabSelected: (Int) -> Unit){ //TABS
                 Box(modifier = Modifier.height(2.dp)
                     .fillMaxWidth(0.6f)
                     .background(if (selectedTab == index)
-                    Color.Green
+                    Color.Black
                     else Color.Transparent))
             }
         }
     }
 }
 
-@Composable
-fun RowTwo(){ //CATEGORIES
+@Composable //CATEGORIES
+fun RowTwo(
+    categories: List<String>,
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit
+){
     Row(
-
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ){
-
+        categories.forEach {
+            category ->
+            FilterChip(
+                selected = category == selectedCategory,
+                onClick = {onCategorySelected(category)},
+                label = {Text(category)},
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color.Green,
+                    selectedLabelColor = Color.White
+                )
+            )
+        }
     }
 }
 
