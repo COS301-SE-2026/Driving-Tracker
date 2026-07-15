@@ -4,6 +4,9 @@ jest.mock('../../../src/db/prisma', () => ({
         users: {
         findFirst: jest.fn(),
         },
+        user_devices: {
+            findMany: jest.fn()
+        },
         trusted_contacts: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -28,11 +31,29 @@ jest.mock('../../../src/db/prisma', () => ({
     },
 }));
 
+jest.mock('../../../src/services/user_devices_services', () => ({
+    user_devices_services: {
+        get_user_fcm_tokens: jest.fn(),
+        get_multiple_users_fcm_tokens: jest.fn(),
+    },
+}));
+
+jest.mock('../../../src/services/notification_service', () => ({
+    notification_services: {
+        send_trusted_contact_request_notification: jest.fn(),
+        send_trip_shared_notification: jest.fn(),
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { contact_services } from '../../../src/services/contacts_services';
+import { user_devices_services } from '../../../src/services/user_devices_services';
+import { notification_services } from '../../../src/services/notification_service';
 
 const mock_prisma = prisma as any ;
+const mock_user_devices_services = user_devices_services as any;
+const mock_notification_services = notification_services as any;
 
 describe('Contact services . create_trusted_contact',()=>{
     beforeEach(async()=>{jest.clearAllMocks});
@@ -49,11 +70,20 @@ describe('Contact services . create_trusted_contact',()=>{
         mock_prisma.trusted_contacts.create.mockResolvedValue({
             contact_id: 'c1',
         });
+        mock_prisma.user_devices.findMany.mockResolvedValue([
+            { fcm_token: 'token-1' },
+        ]);
+        mock_user_devices_services.get_user_fcm_tokens.mockResolvedValue([
+            'token-1',
+        ]);
+        mock_notification_services.send_trusted_contact_request_notification.mockResolvedValue(undefined);
 
         const result = await contact_services.create_trusted_contact('u1', 'johndoe');
 
         expect(result.contact_id).toBe('c1');
         expect(result.username).toBe('johndoe');
+        expect(mock_user_devices_services.get_user_fcm_tokens).toHaveBeenCalledWith('u2');
+        expect(mock_notification_services.send_trusted_contact_request_notification).toHaveBeenCalled();
     });
 
     it('throws when user not found', async ()=>{
@@ -138,7 +168,7 @@ describe('alert contacts for event',()=>{
     });
 });
 describe('share trip location',()=>{
-    beforeEach(async()=>{jest.clearAllMocks});
+    beforeEach(async()=>{ jest.clearAllMocks() });
 
     it('shares trip location with contacts', async () => {
         mock_prisma.trips.findUnique.mockResolvedValue({
@@ -150,11 +180,18 @@ describe('share trip location',()=>{
             {
                 contact_id: 'c1',
                 contact_user: { username: 'contact1' },
+                contact_user_id: 'u2'
             },
         ]);
         mock_prisma.trip_location_shares.createMany.mockResolvedValue({
             count: 1,
         });
+
+        mock_user_devices_services.get_multiple_users_fcm_tokens.mockResolvedValue([
+            'token-1'
+        ]);
+
+        mock_notification_services.send_trip_shared_notification.mockResolvedValue(undefined);
 
         const result = await contact_services.share_trip_location({
             user_id: 'u1',
