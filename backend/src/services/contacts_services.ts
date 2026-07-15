@@ -2,7 +2,6 @@ import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
 import { ConsentStatus } from '@prisma/client';
-import { ExtendedError } from '../utils/errors';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {

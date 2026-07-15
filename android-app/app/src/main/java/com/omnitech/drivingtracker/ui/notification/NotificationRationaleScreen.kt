@@ -49,7 +49,7 @@ fun NotificationRationale(
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
+    ) { _ ->
         onPermissionHandled()
     }
 
@@ -61,6 +61,38 @@ fun NotificationRationale(
     LaunchedEffect(isGranted) {
         if(isGranted) {
             onPermissionHandled()
+        }
+    }
+
+    fun shouldOpenSettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+
+        val isDeniedOnce = (context as Activity)
+            .shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+
+        return !isDeniedOnce && viewModel.hasRequestedBefore()
+    }
+
+    fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+
+        context.startActivity(intent)
+    }
+
+    fun requestPermission() {
+        viewModel.markAsRequested()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    fun onEnableNotificationsClick() {
+        when {
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> onPermissionHandled()
+            shouldOpenSettings() -> openAppSettings()
+            else -> requestPermission()
         }
     }
 
@@ -91,27 +123,7 @@ fun NotificationRationale(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
-                            val isDeniedOnce = (context as Activity)
-                                .shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
-
-                            if( !isDeniedOnce && viewModel.hasRequestedBefore()) {
-                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.fromParts("package", context.packageName, null)
-                                }
-
-                                context.startActivity(intent)
-                            }else {
-                                viewModel.markAsRequested()
-                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                        } else {
-                            onPermissionHandled()
-                        }
-
-                    }) {
+                    Button(onClick = { onEnableNotificationsClick() }) {
                         Text("Enable Notifications")
                     }
 

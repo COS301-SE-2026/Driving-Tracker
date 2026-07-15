@@ -10,7 +10,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -31,8 +30,8 @@ import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.notification.NotificationRationale
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.lifecycle.Lifecycle
+import android.Manifest
 import com.google.firebase.messaging.FirebaseMessaging
-import java.util.jar.Manifest
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -57,9 +56,14 @@ class MainActivity : ComponentActivity() {
     private fun checkNotificationPermission(): Boolean {
         return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
             ContextCompat
-                .checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)==
+                .checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)==
                     PackageManager.PERMISSION_GRANTED
         } else true
+    }
+
+    fun getPostAuthDestination(): String {
+        return if (checkNotificationPermission()) Screen.Dashboard.route
+        else Screen.NotificationRationale.route
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -75,17 +79,27 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val lifecycleOwner = LocalLifecycleOwner.current
 
+                //Navigate to destination post auth
+                fun navigatePostAuth() {
+                    navController.navigate(getPostAuthDestination()) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                }
+
+                //navigate from a notification
+                fun handleNotificationNavigation() {
+                    val destination = intent.getStringExtra("navigate_to")?: return
+
+                    navController.navigate(destination)
+                    intent.removeExtra("navigate_to")
+                }
+
                 //Navigation through notifications
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
 
                         if(event == Lifecycle.Event.ON_RESUME){
-                            val destination = intent.getStringExtra("navigate_to")
-
-                            if (destination != null){
-                                navController.navigate(destination)
-                                intent.removeExtra("navigate_to")
-                            }
+                           handleNotificationNavigation()
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -104,29 +118,13 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
-                            onLoginSuccess = {
-                                val destination = if(checkNotificationPermission()){
-                                    Screen.Dashboard.route
-                                } else { Screen.NotificationRationale.route}
-
-                                navController.navigate(destination){
-                                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                                }
-                            },
+                            onLoginSuccess = { navigatePostAuth() },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = {
-                                val destination = if(checkNotificationPermission()){
-                                    Screen.Dashboard.route
-                                } else { Screen.NotificationRationale.route}
-
-                                navController.navigate(destination){
-                                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                                }
-                            },
+                            onSignUpSuccess = { navigatePostAuth() },
                             onBackClick = { navController.popBackStack() }
                         )
                     }

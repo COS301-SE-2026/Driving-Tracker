@@ -18,7 +18,7 @@ export const user_devices_services={
 
         } catch(err: any){
 
-            throw new ExtendedError("Cannot register token","INTERNAL_SERVER_ERROR");
+            throw new ExtendedError((err?.message)?err.message : "Cannot register token","INTERNAL_SERVER_ERROR");
         }
 
     },
@@ -38,7 +38,7 @@ export const user_devices_services={
 
         } catch(err: any){
 
-            throw new ExtendedError("Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
+            throw new ExtendedError((err?.message)?err.message : "Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
             
         }
     },
@@ -60,7 +60,7 @@ export const user_devices_services={
 
         } catch(err: any){
 
-            throw new ExtendedError("Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
+            throw new ExtendedError((err?.message)?err.message : "Could not retrieve user fcm tokens", "FCM_TOKEN_RETRIEVAL_ERROR");
             
         }
     }     
