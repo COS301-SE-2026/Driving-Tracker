@@ -71,7 +71,7 @@ fun OBDKeyData(navController: NavController? =null) {
             //because our values can be changed
             KData("Engine RPM", "010C","0", "RPM", Icons.Default.Speed),
             KData("Coolant Temp", "0105","0", "°C", Icons.Default.Thermostat),
-            KData("Fuel System Status", "0103","0", "", Icons.Default.LocalGasStation),
+            KData("Fuel System Status", "0103","0", "%", Icons.Default.LocalGasStation),
             KData("Vehicle Speed", "010D","0", "km/h", Icons.Default.DirectionsCar),
         )
     }
@@ -141,6 +141,12 @@ fun DataCard(dat: KData, iconTint: Color, modifier: Modifier = Modifier){
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
+            /*Text(
+                text = dat.measurement,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error
+            )*/
         }
     }
 }
