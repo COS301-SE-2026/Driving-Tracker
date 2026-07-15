@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.runtime.LaunchedEffect
 
 
 //key data class
@@ -63,23 +64,27 @@ data class ErrorCode(
     val description: String
 )
 @Composable
-fun OBDKeyData(navController: NavController? =null) {
+fun OBDKeyData(
+    navController: NavController? =null,
+    viewModel: ObdViewModel = hiltViewModel()) {
 
-    //mock data for ui
-    val dat = remember {
-        mutableStateListOf(
-            //because our values can be changed
-            KData("Engine RPM", "010C","0", "RPM", Icons.Default.Speed),
-            KData("Coolant Temp", "0105","0", "°C", Icons.Default.Thermostat),
-            KData("Fuel System Status", "0103","0", "", Icons.Default.LocalGasStation),
-            KData("Vehicle Speed", "010D","0", "km/h", Icons.Default.DirectionsCar),
-        )
+    LaunchedEffect(Unit){
+        viewModel.loadPairedDevices()
     }
 
-    val errorCodes = listOf(
-        ErrorCode("P0300", "Random Cylinder Misfire Detected"),
-        ErrorCode("P0300", "Multiple Cylinder Misfire Detected")
+    val metrics by viewModel.vehicleMetrics.collectAsState()
+
+    val dat = listOf(
+            //because our values can be changed
+            KData("Engine RPM", "010C","${metrics.rpm}", "RPM", Icons.Default.Speed),
+            KData("Coolant Temp", "0105","${metrics.coolantTemp}", "°C", Icons.Default.Thermostat),
+            KData("Fuel Trim", "0103",String.format("%.1f", metrics.fuelTrim), "%", Icons.Default.LocalGasStation),
+            KData("Vehicle Speed", "010D","${metrics.speed}", "km/h", Icons.Default.DirectionsCar),
     )
+
+    val errorCodes = metrics.faultCodes.map { code ->
+        ErrorCode(code, "Diagnostic Trouble Code detected")
+    }
 
     StandardScreen(
         navController = navController,
@@ -87,6 +92,12 @@ fun OBDKeyData(navController: NavController? =null) {
         description = "View essential vehicle metrics such as engine RPM, coolant " +
         "temperature, fuel trim, and diagnostic trouble codes."
     ) {
+            Button(
+                onClick = { viewModel.readFaultCodes()},
+                modifier = Modifier.padding(16.dp)
+            ){
+                Text("Scan fault codes")
+            }
             Spacer(modifier = Modifier.height(12.dp))
             //Data (2 cards per row)
             Row(
