@@ -2,7 +2,7 @@ jest.mock('../../../src/services/contacts_services');
 
 import { describe, it, expect, jest,beforeEach } from '@jest/globals';
 import contacts_controller from '../../../src/controllers/contacts.controller';
-const { create_contact, get_contacts, alert_contacts, share_location } = contacts_controller;
+const { create_contact, get_contacts, alert_contacts, share_location, respond_to_contact_request } = contacts_controller;
 import { contact_services } from '../../../src/services/contacts_services';
 
 // jest.mock('../../../src/middleware/auth',()=>({}));//the auth
@@ -160,5 +160,62 @@ describe('Contact endpoints', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Location successfully shared' }));
     });
   });
+
+  describe('respond_to_contact_request',()=>{
+        it('returns 200 on success', async()=>{
+            jest.spyOn(contact_services,'respond_to_contact_request').mockResolvedValueOnce({
+                contact_id: 'c1',
+                message: 'Status updated successfully'
+            } as any);
+
+            const req: any = { 
+                user: { sub: 'user-1' },
+                params: {contact_id:  'c1'},
+                body: { status: 'APPROVED' } 
+            };
+            const res: any = make_res();
+
+            await respond_to_contact_request(req, res);
+
+            expect(contact_services.respond_to_contact_request).toHaveBeenCalledWith('APPROVED', 'c1', 'user-1');
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Status updated successfully', data: { contact_id: 'c1' } }));
+        });
+
+        it('returns 409 when unauthenticated', async () => {
+            const req: any = { user: undefined, params: {contact_id:  'c1'}, body: { status: 'APPROVED' }};
+            const res: any = make_res();
+
+            await respond_to_contact_request(req, res);
+            expect(res.status).toHaveBeenCalledWith(409);
+        });
+
+        it('returns 422 for invalid status', async () => {
+            const req: any = { user: { sub: 'user-1' }, params: {contact_id:  'c1'}, body: { status: 'PENDING' }};
+            const res: any = make_res();
+
+            await respond_to_contact_request(req, res);
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({ error: 'INVALID_STATUS' })
+            );
+        }); 
+
+        it('maps CONTACT_REQUEST_NOT_FOUND from service', async () => {
+           jest.spyOn(contact_services, 'respond_to_contact_request').mockRejectedValueOnce({
+            code:  'CONTACT_REQUEST_NOT_FOUND'
+           });
+
+            const req: any = { user: { sub: 'user-1' }, params: {contact_id:  'c1'}, body: { status: 'APPROVED' }};
+            const res: any = make_res();
+
+            await respond_to_contact_request(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+        }); 
+    });
+
+
 
 })

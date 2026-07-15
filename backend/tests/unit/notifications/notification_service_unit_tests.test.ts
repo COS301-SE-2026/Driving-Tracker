@@ -47,6 +47,23 @@ describe('notification_services', () => {
                 notification_services.send_trusted_contact_request_notification([], 'John Doe', 'c1')
             ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_trusted_contact_request_notification(
+                    ['token-1'],
+                    'John Doe',
+                    'c1'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
+        });
     });
 
     describe('send_trip_shared_notification', () => {
@@ -78,6 +95,24 @@ describe('notification_services', () => {
             await expect(
                 notification_services.send_trip_shared_notification([], 'John Doe', 'c1')
             ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
+        });
+
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_trip_shared_notification(
+                    ['token-1'],
+                    'John Doe',
+                    't1'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
         });
     });
 
@@ -112,6 +147,25 @@ describe('notification_services', () => {
                 notification_services.send_trip_alert_notification([], 't1', 'HARSH_BRAKE', 'Harsh brake detected')
             ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_trip_alert_notification(
+                    ['token-1'],
+                    't1',
+                    'HARSH_BRAKE',
+                    'Harsh brake detected'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
+        });
+
     });
 
     describe('send_general_notification', () => {
@@ -141,6 +195,23 @@ describe('notification_services', () => {
             await expect(
                 notification_services.send_general_notification([], 'General Update', 'Message Body')
             ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
+        });
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_general_notification(
+                    ['token-1'],
+                    'General Update',
+                    'Message Body'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
         });
     });
 
@@ -202,6 +273,25 @@ describe('notification_services', () => {
                 notification_services.send_badge_notification([],'Badge Unlocked',
                 'You earned a new badge','b1','icon.png')
             ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
+        });
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_badge_notification(
+                    ['token-1'],
+                    'Badge Unlocked',
+                    'You earned a new badge',
+                    'b1',
+                    'icon.png'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
         });
     });
 
