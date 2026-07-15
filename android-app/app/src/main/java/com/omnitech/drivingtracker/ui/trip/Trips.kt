@@ -43,6 +43,7 @@ package com.omnitech.drivingtracker.ui.trip
 //import androidx.compose.runtime.remember
 //import androidx.compose.runtime.setValue
 import androidx.compose.foundation.Image
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -183,6 +184,9 @@ fun Trips(
             tripViewModel.loadVehicles()
             tripViewModel.loadApprovedContacts()
         },
+        onApplyFilters = {status, start,end ->
+            tripsViewModel.loadTripsHistory(start,end,status)
+        },
         navController = navController
     )
 }
@@ -196,9 +200,11 @@ fun TripsContent(
     onRetryTrips: () -> Unit,
     onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
     onRefreshContacts: () -> Unit,
+    onApplyFilters: (String?, String?, String?) -> Unit,
     navController: NavController? = null
 ) {
     var showStartTripDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -298,7 +304,10 @@ fun TripsContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Past", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
+            IconButton(onClick = {showFilterDialog= true}) {
+                Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
+            }
+
         }
 
         when (tripsState) {
@@ -347,7 +356,9 @@ fun TripsContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         trips.forEachIndexed { index, trip ->
-                            TripCard(trip = trip, isLatest = index == 0)
+                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {navController?.navigate(
+                                Screen.TripSummary.createRoute(trip.tripId))}
+                            )
                         }
                     }
                 }
@@ -367,8 +378,98 @@ fun TripsContent(
             }
         )
     }
+    if(showFilterDialog){
+        FilterDialog(onDismiss = { showFilterDialog = false },
+            onApply = {status,start,end ->
+                onApplyFilters(status,start,end)
+            showFilterDialog= false
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterDialog(
+    onDismiss: () -> Unit,
+    onApply: (status: String?, startDate: String?, endDate: String?) -> Unit
+) {
+    var selectedStatus by remember { mutableStateOf<String?>(null) }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val statusOptions = listOf("ALL", "COMPLETED", "ONGOING", "CANCELLED")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Filter Trips") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Status Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedStatus ?: "Select Status",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Status") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        statusOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selectedStatus = if (option == "ALL") null else option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Date inputs (Enter as YYYY-MM-DD)
+                OutlinedTextField(
+                    value = startDate,
+                    onValueChange = { startDate = it },
+                    label = { Text("Start Date (YYYY-MM-DD)") },
+                    placeholder = { Text("e.g. 2023-10-01") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = endDate,
+                    onValueChange = { endDate = it },
+                    label = { Text("End Date (YYYY-MM-DD)") },
+                    placeholder = { Text("e.g. 2023-10-31") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // Format dates to ISO before sending
+                val startIso = if (startDate.isNotBlank()) "${startDate}T00:00:00Z" else null
+                val endIso = if (endDate.isNotBlank()) "${endDate}T23:59:59Z" else null
+                onApply(selectedStatus, startIso, endIso)
+            }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun StartTripDialog(
@@ -576,7 +677,7 @@ private fun formatTripScore(trip: TripItemDto): Int {
 
 
 @Composable
-fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
+fun TripCard(trip: TripItemDto, isLatest: Boolean = false, onSeeMoreClick: () -> Unit) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -647,7 +748,7 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
-                    onClick = {},
+                    onClick = onSeeMoreClick,
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(containerColor = Green),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -706,7 +807,8 @@ fun TripsPreview() {
             vehicles = emptyList(),
             onRetryTrips = {},
             onStartTrip = { _, _, _, _, _ -> },
-            onRefreshContacts = {}
+            onRefreshContacts = {},
+            onApplyFilters = { _, _, _ -> }
         )
     }
 }

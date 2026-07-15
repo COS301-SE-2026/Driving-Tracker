@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.RecentTripCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
@@ -49,7 +50,7 @@ fun Dashboard(navController: NavController? = null,
                     leftIcon = Icons.Default.Menu,
                     rightIcon = Icons.Default.Settings,
                     onLeftClick = { /* Open menu */ },
-                    onRightClick = { /* Open settings */ }
+                    onRightClick = {navController?.navigate(Screen.Settings.route)}
                 )
             },
             bottomBar = {
