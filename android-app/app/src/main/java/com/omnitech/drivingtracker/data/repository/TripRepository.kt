@@ -9,6 +9,19 @@ import java.time.Instant
 import javax.inject.Inject
 
 class TripRepository @Inject constructor(private val api: ApiService){
+
+    suspend fun getMapToken(): Result<MapTokenData> {
+        return try{
+            val response = api.getMapToken()
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
+        }
+        catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,

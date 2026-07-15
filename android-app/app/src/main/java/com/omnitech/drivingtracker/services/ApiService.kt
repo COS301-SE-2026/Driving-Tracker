@@ -70,4 +70,7 @@ interface ApiService{
 
     @GET("leaderboard/scopes")
     suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
+
+    @GET("map/token")
+    suspend fun getMapToken(): MapTokenResponse
 }
