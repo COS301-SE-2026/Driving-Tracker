@@ -30,7 +30,7 @@ import com.omnitech.drivingtracker.ui.components.VehicleImage
 fun VehicleCard(
     vehicle: Vehicle,
     onDrivingInfoClick: () -> Unit,
-    onEditAliasClick: () -> Unit,
+    onEditNameClick: () -> Unit,
     onEditImageClick: () -> Unit,
     onRemoveClick: () -> Unit
 ) {
@@ -70,7 +70,7 @@ fun VehicleCard(
             Column(modifier = Modifier.weight(1.0f)){
 
                 Text(
-                    text = vehicle.alias,
+                    text = vehicle.name,
                     style = MaterialTheme.typography.headlineMedium
                 )
 
@@ -109,10 +109,10 @@ fun VehicleCard(
                 ) {
 
                     DropdownMenuItem(
-                        text = { Text("Edit Alias", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                        text = { Text("Edit Name", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
                         onClick = {
                             showMenu = false
-                            onEditAliasClick()
+                            onEditNameClick()
                         }
                     )
 
@@ -156,22 +156,22 @@ fun VehicleCard(
 }
 
 @Composable
-fun EditAliasDialog(
+fun EditNameDialog(
     vehicle: Vehicle,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ){
 
-    var text by remember { mutableStateOf(vehicle.alias) }
+    var text by remember { mutableStateOf(vehicle.name) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Alias") },
+        title = { Text("Edit Name") },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("New Alias") },
+                label = { Text("New Name") },
                 singleLine = true
             )
         },
