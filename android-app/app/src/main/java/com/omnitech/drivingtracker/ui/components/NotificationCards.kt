@@ -42,7 +42,7 @@ fun NotificationCard(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(contentColor = CardWhite),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
     ) {
         Column(
