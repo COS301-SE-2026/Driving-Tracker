@@ -23,8 +23,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - uses: actions/setup-node@v4
         with:
@@ -83,9 +85,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           mkdir -p backend
-          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - name: Create .env for docker compose
         run: |
@@ -129,8 +133,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Decode google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > app/google-services.json
 
       - uses: actions/setup-java@v4
         with:
