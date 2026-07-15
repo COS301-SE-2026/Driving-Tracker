@@ -90,6 +90,7 @@ fun Help(navController: NavController?=null){
             }
             //Contact Us
             else{
+                Spacer(modifier = Modifier.height(16.dp))
                 ContactCard(contactItems)
             }
         }
@@ -186,7 +187,8 @@ fun Question(item : FaqItem){
                     text = item.question,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
-                    color = Color.Black
+                    color = Color.Black,
+                    fontSize = 20.sp
                 )
                 Icon(
                     imageVector = if (expanded)
@@ -199,9 +201,10 @@ fun Question(item : FaqItem){
             if (expanded){
                 Text(
                     text = item.answer,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     color = Color.Black,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontWeight = FontWeight.Normal
                 )
             }
         }
@@ -237,7 +240,7 @@ fun ContactRow(item : ContactItem){
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.name,
-                tint = Color.Gray
+                tint = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -245,16 +248,19 @@ fun ContactRow(item : ContactItem){
             Column{
                 Text(
                     text = item.name,
-                    fontSize = 12.sp,
+                    fontSize = 20.sp,
                     color = Color.Black
                 )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = item.value,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.DarkGray
                 )
             }
         }
     }
+    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Preview(showBackground = true)
