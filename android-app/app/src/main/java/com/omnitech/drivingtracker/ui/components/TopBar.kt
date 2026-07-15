@@ -46,10 +46,12 @@ fun TopBar(leftIcon: ImageVector, rightIcon: ImageVector, onLeftClick: () -> Uni
             )
         }
         //Right button
-        Icon(
-            imageVector = rightIcon,
-            contentDescription = "Settings",
-            tint = MaterialTheme.colorScheme.onBackground
-        )
+        IconButton(onClick = onRightClick) {
+            Icon(
+                imageVector = rightIcon,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
     }
 }

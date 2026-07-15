@@ -101,4 +101,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.analytics)
+
+    //Coil for loading images from URLs
+    implementation(libs.coil.compose)
 }
