@@ -73,7 +73,8 @@ jobs:
       #CI-only JWT
       JWT_SECRET: ci-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
-
+      #azuremaps
+      AZURE_MAPS_SUBSCRIPTION_KEY: ci-maps-token
       NEXT_PUBLIC_API_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +89,7 @@ jobs:
           JWT_SECRET=${{ env.JWT_SECRET }}
           JWT_REFRESH_SECRET=${{ env.JWT_REFRESH_SECRET }}
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+          AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
           EOF
 
             mkdir -p backend
