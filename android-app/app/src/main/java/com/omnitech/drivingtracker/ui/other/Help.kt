@@ -17,15 +17,20 @@ import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 
+data class FaqItem(
+    val category: String,
+    val question: String,
+    val answer: String
+)
 @Composable
 fun Help(navController: NavController?=null){
 
-    data class FaqItem(
-        val category: String,
-        val question: String,
-        val answer: String
-    )
 
     val faqItems = listOf(
         FaqItem("General","How do I share my trips with my friends and family?",
@@ -110,8 +115,59 @@ fun RowTwo(
 }
 
 @Composable
-fun QuestionCard(navController: NavController){
+fun QuestionCard(items: List<FaqItem>){
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ){
+        items.forEach{
+            item -> Question( item = item)
+        }
+    }
 
+}
+
+@Composable
+fun Question(item : FaqItem){
+
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = { expanded = !expanded},
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.onSurfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ){
+        Column( modifier = Modifier.fillMaxWidth()){
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Text(
+                    text = item.question,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (expanded)
+                                    Icons.Default.KeyboardArrowUp
+                                    else Icons.Default.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = Color.Gray
+                )
+            }
+            if (expanded){
+                Text(
+                    text = item.answer,
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
