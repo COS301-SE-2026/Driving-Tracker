@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.obd
 
 import android.bluetooth.BluetoothDevice
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.local.SessionManager
@@ -23,20 +24,23 @@ class ObdViewModel @Inject constructor(
     //expose connection state from manager to UI
     val connectionState = obdManager.connectionState
 
+    val connectedDeviceAddress = obdManager.connectedDeviceAddress
+
     init{
         loadPairedDevices()
         attemptAutoConnect()
     }
 
-    fun loadPairedDevices(){
+    fun loadPairedDevices() {
+        Log.d("OBD Load", "Loading paired devices")
         val allDevices = obdManager.getPairedDevices()
         //filter for common obd names for ease of use
-        _pairedDevices.value = allDevices.filter{ device ->
+        _pairedDevices.value = allDevices.filter { device ->
             try {
                 val name = device.name ?: ""
                 name.contains("OBD", ignoreCase = true) ||
                         name.contains("ELM", ignoreCase = true)
-            }catch(e: SecurityException){
+            } catch (e: SecurityException) {
                 false
             }
         }
