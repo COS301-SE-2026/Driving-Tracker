@@ -32,7 +32,7 @@ import androidx.compose.runtime.setValue
 import com.omnitech.drivingtracker.ui.obd.OBDMain
 import androidx.compose.runtime.saveable.*
 import androidx.navigation.NavController
-import com.omnitech.drivingtracker.ui.notification.Notification
+import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                         AchievementsScreen(navController = navController)
                     }
                     composable(Screen.Notifications.route){
-                        Notifications(navController = navController)
+                        NotificationsScreen(navController = navController)
                     }
                     composable(
                         route = Screen.TripSummary.route,

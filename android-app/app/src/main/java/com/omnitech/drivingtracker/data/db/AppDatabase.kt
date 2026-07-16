@@ -9,7 +9,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 
-@Database(entities = [UserEntity::class, TripEntity::class, TripReadingEntity::class], version = 1)
+@Database(entities = [UserEntity::class, TripEntity::class, TripReadingEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao

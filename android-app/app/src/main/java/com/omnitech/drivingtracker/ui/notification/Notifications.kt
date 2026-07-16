@@ -26,7 +26,7 @@ import com.omnitech.drivingtracker.ui.components.*
 
 
 @Composable
-fun Notifications(
+fun NotificationsScreen(
     navController: NavController? = null
 ) {
     //State to track which sections are expanded
@@ -154,5 +154,5 @@ fun NotificationSectionHeader(
 @Preview(showBackground = true)
 @Composable
 fun NotificationsPreview() {
-    Notifications()
+    NotificationsScreen()
 }
