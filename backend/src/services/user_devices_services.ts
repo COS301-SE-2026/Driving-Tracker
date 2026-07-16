@@ -32,7 +32,7 @@ export const user_devices_services={
                 select: { fcm_token: true }
             });
 
-            const user_tokens = tokens.map(item=>item.fcm_token);
+            const user_tokens = tokens.map((item: {fcm_token: string}) =>item.fcm_token);
 
             return user_tokens;
 
@@ -54,7 +54,7 @@ export const user_devices_services={
                 select: { fcm_token: true }
             });
 
-            const user_tokens = tokens.map(item=>item.fcm_token);
+            const user_tokens = tokens.map((item: {fcm_token: string}) => item.fcm_token);
 
             return user_tokens;
 

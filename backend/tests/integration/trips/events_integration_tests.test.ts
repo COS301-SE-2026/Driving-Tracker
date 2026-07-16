@@ -43,7 +43,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 
 		expect(res.status).toBe(201);
 		expect(res.body.data.event_id).toBeDefined();
-		expect(res.body.data.trip_id);
+		expect(res.body.data.trip_id).toBe(trip.trip_id);
 		expect(res.body.data.type).toBe('HARSH_BRAKE');
 
 		const events = await prisma.trip_events.findMany({

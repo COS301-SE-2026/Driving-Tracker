@@ -165,7 +165,9 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
             });
         }else if(error.message.includes("You do not own this trip")){
             res.status(400).json({error:"UNAUTHORIZED"});
-        }
+        }else{
+			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message });
+		}
     }
 };
 
