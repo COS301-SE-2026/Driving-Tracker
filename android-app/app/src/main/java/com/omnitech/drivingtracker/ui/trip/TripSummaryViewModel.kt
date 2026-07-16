@@ -30,6 +30,19 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
     private val _endTripState = MutableStateFlow<UiState>(UiState.Idle)
     val endTripState: StateFlow<UiState> = _endTripState
 
+    private val _mapToken = MutableStateFlow<String?>(null)
+    val mapTokenState: StateFlow<String?> = _mapToken
+
+    fun fetchMapToken() {
+        viewModelScope.launch {
+            repository.getMapToken().onSuccess { data ->
+                _mapToken.value = data.token
+            }.onFailure {
+                _mapToken.value = null
+            }
+        }
+    }
+
     fun loadTripSummary(tripId: String) {
         viewModelScope.launch {
             _uiState.value = UiState.Loading

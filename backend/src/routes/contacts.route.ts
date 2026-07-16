@@ -17,5 +17,7 @@ contacts_router.get("/", verify_token, contacts_controller.get_contacts);
 contacts_router.post("/alerts", verify_token, contacts_controller.alert_contacts);
 //persists location sharing for a trip until end
 contacts_router.post("/share_location", verify_token, contacts_controller.share_location);
+//reponds to trusted contact request and changes the status
+contacts_router.patch("/:contact_id/respond", verify_token, contacts_controller.respond_to_contact_request);
 
 export default contacts_router;

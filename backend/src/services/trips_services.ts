@@ -1,6 +1,8 @@
 //connection to the data base 
 // not quite sure of the imports as yet 
 import prisma from '../db/prisma';
+import { notification_services } from './notification_service';
+import { user_devices_services } from './user_devices_services';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -137,7 +139,7 @@ export const trips_services ={
                             contact_id: { in: data.share_with_contacts},
                             consent_status: "APPROVED"
                         },
-                        select: {contact_id: true}
+                        select: {contact_id: true, contact_user_id: true}
                     });
 
                     const validIds = valid.map(v => v.contact_id);
@@ -156,6 +158,15 @@ export const trips_services ={
                         data: shareRows,
                         skipDuplicates: true
                     });
+
+                    const contact_user_ids = valid.map(v => v.contact_user_id);
+
+                    const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+                    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+                    await notification_services.send_trip_shared_notification(fcm_tokens, full_name, newTrip.trip_id);
+
                 }
                 return newTrip;
             });

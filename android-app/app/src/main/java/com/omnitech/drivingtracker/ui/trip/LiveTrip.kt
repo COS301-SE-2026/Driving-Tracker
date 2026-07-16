@@ -16,10 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,10 +34,13 @@ import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
+import com.omnitech.drivingtracker.services.TripTrackingService
+import com.omnitech.drivingtracker.ui.components.AzureMapContainer
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 
+@OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
 fun LiveTrip(
     tripId: String,
@@ -42,10 +49,56 @@ fun LiveTrip(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val endTripState by viewModel.endTripState.collectAsState()
+    val mapToken by viewModel.mapTokenState.collectAsState()
+
+    val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
+        listOf(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    LaunchedEffect(Unit) {
+        if (!locationPermissionState.allPermissionsGranted) {
+            locationPermissionState.launchMultiplePermissionRequest()
+        }
+    }
+
+    val context = LocalContext.current
+    val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
+    var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
+
+    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
+        if (locationPermissionState.allPermissionsGranted) {
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
+            ).build()
+
+            val callback = object : com.google.android.gms.location.LocationCallback() {
+                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                    liveLocation = result.lastLocation
+                }
+            }
+
+            try {
+                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
+            } catch (e: SecurityException) {
+                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
+            }
+        }
+    }
+
+    LaunchedEffect(liveLocation, uiState) {
+        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
+        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
+        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
+    }
 
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
             viewModel.loadTripSummary(tripId)
+            viewModel.fetchMapToken()
         }
     }
 
@@ -76,6 +129,7 @@ fun LiveTrip(
         } else {
             // If not first trip, navigate away immediately
             LaunchedEffect(Unit) {
+                TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {
                     popUpTo(Screen.Dashboard.route)
                 }
@@ -101,6 +155,8 @@ fun LiveTrip(
     LiveTripContent(
         uiState = uiState,
         endTripState = currentEndTripState,
+        mapToken = mapToken,
+        liveLocation = liveLocation,
         onEndTrip = { viewModel.endTrip(tripId) },
         navController = navController
     )
@@ -110,12 +166,18 @@ fun LiveTrip(
 fun LiveTripContent(
     uiState: TripSummaryViewModel.UiState,
     endTripState: TripSummaryViewModel.UiState = TripSummaryViewModel.UiState.Idle,
+    mapToken: String? = null,
+    liveLocation: android.location.Location? = null,
     onEndTrip: () -> Unit = {},
     navController: NavController? = null
 ) {
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 30.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 30.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -156,6 +218,8 @@ fun LiveTripContent(
                 TripDetails(
                     trip = currentUiState.trip,
                     endTripState = endTripState,
+                    mapToken = mapToken,
+                    liveLocation = liveLocation,
                     onEndTrip = onEndTrip,
                     navController = navController
                 )
@@ -169,22 +233,42 @@ fun LiveTripContent(
 private fun TripDetails(
     trip: TripSummaryDto,
     endTripState: TripSummaryViewModel.UiState,
+    mapToken: String?,
+    liveLocation: android.location.Location?,
     onEndTrip: () -> Unit,
     navController: NavController?
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Map
-        Box(modifier = Modifier.fillMaxWidth().height(370.dp).background(Color(0xFFD0D8E0))) {
-            // Map placeholder
-            Image(
-                painter = painterResource(id = R.drawable.map),
-                contentDescription = "Trip map",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(370.dp)
+            .background(Color(0xFFD0D8E0))) {
+            if (mapToken != null) {
+                val latestEvent = trip.events.lastOrNull()
+                AzureMapContainer(
+                    subscriptionKey = mapToken,
+                    latitude = liveLocation?.latitude ?: latestEvent?.latitude ?: -25.7479,
+                    longitude = liveLocation?.longitude ?: latestEvent?.longitude ?: 28.2293,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Map placeholder
+                Image(
+                    painter = painterResource(id = R.drawable.map),
+                    contentDescription = "Trip map",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
             // Recording badge
             Card(
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp),
                 shape = RoundedCornerShape(50),
                 colors = CardDefaults.cardColors(containerColor = Color.Black)
             ) {
@@ -192,7 +276,9 @@ private fun TripDetails(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.size(8.dp).background(Color.Red, CircleShape))
+                    Box(modifier = Modifier
+                        .size(8.dp)
+                        .background(Color.Red, CircleShape))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Recording", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White)
                 }
@@ -200,7 +286,9 @@ private fun TripDetails(
 
             //Timer
             Card(
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
                 shape = RoundedCornerShape(50),
                 colors = CardDefaults.cardColors(containerColor = Color.Black)
             ) {
@@ -212,7 +300,9 @@ private fun TripDetails(
 
             //Speed and fuel for trips
             Column(
-                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
@@ -259,7 +349,9 @@ private fun TripDetails(
 
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
@@ -293,7 +385,9 @@ private fun TripDetails(
 
         //Trip summary card
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
@@ -326,7 +420,9 @@ private fun TripDetails(
 
         //Alerts section (alerts not made but count used)
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {

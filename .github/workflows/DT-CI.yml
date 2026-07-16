@@ -22,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -73,10 +79,18 @@ jobs:
       #CI-only JWT
       JWT_SECRET: ci-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
-
+      #azuremaps
+      AZURE_MAPS_SUBSCRIPTION_KEY: ci-maps-token
       NEXT_PUBLIC_API_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          mkdir -p backend
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - name: Create .env for docker compose
         run: |
@@ -88,12 +102,14 @@ jobs:
           JWT_SECRET=${{ env.JWT_SECRET }}
           JWT_REFRESH_SECRET=${{ env.JWT_REFRESH_SECRET }}
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+          AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
           EOF
 
             mkdir -p backend
             cat > backend/.env <<EOF
             DATABASE_URL=${{ env.DATABASE_URL }}
             SEED_USER_PASSWORD=ci-seed-password
+            AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
             EOF
 
       - run: docker compose build
@@ -118,6 +134,12 @@ jobs:
         working-directory: android-app
     steps:
       - uses: actions/checkout@v4
+
+      - name: Decode google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > app/google-services.json
 
       - uses: actions/setup-java@v4
         with:
