@@ -33,7 +33,7 @@ describe('PATCH trips/end_trip integration test', () => {
 		const res = await request(app).patch(`/trips/${trip.trip_id}/end_trip`)
 		.set('Authorization', `Bearer ${token}`).send({
 			trip_id: trip.trip_id,
-			endtime: new Date().toISOString(),
+			end_time: new Date().toISOString(),
 			route_polyline: 'mock_polyline',
 			distance_km: 14.2,
 			duration_minutes: 22,
@@ -96,7 +96,7 @@ describe('PATCH trips/end_trip integration test', () => {
 
 		const res = await request(app).patch(`/trips/${trip.trip_id}/end_trip`)
 		.set('Authorization', `Bearer ${token}`).send({
-			trip: trip.trip_id,
+			trip_id: trip.trip_id,
 			end_time: new Date().toISOString(),
 			route_polyline: 'mock_polyline',
 			distance_km: 14.2,
@@ -136,7 +136,7 @@ describe('PATCH trips/end_trip integration test', () => {
 		expect(res.status).toBe(404);
 		expect(res.body).toEqual({
 			error: 'TRIP_NOT_FOUND',
-			message: 'Trip npt found',
+			message: 'Trip not found',
 		});
 	});
 
@@ -159,7 +159,7 @@ describe('PATCH trips/end_trip integration test', () => {
 
 		const res = await request(app).patch(`/trips/${trip.trip_id}/end_trip`)
 		.set('Authorization', `Bearer ${token}`).send({
-			trip: trip.trip_id,
+			trip_id: trip.trip_id,
 			end_time: new Date().toISOString(),
 			route_polyline: 'mock_polyline',
 			distance_km: 14.2,
