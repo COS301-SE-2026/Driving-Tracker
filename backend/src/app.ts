@@ -17,7 +17,9 @@ const app = express();
 //security headers added to responses
 app.use(helmet());
 //prevents browser from blocking api requests
-app.use(cors());
+app.use(cors({origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+	credentials: true
+}));
 //allows express to parse JSON request bodies
 app.use(express.json());
 

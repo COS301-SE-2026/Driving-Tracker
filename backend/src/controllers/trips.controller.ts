@@ -155,7 +155,9 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
     }catch(error: any){
 		console.error("record_trip error:", error.message);
         if(error.message.includes("Missing required fields")){
-            res.status(401).json({
+			/* istanbul ignore next -- unreachable via HTTP: trip_id is guaranteed by thr route, 
+			user_id is checked earlier in the controller */
+			res.status(401).json({
                 error: "Fill all valid fields"
             });
         }else if(error.message.includes("Trip not found")){

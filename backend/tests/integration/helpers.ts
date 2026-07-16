@@ -4,7 +4,7 @@ import app from '../../src/app';
 import prisma from '../../src/db/prisma';
 
 export const seedUserAndLogin = async (unique: number) => {
-	const password = 'Password123!';
+	const password = process.env.TEST_USER_PASSWORD || 'Password123!';
 	const password_hash = await bcrypt.hash(password, 10);
 
 	const user = await prisma.users.create({

@@ -50,7 +50,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			where: { trip_id: trip.trip_id },
 		});
 
-		expect(events.length).toBe(1);
+		expect(events.length).toHaveLength(1);
 		expect(events[0].type).toBe('HARSH_BRAKE');
 		expect(Number(events[0].severity)).toBe(7.5);
 		expect(events[0].sensor_source).toBe('ACCELEROMETER');
@@ -94,7 +94,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			where: { trip_id: trip.trip_id },
 		});
 
-		expect(events.length).toBe(4);
+		expect(events.length).toHaveLength(4);
 		const types = events.map((e) => e.type);
 		expect(types).toContain('HARSH_BRAKE');
 		expect(types).toContain('HARSH_ACCELERATION');
@@ -136,7 +136,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		const events = await prisma.trip_events.findMany({
 			where: { trip_id: trip.trip_id },
 		});
-		expect(events.length).toBe(0);
+		expect(events.length).toHaveLength(0);
 	});
 
 	it('returns 403 when a user does not own the trip', async () => {
@@ -177,7 +177,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		const events = await prisma.trip_events.findMany({
 			where: { trip_id: trip.trip_id },
 		});
-		expect(events.length).toBe(0);
+		expect(events.length).toHaveLength(0);
 	});
 
 	it('returns 403 when a user does not own the trip', async () => {
