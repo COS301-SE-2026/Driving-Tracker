@@ -64,7 +64,7 @@ fun LiveTrip(
         }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
     var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
@@ -103,8 +103,6 @@ fun LiveTrip(
     }
 
     val currentEndTripState = endTripState
-
-    val context = LocalContext.current
     
     if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
         if (currentEndTripState.isFirstTrip) {
