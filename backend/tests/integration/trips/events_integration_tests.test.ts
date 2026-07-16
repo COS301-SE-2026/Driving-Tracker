@@ -33,8 +33,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.set('Authorization', `Bearer ${token}`).send({
 			event_type: 'HARSH_BRAKE',
 			location: {
-				latitude: -25.77116,
-				longtitude: 28.29979,
+				lat: -25.77116,
+				lng: 28.29979,
 			},
 			severity: 7.5,
 			sensor_source: 'ACCELEROMETER',
@@ -44,7 +44,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		expect(res.status).toBe(201);
 		expect(res.body.data.event_id).toBeDefined();
 		expect(res.body.data.trip_id);
-		expect(res.body.type).toBe('HARSH_BRAKE');
+		expect(res.body.data.type).toBe('HARSH_BRAKE');
 
 		const events = await prisma.trip_events.findMany({
 			where: { trip_id: trip.trip_id },
@@ -79,12 +79,12 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			.send({
 				event_type,
 				location: {
-					latitude: -25.77116,
-					longitude: 28.29979
+					lat: -25.77116,
+					lng: 28.29979
 				},
 				severity: 6.0,
 				sensor_source: 'ACCELEROMETER',
-				timeStamp: new Date().toISOString(),
+				timestamp: new Date().toISOString(),
 			});
 
 			expect(res.status).toBe(201);
@@ -122,8 +122,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.set('Authorization', `Bearer ${token}`).send({
 			event_type: 'NOT_A_REAL_EVENT',
 				location: {
-					latitude: -25.77116,
-					longitude: 28.29979
+					lat: -25.77116,
+					lng: 28.29979
 				},
 				severity: 5.0,
 				sensor_source: 'ACCELEROMETER',
@@ -140,10 +140,11 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 	});
 
 	it('returns 403 when a user does not own the trip', async () => {
-		const unique = Date.now();
-		const {token} = await seedUserAndLogin(unique);
+		const uniqueA = Date.now();
+		const uniqueB = uniqueA + 1;
+		const {token} = await seedUserAndLogin(uniqueA);
 
-		const { user: otherUser, vehicle: otherVehicle } = await seedUserAndLogin(unique);
+		const { user: otherUser, vehicle: otherVehicle } = await seedUserAndLogin(uniqueB);
 
 		const trip = await prisma.trips.create({
 			data: {
@@ -161,8 +162,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.set('Authorization', `Bearer ${token}`).send({
 			event_type: 'HARSH_BRAKE',
 				location: {
-					latitude: -25.77116,
-					longitude: 28.29979
+					lat: -25.77116,
+					lng: 28.29979
 				},
 				severity: 7.5,
 				sensor_source: 'ACCELEROMETER',
@@ -187,15 +188,15 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.set('Authorization', `Bearer ${token}`).send({
 			event_type: 'HARSH_BRAKE',
 				location: {
-					latitude: -25.77116,
-					longitude: 28.29979
+					lat: -25.77116,
+					lng: 28.29979
 				},
 				severity: 7.5,
 				sensor_source: 'ACCELEROMETER',
 				timeStamp: new Date().toISOString(),
 		});
 		expect(res.status).toBe(404);
-		expect(res.body.error).toBe('Trip not found');
+		expect(res.body.error).toBe('TRIP_NOT_FOUND');
 	});
 
 	it('returns 401 when a user is unauthorized or no token is provided', async () => {
@@ -203,8 +204,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.send({
 			event_type: 'HARSH_BRAKE',
 				location: {
-					latitude: -25.77116,
-					longitude: 28.29979
+					lat: -25.77116,
+					lng: 28.29979
 				},
 				severity: 7.5,
 				sensor_source: 'ACCELEROMETER',

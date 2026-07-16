@@ -65,7 +65,7 @@ export interface record_data{
     coolant_temp: number;
     fuel_trim_percent: number;
     throttle_position: number;
-    dtc_codes: string;
+    dtc_codes: string [];
 };
 export interface trip_history_filter {
     user_id: string;
@@ -76,7 +76,7 @@ export interface trip_history_filter {
 export interface trip_events_log{
     trip_id: string;
     user_id: string;
-    event_type: "HARSH_BRAKE"| "HARSH_ACCELERATION"| "SHARP_CORNER"|"CRASH";
+    event_type: "HARSH_BRAKE"| "HARSH_ACCELERATION"| "SHARP_CORNER"|"CRASH_LIKE";
     location:{
         lat: number;
         lng: number;
@@ -300,7 +300,7 @@ export const trips_services ={
                     coolant_temp_c: data.coolant_temp,
                     fuel_trim_percent: data.fuel_trim_percent,
                     throttle_position: data.throttle_position,
-                    dtc_codes: data.dtc_codes ? [data.dtc_codes] : []
+                    dtc_codes: data.dtc_codes ?? []
                 }
             });
 

@@ -16,8 +16,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 	const buildReadingPayload = (overrides?: object) => ({
 		recorded_at: new Date().toISOString(),
 		location: {
-			longitude: 28.29979,
-			latitude: -25.77116,
+			lng: 28.29979,
+			lat: -25.77116,
 		},
 		data_source: 'PHONE',
 		speed_kmh: 60.5,
@@ -144,7 +144,8 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 		.set('Authorization', `Bearer ${token}`).send(buildReadingPayload());
 
 		expect(res.status).toBe(404);
-		expect(res.body.error).toBe('NOT_FOUND');
+		expect(res.body.error).toBe('TRIP_NOT_FOUND');
+		expect(res.body.message).toBe('Trip not found');
 
 	});
 

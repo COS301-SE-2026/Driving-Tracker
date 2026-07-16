@@ -79,7 +79,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
         });
     }catch(error: any){
         if(error.message.includes("Trip not found")){
-            res.status(404).json({ error: "Trip not found" });
+            res.status(404).json({ error: "TRIP_NOT_FOUND", message: "Trip not found" });
         } else if(error.message.includes("You do not own this trip")){
             res.status(403).json({
                 error: "You do not own this trip" 
@@ -96,8 +96,8 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
 export const record_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const user_id = req.user?.sub;
-        const 	{	trip_id,
-                recorded_at,
+		const { trip_id } = req.params;
+        const 	{ recorded_at,
                 data_source,
                 location,
                 speed_kmh,
@@ -106,7 +106,7 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
                 gyroscope_y,
                 gyroscope_z,
                 rpm,
-                coolant_temp,
+                coolant_temp_c,
                 fuel_trim_percent,
                 throttle_position,
                 dtc_codes
@@ -130,7 +130,7 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
                 gyroscope_y,
                 gyroscope_z,
                 rpm,
-                coolant_temp,
+                coolant_temp : coolant_temp_c,
                 fuel_trim_percent,
                 throttle_position,
                 dtc_codes
@@ -140,13 +140,15 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
         });
         
     }catch(error: any){
+		console.error("record_trip error:", error.message);
         if(error.message.includes("Missing required fields")){
             res.status(401).json({
                 error: "Fill all valid fields"
             });
         }else if(error.message.includes("Trip not found")){
             res.status(404).json({
-                error:"Trip not found"
+                error:"TRIP_NOT_FOUND",
+				message:"Trip not found"
             });
         }else if(error.message.includes("You do not own this trip")){
             res.status(400).json({error:"UNAUTHORIZED"});
