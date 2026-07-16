@@ -75,17 +75,17 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_bell),
                     contentDescription = "Alerts",
-                    tint = if (color == "al") Blue else Color.Gray
+                    tint = if (color == "alerts") Blue else Color.Gray
                 )
             },
             label = {
                 Text(
                     text = "Alerts",
-                    color = if (color == "al") Blue else Color.Gray
+                    color = if (color == "alerts") Blue else Color.Gray
                 )
             },
             selected = false,
-            onClick = { /*Navigates to alerts*/ }
+            onClick = {navController?.navigate(Screen.Notifications.route)}
         )
 
         //More Item

@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.ui.components.TopBar
@@ -59,12 +59,13 @@ fun OBDConnect(navController: NavController? =null,
     val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
     val connectionState by viewModel.connectionState.collectAsState() //real status
 
+    val connectedAddress by viewModel.connectedDeviceAddress.collectAsState()
     //transform bluetoothDevice since viewModel provides list but UI expects Device objects
     val uiDevices = bluetoothDevices.map{btDevice: BluetoothDevice ->
         Device(
             name = try { btDevice.name } catch (e: SecurityException) { null } ?: "Unknown Device",
             address = btDevice.address, //this is MAC address
-            isConnected = connectionState == ObdManager.ConnectionState.CONNECTED,
+            isConnected = connectionState == ObdManager.ConnectionState.CONNECTED && btDevice.address == connectedAddress,
             adapter = "ELM327"
         )
     }
