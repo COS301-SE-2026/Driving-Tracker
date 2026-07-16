@@ -41,6 +41,7 @@ import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import android.bluetooth.BluetoothDevice
+import androidx.compose.runtime.DisposableEffect
 
 data class Device(
     val name: String,
@@ -68,6 +69,20 @@ fun OBDConnect(navController: NavController? =null,
             isConnected = connectionState == ObdManager.ConnectionState.CONNECTED && btDevice.address == connectedAddress,
             adapter = "ELM327"
         )
+    }
+
+    //Automatically refresh the devices  list when the user returns to this screen
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME){
+                viewModel.loadPairedDevices()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     StandardScreen(
