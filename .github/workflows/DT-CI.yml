@@ -22,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -79,6 +85,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          mkdir -p backend
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+
       - name: Create .env for docker compose
         run: |
           cat > .env <<EOF
@@ -121,6 +134,12 @@ jobs:
         working-directory: android-app
     steps:
       - uses: actions/checkout@v4
+
+      - name: Decode google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > app/google-services.json
 
       - uses: actions/setup-java@v4
         with:

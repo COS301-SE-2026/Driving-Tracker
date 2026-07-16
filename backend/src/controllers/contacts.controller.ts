@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../middleware/auth";
 import { contact_services } from "../services/contacts_services";
+import { ExtendedError } from "../utils/errors";
 
 
 function get_user_id(req: AuthRequest): string | null {
@@ -38,6 +39,14 @@ const contacts_controller = {
             });
         }catch(e: any){
             //map service error codes to API responses
+            if((e instanceof ExtendedError)){
+                
+                return res.status(500).json({
+                    error: e.errorCode,
+                    message: e.message,
+                });
+            }
+
             if(e?.code === "ALREADY_TRUSTED_CONTACT"){
                 return res.status(409).json({
                     error: "ALREADY_TRUSTED_CONTACT",
@@ -246,8 +255,64 @@ const contacts_controller = {
                 });
             }
 
+            if (e?.code === "USER_NOT_FOUND") {
+                return res.status(409).json({
+                error: "USER_NOT_FOUND",
+                message: "Could not find user",
+                });
+            }
+
+            if((e instanceof ExtendedError)){
+                return res.status(500).json({error: e.errorCode, message: e.message});
+            }
+
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR" }); 
         }
     },
+    /**
+     * PATCH /contacts/:contact_id/respond
+        * contact_id is "...uuid..." Path parameter
+        * Body: {
+        *   "status": "APPROVED" or "DENIED"
+        * }
+     */
+    async respond_to_contact_request(req: AuthRequest, res: Response){
+        const user_id = get_user_id(req);
+
+        if(!user_id){
+            return res.status(409).json({error: "UNAUTHORIZED"});
+        }
+
+        const {status} = req.body;
+
+        const {contact_id} = req.params;
+
+        if(!["APPROVED", "DENIED"].includes(status)){
+            return res.status(422).json({error: "INVALID_STATUS", message: "Status should be APPROVED or DENIED"})
+        }
+
+        try{
+            const response = await contact_services.respond_to_contact_request(status, contact_id, user_id);
+
+            return res.status(200).json({
+                message: response.message,
+                data: { contact_id: response.contact_id}
+            });
+
+        } catch(err: any){
+
+            if(err?.code === "INVALID_STATUS"){
+                return res.status(422).json({error: "INVALID_STATUS", message: "Status should be APPROVED or DENIED"})
+            }
+
+            if((err instanceof ExtendedError)){
+
+                return res.status(500).json({error: err.errorCode, message: err.message});
+            }
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not respond to trusted contact request"});
+        }
+
+    }
 };
 export default contacts_controller;

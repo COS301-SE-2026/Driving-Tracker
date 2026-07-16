@@ -5,11 +5,14 @@ node_modules/
 env
 .env.local
 .env.test
+backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
 **/.yarn/*
 .pnp.*
 
 /coverage
+backend/coverage
 
 **/.next/
 **/out/

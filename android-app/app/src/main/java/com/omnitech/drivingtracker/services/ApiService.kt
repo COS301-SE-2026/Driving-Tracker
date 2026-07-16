@@ -71,6 +71,10 @@ interface ApiService{
     @GET("leaderboard/scopes")
     suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
 
+    //Notifications
+    @POST("devices/fcm_token")
+    suspend fun registerFcmToken(@Body body: RegisterFcmRequest): RegisterFcmResponse
+  
     @GET("map/token")
     suspend fun getMapToken(): MapTokenResponse
 }

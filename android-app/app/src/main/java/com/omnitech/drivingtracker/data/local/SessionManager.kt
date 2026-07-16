@@ -40,4 +40,20 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
     fun getLastObdAddress(): String? {
         return prefs.getString("last_obd_address", null)
     }
+
+    fun setNotificationRequested(){
+        prefs.edit{ putBoolean("notification_requested", true) }
+    }
+
+    fun hasRequestedNotification(): Boolean {
+        return prefs.getBoolean("notification_requested", false)
+    }
+
+    fun saveFcmToken(token: String) {
+        prefs.edit { putString("fcm_token", token) }
+    }
+
+    fun getFcmToken(): String? {
+        return prefs.getString("fcm_token", null)
+    }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.repository.AchievementsRepository
+import com.omnitech.drivingtracker.services.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

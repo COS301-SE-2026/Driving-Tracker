@@ -50,6 +50,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - ./backend/.env
     environment:
@@ -57,6 +58,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       NODE_ENV: development
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
     depends_on:
       db:
         condition: service_healthy
@@ -68,6 +70,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - .env
     environment:

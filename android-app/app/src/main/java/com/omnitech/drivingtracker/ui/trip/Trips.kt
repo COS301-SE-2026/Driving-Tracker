@@ -125,23 +125,23 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.services.TripTrackingService
+import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 
 @Composable
 fun Trips(
     navController: NavController? = null,
     tripsViewModel: TripsViewModel = hiltViewModel(),
     tripViewModel: TripViewModel = hiltViewModel(),
-    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = hiltViewModel()
+    contactsViewModel: ContactsViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()
     val vehiclesState by tripViewModel.vehiclesState.collectAsState()
-    val contactsState by contactsViewModel.uiState.collectAsState()
+    val approvedContactsState by tripViewModel.approvedContactsState.collectAsState()
 
-    val approvedContacts = when (val state = contactsState) {
-        is com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success -> {
-            state.contacts.filter { it.consentStatus == ConsentStatus.APPROVED }
-        }
+    val approvedContacts = when (val state = approvedContactsState) {
+        is TripViewModel.UiState.SuccessApprovedContacts -> state.data
         else -> emptyList()
     }
 
@@ -150,12 +150,16 @@ fun Trips(
         else -> emptyList()
     }
 
+    val context = LocalContext.current
+
     LaunchedEffect(tripStartState){
         val state = tripStartState
         if (state is TripViewModel.UiState.Success) {
             val tripId = state.data
 
             if (tripId.isNotEmpty()){
+                TripTrackingService.startTrip(context, tripId)
+
                 navController?.navigate(Screen.LiveTrip.createRoute(tripId))
             }
         }
@@ -176,6 +180,10 @@ fun Trips(
                 selectedContactIds = contactIds.ifEmpty { null }
             )
         },
+        onRefreshContacts = {
+            tripViewModel.loadVehicles()
+            tripViewModel.loadApprovedContacts()
+        },
         onApplyFilters = {status, start,end ->
             tripsViewModel.loadTripsHistory(start,end,status)
         },
@@ -191,6 +199,7 @@ fun TripsContent(
     vehicles: List<VehicleDto>,
     onRetryTrips: () -> Unit,
     onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
+    onRefreshContacts: () -> Unit,
     onApplyFilters: (String?, String?, String?) -> Unit,
     navController: NavController? = null
 ) {
@@ -249,7 +258,10 @@ fun TripsContent(
                 Text("On the move again?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { showStartTripDialog = true },
+                    onClick = {
+                        onRefreshContacts()
+                        showStartTripDialog = true
+                              },
                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -795,6 +807,7 @@ fun TripsPreview() {
             vehicles = emptyList(),
             onRetryTrips = {},
             onStartTrip = { _, _, _, _, _ -> },
+            onRefreshContacts = {},
             onApplyFilters = { _, _, _ -> }
         )
     }

@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +34,7 @@ import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
+import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -62,7 +64,7 @@ fun LiveTrip(
         }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
     var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
@@ -127,6 +129,7 @@ fun LiveTrip(
         } else {
             // If not first trip, navigate away immediately
             LaunchedEffect(Unit) {
+                TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {
                     popUpTo(Screen.Dashboard.route)
                 }

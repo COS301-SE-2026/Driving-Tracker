@@ -1,9 +1,18 @@
 package com.omnitech.drivingtracker
 
+import android.app.ComponentCaller
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,9 +32,13 @@ import com.omnitech.drivingtracker.ui.other.*
 import com.omnitech.drivingtracker.ui.obd.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.omnitech.drivingtracker.ui.notification.NotificationRationale
+import androidx.lifecycle.Lifecycle
+import android.Manifest
+import dagger.hilt.android.AndroidEntryPoint
+import com.google.firebase.messaging.FirebaseMessaging
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
 import com.omnitech.drivingtracker.ui.trip.TripSummary
-import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -54,6 +67,9 @@ sealed class Screen(val route: String){
     data object LiveTrip : Screen("live_trip/{trip_id}") {
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
+
+    data object NotificationRationale: Screen("notification_rationale")
+
     data object WeeklyChallenges : Screen("weekly_challenges")
 
 
@@ -80,6 +96,25 @@ sealed class Screen(val route: String){
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private fun checkNotificationPermission(): Boolean {
+        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            ContextCompat
+                .checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)==
+                    PackageManager.PERMISSION_GRANTED
+        } else true
+    }
+
+    fun getPostAuthDestination(): String {
+        return if (checkNotificationPermission()) Screen.Dashboard.route
+        else Screen.NotificationRationale.route
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -91,6 +126,36 @@ class MainActivity : ComponentActivity() {
             DrivingTrackerTheme(darkTheme = darkMode){
 
                 val navController = rememberNavController()
+                val lifecycleOwner = LocalLifecycleOwner.current
+
+                //Navigate to destination post auth
+                fun navigatePostAuth() {
+                    navController.navigate(getPostAuthDestination()) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                }
+
+                //navigate from a notification
+                fun handleNotificationNavigation() {
+                    val destination = intent.getStringExtra("navigate_to")?: return
+
+                    navController.navigate(destination)
+                    intent.removeExtra("navigate_to")
+                }
+
+                //Navigation through notifications
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+
+                        if(event == Lifecycle.Event.ON_RESUME){
+                           handleNotificationNavigation()
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
 
                 NavHost(navController = navController, startDestination = Screen.Welcome.route){
                     composable(Screen.Welcome.route){
@@ -102,21 +167,13 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
-                            onLoginSuccess = {
-                                navController.navigate(Screen.Dashboard.route){
-                                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                                }
-                            },
+                            onLoginSuccess = { navigatePostAuth() },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = {
-                                navController.navigate(Screen.Dashboard.route){
-                                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                                }
-                            },
+                            onSignUpSuccess = { navigatePostAuth() },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
@@ -154,6 +211,14 @@ class MainActivity : ComponentActivity() {
                         val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
 
                         LiveTrip(tripId = tripId, navController = navController)
+                    }
+                    composable(Screen.NotificationRationale.route) {
+                        NotificationRationale(
+                            onPermissionHandled = {
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.NotificationRationale.route) { inclusive = true }
+                                }
+                        })
                     }
                     composable(Screen.OBDConnect.route) {
                         val activity = LocalActivity.current as ComponentActivity
