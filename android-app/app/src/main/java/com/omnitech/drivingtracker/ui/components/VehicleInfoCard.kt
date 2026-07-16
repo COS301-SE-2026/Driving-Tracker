@@ -41,7 +41,7 @@ fun VehicleInfoCard(
             ) {
 
                 Text(
-                    text = "${vehicle.alias}'s stats",
+                    text = "${vehicle.name}'s stats",
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.align(Alignment.Start)
                 )

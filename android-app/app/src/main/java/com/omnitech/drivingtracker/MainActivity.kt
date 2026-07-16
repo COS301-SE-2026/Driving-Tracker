@@ -32,7 +32,10 @@ import androidx.compose.runtime.setValue
 import com.omnitech.drivingtracker.ui.obd.OBDMain
 import androidx.compose.runtime.saveable.*
 import androidx.navigation.NavController
-import com.omnitech.drivingtracker.ui.notification.Notifications
+import com.omnitech.drivingtracker.ui.notification.Notification
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.obd.ObdViewModel
+import androidx.activity.compose.LocalActivity
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -153,7 +156,9 @@ class MainActivity : ComponentActivity() {
                         LiveTrip(tripId = tripId, navController = navController)
                     }
                     composable(Screen.OBDConnect.route) {
-                        OBDConnect(navController = navController)
+                        val activity = LocalActivity.current as ComponentActivity
+                        val obdViewModel: ObdViewModel = hiltViewModel(activity)
+                        OBDConnect(navController = navController, viewModel = obdViewModel)
                     }
                     composable(Screen.Vehicles.route) {
                         Vehicles(navController = navController)
@@ -172,7 +177,9 @@ class MainActivity : ComponentActivity() {
                         More(navController = navController)
                     }
                     composable(Screen.OBDKeyData.route){
-                        OBDKeyData(navController = navController)
+                        val activity = LocalActivity.current as ComponentActivity
+                        val obdViewModel: ObdViewModel = hiltViewModel(activity)
+                        OBDKeyData(navController = navController, viewModel = obdViewModel)
                     }
                     composable(Screen.OBDLiveWarnings.route){
                         OBDLiveWarnings(navController = navController)

@@ -50,6 +50,8 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
@@ -77,8 +79,8 @@ services:
       prisma-migrate:
         condition: service_completed_successfully
     ports:
-      - "5556:5555"
-    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; exec ./node_modules/.bin/prisma studio --port 5555 --browser none --url "$DATABASE_URL"'
+      - "5556:5556"
+    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; exec ./node_modules/.bin/prisma studio --port 5556 --browser none --url "$DATABASE_URL"'
     restart: "no"
 
   migrate-dev:
