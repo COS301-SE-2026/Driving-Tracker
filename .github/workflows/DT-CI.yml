@@ -68,7 +68,7 @@ jobs:
           --health-retries 5
 
     env: 
-      DATABASE_URL: postgresql://ci_user:ci_pass@localhost:5432/driving_tracker_ci?schema=public
+      DATABASE_URL: postgresql://ci_user:${{ secrets.CI_DB_PASSWORD || 'ci_pass' }}@localhost:5432/driving_tracker_ci?schema=public
       JWT_SECRET: ci-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
       NODE_ENV: test
