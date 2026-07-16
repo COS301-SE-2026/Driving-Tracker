@@ -469,7 +469,7 @@ private fun TripDetails(
 
                 ShareTripDialog(
                     //only users who have consented to share
-                    contacts = contactsState.contacts.filter {it.consentStatus == ConsentStatus.APPROVED},
+                    contacts = contactsState.contacts, //.filter {it.consentStatus == ConsentStatus.APPROVED},
                     selectedContactIds = selectedContactIds,
                     onSelectionChange = {selectedContactIds = it},
                     onConfirm = {
