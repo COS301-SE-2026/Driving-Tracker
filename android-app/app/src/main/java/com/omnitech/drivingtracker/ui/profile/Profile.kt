@@ -22,9 +22,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.*
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.*
 
 @Composable
 fun Profile(navController: NavController? = null) {
@@ -54,6 +63,12 @@ fun Profile(navController: NavController? = null) {
             }
             item {
                 //Account Information
+                AccountInformation(
+                    fullName = "John Doe",
+                    username = "JohnnyBoy123",
+                    email = "JohnD@gmail.com",
+                    phoneNumber = "081 854 0565"
+                )
             }
             item {
                 //App Activity
@@ -90,6 +105,91 @@ fun ProfileHeader(name: String, profilePicture: ImageVector) {
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.titleMedium
         )
+    }
+}
+
+@Composable
+fun ExpandableSection(
+    title: String,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    content: @Composable () -> Unit
+){
+    Column{
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleExpanded)
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Text (text = title, style = MaterialTheme.typography.titleMedium)
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand"
+            )
+        }
+        if (expanded){
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)){
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+fun AccountInfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    onClick: () -> Unit
+){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(color = MaterialTheme.colorScheme.background, shape = RoundedCornerShape(8.dp))
+        .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ){
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ){
+
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary,modifier = Modifier.size(40.dp))
+
+            Spacer(modifier = Modifier.width(12.dp))
+            Column{
+                Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+
+            }
+        }
+        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
+    }
+}
+
+@Composable
+fun AccountInformation(
+    fullName: String,
+    username: String,
+    email: String,
+    phoneNumber: String
+){
+    var expanded by remember { mutableStateOf(true) }
+
+    ExpandableSection(
+        title = "Account Information",
+        expanded = expanded,
+        onToggleExpanded = {expanded = ! expanded}
+    ) {
+        AccountInfoRow(icon = Icons.Default.Person, label = "Full Name", value = fullName, onClick = {})
+        AccountInfoRow(icon = Icons.Default.Person, label = "Username", value = username, onClick = {})
+        AccountInfoRow(icon = Icons.Default.Email, label = "Email", value = email, onClick = {})
+        AccountInfoRow(icon = Icons.Default.Phone, label = "Phone Number", value = phoneNumber, onClick = {})
     }
 }
 
