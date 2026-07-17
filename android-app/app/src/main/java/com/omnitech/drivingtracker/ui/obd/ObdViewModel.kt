@@ -62,6 +62,8 @@ class ObdViewModel @Inject constructor(
             if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
                 sessionManager.saveLastObdAddress(address)
 
+                obdManager.fetchVin()
+
                 obdManager.startLiveDataLoop()
             }
         }
