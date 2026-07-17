@@ -24,7 +24,6 @@ fun YourTopBar(
     rightWord: String,
     onLeftClick: () -> Unit,
     onRightClick: () -> Unit,
-    showBottomBar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(

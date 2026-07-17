@@ -237,7 +237,6 @@ fun AccountInfoRow(
 
             }
         }
-        //Icon(Icons.Default.EditNote, contentDescription = null)
     }
 }
 
@@ -248,13 +247,6 @@ fun AccountInformation(
     email: String,
     phoneNumber: String
 ){
-    var expanded by remember { mutableStateOf(true) }
-
-    /*ExpandableSection(
-        title = "Account Information",
-        expanded = expanded,
-        onToggleExpanded = {expanded = ! expanded}
-    ) {*/
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -325,14 +317,6 @@ fun TripCountRow(count: Int){
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ){
-        /*Icon(
-            imageVector = Icons.Default.History,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(36.dp)
-        )*/
-        //Spacer(modifier = Modifier.width(12.dp))
-
         Column{
             Text(text = "Trips Completed", style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -393,7 +377,6 @@ fun BadgesRow(badges: List<Badge>){
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    //Text(text = badge.name, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
