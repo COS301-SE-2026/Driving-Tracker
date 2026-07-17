@@ -72,6 +72,7 @@ jobs:
       JWT_SECRET: ci-secret
       JWT_REFRESH_SECRET: ci-refresh-secret
       NODE_ENV: test
+      TEST_USER_PASSWORD: Password123!
 
     steps:
       - uses: actions/checkout@v4
