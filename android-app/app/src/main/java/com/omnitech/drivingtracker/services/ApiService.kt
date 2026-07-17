@@ -17,6 +17,12 @@ interface ApiService{
     @POST("contacts/share_location")
     suspend fun shareLocation(@Body body: ShareLocationRequest): GenericResponse
 
+    @PATCH("contacts/{contact_id}/respond")
+    suspend fun respondToContactRequest(
+        @Path("contact_id") contactId: String,
+        @Body body: RespondContactRequest
+    ): RespondContactResponse
+
     @GET("vehicle/get_all_vehicles/")
     suspend fun getVehicles(): List<VehicleDto>
 

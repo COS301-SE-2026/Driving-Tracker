@@ -37,6 +37,9 @@ class MessagingService: FirebaseMessagingService() {
             when(type){
                 "TRUSTED_CONTACT_REQUEST" -> {
 
+                    val contactId = message.data["contact_id"]
+                    val sentBy = message.data["sent_by"]
+
                     notificationHelper.showGeneralNotification(
                         message.notification?.title ?: "Trusted Contact Request",
                         message.notification?.body ?: "You have been requested to be a trusted contact")

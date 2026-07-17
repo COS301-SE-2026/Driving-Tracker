@@ -27,6 +27,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             destination?.let { putExtra("navigate_to", it) }
         }
+        //Update for contact request
 
         return PendingIntent.getActivity(
             context,
@@ -116,6 +117,25 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             .setSmallIcon(R.drawable.ic_nav_bell) //To be changed
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(buildMainActivityIntent("dashboard")) //To be changed
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException){
+            //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show general notification error")
+        }
+    }
+
+    fun showTrustedContactRequestNotification(title: String, message: String, contactId: String, sentBy: String){
+        //TODO
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.FCM_DEFAULT)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_contacts) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(buildMainActivityIntent("notifications")) //To be changed
             .setAutoCancel(true)
 
         try {

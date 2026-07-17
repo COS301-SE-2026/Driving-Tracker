@@ -10,3 +10,18 @@ data class RegisterFcmResponse(
     val message: String
 )
 
+data class RespondContactRequest(
+    val status: String
+)
+
+data class RespondContactResponse(
+    val message: String,
+    val data: RespondContactData
+)
+
+data class RespondContactData(
+    @SerializedName("contact_id") val contactId: String
+)
+
+
+

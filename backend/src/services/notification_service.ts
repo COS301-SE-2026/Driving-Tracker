@@ -20,7 +20,8 @@ export const notification_services= {
             },
             data: {
                 type: "TRUSTED_CONTACT_REQUEST",
-                contact_id
+                contact_id,
+                sent_by,
             }
         }).catch( err => {
             const errorMessage = err instanceof Error? err.message: String(err);

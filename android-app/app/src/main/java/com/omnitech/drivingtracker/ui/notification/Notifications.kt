@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.*
 
@@ -27,13 +28,18 @@ import com.omnitech.drivingtracker.ui.components.*
 
 @Composable
 fun NotificationsScreen(
-    navController: NavController? = null
+    navController: NavController? = null,
+    viewModel: NotificationViewModel = hiltViewModel()
 ) {
     //State to track which sections are expanded
     var expandedToday by remember { mutableStateOf(true) }
     var expandedYesterday by remember { mutableStateOf(true) }
     var expandedThisWeek by remember { mutableStateOf(true) }
     var expandedEarlier by remember { mutableStateOf(true) }
+
+    //Ui state
+    val state by viewModel.uiState.collectAsState()
+    var showAddContactDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
