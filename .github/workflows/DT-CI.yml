@@ -73,6 +73,8 @@ jobs:
       JWT_REFRESH_SECRET: ci-refresh-secret
       NODE_ENV: test
       TEST_USER_PASSWORD: Password123!
+      AZURE_MAPS_CLIENT_ID: ${{ secrets.AZURE_MAPS_CLIENT_ID }}
+      AZURE_MAPS_SUBSCRIPTION_KEY: ${{ secrets.AZURE_MAPS_SUBSCRIPTION_KEY }}
 
     steps:
       - uses: actions/checkout@v4
