@@ -45,6 +45,7 @@ services:
 
   api:
     build: ./backend
+    command: yarn dev
     ports:
       - "3000:3000"
     volumes:
