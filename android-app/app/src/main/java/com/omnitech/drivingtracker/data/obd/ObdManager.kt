@@ -155,12 +155,9 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
                     delay(500)
                 } catch (e: Exception) {
                     Log.e("OBD_LOOP", "Failed to fetch metrics, retrying...", e)
-//                    _metrics.value = _metrics.value.copy(isDataLive = false)
-//                    break
                     _connectionState.value = ConnectionState.DISCONNECTED
                     _connectedDeviceAddress.value = null
                     break
-                    delay(1000)
                 }
             }
         }finally{
