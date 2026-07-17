@@ -65,8 +65,7 @@ fun Help(navController: NavController?=null){
         navController = navController,
         title = "Help",
         onLeftClick = {navController?.popBackStack()},
-        onRightClick = {navController?.navigate(Screen.Settings.route)},
-        showBottomBar = false
+        onRightClick = {navController?.navigate(Screen.Settings.route)}
 
     ) {
         Spacer(modifier = Modifier.height(20.dp))
@@ -111,7 +110,7 @@ fun RowOne(selectedTab: Int, onTabSelected: (Int) -> Unit){ //TABS
             ){
                 Text(
                     text = label,
-                    fontWeight = if (selectedTab == index) FontWeight.ExtraBold else FontWeight.ExtraBold,
+                    fontWeight = if (selectedTab == index) FontWeight.ExtraBold else FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
                 Box(modifier = Modifier.height(2.dp)

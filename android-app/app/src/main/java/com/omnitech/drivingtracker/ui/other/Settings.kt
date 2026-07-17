@@ -39,7 +39,6 @@ fun Settings(navController: NavController? =null,
     StandardScreen(
         navController = navController,
         title = "Settings",
-        showBottomBar = false,
         onLeftClick = {navController?.popBackStack()},
         onRightClick = {navController?.navigate(Screen.Settings.route)}
     ) {

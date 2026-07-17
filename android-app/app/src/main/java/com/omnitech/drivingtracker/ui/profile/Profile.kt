@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExpandLess
@@ -42,11 +41,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.ui.Alignment
 
-data class Badge(val name: String, val icon: ImageVector)
 @Composable
 fun Profile(navController: NavController? = null) {
 
@@ -60,7 +57,6 @@ fun Profile(navController: NavController? = null) {
                 rightIcon = Icons.Default.Settings,
                 leftWord = "Your ",
                 rightWord = "Profile",
-                showBottomBar = false,
                 onLeftClick = { navController?.popBackStack() },
                 onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
@@ -307,78 +303,6 @@ fun AppActivity(
                 label = "Vehicles",
                 modifier = Modifier.weight(1f)
             )
-        }
-    }
-}
-
-@Composable
-fun TripCountRow(count: Int){
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ){
-        Column{
-            Text(text = "Trips Completed", style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = count.toString(), style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,color = MaterialTheme.colorScheme.tertiary)
-        }
-    }
-}
-
-@Composable
-fun VehicleImagesRow(imageUris: List<String>){
-    Column{
-        Text(
-            text = "My Vehicles",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)){
-            items(imageUris){
-                uri ->
-                AsyncImage(
-                    model = uri,
-                    contentDescription = "Vehicle image",
-                    modifier = Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-    }
-}
-@Composable
-fun BadgesRow(badges: List<Badge>){
-    Column(
-
-    ){
-        Text(
-            text = "Badges Earned",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)){
-            items(badges){
-                badge ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ){
-                    Box(
-                        modifier = Modifier.size(56.dp)
-                            .background(color = MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ){
-                        Icon(
-                            imageVector = badge.icon,
-                            contentDescription = badge.name,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
         }
     }
 }
