@@ -3,8 +3,16 @@ import bcrypt from 'bcrypt';
 import app from '../../src/app';
 import prisma from '../../src/db/prisma';
 
+function getTestPassword(): string {
+	const password = process.env.TEST_USER_PASSWORD;
+	if(!password){
+		throw new Error('TEST_USER_PASSWORD environment variable is required to run integration tests');
+	}
+	return password;
+}
+
 export const seedUserAndLogin = async (unique: number) => {
-	const password = process.env.TEST_USER_PASSWORD || 'Password123!';
+	const password = getTestPassword();
 	const password_hash = await bcrypt.hash(password, 10);
 
 	const user = await prisma.users.create({

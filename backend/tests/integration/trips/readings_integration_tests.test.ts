@@ -4,7 +4,7 @@ import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
 import { seedUserAndLogin, cleanTripsData } from '../helpers';
 
-describe('POST /trips/:trip_id/events/log integration test', () =>{
+describe('POST /trips/:trip_id/readings/record integration test', () =>{
 	beforeEach(async () => {
 		await cleanTripsData();
 	})
@@ -58,7 +58,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			where: { trip_id: trip.trip_id },
 		});
 
-		expect(readings.length).toHaveLength(1);
+		expect(readings).toHaveLength(1);
 		expect(Number(readings[0].speed_kmh)).toBeCloseTo(60.5, 1);
 		expect(Number(readings[0].latitude)).toBeCloseTo(-25.77116, 3);
 		expect(Number(readings[0].longitude)).toBeCloseTo(28.29979, 3);
@@ -97,7 +97,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			where: { trip_id: trip.trip_id },
 		});
 		
-		expect(readings.length).toHaveLength(5);
+		expect(readings).toHaveLength(5);
 	});
 
 	it('records OBD data with DTC codes', async () => {
@@ -130,7 +130,7 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 			where: { trip_id: trip.trip_id },
 		});
 
-		expect(readings.length).toHaveLength(1);
+		expect(readings).toHaveLength(1);
 		expect(readings[0].dtc_codes).toContain('P0420');
 		expect(readings[0].dtc_codes).toContain('P0301');
 		expect(readings[0].data_source).toBe('OBD');
@@ -179,4 +179,5 @@ describe('POST /trips/:trip_id/events/log integration test', () =>{
 
 		expect(res.status).toBe(500);
 		expect(res.body.error).toBe('INTERNAL_SERVER_ERROR');
+	});
 });
