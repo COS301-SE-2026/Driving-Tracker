@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
@@ -44,6 +43,8 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.ui.Alignment
 
 data class Badge(val name: String, val icon: ImageVector)
 @Composable
@@ -90,9 +91,8 @@ fun Profile(navController: NavController? = null) {
             item {
                 //App Activity
                 AppActivity(
-                    vehicleImageUris = listOf(),
-                    badges = listOf(Badge("First Trip",Icons.Default.History),
-                        Badge("Safe Driver", Icons.Default.VerifiedUser)),
+                    vehicleCount = 2,
+                    badgeCount = 2,
                     tripCount = 12
                 )
             }
@@ -281,21 +281,41 @@ fun AccountInformation(
 
 @Composable
 fun AppActivity(
-    vehicleImageUris: List<String>,
-    badges: List<Badge>,
+    vehicleCount: Int,
+    badgeCount: Int,
     tripCount: Int
 ){
 
-    var expanded by remember {mutableStateOf(true)}
+    var expanded by remember {mutableStateOf(false)}
 
     ExpandableSection(
         title = "App Activity",
         expanded = expanded,
         onToggleExpanded = {expanded = ! expanded}
     ) {
-        TripCountRow(count = tripCount)
-        VehicleImagesRow(imageUris = vehicleImageUris)
-        BadgesRow(badges = badges)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ){
+            StatCard(
+                icon = Icons.Default.History,
+                value = tripCount.toString(),
+                label = "Trips",
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                icon = Icons.Default.VerifiedUser,
+                value = badgeCount.toString(),
+                label = "Badges",
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                icon = Icons.Default.DirectionsCar,
+                value = vehicleCount.toString(),
+                label = "Vehicles",
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
@@ -381,20 +401,39 @@ fun BadgesRow(badges: List<Badge>){
 }
 
 @Composable
-fun AppActivityCard(activity : String){
+fun StatCard(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+){
     Card(
-
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ){
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier= Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ){
-
-            Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary,modifier = Modifier.size(36.dp))
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(text = activity, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Medium)
-
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
