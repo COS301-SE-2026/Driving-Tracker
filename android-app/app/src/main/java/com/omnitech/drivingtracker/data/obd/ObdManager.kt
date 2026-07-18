@@ -53,6 +53,7 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
             val inputStream = socket?.inputStream?:return@withContext
 
             try{
+                delay(500)
                 val vinCmd = VinCommand()
                 vinCmd.run(inputStream, out)
 
@@ -92,6 +93,10 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
                 Log.d("OBD_TEST", "FAULT CODES FOUND: $codeList")
             }catch(e: Exception){
                 Log.e("OBD_LOG", "Failed to fetch trouble codes", e)
+                if(e is java.io.IOException){
+                    _connectionState.value = ConnectionState.DISCONNECTED
+                    _connectedDeviceAddress.value = null
+                }
             }
         }
     }
