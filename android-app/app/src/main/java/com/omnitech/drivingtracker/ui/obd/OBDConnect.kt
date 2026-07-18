@@ -41,6 +41,7 @@ import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import android.bluetooth.BluetoothDevice
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 
 data class Device(
@@ -55,6 +56,10 @@ data class Device(
 @Composable
 fun OBDConnect(navController: NavController? =null,
                viewModel: ObdViewModel = hiltViewModel()){
+
+    LaunchedEffect(Unit) {
+        viewModel.loadPairedDevices()
+    }
 
     val context = LocalContext.current
     val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data

@@ -29,6 +29,7 @@ import com.github.pires.obd.commands.control.TroubleCodesCommand
 import com.github.pires.obd.commands.protocol.ResetTroubleCodesCommand
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.github.pires.obd.commands.control.VinCommand
 
 //data class representing live state of vehicle
 data class VehicleMetrics(
@@ -37,6 +38,7 @@ data class VehicleMetrics(
     val coolantTemp: Int = 0,
     val fuelTrim: Double = 0.0,
     val faultCodes: List<String> = emptyList(),
+    val vin: String = "",
     val isDataLive: Boolean = false
 )
 
@@ -44,6 +46,26 @@ data class VehicleMetrics(
 class ObdManager @Inject constructor(@param:ApplicationContext private val context: Context){
 
     private val socketMutex = Mutex() // Prevents command collisions
+
+    suspend fun fetchVin() = withContext(Dispatchers.IO){
+        socketMutex.withLock {
+            val out = socket?.outputStream?:return@withContext
+            val inputStream = socket?.inputStream?:return@withContext
+
+            try{
+                val vinCmd = VinCommand()
+                vinCmd.run(inputStream, out)
+
+                val vinResult = vinCmd.formattedResult
+
+                _metrics.value = _metrics.value.copy(vin = vinResult)
+                Log.d("OBD_LOG", "Successfulyl retrived VIN: $vinResult")
+            }catch(e: Exception){
+                Log.e("OBD_LOG", "Failed to fetch VIN", e)
+                _metrics.value = _metrics.value.copy(vin = "Unknown")
+            }
+        }
+    }
     private var isLoopRunning = false
     //get fault codes (DTCs)
     suspend fun fetchTroubleCodes() = withContext(Dispatchers.IO){
@@ -133,9 +155,9 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
                     delay(500)
                 } catch (e: Exception) {
                     Log.e("OBD_LOOP", "Failed to fetch metrics, retrying...", e)
-//                    _metrics.value = _metrics.value.copy(isDataLive = false)
-//                    break
-                    delay(1000)
+                    _connectionState.value = ConnectionState.DISCONNECTED
+                    _connectedDeviceAddress.value = null
+                    break
                 }
             }
         }finally{

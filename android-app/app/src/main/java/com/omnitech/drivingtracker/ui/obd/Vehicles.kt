@@ -34,7 +34,7 @@ import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.VehicleCard
 import com.omnitech.drivingtracker.ui.components.AddVehicleButton
-import com.omnitech.drivingtracker.ui.components.EditAliasDialog
+import com.omnitech.drivingtracker.ui.components.EditNameDialog
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import com.omnitech.drivingtracker.ui.components.AddVehicleDialog
 import com.omnitech.drivingtracker.ui.theme.*
@@ -50,7 +50,7 @@ import java.util.UUID
 //Data model for vehicle UI
 data class Vehicle(
     val id: String,
-    val alias: String,
+    val name: String,
     val brand: String,
     val model: String,
     val mileage: Int,
@@ -67,7 +67,7 @@ fun Vehicles(
 ) {
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
-    var vehicleToEditAlias by remember { mutableStateOf<Vehicle?>(null) }
+    var vehicleToEditName by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleToEditImage by remember { mutableStateOf<Vehicle?>(null) }
     var showAddVehicleDialog by remember { mutableStateOf(false) }
     var showImagePicker by remember { mutableStateOf(false) }
@@ -119,7 +119,7 @@ fun Vehicles(
                 VehicleCard(
                     vehicle = vehicle,
                     onDrivingInfoClick = { selectedVehicleForStats = vehicle },
-                    onEditAliasClick = { vehicleToEditAlias = vehicle },
+                    onEditNameClick = { vehicleToEditName = vehicle },
                     onEditImageClick = {
                         vehicleToEditImage = vehicle
                         showImagePicker = true
@@ -143,17 +143,17 @@ fun Vehicles(
         )
     }
 
-    //Edit Alias Dialog
-    vehicleToEditAlias?.let { vehicle ->
-        EditAliasDialog(
+    //Edit Name Dialog
+    vehicleToEditName?.let { vehicle ->
+        EditNameDialog(
             vehicle = vehicle,
-            onDismiss = { vehicleToEditAlias = null },
-            onConfirm = { newAlias ->
+            onDismiss = { vehicleToEditName = null },
+            onConfirm = { newName ->
                 val index = vehicleList.indexOfFirst { it.id == vehicle.id }
                 if (index != -1) {
-                    vehicleList[index] = vehicleList[index].copy(alias = newAlias)
+                    vehicleList[index] = vehicleList[index].copy(name = newName)
                 }
-                vehicleToEditAlias = null
+                vehicleToEditName = null
             }
         )
     }
@@ -163,7 +163,7 @@ fun Vehicles(
         AlertDialog(
             onDismissRequest = { vehicleToRemove = null },
             title = { Text("Remove Vehicle") },
-            text = { Text("Are you sure you want to remove ${vehicle.alias}? This action cannot be undone.") },
+            text = { Text("Are you sure you want to remove ${vehicle.name}? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -218,8 +218,8 @@ fun Vehicles(
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             },
-            onConfirm = { alias, brand, model, uri ->
-                vehicleList.add(Vehicle(UUID.randomUUID().toString(), alias, brand, model, 0, 0, 0.0, false, imageUri = uri))
+            onConfirm = { name, brand, model, uri ->
+                vehicleList.add(Vehicle(UUID.randomUUID().toString(), name, brand, model, 0, 0, 0.0, false, imageUri = uri))
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             }

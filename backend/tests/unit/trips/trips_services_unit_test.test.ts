@@ -388,7 +388,7 @@ describe('Trips services.record', () => {
             coolant_temp: 95,
             fuel_trim_percent: 0,
             throttle_position: 25,
-            dtc_codes: '',
+            dtc_codes: [],
         });
 
         expect(mock_prisma.trip_readings.create).toHaveBeenCalled();
@@ -413,7 +413,7 @@ describe('Trips services.record', () => {
                 coolant_temp: 95,
                 fuel_trim_percent: 0,
                 throttle_position: 25,
-                dtc_codes: '',
+                dtc_codes: [],
             })
         ).rejects.toThrow('Trip not found');
     });
@@ -440,7 +440,7 @@ describe('Trips services.record', () => {
                 coolant_temp: 95,
                 fuel_trim_percent: 0,
                 throttle_position: 25,
-                dtc_codes: '',
+                dtc_codes: [],
             })
         ).rejects.toThrow('You do not own this trip');
     });

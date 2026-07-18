@@ -131,7 +131,7 @@ model trips {
   start_latitude   Decimal?        @db.Decimal(9, 6)
   end_longitude    Decimal?        @db.Decimal(9, 6)
   end_latitude     Decimal?        @db.Decimal(9, 6)
-  route_polyline   String?
+  route_polyline   Json?           @db.JsonB
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
@@ -228,6 +228,7 @@ model users {
   user_badges      user_badges[]
   users_vehicles     users_vehicles[]
   trip_location_shares  trip_location_shares[]  @relation("TripSharesOwner")
+  user_devices  user_devices[]
 }
 
 model trip_location_shares {
@@ -266,4 +267,14 @@ model vehicles {
 
   trips        trips[]
   users_vehicles        users_vehicles[]
+}
+
+model user_devices {
+  device_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  fcm_token   String    @unique
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+  
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }

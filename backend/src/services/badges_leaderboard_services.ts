@@ -68,7 +68,7 @@ export const badges_leaderboard_services = {
         //you want to evaluate if all the trips are met , check all the events that have happened 
 
         
-        const eventCounts = trip.trip_events.reduce(
+        const event_counts = trip.trip_events.reduce(
         (acc: any , event: any) => {
             const type = event.type ?? "";
             acc.total_events += 1;
@@ -109,11 +109,11 @@ export const badges_leaderboard_services = {
             safety_score: Number(trip_score?.safety_score ?? 0),
             eco_score: Number(trip_score?.eco_score ?? 0),
             overall_score: Number(trip_score?.overall_score ?? 0),
-            total_events: eventCounts.total_events,
-            harsh_brake_count: eventCounts.harsh_brake_count,
-            harsh_acceleration_count: eventCounts.harsh_acceleration_count,
-            sharp_corner_count: eventCounts.sharp_corner_count,
-            crash_count: eventCounts.crash_count,
+            total_events: event_counts.total_events,
+            harsh_brake_count: event_counts.harsh_brake_count,
+            harsh_acceleration_count: event_counts.harsh_acceleration_count,
+            sharp_corner_count: event_counts.sharp_corner_count,
+            crash_count: event_counts.crash_count,
             shared_trip_count: trip.trip_location_shares.length,
             completed_trip_count: user_trip_count,
         };
