@@ -116,7 +116,7 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             .setContentText(message)
             .setSmallIcon(R.drawable.ic_nav_bell) //To be changed
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(buildMainActivityIntent("dashboard")) //To be changed
+            .setContentIntent(buildMainActivityIntent("notifications")) //To be changed
             .setAutoCancel(true)
 
         try {

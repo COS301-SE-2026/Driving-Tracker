@@ -14,6 +14,9 @@ interface ApiService{
     @POST("contacts/alerts")
     suspend fun alertContacts(@Body body: AlertContactsRequest): GenericResponse
 
+    @GET("contacts/received_requests")
+    suspend fun getReceivedContactRequests(): ReceivedRequestResponse
+
     @POST("contacts/share_location")
     suspend fun shareLocation(@Body body: ShareLocationRequest): GenericResponse
 

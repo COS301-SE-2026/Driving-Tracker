@@ -36,10 +36,15 @@ fun NotificationsScreen(
     var expandedYesterday by remember { mutableStateOf(true) }
     var expandedThisWeek by remember { mutableStateOf(true) }
     var expandedEarlier by remember { mutableStateOf(true) }
+    var expandedRequests by remember { mutableStateOf(true) }
 
     //Ui state
     val state by viewModel.uiState.collectAsState()
     var showAddContactDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.getContactRequests()
+    }
 
     Scaffold(
         topBar = {
@@ -61,6 +66,28 @@ fun NotificationsScreen(
                 .padding(horizontal = 24.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
         ) {
+
+            //Pending requests
+            item{
+                NotificationSectionHeader("Requests", expandedRequests) { expandedRequests = !expandedRequests }
+            }
+
+            item {
+                AnimatedVisibility(visible = expandedRequests) {
+                    Column {
+                        if(state is NotificationViewModel.UiState.SuccessPendingRequests){
+                            val requests = (state as NotificationViewModel.UiState.SuccessPendingRequests).requests
+
+                            requests.forEach { request ->
+                                NotificationCard(NotificationItem(request.contactId, NotificationType.CONTACT_REQUEST, request.username),
+                                    onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
+                                    onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             //Today
             item{

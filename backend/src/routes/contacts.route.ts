@@ -20,6 +20,6 @@ contacts_router.post("/share_location", verify_token, contacts_controller.share_
 //reponds to trusted contact request and changes the status
 contacts_router.patch("/:contact_id/respond", verify_token, contacts_controller.respond_to_contact_request);
 //gets trusted contact requests received by a user
-contacts_router.get("/recieved_requests", verify_token, contacts_controller.get_receieved_contact_requests);
+contacts_router.get("/received_requests", verify_token, contacts_controller.get_receieved_contact_requests);
 
 export default contacts_router;
