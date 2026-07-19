@@ -294,6 +294,37 @@ export const contact_services ={
             contact_id,
             message: "Status updated successfully"
         };
-    }
+    },
+
+    /*
+    * Returns user's pending trusted contact requests where they are the contact
+    */
+   async get_received_contact_requests(user_id: string){
+
+        const requests = await prisma.trusted_contacts.findMany({
+            where: { contact_user_id: user_id,
+                consent_status: 'PENDING'
+            },
+            select: {
+                contact_id: true,
+                user_id: true,
+                created_at: true,
+
+                owner_user: {
+                    select:  {
+                        username: true,
+                    }
+                },
+            }
+        });
+
+        const requestsArr = requests? requests.map(r => ({
+            contact_id: r.contact_id,
+            created_at: r.created_at,
+            username: r.owner_user.username
+        })):[];
+
+        return requestsArr;   
+    },
     
 };
