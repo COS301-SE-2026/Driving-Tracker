@@ -13,6 +13,9 @@ jest.mock('../../../src/db/prisma', () => ({
         create: jest.fn(),
         update: jest.fn(),
         },
+        notifications: {
+        createMany: jest.fn(),
+        },
         trip_events: {
         findUnique: jest.fn(),
         },
@@ -58,7 +61,7 @@ const mock_user_devices_services = user_devices_services as any;
 const mock_notification_services = notification_services as any;
 
 describe('Contact services . create_trusted_contact',()=>{
-    beforeEach(async()=>{jest.clearAllMocks()});
+    beforeEach(async()=>{jest.clearAllMocks() });
 
     it('creates when valid username provided', async()=>{
         mock_prisma.users.findFirst.mockResolvedValue({

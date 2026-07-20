@@ -1,7 +1,7 @@
 import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
-import { ConsentStatus } from '@prisma/client';
+import { ConsentStatus, NotificationType } from '@prisma/client';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -28,6 +28,45 @@ async function get_user_fullname(user_id: string){
 
     return full_name;
 }
+
+async function add_notification(input: {
+        user_ids: string[];
+        type: string;
+        title: string;
+        body: string | null;
+        reference_ids: string[];
+        reference_type: string | null;
+    }){
+
+        if(!Object.values(NotificationType).includes(input.type as NotificationType)){
+            throw coded_error("INVALID_STATUS");
+        }
+
+        if(input.user_ids.length !== input.reference_ids?.length){
+            throw coded_error("Users and references length mismatch");
+        }
+
+        const entries = input.user_ids.map((user_id, index) => ({
+            user_id: user_id,
+            type: input.type,
+            title: input.title,
+            body: input.body,
+            reference_id: input.reference_ids? input.reference_ids[index] : null,
+            reference_type: input.reference_type
+        }));
+
+        await prisma.notifications.createMany({
+            data: entries.map((entry) => ({
+                user_id: entry.user_id,
+                type: entry.type as NotificationType,
+                title: entry.title,
+                body: entry.body?? null,
+                reference_id: entry.reference_id?? null,
+                reference_type: entry.reference_type?? null,
+            })),
+            skipDuplicates: true
+        });
+    }
 
 
 export const contact_services ={
@@ -222,6 +261,8 @@ export const contact_services ={
             skipDuplicates: true,
         });
 
+        const contact_ids_arr = trusted.map(t => t.contact_id);
+
         const contact_user_ids = trusted.map(t => t.contact_user_id);
 
         const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
@@ -232,6 +273,15 @@ export const contact_services ={
 
             throw coded_error("USER_NOT_FOUND");
         }
+
+        await add_notification({
+            user_ids: contact_user_ids,
+            type: NotificationType.TRIP_SHARED,
+            title: "Trusted Contact",
+            body: `${full_name} is sharing their live trip with you`,
+            reference_ids: contact_ids_arr,
+            reference_type: "trusted_contact",
+        });
 
         await notification_services.send_trip_shared_notification(fcm_tokens, full_name, trip_id);
 
@@ -288,7 +338,18 @@ export const contact_services ={
             throw coded_error("USER_NOT_FOUND")
         }
 
-        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus)
+        const statusStr = (status === "APPROVED")? "accepted" : "declined";
+
+        await add_notification({
+            user_ids: [target_user_id],
+            type: NotificationType.TRUSTED_CONTACT_RESPONSE,
+            title: "Trusted Contact",
+            body: `${sent_by} has ${statusStr} your Trusted Contact Request`,
+            reference_ids: [contact_id],
+            reference_type: "trusted_contact"
+        });
+
+        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus);
 
         return {
             contact_id,

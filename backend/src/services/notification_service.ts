@@ -1,6 +1,7 @@
 import { ExtendedError } from '../utils/errors';
 import { getMessaging } from '../utils/firebase';
 import { ConsentStatus } from '@prisma/client';
+import prisma from '../db/prisma';
 
 
 export const notification_services= {
@@ -154,6 +155,26 @@ export const notification_services= {
             throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
         })
 
+    },
+    //Fetch users notifications
+    async fetch_notifications(user_id: string){
+
+        const notifications = await prisma.notifications.findMany({
+            where: { user_id },
+            orderBy: {created_at: "desc"},
+        });
+
+        const notification_arr = notifications.map((noti) => ({
+            notification_id: noti.notification_id,
+            type: noti.user_id,
+            title: noti.title,
+            body: noti.body?? null,
+            reference_id: noti.reference_id?? null,
+            reference_type: noti.reference_type?? null,
+            created_at: noti.created_at,
+        }));
+
+        return notification_arr;
     }
 
 }
