@@ -26,6 +26,12 @@ class ObdViewModel @Inject constructor(
 
     val connectedDeviceAddress = obdManager.connectedDeviceAddress
 
+    private val _isScanningFaults = MutableStateFlow(false)
+    val isScanningFaults = _isScanningFaults.asStateFlow()
+
+    private val _fautlScanAttempted = MutableStateFlow(false)
+    val faultScanAttempted = _fautlScanAttempted.asStateFlow()
+
     init{
         loadPairedDevices()
         attemptAutoConnect()
@@ -40,6 +46,7 @@ class ObdViewModel @Inject constructor(
                 val name = device.name ?: ""
                 name.contains("OBD", ignoreCase = true) ||
                         name.contains("ELM", ignoreCase = true)
+                        || name.contains("Android", ignoreCase = true)
             } catch (e: SecurityException) {
                 false
             }
@@ -62,6 +69,8 @@ class ObdViewModel @Inject constructor(
             if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
                 sessionManager.saveLastObdAddress(address)
 
+                obdManager.fetchVin()
+
                 obdManager.startLiveDataLoop()
             }
         }
@@ -69,7 +78,13 @@ class ObdViewModel @Inject constructor(
 
     fun readFaultCodes(){
         viewModelScope.launch{
-            obdManager.fetchTroubleCodes()
+            _isScanningFaults.value = true
+            _fautlScanAttempted.value = true
+            try{
+                obdManager.fetchTroubleCodes()
+            }finally {
+                _isScanningFaults.value = false
+            }
         }
     }
 

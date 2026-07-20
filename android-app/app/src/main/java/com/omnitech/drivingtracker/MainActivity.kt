@@ -38,6 +38,7 @@ import android.Manifest
 import dagger.hilt.android.AndroidEntryPoint
 import com.google.firebase.messaging.FirebaseMessaging
 import com.omnitech.drivingtracker.ui.obd.OBDConnect
+import com.omnitech.drivingtracker.ui.profile.Profile
 import com.omnitech.drivingtracker.ui.trip.TripSummary
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -248,6 +249,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.OBDLiveWarnings.route){
                         OBDLiveWarnings(navController = navController)
+                    }
+                    composable(Screen.Profile.route){
+                        Profile(navController = navController)
                     }
                 }
             }

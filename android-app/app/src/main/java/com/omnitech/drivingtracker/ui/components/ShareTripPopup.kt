@@ -24,40 +24,13 @@ fun ShareTripDialog(
         text = {
             Column {
                 if (contacts.isEmpty()) {
-                    Text("No Contacts found.")
+                    EmptyContactsView()
                 } else {
-                    LazyColumn( modifier = Modifier.heightIn(max = 300.dp)){
-                        items(contacts) { contact ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onSelectionChange(
-                                            if (contact.contactId in selectedContactIds) selectedContactIds - contact.contactId
-                                            else selectedContactIds + contact.contactId
-                                        )
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = contact.contactId in selectedContactIds,
-                                    onCheckedChange = { checked ->
-                                        onSelectionChange(
-                                            if (checked) selectedContactIds + contact.contactId
-                                            else selectedContactIds - contact.contactId
-                                        )
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(contact.name)
-                            }
-                        }
-                    }
-            }
+                    ContactsListView(contacts, selectedContactIds, onSelectionChange)
+                }
             }
         },
-        confirmButton = { //FIX TO ACTUALLY SEND TRIP
+        confirmButton = {
             Button(onClick = onConfirm, enabled = selectedContactIds.isNotEmpty()){
                 //enabled stops a user from sending without a contact being selected
                 Text("Send Trip")
@@ -68,4 +41,59 @@ fun ShareTripDialog(
             Text("Cancel")
         } }
     )
+}
+
+@Composable
+private fun ContactsListView(
+    contacts: List<ContactDto>,
+    selectedContactIds: Set<String>,
+    onSelectionChange: (Set<String>) -> Unit
+){
+    LazyColumn( modifier = Modifier.heightIn(max = 300.dp)){
+        items(contacts) { contact ->
+            ContactsSelectionRow(
+                contact = contact,
+                isSelected = contact.contactId in selectedContactIds,
+                onToggle = {isChecked ->
+                    val newSelection = if (isChecked){
+                        selectedContactIds + contact.contactId
+                    }
+                    else{
+                        selectedContactIds - contact.contactId
+                    }
+                    onSelectionChange(newSelection)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyContactsView(){
+    Text("No Contacts Found.")
+}
+
+@Composable
+private fun ContactsSelectionRow(
+    contact: ContactDto,
+    isSelected: Boolean,
+    onToggle: (Boolean) -> Unit
+){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onToggle(!isSelected)
+            }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = { onToggle(it)
+            }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(contact.name)
+    }
 }

@@ -201,12 +201,12 @@ describe('Trips endpoints unit tests', ()=>{
     });
 
     describe('Record trip end point',()=>{
-        it('Return 201 on successful call', async()=>{
+        it('Returns 201 on successful call', async()=>{
             jest.spyOn(trips_services,'record').mockResolvedValueOnce(undefined);
             const req: any = {
                 user: { sub: 'user-1' },
+				params: { trip_id: 't1' },
                 body: {
-                    trip_id: 't1',
                     recorded_at: new Date().toISOString(),
                     data_source: 'gps',
                     location: { lat: 0, lon: 0 },
@@ -230,13 +230,35 @@ describe('Trips endpoints unit tests', ()=>{
         });
         it('Returns 404 when trip is not found', async()=>{
             jest.spyOn(trips_services,'record').mockRejectedValueOnce(new Error('Trip not found'));
-            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 'nope' } };
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: {} };
             const res: any = make_res();
 
             await trips_controller.record_trip(req,res);
             expect(res.status).toHaveBeenCalledWith(404);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Trip not found' }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_NOT_FOUND', message: 'Trip not found' }));
         });
+
+		it('returns 401 when missing required fields', async () => {
+			//mocking service to throw error message
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Missing required fields'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(401);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'Fill all valid fields'}));
+		});
+
+		it('returns 500 for unexpected interal error', async () => {
+			//mocking error that doesnt match any if/else block
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'INTERNAL_SERVER_ERROR'}));
+		});
     });
 
     describe('Get history endpoint', ()=>{

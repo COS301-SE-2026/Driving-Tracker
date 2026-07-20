@@ -37,7 +37,7 @@ jobs:
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build
-      - run: yarn test --coverage
+      - run: yarn test
       - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -45,6 +45,58 @@ jobs:
           files: backend/coverage/lcov.info
           flags: backend
           name: backend-coverage
+
+  backend-integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services: 
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_pass
+          POSTGRES_DB: driving_tracker_ci
+        ports:
+        - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env: 
+      DATABASE_URL: postgresql://ci_user:${{ secrets.CI_DB_PASSWORD || 'ci_pass' }}@localhost:5432/driving_tracker_ci?schema=public
+      JWT_SECRET: ci-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
+      NODE_ENV: test
+      TEST_USER_PASSWORD: Password123!
+      AZURE_MAPS_CLIENT_ID: ${{ secrets.AZURE_MAPS_CLIENT_ID }}
+      AZURE_MAPS_SUBSCRIPTION_KEY: ${{ secrets.AZURE_MAPS_SUBSCRIPTION_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - run: corepack enable
+      - run: corepack prepare yarn@4.6.0 --activate
+      - run: yarn install --immutable
+      - run: yarn prisma:generate
+
+      - run: yarn prisma migrate deploy
+
+      - run: yarn test:integration
   
   frontend:
     runs-on: ubuntu-latest

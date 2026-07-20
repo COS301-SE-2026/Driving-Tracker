@@ -23,7 +23,7 @@ export const notification_services= {
                 contact_id,
                 sent_by,
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to send trusted contact request notification: ", errorMessage)
             throw new ExtendedError("Could not send trusted contact request notification","COULD_NOT_SEND_NOTIFICATION"); 
@@ -47,7 +47,7 @@ export const notification_services= {
             data: {
                 type: "TRUSTED_CONTACT_RESPONSE"
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to send trusted contact request notification: ", errorMessage)
             throw new ExtendedError("Could not send trusted contact request notification","COULD_NOT_SEND_NOTIFICATION"); 
@@ -72,7 +72,7 @@ export const notification_services= {
                 trip_id,
                 shared_by
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to send share trip notification: ", errorMessage)
             throw new ExtendedError("Could not send share trip notification","COULD_NOT_SEND_NOTIFICATION"); 
@@ -97,7 +97,7 @@ export const notification_services= {
                 alert_type,
                 trip_id
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to trip alert: ", errorMessage)
             throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
@@ -119,7 +119,7 @@ export const notification_services= {
             data: {
                 type: "GENERAL",
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to trip alert: ", errorMessage)
             throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
@@ -148,7 +148,7 @@ export const notification_services= {
                 icon_url,
                 badge_id
             }
-        }).catch( err => {
+        }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
             console.error("Failed to trip alert: ", errorMessage)
             throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 

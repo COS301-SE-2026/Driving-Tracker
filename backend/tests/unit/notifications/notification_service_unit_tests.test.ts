@@ -37,6 +37,7 @@ describe('notification_services', () => {
                 data: {
                     type: 'TRUSTED_CONTACT_REQUEST',
                     contact_id: 'c1',
+					sent_by: 'John Doe',
                 }
             });
 
@@ -295,6 +296,33 @@ describe('notification_services', () => {
         });
     });
 
+	describe('send_trusted_contact_response_notification', () => {
+		it('sends the trusted contact response notification (APPROVED)', async () => {
+			mockSendEachForMulticast.mockResolvedValue(undefined);
+
+			await notification_services.send_trusted_contact_response_notification(
+				['token-1'],
+				'John Doe',
+				'APPROVED' as any
+			);
+
+			expect(mockSendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({
+				notification: {
+					title: 'Trusted Contact',
+					body: 'John Doe has accepted your Trusted Contact Request',
+				}
+			}));
+		});
+
+		it('throws COULD_NOT_SEND_NOTIFICATION when firebase fails', async () => {
+			jest.spyOn(console, 'error').mockImplementation(() => {});
+			mockSendEachForMulticast.mockRejectedValueOnce(new Error('Firebase error'));
+
+			await expect(
+				notification_services.send_trusted_contact_response_notification(['t1'], 'User', 'APPROVED' as any)
+			).rejects.toMatchObject({errorCode: 'COULD_NOT_SEND_NOTIFICATION'});
+		});
+	});
 });
 
 
