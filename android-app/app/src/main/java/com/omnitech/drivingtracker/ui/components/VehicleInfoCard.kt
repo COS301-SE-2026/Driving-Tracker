@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.VehicleStatItem
+import com.omnitech.drivingtracker.ui.theme.*
+
 @Composable
 fun VehicleInfoCard(
     vehicle: Vehicle,
@@ -49,32 +51,14 @@ fun VehicleInfoCard(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 //Car Image
-                Box(
+                VehicleImage(
+                    imageRes = vehicle.imageRes,
+                    imageUri = vehicle.imageUri,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    if (vehicle.imageRes != null) {
-                        Image(
-                            painter = painterResource(id = vehicle.imageRes),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else{
-                        Icon(
-                            imageVector = Icons.Default.Image,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color.LightGray
-                        )
-                    }
-
-                }
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -85,6 +69,7 @@ fun VehicleInfoCard(
 
                         VehicleStatItem(//Mileage
                             iconPainter = painterResource(id = R.drawable.stats_distance),
+                            tint = Purple,
                             label = "Mileage",
                             value = "${vehicle.mileage} km",
                             modifier = Modifier.weight(1f)
@@ -93,6 +78,7 @@ fun VehicleInfoCard(
                         VehicleStatItem(//trips
                             iconPainter = painterResource(id = R.drawable.stats_trips),
                             label = "Trips",
+                            tint = Blue,
                             value = "${vehicle.trips}",
                             modifier = Modifier.weight(1f)
                         )
@@ -104,6 +90,7 @@ fun VehicleInfoCard(
                         VehicleStatItem(//Efficiency
                             iconPainter = painterResource(id = R.drawable.stats_fuel),
                             label = "Fuel Efficiency",
+                            tint = Green,
                             value = "${vehicle.fuelEfficiency} km/l",
                             modifier = Modifier.weight(1f)
                         )
@@ -111,6 +98,7 @@ fun VehicleInfoCard(
                         VehicleStatItem(//Needs service?
                             iconPainter = painterResource(id = R.drawable.stats_trips),
                             label = "Needs Service?",
+                            tint = Error,
                             value = if (vehicle.needsService) "YES" else "No",
                             modifier = Modifier.weight(1f)
                         )

@@ -33,6 +33,7 @@ fun VehicleStatItem(
     iconVector: ImageVector? = null,
     label: String,
     value: String,
+    tint: Color,
     modifier: Modifier = Modifier
 ) {
 
