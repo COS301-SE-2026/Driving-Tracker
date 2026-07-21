@@ -364,7 +364,7 @@ fun TripsContent(
                 }
             }
         }
-        BottomNavBar(navController = navController)
+        BottomNavBar(navController = navController, "trip")
     }
 
     if (showStartTripDialog) {
