@@ -68,15 +68,15 @@ fun VehicleInfoCard(
                     Row(modifier = Modifier.fillMaxWidth()) {
 
                         VehicleStatItem(//Mileage
-                            iconPainter = painterResource(id = R.drawable.stats_distance),
-                            tint = Purple,
+                            iconPainter = painterResource(id = R.drawable.stats_time),
+                            tint = Blue,
                             label = "Mileage",
                             value = "${vehicle.mileage} km",
                             modifier = Modifier.weight(1f)
                         )
 
                         VehicleStatItem(//trips
-                            iconPainter = painterResource(id = R.drawable.stats_trips),
+                            iconPainter = painterResource(id = R.drawable.stats_distance),
                             label = "Trips",
                             tint = Blue,
                             value = "${vehicle.trips}",
@@ -90,15 +90,15 @@ fun VehicleInfoCard(
                         VehicleStatItem(//Efficiency
                             iconPainter = painterResource(id = R.drawable.stats_fuel),
                             label = "Fuel Efficiency",
-                            tint = Green,
+                            tint = if (vehicle.fuelEfficiency >= 12.0) Green else Error,
                             value = "${vehicle.fuelEfficiency} km/l",
                             modifier = Modifier.weight(1f)
                         )
 
                         VehicleStatItem(//Needs service?
-                            iconPainter = painterResource(id = R.drawable.stats_trips),
+                            iconPainter = painterResource(id = R.drawable.stats_service),
                             label = "Needs Service?",
-                            tint = Error,
+                            tint = if (vehicle.needsService) Error else Green,
                             value = if (vehicle.needsService) "YES" else "No",
                             modifier = Modifier.weight(1f)
                         )
