@@ -115,7 +115,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_distance),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Blue
+                            tint = Blue,
+                            onClick = {}
                         )
                         StatCard(
                             label = "Driving Time",
@@ -124,7 +125,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_time),
                             percentage = -5,
                             modifier = Modifier.weight(1f),
-                            tint = Purple
+                            tint = Purple,
+                            onClick = {}
                         )
                     }
                     Row(
@@ -138,7 +140,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_fuel),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Green
+                            tint = Green,
+                            onClick = {}
                         )
                         StatCard(
                             label = "Trips",
@@ -146,7 +149,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_trips),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Blue
+                            tint = Blue,
+                            onClick = { navController?.navigate(Screen.Trips.route) }
                         )
                     }
                 }
