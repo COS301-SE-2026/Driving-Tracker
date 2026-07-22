@@ -19,14 +19,9 @@ jobs:
     env:
       #Prisma v7 config expects DATABASE_URL to exist, uses dummy
       DATABASE_URL: postgresql://ci_user:ci_pass@localhost:5432/driving_tracker_ci?schema=public
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create Firebase service account file
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - uses: actions/setup-node@v4
         with:

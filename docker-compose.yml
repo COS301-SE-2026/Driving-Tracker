@@ -51,7 +51,6 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - ./backend/.env
     environment:
@@ -59,7 +58,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       NODE_ENV: development
-      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
+
     depends_on:
       db:
         condition: service_healthy
@@ -71,12 +71,12 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
     depends_on:
       db:
         condition: service_healthy
@@ -130,6 +130,7 @@ services:
       - ./backend/.env.test:/app/.env.test
     environment:
       NODE_ENV: test
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON}
     depends_on:
       db:
         condition: service_healthy
