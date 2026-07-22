@@ -15,12 +15,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.util.Log
 import com.omnitech.drivingtracker.data.models.SpeedZone
+import java.time.format.DateTimeFormatter
 import kotlin.math.sqrt
 import kotlin.math.abs
+import java.time.Instant
 
 @Singleton
 class SensorFusionManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ): SensorEventListener {
 
     companion object{
@@ -268,6 +270,151 @@ class SensorFusionManager @Inject constructor(
             }
         }
 
+        //Event detection - rotation/cornering
+        private fun checkForCorneringEVent(){
+            val now = System.currentTimeMillis()
+            val location = currentLocation?: return
+            val speedKmh = location.speed * 3.6f
 
+            if(speedKmh < 20f ) return
 
+            //gyroscope[2] = yaw rate = rotation around vertical axis
+            //gyroscope[0] = up/down - not cornering
+            //gyroscope[1] = lean side to side - not cornering
+            val yawRate = abs(gyroscope[2])
+
+            //speed aware cornering threshold
+            val cornerThreshold = getCornerThreshold(speedKmh)
+
+            if(yawRate > cornerThreshold && now - lastCornerTime > DEBOUNCE_MS){
+                lastCornerTime = now
+                val severity = calculateSpeedScaledSeverity(
+                    rawValue = yawRate,
+                    threshold = cornerThreshold,
+                    max = 2.0f,
+                    speedKmh = speedKmh
+                )
+                fireEvent(
+                    type = "SHARP_CORNER",
+                    severity = severity,
+                    speedKmh = speedKmh,
+                    location = location,
+                    sensorSource = "GYROSCOPE"
+                )
+                Log.d(TAG, "SHARP_CORNER: yaw=${yawRate}rad/s at ${speedKmh}km/h threshold=$cornerThreshold severity=$severity")
+            }
+        }
+
+    //reading emission
+    private fun emitReading(now: Long){
+        val location = currentLocation?: return
+
+        val reading = FusedReading(
+            timestamp = isoNow(),
+            linearAccelX = linearAccel.getOrElse(0){0f},
+            linearAccelY = linearAccel.getOrElse(1){0f},
+            linearAccelZ = linearAccel.getOrElse(2){0f},
+            gyroX = gyroscope.getOrElse(0){0f},
+            gyroY = gyroscope.getOrElse(1){0f},
+            gyroZ = gyroscope.getOrElse(2){0f},
+            speedKmh = location.speed * 3.6f,
+            latitude = location.latitude,
+            longitude = location.longitude
+        )
+        onReading?.invoke(reading)
+        //update stateflow for UI
+        _liveMetrics.value = _liveMetrics.value.copy(
+            speedKmh = reading.speedKmh,
+            latitude = reading.latitude,
+            longitude = reading.longitude,
+            linearAccelY = reading.linearAccelY,
+            gyroZ = reading.gyroZ
+        )
+    }
+
+    //speed adaptive threshold helpers
+    private fun getSpeedZone(speedKmh: Float): SpeedZone = when{
+        speedKmh < MINIMUM_SPEED_KMH -> SpeedZone.STATIONARY
+        speedKmh < CITY_MAX_KMH -> SpeedZone.CITY
+        speedKmh < HIGHWAY_MIN_KMH -> SpeedZone.SUBURBAN
+        else -> SpeedZone.HIGHWAY
+    }
+
+    private fun getBrakeThreshold(speedKmh: Float): Float = when{
+        speedKmh < CITY_MAX_KMH -> BRAKE_THRESHOLD_CITY
+        speedKmh > HIGHWAY_MIN_KMH -> BRAKE_THRESHOLD_HIGHWAY
+        else -> {
+            //linear interpolation in suburban zone (80-100)
+            val t = (speedKmh-CITY_MAX_KMH) / (HIGHWAY_MIN_KMH-CITY_MAX_KMH)
+            BRAKE_THRESHOLD_CITY + t*(BRAKE_THRESHOLD_HIGHWAY-BRAKE_THRESHOLD_CITY)
+        }
+    }
+
+    private fun getAccelThreshold(speedKmh: Float): Float = when{
+        speedKmh < CITY_MAX_KMH -> ACCEL_THRESHOLD_CITY
+        speedKmh > HIGHWAY_MIN_KMH -> ACCEL_THRESHOLD_HIGHWAY
+        else -> {
+            val t = (speedKmh-CITY_MAX_KMH) / (HIGHWAY_MIN_KMH-CITY_MAX_KMH)
+            ACCEL_THRESHOLD_CITY + t*(ACCEL_THRESHOLD_HIGHWAY-ACCEL_THRESHOLD_CITY)
+        }
+    }
+
+    private fun getCornerThreshold(speedKmh: Float): Float = when{
+        speedKmh < 50f -> CORNER_THRESHOLD_LOW
+        speedKmh < 80f -> CORNER_THRESHOLD_MID
+        else -> CORNER_THRESHOLD_HIGH
+    }
+
+    //speed scaled severity calculation
+
+    //maps raw sensor value onto 0-10 then scales by speed
+    //threshold = value where event starts registering
+    //max = value that maps to severity q0 at baseline speed (80km/h)
+    //speed multiplier = 0.5x at 15 -> 1x at 80 -> 1.5x at 120+
+    private fun calculateSpeedScaledSeverity(
+        rawValue: Float,
+        threshold: Float,
+        max: Float,
+        speedKmh: Float
+    ): Float{
+        val baseSeverity = ((rawValue - threshold) / (max - threshold) * 10f)
+            .coerceIn(0f, 10f)
+        val speedMultiplier = (speedKmh / 80f).coerceIn(0.5f, 1.5f)
+        return (baseSeverity * speedMultiplier).coerceIn(0f, 10f)
+    }
+
+    //internal helpers
+    private fun fireEvent(
+        type: String,
+        severity: Float,
+        speedKmh: Float,
+        location: Location,
+        sensorSource: String
+    ){
+        val event = FusedEvent(
+            type = type,
+            severity = severity,
+            timestamp = isoNow(),
+            speedKmh = speedKmh,
+            latitude = location.latitude,
+            longitude = location.longitude,
+            sensorSource = sensorSource
+        )
+        onEvent?.invoke(event)
+
+        //update stateflow so active trip screen reflects the latest event
+        _liveMetrics.value = _liveMetrics.value.copy(
+            lastEventType = type,
+            lastEventSeverity = severity
+        )
+    }
+
+    private fun updateSpeedZoneMetrics(speedKmh: Float, zone: SpeedZone){
+        if(_liveMetrics.value.currentSpeedZone != zone){
+            _liveMetrics.value = _liveMetrics.value.copy(currentSpeedZone = zone)
+            Log.d(TAG, "Speed zone changed to $zone at ${speedKmh}km/h")
+        }
+    }
+
+    private fun isoNow(): String = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
 }

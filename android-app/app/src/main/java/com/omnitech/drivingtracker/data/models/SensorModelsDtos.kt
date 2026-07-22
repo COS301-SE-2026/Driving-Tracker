@@ -1,5 +1,7 @@
 package com.omnitech.drivingtracker.data.models
 
+import org.checkerframework.checker.units.qual.Current
+
 data class RecordReadingRequest(
     val recorded_at: String,
     val data_source: String,
@@ -45,7 +47,8 @@ data class LiveSensorMetrics(
     val linearAccelY: Float = 0f,
     val gyroZ: Float = 0f,
     val lastEventType: String? = null,
-    val lastEventSeverity: Float? = null
+    val lastEventSeverity: Float? = null,
+    val currentSpeedZone: SpeedZone = SpeedZone.STATIONARY
 )
 
 enum class SpeedZone{

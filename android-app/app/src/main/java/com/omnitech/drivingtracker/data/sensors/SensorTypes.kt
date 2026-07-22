@@ -22,5 +22,6 @@ data class FusedEvent(
     val timestamp: String,
     val latitude: Double,
     val longitude: Double,
+    val speedKmh: Float,
     val sensorSource: String
 )
