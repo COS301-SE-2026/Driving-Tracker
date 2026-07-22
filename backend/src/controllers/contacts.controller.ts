@@ -319,7 +319,7 @@ const contacts_controller = {
         const user_id = get_user_id(req);
 
         if(!user_id){
-            return res.status(409).json({error: "UNAUTHORIZED"});
+            return res.status(401).json({error: "UNAUTHORIZED"});
         }
 
         try{
