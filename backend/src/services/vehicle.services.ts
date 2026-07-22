@@ -194,17 +194,21 @@ interface VehicleBenchmarkTrim {
     epa_combined_mpg_electric: number | null;
 }
 export async function fetch_vehicle_benchmark(make: string, model: string, year:number):Promise<VehicleBenchmarkTrim[]>{
+    // console.log("Fetching benchmark from api")
     const url = `https://carapi.app/api/mileages/v2?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${year}`;
 
     const jwt = await fetch_jwt_car_token() ;
+    // console.log(jwt, "jwt token for carapi");
     const response = await fetch(url,{
         headers:{'Authorization': `Bearer ${jwt}`}
     });
     if (!response.ok) {
+        console.log("Request failed");
         throw new Error("Vehicle API request failed");
     }
 
     const json = await response.json() as { data?: unknown[] };
+    // console.log(json);
 
     const data = json.data ?? [];
 
