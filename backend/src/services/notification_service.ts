@@ -166,7 +166,7 @@ export const notification_services= {
 
         const notification_arr = notifications.map((noti) => ({
             notification_id: noti.notification_id,
-            type: noti.user_id,
+            type: noti.type,
             title: noti.title,
             body: noti.body?? null,
             reference_id: noti.reference_id?? null,

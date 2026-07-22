@@ -2,6 +2,7 @@ import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
 import { ConsentStatus, NotificationType } from '@prisma/client';
+import { add_notification } from '../utils/notification';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -28,45 +29,6 @@ async function get_user_fullname(user_id: string){
 
     return full_name;
 }
-
-async function add_notification(input: {
-        user_ids: string[];
-        type: string;
-        title: string;
-        body: string | null;
-        reference_ids: string[];
-        reference_type: string | null;
-    }){
-
-        if(!Object.values(NotificationType).includes(input.type as NotificationType)){
-            throw coded_error("INVALID_STATUS");
-        }
-
-        if(input.user_ids.length !== input.reference_ids?.length){
-            throw coded_error("Users and references length mismatch");
-        }
-
-        const entries = input.user_ids.map((user_id, index) => ({
-            user_id: user_id,
-            type: input.type,
-            title: input.title,
-            body: input.body,
-            reference_id: input.reference_ids? input.reference_ids[index] : null,
-            reference_type: input.reference_type
-        }));
-
-        await prisma.notifications.createMany({
-            data: entries.map((entry) => ({
-                user_id: entry.user_id,
-                type: entry.type as NotificationType,
-                title: entry.title,
-                body: entry.body?? null,
-                reference_id: entry.reference_id?? null,
-                reference_type: entry.reference_type?? null,
-            })),
-            skipDuplicates: true
-        });
-    }
 
 
 export const contact_services ={
@@ -276,7 +238,7 @@ export const contact_services ={
 
         await add_notification({
             user_ids: contact_user_ids,
-            type: NotificationType.TRIP_SHARED,
+            type: "TRIP_SHARED",
             title: "Trusted Contact",
             body: `${full_name} is sharing their live trip with you`,
             reference_ids: contact_ids_arr,

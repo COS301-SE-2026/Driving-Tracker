@@ -86,4 +86,7 @@ interface ApiService{
   
     @GET("map/token")
     suspend fun getMapToken(): MapTokenResponse
+
+    @GET("notifications")
+    suspend fun getNotifications(): NotificationsResponse
 }

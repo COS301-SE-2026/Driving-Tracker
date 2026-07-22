@@ -25,7 +25,6 @@ import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.*
 
 
-
 @Composable
 fun NotificationsScreen(
     navController: NavController? = null,
@@ -40,10 +39,10 @@ fun NotificationsScreen(
 
     //Ui state
     val state by viewModel.uiState.collectAsState()
-    var showAddContactDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.getContactRequests()
+        viewModel.getNotifications()
     }
 
     Scaffold(
@@ -77,17 +76,25 @@ fun NotificationsScreen(
                     Column {
                         if(state is NotificationViewModel.UiState.SuccessPendingRequests){
                             val requests = (state as NotificationViewModel.UiState.SuccessPendingRequests).requests
-
-                            requests.forEach { request ->
-                                NotificationCard(NotificationItem(request.contactId, NotificationType.CONTACT_REQUEST, request.username),
-                                    onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
-                                    onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
-                                )
+                            if(requests.isEmpty()){
+                               Text(text = "No notifications",
+                                   style = MaterialTheme.typography.bodyMedium,
+                                   )
+                            } else {
+                                requests.forEach { request ->
+                                    NotificationCard(NotificationItem(request.contactId, NotificationType.TRUSTED_CONTACT_REQUEST, request.username),
+                                        onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
+                                        onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
+                                    )
+                                }
                             }
+
                         }
                     }
                 }
             }
+
+            item{ Spacer(modifier = Modifier.height(24.dp)) }
 
             //Today
             item{
@@ -96,8 +103,19 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedToday) {
                     Column {
-                        NotificationCard(NotificationItem("1", NotificationType.CONTACT_REQUEST, "Lesedi P"))
-                        NotificationCard(NotificationItem("2", NotificationType.BADGE_EARNED, badgeName = "Safe Driver"))
+                        if(state is NotificationViewModel.UiState.SuccessNotifications){
+                            val notificationsToday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Today"]
+
+                            if(notificationsToday.isNullOrEmpty()){
+                                Text(text = "No notifications",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }else {
+                                notificationsToday.forEach{ notification ->
+                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -110,7 +128,21 @@ fun NotificationsScreen(
             }
             item {
                 AnimatedVisibility(visible = expandedYesterday) {
-                    NotificationCard(NotificationItem("3", NotificationType.REQUEST_ACCEPTED, "Mosa L"))
+                    Column {
+                        if(state is NotificationViewModel.UiState.SuccessNotifications){
+                            val notificationsYesterday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Yesterday"]
+
+                            if(notificationsYesterday.isNullOrEmpty()){
+                                Text(text = "No notifications",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }else {
+                                notificationsYesterday.forEach{ notification ->
+                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body= notification.body?:""))
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -123,9 +155,19 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedThisWeek) {
                     Column {
-                        NotificationCard(NotificationItem("4", NotificationType.CONTACT_REQUEST, "Brayden B"))
-                        NotificationCard(NotificationItem("5", NotificationType.BADGE_EARNED, badgeName = "Street King"))
-                        NotificationCard(NotificationItem("6", NotificationType.REQUEST_ACCEPTED, "Sente M"))
+                        if(state is NotificationViewModel.UiState.SuccessNotifications){
+                            val notificationsWeek = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["This Week"]
+
+                            if(notificationsWeek.isNullOrEmpty()){
+                                Text(text = "No notifications",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                notificationsWeek.forEach{ notification ->
+                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -139,16 +181,24 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedEarlier) {
                     Column {
-                        NotificationCard(NotificationItem("7", NotificationType.CONTACT_REQUEST, "Larry B"))
-                        NotificationCard(NotificationItem("8", NotificationType.BADGE_EARNED, badgeName = "Mr Safe"))
+                        if(state is NotificationViewModel.UiState.SuccessNotifications){
+                            val notificationsEarlier = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Earlier"]
 
+                            if(notificationsEarlier.isNullOrEmpty()){
+                                Text(text = "No notifications",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                notificationsEarlier.forEach{ notification ->
+                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                }
+                            }
+                        }
                     }
                 }
             }
-
         }
     }
-
 }
 
 @Composable

@@ -4,6 +4,7 @@ import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.NotificationDto
 import com.omnitech.drivingtracker.data.models.RespondContactRequest
 import com.omnitech.drivingtracker.data.models.RespondContactResponse
 import com.omnitech.drivingtracker.services.ApiService
@@ -30,6 +31,18 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
 
     fun markAsRequested() {
         return sessionManager.setNotificationRequested()
+    }
+
+    suspend fun getNotifications() : Result<List<NotificationDto>>{
+        return try{
+            val response = api.getNotifications()
+            Result.success(response.data.notifications) //extract notifications, wrap in success
+        } catch(e: HttpException){
+            val error = ApiErrorParser.parse(e) //parse HTTP error
+            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch notifications")) //wrap in failure
+        } catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+        }
     }
 
 }

@@ -17,15 +17,18 @@ import com.omnitech.drivingtracker.ui.theme.*
 //This file contains component cards for notifications
 
 enum class NotificationType {
-    CONTACT_REQUEST,
-    REQUEST_ACCEPTED,
-    BADGE_EARNED
+    TRUSTED_CONTACT_REQUEST,
+    TRUSTED_CONTACT_RESPONSE,
+    BADGE_UNLOCKED,
+    TRIP_SHARED,
+    GENERAL
 }
 
 data class NotificationItem(
     val id: String,
     val type: NotificationType,
     val name: String = "",
+    val body: String = " ",
     val badgeName: String = "",
     val timestamp: String = ""
 )
@@ -52,19 +55,33 @@ fun NotificationCard(
         ) {
             //Conditional statement to display type of notification
             when (notification.type) {
-                NotificationType.CONTACT_REQUEST -> {
+                NotificationType.TRUSTED_CONTACT_REQUEST -> {
                     ContactRequestCardContent(notification.name, onAccept, onIgnore)
                 }
-                NotificationType.REQUEST_ACCEPTED -> {
+                NotificationType.TRUSTED_CONTACT_RESPONSE -> {
                     Text(
                         text = "${notification.name} accepted your trusted contact request",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )
                 }
-                NotificationType.BADGE_EARNED -> {
+                NotificationType.BADGE_UNLOCKED -> {
                     Text(
                         text = "Congratulations! You just earned a ${notification.badgeName} badge 🎊",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
+                }
+                NotificationType.TRIP_SHARED -> {
+                    Text(
+                        text = notification.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
+                }
+                NotificationType.GENERAL -> {
+                    Text(
+                        text = notification.body,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )
