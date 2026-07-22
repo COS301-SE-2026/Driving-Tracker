@@ -168,7 +168,7 @@ class SensorFusionManager @Inject constructor(
         }
         val now = System.currentTimeMillis()
         if(now - lastReadingTime >= READING_INTERVAL_MS){
-            emitReading(now)
+            emitReading()
             lastReadingTime = now
         }
     }
@@ -306,7 +306,7 @@ class SensorFusionManager @Inject constructor(
         }
 
     //reading emission
-    private fun emitReading(now: Long){
+    private fun emitReading(){
         val location = currentLocation?: return
 
         val reading = FusedReading(
