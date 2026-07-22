@@ -139,12 +139,8 @@ fun WeeklyChallengesContent(
                                         RankCard(
                                             name = entry.displayName,
                                             score = entry.score,
-                                            isUser = entry.rank == leaderboard.myRank
-                                        )
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.onSurface.copy(
-                                                alpha = 0.1f
-                                            )
+                                            isUser = entry.rank == leaderboard.myRank,
+                                            compact = true
                                         )
                                     }
 
