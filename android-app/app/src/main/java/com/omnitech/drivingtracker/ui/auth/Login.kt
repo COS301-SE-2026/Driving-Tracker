@@ -60,7 +60,7 @@ fun Login(
         //The Logo
         item{
             Image(
-                painter = painterResource(id = R.drawable.lg_nw2),
+                painter = painterResource(id = R.drawable.lg_main),
                 contentDescription = "Driving Tracker logo",
                 modifier = Modifier.size(150.dp)
             )

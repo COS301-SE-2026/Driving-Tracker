@@ -33,6 +33,7 @@ fun VehicleStatItem(
     iconVector: ImageVector? = null,
     label: String,
     value: String,
+    tint: Color = Color.DarkGray,
     modifier: Modifier = Modifier
 ) {
 
@@ -46,7 +47,7 @@ fun VehicleStatItem(
                 painter = iconPainter,
                 contentDescription = null,
                 modifier = Modifier.size(32.dp),
-                tint = Color.DarkGray
+                tint = tint
             )
         } else if (iconVector != null) {
             Icon(

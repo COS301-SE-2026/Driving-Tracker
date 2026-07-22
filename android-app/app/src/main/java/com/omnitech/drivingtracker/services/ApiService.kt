@@ -89,4 +89,16 @@ interface ApiService{
 
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
+  
+    @POST("trips/{trip_id}/readings/record")
+    suspend fun recordReading(
+        @Path("trip_id") tripId: String,
+        @Body body: RecordReadingRequest
+    )
+
+    @POST("trips/{trip_id}/events/log")
+    suspend fun logEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: LogEventRequest
+    ): LogEventResponse
 }
