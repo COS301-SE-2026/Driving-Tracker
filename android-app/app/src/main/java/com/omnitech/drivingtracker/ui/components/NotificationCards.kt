@@ -60,7 +60,7 @@ fun NotificationCard(
                 }
                 NotificationType.TRUSTED_CONTACT_RESPONSE -> {
                     Text(
-                        text = "${notification.name} accepted your trusted contact request",
+                        text = notification.body,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )

@@ -19,7 +19,7 @@ jobs:
     env:
       #Prisma v7 config expects DATABASE_URL to exist, uses dummy
       DATABASE_URL: postgresql://ci_user:ci_pass@localhost:5432/driving_tracker_ci?schema=public
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +70,7 @@ jobs:
       TEST_USER_PASSWORD: Password123!
       AZURE_MAPS_CLIENT_ID: ${{ secrets.AZURE_MAPS_CLIENT_ID }}
       AZURE_MAPS_SUBSCRIPTION_KEY: ${{ secrets.AZURE_MAPS_SUBSCRIPTION_KEY }}
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
     steps:
       - uses: actions/checkout@v4
@@ -125,7 +125,7 @@ jobs:
       AZURE_MAPS_SUBSCRIPTION_KEY: ci-maps-token
       NEXT_PUBLIC_API_URL: http://localhost:3000
       #Dummy firebase service json base64
-      FIREBASE_SERVICE_ACCOUNT_JSON_B64: eyJ0eXBlIjoic2VydmljZV9hY2NvdW50IiwicHJvamVjdF9pZCI6ImNpLXRlc3QiLCJwcml2YXRlX2tleV9pZCI6ImNpIiwicHJpdmF0ZV9rZXkiOiItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS0KTUlJRXZnSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2d3Z2dTa0FnRUFBb0lCQVFDLi4uCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0KIiwiY2xpZW50X2VtYWlsIjoiY2lAY2ktdGVzdC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSJ9
+      FIREBASE_SERVICE_ACCOUNT_B64: eyJ0eXBlIjoic2VydmljZV9hY2NvdW50IiwicHJvamVjdF9pZCI6ImNpLXRlc3QiLCJwcml2YXRlX2tleV9pZCI6ImNpIiwicHJpdmF0ZV9rZXkiOiItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS0KTUlJRXZnSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2d3Z2dTa0FnRUFBb0lCQVFDLi4uCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0KIiwiY2xpZW50X2VtYWlsIjoiY2lAY2ktdGVzdC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSJ9
     steps:
       - uses: actions/checkout@v4
 
@@ -140,20 +140,16 @@ jobs:
           JWT_REFRESH_SECRET=${{ env.JWT_REFRESH_SECRET }}
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
           AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
+          FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
           EOF
-
-          DECODED_JSON=$(echo '${{ env.FIREBASE_SERVICE_ACCOUNT_JSON_B64 }}' | base64 -d | tr -d '\r' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-          echo "FIREBASE_SERVICE_ACCOUNT_JSON=${DECODED_JSON}" >> .env
 
             mkdir -p backend
             cat > backend/.env <<EOF
             DATABASE_URL=${{ env.DATABASE_URL }}
             SEED_USER_PASSWORD=ci-seed-password
             AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
+            FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
             EOF
-
-            DECODED_JSON=$(echo '${{ env.FIREBASE_SERVICE_ACCOUNT_JSON_B64 }}' | base64 -d | tr -d '\r' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${DECODED_JSON}" >> .env
 
       - run: docker compose build
       - run: docker compose up -d
