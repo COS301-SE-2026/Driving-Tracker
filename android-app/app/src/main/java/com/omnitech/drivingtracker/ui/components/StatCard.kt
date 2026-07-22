@@ -25,9 +25,10 @@ import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //This function displays the stat box on the dashboard (the grid of 4)
-fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int, modifier: Modifier = Modifier, tint: Color) {
+fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percentage: Int, modifier: Modifier = Modifier, tint: Color, onClick: ()-> Unit) {
 
     Card(
+        onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
