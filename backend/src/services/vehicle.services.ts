@@ -134,4 +134,95 @@ export const vehicle_services={
             throw error 
        }
     }
+};
+
+export async function fetch_jwt_car_token(){
+    const url = `https://carapi.app/api/auth/login`;
+    const api_token = process.env.CARAPI_TOKEN;
+    const api_secret = process.env.CARAPI_SECRET;
+    
+    
+    if (!api_token || !api_secret) {
+        throw new Error("Missing CARAPI_TOKEN or CARAPI_SECRET");
+    }
+
+    const response = await fetch(url,{
+        method: 'POST',
+        headers:{
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            api_token,
+            api_secret
+        })
+    });
+
+    if (!response.ok) {
+        const error_body = await response.text();
+        throw new Error(`CarAPI token request failed: ${response.status} ${response.statusText} - ${error_body}`);
+    }
+
+    const jwt = await response.text();
+    // console.log('JWT Token:', jwt);
+    return jwt; 
+};
+interface VehicleBenchmarkTrim {
+    id: number;
+    make_id: number;
+    model_id: number;
+    submodel_id: number;
+    trim_id: number;
+    year: number;
+    make: string;
+    model: string;
+    series: string | null;
+    submodel: string | null;
+    trim: string;
+    trim_description: string;
+    fuel_tank_capacity: string;
+    combined_mpg: number;
+    epa_city_mpg: number;
+    epa_highway_mpg: number;
+    range_city: number;
+    range_highway: number;
+    battery_capacity_electric: number | null;
+    epa_time_to_charge_hr_240v_electric: number | null;
+    epa_kwh_100_mi_electric: number | null;
+    range_electric: number | null;
+    epa_highway_mpg_electric: number | null;
+    epa_city_mpg_electric: number | null;
+    epa_combined_mpg_electric: number | null;
+}
+export async function fetch_vehicle_benchmark(make: string, model: string, year:number):Promise<VehicleBenchmarkTrim[]>{
+    const url = `https://carapi.app/api/mileages/v2?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${year}`;
+
+    const jwt = await fetch_jwt_car_token() ;
+    const response = await fetch(url,{
+        headers:{'Authorization': `Bearer ${jwt}`}
+    });
+    if (!response.ok) {
+        throw new Error("Vehicle API request failed");
+    }
+
+    const json = await response.json() as { data?: unknown[] };
+
+    const data = json.data ?? [];
+
+    if (data.length === 0) {
+        throw new Error(`No vehicle found for ${make} ${model} ${year}`);
+    }
+
+    if (!isVehicleBenchmarkArray(data)) {
+        throw new Error("Unexpected shape from vehicle benchmark API");
+    }
+
+    return data; 
+};
+function isVehicleBenchmarkArray(value: unknown[]): value is VehicleBenchmarkTrim[] {
+    return value.every(item =>
+        typeof item === 'object' &&
+        item !== null &&
+        'combined_mpg' in item &&
+        'trim_description' in item
+    );
 }
