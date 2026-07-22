@@ -14,28 +14,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.util.Log
+import com.omnitech.drivingtracker.data.models.SpeedZone
+import kotlin.math.sqrt
+import kotlin.math.abs
 
 @Singleton
 class SensorFusionManager @Inject constructor(
     @ApplicationContext private val context: Context
 ): SensorEventListener {
-
-    //called when there's a new sensor reading
-    override fun onSensorChanged(event: SensorEvent){
-        when(event.sensor.type){
-            Sensor.TYPE_LINEAR_ACCELERATION ->{
-                //handle accel events
-            }
-            Sensor.TYPE_GYROSCOPE -> {
-                //handle rotation events
-            }
-        }
-    }
-
-    //called when sensor accuracy changes
-    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-
-    }
 
     companion object{
         private const val TAG = "SensorFusion"
@@ -121,7 +107,6 @@ class SensorFusionManager @Inject constructor(
 
 
     //Lifecycle
-
     fun start(
         onReadingAvailable: (FusedReading) -> Unit,
         onEventDetected: (FusedEvent) -> Unit
@@ -162,4 +147,127 @@ class SensorFusionManager @Inject constructor(
     fun updateLocation(location: Location){
         currentLocation = location
     }
+
+    //called when there's a new sensor reading
+    //Sensor Events
+    override fun onSensorChanged(event: SensorEvent){
+        when(event.sensor.type){
+            Sensor.TYPE_LINEAR_ACCELERATION -> {
+                linearAccel = event.values.clone()
+                checkForLinearEvents()
+            }
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                rotationVector = event.values.clone()
+                checkForCorneringEVent()
+            }
+            Sensor.TYPE_GYROSCOPE -> {
+                gyroscope = event.values.clone()
+            }
+        }
+        val now = System.currentTimeMillis()
+        if(now - lastReadingTime >= READING_INTERVAL_MS){
+            emitReading(now)
+            lastReadingTime = now
+        }
+    }
+
+    //called when sensor accuracy changes
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+
+        //Event Detection - linear (braking/acceleration/crash)
+        private fun checkForLinearEvents(){
+            val now = System.currentTimeMillis()
+            val location = currentLocation?: return
+            val speedKmh = location.speed * 3.6f
+
+            //speed gate
+            //everything below minimum speed is ignored
+            if(speedKmh < MINIMUM_SPEED_KMH){
+                updateSpeedZoneMetrics(speedKmh, SpeedZone.STATIONARY)
+                return
+            }
+
+            val speedZone = getSpeedZone(speedKmh)
+            updateSpeedZoneMetrics(speedKmh, speedZone)
+
+            //sensor axes when phone is portrait
+            // x = left/right
+            // y = forward/back
+            // z = up/down
+            val longitudinal = linearAccel[1]
+            //total magnitude of acceleration vector
+            val magnitude = sqrt(
+                linearAccel[0] * linearAccel[0] +
+                linearAccel[1] * linearAccel[1] +
+                linearAccel[2] * linearAccel[2]
+            )
+
+            crashBuffer.addLast(magnitude)
+            if(crashBuffer.size > CRASH_BUFFER_SIZE) crashBuffer.removeFirst()
+
+            //get speed appropriate thresholds
+            val brakeThreshold = getBrakeThreshold(speedKmh)
+            val accelThreshold = getAccelThreshold(speedKmh)
+
+            //Harsh braking
+            //Strong negative Y = decelerating hard
+            if(longitudinal < -brakeThreshold && now - lastBrakeTime > DEBOUNCE_MS){
+                lastBrakeTime = now
+                val severity = calculateSpeedScaledSeverity(
+                    rawValue = abs(longitudinal),
+                    threshold = brakeThreshold,
+                    max = 15.0f,
+                    speedKmh = speedKmh
+                )
+                fireEvent(
+                    type = "HARSH_BRAKE",
+                    severity = severity,
+                    speedKmh = speedKmh,
+                    location = location,
+                    sensorSource = "ACCELEROMETER"
+                )
+                Log.d(TAG, "HARSH_BRAKE: ${longitudinal}m/s^2 at ${speedKmh}km/h zone=$speedZone " +
+                        "threshold=$brakeThreshold severity=$severity")
+            }
+
+            //harsh acceleration
+            //String positive Y = accelerating aggressively
+            if(longitudinal > accelThreshold && now - lastAccelTime > DEBOUNCE_MS){
+                lastAccelTime = now
+                val severity = calculateSpeedScaledSeverity(
+                    rawValue = longitudinal,
+                    threshold = accelThreshold,
+                    max = 12.0f,
+                    speedKmh = speedKmh
+                )
+                fireEvent(
+                    type = "HARSH_ACCELERATION",
+                    severity = severity,
+                    speedKmh = speedKmh,
+                    location = location,
+                    sensorSource = "ACCELEROMETER"
+                )
+                Log.d(TAG, "HARSH_ACCELERATION: ${longitudinal}m/s^2 at \${speedKmh}km/h severity=$severity")
+            }
+
+            //crash detection
+            //requires sustained high total magnitude across multiple readings
+            if(speedKmh >= CRASH_MIN_SPEED_KMH && crashBuffer.size >= CRASH_BUFFER_SIZE){
+                val average = crashBuffer.average().toFloat()
+                if(average > CRASH_THRESHOLD && now - lastCrashTime > DEBOUNCE_MS){
+                    lastCrashTime = now
+                    fireEvent(
+                        type = "CRASH_LIKE",
+                        severity = 10.0f,
+                        speedKmh = speedKmh,
+                        location = location,
+                        sensorSource = "ACCELEROMETER"
+                    )
+                    Log.d(TAG, "CRASH_LIKE: avgMagnitude=${average}m/s^2 at ${speedKmh}km/h")
+                }
+            }
+        }
+
+
+
 }

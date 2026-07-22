@@ -48,3 +48,9 @@ data class LiveSensorMetrics(
     val lastEventSeverity: Float? = null
 )
 
+enum class SpeedZone{
+    STATIONARY,
+    CITY,
+    SUBURBAN,
+    HIGHWAY
+}
