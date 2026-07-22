@@ -50,6 +50,8 @@ fun More(navController: NavController){
                 modifier = Modifier.padding(innerPadding)
             ){
                 Spacer(modifier = Modifier.height(25.dp))
+                ContentCard("Contacts"){navController.navigate(Screen.Contacts.route)}
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Weekly Challenges"){navController.navigate(Screen.WeeklyChallenges.route)}
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("OBD"){navController.navigate(Screen.OBDMain.route)}
