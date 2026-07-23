@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
 import com.omnitech.drivingtracker.R
 
+
 @Composable
 fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
     Column(
@@ -28,16 +30,8 @@ fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        //The Logo
-        Image(
-            painter = painterResource(id = R.drawable.lg_nw2),
-            contentDescription = "Driving Tracker logo",
-            modifier = Modifier.size(280.dp)
-        )
-
         //Text
         Column(
-            modifier = Modifier.padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -96,32 +90,50 @@ fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
 
         }
 
+        Spacer(modifier = Modifier.height(50.dp))
 
+        //The Logo
+        Image(
+            painter = painterResource(id = R.drawable.lg_main),
+            contentDescription = "Driving Tracker logo",
+            modifier = Modifier.size(280.dp)
+        )
 
-        Row(
+        Spacer(modifier = Modifier.height(40.dp))
+
+        //Sign In button
+        Button(
+            onClick = onLoginClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp), //Space from screen edges
-            horizontalArrangement = Arrangement.spacedBy(16.dp) //space between buttons
+                .height(50.dp)
+                .padding(horizontal = 30.dp),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Green)
         ) {
-            //Sign in button
-            OutlinedButton(
-                onClick = onLoginClick,
-                modifier = Modifier.weight(1f), //Takes half the space
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Sign in", color = Color.Black)
-            }
+            Text("Sign In", color = Color.White)
+        }
 
-            //Register button
-            Button(
-                onClick = onSignUpClick,
-                modifier = Modifier.weight(1f), //Takes half the space
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Green)
-            ) {
-                Text("Register", color = Color.White)
-            }
+        Spacer(modifier = Modifier.height(18.dp))
+
+        //Register link
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "Do you have an account? ",
+                style = MaterialTheme.typography.titleSmall
+            )
+
+            Text(
+                text = "Register",
+                color = Blue,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onSignUpClick() }
+            )
 
         }
     }

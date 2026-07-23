@@ -77,8 +77,8 @@ fun Vehicles(
     //sample data
     val vehicleList = remember {
         mutableStateListOf(
-            Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, false),
-            Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 10.1, true)
+            Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, true),
+            Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 13.2, false),
         )
     }
 
