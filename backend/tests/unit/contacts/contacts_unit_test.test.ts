@@ -168,7 +168,7 @@ describe('Contact endpoints', ()=>{
             const res: any = make_res();
             await share_location(req, res);
             expect(res.status).toHaveBeenCalledWith(403);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NOT_TRUSTED_CONTACT', message: 'Cannot share location non-trusted contacts' }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NOT_TRUSTED_CONTACT', message: 'Cannot share location with non-trusted contacts' }));
 		});
 
 		it('returns 409 when user not found during share', async () =>{
