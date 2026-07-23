@@ -158,10 +158,33 @@ describe('Contact endpoints', ()=>{
             await share_location(req, res);
             expect(res.status).toHaveBeenCalledWith(201);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Location successfully shared' }));
-    });
-  });
+    	});
 
-  describe('respond_to_contact_request',()=>{
+		it('returns 403 when contact is not trusted', async () =>{
+			jest.spyOn(contact_services, 'share_trip_location').mockRejectedValueOnce({
+                code: 'NOT_TRUSTED_CONTACT'
+            });
+            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 't1', contacts: [{ contact_id: 'c1' }] } };
+            const res: any = make_res();
+            await share_location(req, res);
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NOT_TRUSTED_CONTACT', message: 'Cannot share location non-trusted contacts' }));
+		});
+
+		it('returns 409 when user not found during share', async () =>{
+			jest.spyOn(contact_services, 'share_trip_location').mockRejectedValueOnce({
+                code: 'USER_NOT_FOUND'
+            });
+            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 't1', contacts: [{ contact_id: 'c1' }] } };
+            const res: any = make_res();
+            await share_location(req, res);
+            expect(res.status).toHaveBeenCalledWith(409);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'Could not find user' }));
+		});
+
+  	});
+
+  	describe('respond_to_contact_request',()=>{
         it('returns 200 on success', async()=>{
             jest.spyOn(contact_services,'respond_to_contact_request').mockResolvedValueOnce({
                 contact_id: 'c1',
