@@ -3,12 +3,37 @@ jest.mock('../../../src/utils/firebase', () => ({
     getMessaging: jest.fn(),
 }));
 
+jest.mock('../../../src/db/prisma', () => ({
+    __esModule: true,
+    default: {
+        users: {
+            findFirst: jest.fn(),
+        },
+        user_devices: {
+            findMany: jest.fn()
+        },
+        trusted_contacts: {
+            findFirst: jest.fn(),
+            findMany: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+        },
+        notifications: {
+            createMany: jest.fn(),
+            findMany: jest.fn(),
+        },
+        $transaction: jest.fn(),
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import { getMessaging } from '../../../src/utils/firebase';
 import { notification_services } from '../../../src/services/notification_service';
+import prisma from '../../../src/db/prisma';
 
 const mockGetMessaging = getMessaging as jest.Mock;
 const mockSendEachForMulticast = jest.fn() as any;
+const mock_prisma = prisma as any ;
 
 describe('notification_services', () => {
     beforeEach(() => {
@@ -37,6 +62,7 @@ describe('notification_services', () => {
                 data: {
                     type: 'TRUSTED_CONTACT_REQUEST',
                     contact_id: 'c1',
+					sent_by: 'John Doe',
                 }
             });
 
@@ -295,6 +321,71 @@ describe('notification_services', () => {
         });
     });
 
+	describe('send_trusted_contact_response_notification', () => {
+		it('sends the trusted contact response notification (APPROVED)', async () => {
+			mockSendEachForMulticast.mockResolvedValue(undefined);
+
+			await notification_services.send_trusted_contact_response_notification(
+				['token-1'],
+				'John Doe',
+				'APPROVED' as any
+			);
+
+			expect(mockSendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({
+				notification: {
+					title: 'Trusted Contact',
+					body: 'John Doe has accepted your Trusted Contact Request',
+				}
+			}));
+		});
+
+		it('throws COULD_NOT_SEND_NOTIFICATION when firebase fails', async () => {
+			jest.spyOn(console, 'error').mockImplementation(() => {});
+			mockSendEachForMulticast.mockRejectedValueOnce(new Error('Firebase error'));
+
+			await expect(
+				notification_services.send_trusted_contact_response_notification(['t1'], 'User', 'APPROVED' as any)
+			).rejects.toMatchObject({errorCode: 'COULD_NOT_SEND_NOTIFICATION'});
+		});
+	});
+
+    describe('fetch user notifications',()=>{
+        
+        it('returns list of user notifications', async () => {
+            mock_prisma.notifications.findMany.mockResolvedValue([
+                {
+                    notification_id: "noti-1",
+                    user_id: "user-1",
+                    type: "contact-request",
+                    title: "Contact",
+                    body: "request",
+                    is_read: false,
+                    reference_id: "contact-1",
+                    reference_type: "trusted_contact",
+                    created_at: "2026-03-03",
+                },
+                {
+                    notification_id: "noti-2",
+                    user_id: "user-1",
+                    type: "contact-request",
+                    title: "Contact",
+                    body: "request",
+                    is_read: false,
+                    reference_id: "contact-2",
+                    reference_type: "trusted_contact",
+                    created_at: "2026-05-05",
+                },
+            ]);
+    
+            const result = await notification_services.fetch_notifications('u1');
+    
+            expect(result.length).toBe(2);
+            expect(result[0].notification_id).toBe('noti-1');
+            expect(result[0].reference_id).toBe('contact-1');
+            expect(result[1].notification_id).toBe('noti-2');
+            expect(result[1].reference_id).toBe('contact-2');
+        });
+    });
 });
 
 

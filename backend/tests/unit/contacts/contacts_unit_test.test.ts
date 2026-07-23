@@ -2,7 +2,7 @@ jest.mock('../../../src/services/contacts_services');
 
 import { describe, it, expect, jest,beforeEach } from '@jest/globals';
 import contacts_controller from '../../../src/controllers/contacts.controller';
-const { create_contact, get_contacts, alert_contacts, share_location, respond_to_contact_request } = contacts_controller;
+const { create_contact, get_contacts, alert_contacts, share_location, respond_to_contact_request, get_receieved_contact_requests } = contacts_controller;
 import { contact_services } from '../../../src/services/contacts_services';
 
 // jest.mock('../../../src/middleware/auth',()=>({}));//the auth
@@ -212,6 +212,32 @@ describe('Contact endpoints', ()=>{
 
             await respond_to_contact_request(req, res);
 
+            expect(res.status).toHaveBeenCalledWith(500);
+        }); 
+    });
+
+    describe('get received contacts requests endpoint',()=>{
+        it('returns 200 and trusted contact requests sent to user',async()=>{
+            const requests = [{ contact_id:'c1', created_at: '2026-07-07', username:'a'}];
+            jest.spyOn(contact_services,'get_received_contact_requests').mockResolvedValueOnce(requests as any);
+            const req: any = { user: { sub: 'user-1' } };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ data: { requests }, message: "Fetched received contact requests" }));
+        });
+
+        it('returns 401 when unauthenticated', async () => {
+            const req: any = { user: undefined };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
+            expect(res.status).toHaveBeenCalledWith(401);
+        });
+        it('handles other error', async () => {
+            jest.spyOn(contact_services, 'get_received_contact_requests').mockRejectedValueOnce({ code: 'CANNOT_ACCESS_REQUESTS' });
+            const req: any = { user: { sub: 'user-1' } };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
             expect(res.status).toHaveBeenCalledWith(500);
         }); 
     });

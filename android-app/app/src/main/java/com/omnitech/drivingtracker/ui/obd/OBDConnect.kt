@@ -48,6 +48,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 
 data class Device(
     val name: String,
@@ -61,6 +63,10 @@ data class Device(
 @Composable
 fun OBDConnect(navController: NavController? =null,
                viewModel: ObdViewModel = hiltViewModel()){
+
+    LaunchedEffect(Unit) {
+        viewModel.loadPairedDevices()
+    }
 
     val context = LocalContext.current
     val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
@@ -106,6 +112,18 @@ fun OBDConnect(navController: NavController? =null,
             },
             viewModel = viewModel
         )
+    //Automatically refresh the devices  list when the user returns to this screen
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME){
+                viewModel.loadPairedDevices()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     StandardScreen(

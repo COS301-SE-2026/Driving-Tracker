@@ -256,3 +256,6 @@ docker compose up --build studio
 
 #Running migrations with docker-compose
 MIGRATION_NAME=example_name docker compose up --build migrate-dev
+
+#Running integration tests through docker
+docker compose run --rm api-test

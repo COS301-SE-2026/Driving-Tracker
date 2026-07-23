@@ -17,6 +17,21 @@ data class ContactsResponse(
     val message: String? = null
 )
 
+data class ReceivedRequestResponse(
+    val data: RequestsData,
+    val message: String
+)
+
+data class RequestsData(
+    val requests: List<RequestDto>
+)
+
+data class RequestDto(
+    @SerializedName("contact_id") val contactId: String,
+    @SerializedName("created_at") val createdAt: String,
+    val username: String,
+)
+
 data class ContactsData(
     val contacts: List<ContactDto>
 )

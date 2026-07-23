@@ -356,15 +356,20 @@ fun TripsContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         trips.forEachIndexed { index, trip ->
-                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {navController?.navigate(
-                                Screen.TripSummary.createRoute(trip.tripId))}
+                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {
+                                if(trip.status == "IN_PROGRESS"){
+                                    navController?.navigate(Screen.LiveTrip.createRoute(trip.tripId))
+                                }else{
+                                    navController?.navigate(Screen.TripSummary.createRoute(trip.tripId))
+                                    }
+                                }
                             )
                         }
                     }
                 }
             }
         }
-        BottomNavBar(navController = navController)
+        BottomNavBar(navController = navController, "trip")
     }
 
     if (showStartTripDialog) {

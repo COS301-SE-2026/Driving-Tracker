@@ -53,7 +53,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_starfilled),
+                    painter = painterResource(id = R.drawable.ic_nav_achievements),
                     contentDescription = "Achievements",
                     tint = if (color == "ach") Blue else Color.Gray
                 )

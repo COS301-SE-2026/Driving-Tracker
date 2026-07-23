@@ -3,6 +3,7 @@
 import prisma from '../db/prisma';
 import { notification_services } from './notification_service';
 import { user_devices_services } from './user_devices_services';
+import { add_notification } from '../utils/notification';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -67,7 +68,7 @@ export interface record_data{
     coolant_temp: number;
     fuel_trim_percent: number;
     throttle_position: number;
-    dtc_codes: string;
+    dtc_codes: string [];
 };
 export interface trip_history_filter {
     user_id: string;
@@ -78,7 +79,7 @@ export interface trip_history_filter {
 export interface trip_events_log{
     trip_id: string;
     user_id: string;
-    event_type: "HARSH_BRAKE"| "HARSH_ACCELERATION"| "SHARP_CORNER"|"CRASH";
+    event_type: "HARSH_BRAKE"| "HARSH_ACCELERATION"| "SHARP_CORNER"|"CRASH_LIKE";
     location:{
         lat: number;
         lng: number;
@@ -159,11 +160,23 @@ export const trips_services ={
                         skipDuplicates: true
                     });
 
+
+
                     const contact_user_ids = valid.map(v => v.contact_user_id);
 
                     const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
 
                     const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+                    
+                    
+                    await add_notification({
+                        user_ids: contact_user_ids,
+                        type: "TRIP_SHARED",
+                        title: "Trusted Contact",
+                        body: `${full_name} is sharing their live trip with you`,
+                        reference_ids: validIds,
+                        reference_type: "trusted_contact",
+                    });
 
                     await notification_services.send_trip_shared_notification(fcm_tokens, full_name, newTrip.trip_id);
 
@@ -311,7 +324,7 @@ export const trips_services ={
                     coolant_temp_c: data.coolant_temp,
                     fuel_trim_percent: data.fuel_trim_percent,
                     throttle_position: data.throttle_position,
-                    dtc_codes: data.dtc_codes ? [data.dtc_codes] : []
+                    dtc_codes: data.dtc_codes ?? []
                 }
             });
 

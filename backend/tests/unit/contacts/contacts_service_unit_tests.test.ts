@@ -13,6 +13,9 @@ jest.mock('../../../src/db/prisma', () => ({
         create: jest.fn(),
         update: jest.fn(),
         },
+        notifications: {
+        createMany: jest.fn(),
+        },
         trip_events: {
         findUnique: jest.fn(),
         },
@@ -58,7 +61,7 @@ const mock_user_devices_services = user_devices_services as any;
 const mock_notification_services = notification_services as any;
 
 describe('Contact services . create_trusted_contact',()=>{
-    beforeEach(async()=>{jest.clearAllMocks()});
+    beforeEach(async()=>{jest.clearAllMocks() });
 
     it('creates when valid username provided', async()=>{
         mock_prisma.users.findFirst.mockResolvedValue({
@@ -299,4 +302,42 @@ describe('contact services.respond_to_contact_request', () => {
         ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
     });
 
+});
+
+describe('contact services.get_received_contact_requests',()=>{
+    beforeEach(async()=>{jest.clearAllMocks()});
+
+    it('returns list of trusted contacts', async () => {
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([
+            {
+                contact_id: 'c1',
+                user_id: 'user-1',
+                created_at: '2026-03-03',
+                owner_user: { username: 'johndoe' },
+            },
+            {
+                contact_id: 'c2',
+                user_id: 'user-2',
+                created_at: '2026-04-04',
+                owner_user: { username: 'janesmith' },
+            },
+        ]);
+
+        const result = await contact_services.get_received_contact_requests('u1');
+
+        expect(result.length).toBe(2);
+        expect(result[0].contact_id).toBe('c1');
+        expect(result[0].username).toBe('johndoe');
+        expect(result[1].contact_id).toBe('c2');
+        expect(result[1].username).toBe('janesmith');
+    });
+
+    it('returns empty list when no notifications', async () => {
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+
+        const result = await contact_services.get_received_contact_requests('u1');
+
+        expect(result.length).toBe(0);
+        
+    });
 });

@@ -131,7 +131,7 @@ model trips {
   start_latitude   Decimal?        @db.Decimal(9, 6)
   end_longitude    Decimal?        @db.Decimal(9, 6)
   end_latitude     Decimal?        @db.Decimal(9, 6)
-  route_polyline   String?
+  route_polyline   Json?           @db.JsonB
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
@@ -200,6 +200,15 @@ enum DataSource {
   OBD
 }
 
+enum NotificationType {
+  TRIP_SHARED
+  BADGE_UNLOCKED
+  TRUSTED_CONTACT_REQUEST
+  TRUSTED_CONTACT_RESPONSE
+  TRIP_ALERT
+  GENERAL
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
   user_id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -229,6 +238,7 @@ model users {
   users_vehicles     users_vehicles[]
   trip_location_shares  trip_location_shares[]  @relation("TripSharesOwner")
   user_devices  user_devices[]
+  notifications notifications[]
 }
 
 model trip_location_shares {
@@ -277,4 +287,18 @@ model user_devices {
   updated_at  DateTime  @updatedAt @db.Timestamptz(6)
   
   users       users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model notifications {
+  notification_id   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String              @db.Uuid
+  type              NotificationType
+  title             String              @db.VarChar(255)
+  body              String?             
+  is_read           Boolean             @default(false)
+  reference_id      String?             @db.Uuid
+  reference_type    String?             @db.VarChar(50)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+
+  users             users               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }

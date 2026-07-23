@@ -45,12 +45,12 @@ services:
 
   api:
     build: ./backend
+    command: yarn dev
     ports:
       - "3000:3000"
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - ./backend/.env
     environment:
@@ -58,7 +58,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       NODE_ENV: development
-      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+      FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
+
     depends_on:
       db:
         condition: service_healthy
@@ -70,12 +71,12 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-      - ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json:/app/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
     env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
+      FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
     depends_on:
       db:
         condition: service_healthy
@@ -116,6 +117,25 @@ services:
     environment:
         PORT: 3001
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+
+  api-test:
+    build: ./backend
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/tests:/app/tests
+      - ./backend/jest.config.cjs:/app/jest.config.cjs
+      - ./backend/tsconfig.build.json:/app/tsconfig.build.json
+      - ./backend/tests/jest.setup.ts:/app/tests/jest.setup.ts
+      - ./backend/.env.test:/app/.env.test
+    environment:
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+      prisma-migrate:
+        condition: service_completed_successfully
+    command: sh -lc "yarn jest --config /app/jest.config.cjs --runInBand --detectOpenHandles"
 
 volumes:
   postgres_data:
