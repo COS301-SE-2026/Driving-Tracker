@@ -6,8 +6,22 @@ import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
 import java.time.Instant
+import javax.inject.Inject
 
-class TripRepository(private val api: ApiService){
+class TripRepository @Inject constructor(private val api: ApiService){
+
+    suspend fun getMapToken(): Result<MapTokenData> {
+        return try{
+            val response = api.getMapToken()
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
+        }
+        catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,
@@ -30,6 +44,18 @@ class TripRepository(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to start trip"))
         }catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun getVehicles(): Result<List<VehicleDto>> {
+        return try {
+            val response = api.getVehicles()
+            Result.success(response)
+        } catch (e: HttpException) {
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch vehicles"))
+        } catch (e: Exception) {
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }

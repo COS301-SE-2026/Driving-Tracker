@@ -25,7 +25,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.ui.res.painterResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.components.BadgeSection
@@ -40,20 +42,40 @@ import androidx.navigation.NavController
 @Composable
 fun AchievementsScreen(
     navController: NavController? = null,
-    viewModel: AchievementsViewModel
+    viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     AchievementsContent(
         state = state,
-        navController = navController
+        navController = navController,
+        onFilterChanged = {category, scope ->
+            viewModel.getLeaderboard(category, scope)
+        }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsContent(
     state: AchievementsViewModel.UiState,
-    navController: NavController? = null
+    navController: NavController? = null,
+    onFilterChanged: (category: String, scope: String) -> Unit = {_, _ -> }
 ) {
+    var expandedCategory by remember { mutableStateOf(false) }
+    var expandedScope by remember { mutableStateOf(false) }
+    var selectedCategory by remember {mutableStateOf("OVERALL")}
+    var selectedScope by remember {mutableStateOf("WEEKLY")}
+    var categories by remember {mutableStateOf(emptyList<String>())}
+    var scopes by remember {mutableStateOf(emptyList<String>())}
+
+    LaunchedEffect(state){
+
+        if (state is AchievementsViewModel.UiState.Success) {
+            categories = state.categories
+            scopes = state.scopes
+        }
+    }
+
     Scaffold(
         topBar = {
             TopBar(
@@ -90,6 +112,88 @@ fun AchievementsContent(
                     text = "Ranks",
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ExposedDropdownMenuBox(
+                        expanded = expandedCategory,
+                        onExpandedChange = { expandedCategory = !expandedCategory },
+                        modifier = Modifier.width(150.dp).height(56.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = selectedCategory.replace('_',' ')
+                                .lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Category") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedCategory,
+                            onDismissRequest = { expandedCategory = false }
+                        ) {
+                            categories.forEach { category ->
+                                val itemText = category.replace('_',' ')
+                                    .lowercase()
+                                    .replaceFirstChar { it.uppercase() }
+
+                                DropdownMenuItem(
+                                    text = { Text(itemText) },
+                                    onClick = {
+                                        selectedCategory = category
+                                        expandedCategory = false
+                                        onFilterChanged(selectedCategory,selectedScope)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    ExposedDropdownMenuBox(
+                        expanded = expandedScope,
+                        onExpandedChange = { expandedScope = !expandedScope },
+                        modifier = Modifier.width(150.dp).height(56.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = selectedScope.replace('_',' ')
+                                .lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Scope") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedScope) },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedScope,
+                            onDismissRequest = { expandedScope = false }
+                        ) {
+                            scopes.forEach { scope ->
+                                val itemText = scope.replace('_',' ')
+                                    .lowercase()
+                                    .replaceFirstChar { it.uppercase() }
+
+                                DropdownMenuItem(
+                                    text = { Text(itemText) },
+                                    onClick = {
+                                        selectedScope = scope
+                                        expandedScope = false
+                                        onFilterChanged(selectedCategory,selectedScope)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             when (state) {
@@ -147,9 +251,11 @@ fun AchievementsPreview() {
         myScore = 80
     )
 
+    val mockCategories : List<String> = listOf("OVERALL", "SAFETY", "ECO")
+
     DrivingTrackerTheme {
         AchievementsContent(
-            state = AchievementsViewModel.UiState.Success(mockLeaderboard)
+            state = AchievementsViewModel.UiState.Success(mockLeaderboard, categories = mockCategories)
         )
     }
 }

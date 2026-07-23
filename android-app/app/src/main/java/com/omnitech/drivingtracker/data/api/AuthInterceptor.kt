@@ -5,12 +5,14 @@ import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.AuthResponse
 import com.omnitech.drivingtracker.data.models.ErrorDto
 import com.omnitech.drivingtracker.data.models.RefreshRequest
-import com.omnitech.drivingtracker.services.RetrofitClient
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import javax.inject.Inject
+import javax.inject.Named
 
-class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor {
+class AuthInterceptor @Inject constructor (private val sessionManager: SessionManager,
+    @Named("baseUrl") private val baseUrl: String) : Interceptor {
     private val gson = Gson()
     private val client = OkHttpClient()
 
@@ -81,7 +83,7 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
         val refreshRequest = RefreshRequest(refreshToken)
         val body = gson.toJson(refreshRequest).toRequestBody("application/json".toMediaType())
         
-        val url = "${RetrofitClient.BASE_URL}api/auth/refresh"
+        val url = "${baseUrl}api/auth/refresh"
         val request = Request.Builder()
             .url(url)
             .post(body)

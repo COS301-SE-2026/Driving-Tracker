@@ -45,16 +45,21 @@ services:
 
   api:
     build: ./backend
+    command: yarn dev
     ports:
       - "3000:3000"
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       NODE_ENV: development
+      FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
+
     depends_on:
       db:
         condition: service_healthy
@@ -71,14 +76,15 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: development
+      FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
     depends_on:
       db:
         condition: service_healthy
       prisma-migrate:
         condition: service_completed_successfully
     ports:
-      - "5556:5555"
-    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; exec ./node_modules/.bin/prisma studio --port 5555 --browser none --url "$DATABASE_URL"'
+      - "5556:5556"
+    command: sh -lc 'until pg_isready -h db -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 1; done; exec ./node_modules/.bin/prisma studio --port 5556 --browser none --url "$DATABASE_URL"'
     restart: "no"
 
   migrate-dev:
@@ -111,6 +117,25 @@ services:
     environment:
         PORT: 3001
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+
+  api-test:
+    build: ./backend
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/tests:/app/tests
+      - ./backend/jest.config.cjs:/app/jest.config.cjs
+      - ./backend/tsconfig.build.json:/app/tsconfig.build.json
+      - ./backend/tests/jest.setup.ts:/app/tests/jest.setup.ts
+      - ./backend/.env.test:/app/.env.test
+    environment:
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+      prisma-migrate:
+        condition: service_completed_successfully
+    command: sh -lc "yarn jest --config /app/jest.config.cjs --runInBand --detectOpenHandles"
 
 volumes:
   postgres_data:

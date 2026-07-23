@@ -131,7 +131,7 @@ model trips {
   start_latitude   Decimal?        @db.Decimal(9, 6)
   end_longitude    Decimal?        @db.Decimal(9, 6)
   end_latitude     Decimal?        @db.Decimal(9, 6)
-  route_polyline   String?
+  route_polyline   Json?           @db.JsonB
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
@@ -200,6 +200,15 @@ enum DataSource {
   OBD
 }
 
+enum NotificationType {
+  TRIP_SHARED
+  BADGE_UNLOCKED
+  TRUSTED_CONTACT_REQUEST
+  TRUSTED_CONTACT_RESPONSE
+  TRIP_ALERT
+  GENERAL
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
   user_id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -226,8 +235,10 @@ model users {
   //where a user is someone elses contact
   trusted_contacts_of_user  trusted_contacts[]  @relation("TrustedContactsContactUser")
   user_badges      user_badges[]
-  vehicles         vehicles[]
+  users_vehicles     users_vehicles[]
   trip_location_shares  trip_location_shares[]  @relation("TripSharesOwner")
+  user_devices  user_devices[]
+  notifications notifications[]
 }
 
 model trip_location_shares {
@@ -243,15 +254,51 @@ model trip_location_shares {
 
   @@unique([trip_id, contact_id])
 }
+model users_vehicles {
+  assignment_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  vehicle_id    String   @db.Uuid
+  assigned_at   DateTime @default(now()) @db.Timestamptz(6)
+  
+  users    users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  vehicles vehicles @relation(fields: [vehicle_id], references: [vehicle_id], onDelete: Cascade)
+  
+  @@unique([user_id, vehicle_id])  // Prevents duplicate assignments
+}
 
 model vehicles {
   vehicle_id   String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id      String  @db.Uuid
   registration String? @db.VarChar(20)
   make         String? @db.VarChar(50)
   model        String? @db.VarChar(50)
   year         Int?
   fuel_type    String? @db.VarChar(20)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
   trips        trips[]
-  users        users   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  users_vehicles        users_vehicles[]
+}
+
+model user_devices {
+  device_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  fcm_token   String    @unique
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+  
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model notifications {
+  notification_id   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String              @db.Uuid
+  type              NotificationType
+  title             String              @db.VarChar(255)
+  body              String?             
+  is_read           Boolean             @default(false)
+  reference_id      String?             @db.Uuid
+  reference_type    String?             @db.VarChar(50)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+
+  users             users               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }

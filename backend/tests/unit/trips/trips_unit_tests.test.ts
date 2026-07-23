@@ -3,9 +3,10 @@ jest.mock('../../../src/services/trips_services');
 import { describe, it, expect, jest ,beforeEach} from '@jest/globals';
 import * as trips_controller from '../../../src/controllers/trips.controller';
 import { trips_services } from '../../../src/services/trips_services';
+import { ExtendedError } from '../../../src/utils/errors';
 
 describe('Trips endpoints unit tests', ()=>{
-    beforeEach(async () => jest.clearAllMocks());
+    beforeEach(async () => jest.resetAllMocks());
 
     const make_res = () => {
         const json = jest.fn();
@@ -55,6 +56,66 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.status).toHaveBeenCalledWith(409);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Trip already in progress' }));
         });
+
+        // error code test for when no fcm tokens are provided
+        it('Returns 422 when no tokens provided', async ()=>{
+            jest.spyOn(trips_services, 'create').mockRejectedValueOnce(new ExtendedError('No tokens provided','NO_TOKENS_PROVIDED'));
+             const req: any = {
+                user: { sub: 'user-2' },
+                body: { vehicle_id: 'v1', start_date: new Date().toISOString(), data_source: 'OBD', start_location: { lat: 0, lng: 0 } },
+            };
+            const res: any = make_res();
+
+            await trips_controller.start_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NO_TOKENS_PROVIDED', message: 'No tokens provided' }));
+        });
+
+        // error code test for when required fields are missing
+        it('Returns 422 when missing required fields', async ()=>{
+            jest.spyOn(trips_services, 'create').mockRejectedValueOnce(new Error('Missing required fields'));
+             const req: any = {
+                user: { sub: 'user-1' },
+                body: { vehicle_id: null, start_date: new Date().toISOString(), data_source: 'OBD', start_location: { lat: 0, lon: 0 } },
+            };
+            const res: any = make_res();
+
+            await trips_controller.start_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'MISSING_REQUIRED_FIELDS' }));
+        });
+
+        // error code test for when required fields are missing
+        it('Returns 403 when user not found', async ()=>{
+            jest.spyOn(trips_services, 'create').mockRejectedValueOnce(new Error('User not found'));
+             const req: any = {
+                user: null,
+                body: { vehicle_id: 'v1', start_date: new Date().toISOString(), data_source: 'OBD', start_location: { lat: 0, lon: 0 } },
+            };
+            const res: any = make_res();
+
+            await trips_controller.start_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+        });
+
+        // error code test for when an ExtendedError is thrown
+        it('Returns 500 when ExtendedError is thrown', async ()=>{
+            jest.spyOn(trips_services, 'create').mockRejectedValueOnce(new ExtendedError('Error','ERROR'));
+             const req: any = {
+                user: { sub: 'user-1' },
+                body: { vehicle_id: 'v1', start_date: new Date().toISOString(), data_source: 'OBD', start_location: { lat: 0, lon: 0 } },
+            };
+            const res: any = make_res();
+
+            await trips_controller.start_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'ERROR', message: 'Error' }));
+        });
     });
     //this is the edge case of the end trip endpoint 
     describe('end_trip endpoint',()=>{
@@ -96,17 +157,56 @@ describe('Trips endpoints unit tests', ()=>{
             await trips_controller.end_trip(req, res);
 
             expect(res.status).toHaveBeenCalledWith(409);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Trip is already completed' }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_ALREADY_COMPLETED' }));
+        });
+
+        it('Returns 403 when unauthorized', async () => {
+            jest.spyOn(trips_services, 'end_trip').mockRejectedValueOnce(new Error('Unauthorized'));
+
+            const req: any = { user: null, params: { trip_id: 'nope' }, body: {} };
+            const res: any = make_res();
+
+            await trips_controller.end_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+        });
+
+        it('Returns 403 when user does not own the trip', async () => {
+            jest.spyOn(trips_services, 'end_trip').mockRejectedValueOnce(new Error('You do not own this trip'));
+
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: {} };
+            const res: any = make_res();
+
+            await trips_controller.end_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'FORBIDDEN', message: 'You do not own this trip' }));
+        });
+
+        it('Returns 409 when a non-specific error is thrown',async()=>{
+            jest.spyOn(trips_services,'end_trip').mockRejectedValueOnce(new Error('Error'));
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1' },
+                body: { end_time: new Date().toISOString() },
+            };
+            const res: any = make_res();
+
+            await trips_controller.end_trip(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR' }));
         });
     });
 
     describe('Record trip end point',()=>{
-        it('Return 201 on successful call', async()=>{
+        it('Returns 201 on successful call', async()=>{
             jest.spyOn(trips_services,'record').mockResolvedValueOnce(undefined);
             const req: any = {
                 user: { sub: 'user-1' },
+				params: { trip_id: 't1' },
                 body: {
-                    trip_id: 't1',
                     recorded_at: new Date().toISOString(),
                     data_source: 'gps',
                     location: { lat: 0, lon: 0 },
@@ -130,13 +230,35 @@ describe('Trips endpoints unit tests', ()=>{
         });
         it('Returns 404 when trip is not found', async()=>{
             jest.spyOn(trips_services,'record').mockRejectedValueOnce(new Error('Trip not found'));
-            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 'nope' } };
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: {} };
             const res: any = make_res();
 
             await trips_controller.record_trip(req,res);
             expect(res.status).toHaveBeenCalledWith(404);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Trip not found' }));
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_NOT_FOUND', message: 'Trip not found' }));
         });
+
+		it('returns 401 when missing required fields', async () => {
+			//mocking service to throw error message
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Missing required fields'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(401);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'Fill all valid fields'}));
+		});
+
+		it('returns 500 for unexpected interal error', async () => {
+			//mocking error that doesnt match any if/else block
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'INTERNAL_SERVER_ERROR'}));
+		});
     });
 
     describe('Get history endpoint', ()=>{
@@ -245,6 +367,38 @@ describe('Trips endpoints unit tests', ()=>{
 
             expect(res.status).toHaveBeenCalledWith(400);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_EVENT_TYPE' }));
+        });
+
+        it('Returns 400 on invalid event type', async () => {
+            jest.spyOn(trips_services, 'events_log').mockRejectedValueOnce(new Error('You do not own this trip'));
+
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1' },
+                body: { event_type: 'harsh_braking', timestamp: new Date().toISOString() },
+            };
+            const res: any = make_res();
+
+            await trips_controller.log_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'FORBIDDEN', message: 'You do not own this trip' }));
+        });
+
+        it('Returns 500 on non-specific error', async () => {
+            jest.spyOn(trips_services, 'events_log').mockRejectedValueOnce(new Error('Error'));
+
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1' },
+                body: { event_type: 'harsh_braking', timestamp: new Date().toISOString() },
+            };
+            const res: any = make_res();
+
+            await trips_controller.log_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR' }));
         });
     })
 

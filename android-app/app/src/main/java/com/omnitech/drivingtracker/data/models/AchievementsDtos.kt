@@ -85,3 +85,16 @@ data class LeaderboardEntry(
     @SerializedName("display_name") val displayName: String,
     val score: Double
 )
+
+//Leaderboard categories & scopes
+data class LeaderboardCategoryResponse(val data: LeaderboardCategoryData)
+
+data class LeaderboardCategoryData(
+    val categories: List<String>,
+)
+
+data class LeaderboardScopesResponse(val data: LeaderboardScopesData)
+
+data class LeaderboardScopesData(
+    val scopes: List<String>,
+)

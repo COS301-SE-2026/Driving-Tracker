@@ -1,4 +1,8 @@
 import prisma from '../db/prisma';
+import {notification_services} from  "../services/notification_service";
+import {user_devices_services} from  "../services/user_devices_services";
+import { ConsentStatus, NotificationType } from '@prisma/client';
+import { add_notification } from '../utils/notification';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -11,6 +15,19 @@ function coded_error(code: string){
     const err: any = new Error(code);
     err.code = code;
     return err;
+}
+
+async function get_user_fullname(user_id: string){
+
+    const user = await prisma.users.findFirst({
+        where: { user_id }
+    });
+
+    if(!user) return null;
+
+    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+    return full_name;
 }
 
 
@@ -64,6 +81,16 @@ export const contact_services ={
             },
             select: {contact_id: true},
         });
+        
+        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(target_user.user_id);
+
+        const sent_by = await get_user_fullname(user_id);
+
+        if(!sent_by) {
+            throw coded_error("USER_NOT_FOUND")
+        }
+
+        await notification_services.send_trusted_contact_request_notification(fcm_tokens, sent_by, created.contact_id);   
 
         // Controller expects to return contact_id + username
         return {
@@ -75,7 +102,10 @@ export const contact_services ={
     //Returns the user's trusted contacts.
     async list_trusted_contacts(user_id: string){
         const contacts = await prisma.trusted_contacts.findMany({
-            where: {user_id},
+            where: {
+                user_id,
+                consent_status: "APPROVED"
+            },
             select: {
                 contact_id: true,
                 name: true,
@@ -176,6 +206,7 @@ export const contact_services ={
             select: {
                 contact_id: true,
                 contact_user: { select: { username: true } },
+                contact_user_id: true
             },
         });
         if(trusted.length !== contact_ids.length) throw coded_error("NOT_TRUSTED_CONTACT");
@@ -192,6 +223,30 @@ export const contact_services ={
             skipDuplicates: true,
         });
 
+        const contact_ids_arr = trusted.map(t => t.contact_id);
+
+        const contact_user_ids = trusted.map(t => t.contact_user_id);
+
+        const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+        const full_name = await get_user_fullname(user_id);
+
+        if(!full_name){
+
+            throw coded_error("USER_NOT_FOUND");
+        }
+
+        await add_notification({
+            user_ids: contact_user_ids,
+            type: "TRIP_SHARED",
+            title: "Trusted Contact",
+            body: `${full_name} is sharing their live trip with you`,
+            reference_ids: contact_ids_arr,
+            reference_type: "trusted_contact",
+        });
+
+        await notification_services.send_trip_shared_notification(fcm_tokens, full_name, trip_id);
+
         //return data in format of endpoint
         return {
             trip_id,
@@ -202,4 +257,97 @@ export const contact_services ={
             })),
         };
     },
+    //Updates pending trusted contact request to APPROVED or DENIED
+    async respond_to_contact_request(status: string, contact_id: string, user_id: string){
+
+        //ensure status falls within enum values
+        if(!Object.values(ConsentStatus).includes(status as ConsentStatus)){
+            throw coded_error("INVALID_STATUS");
+        }
+
+        const target_contact = await prisma.trusted_contacts.findFirst({
+            where: { 
+                contact_id,
+                contact_user_id: user_id
+            }
+        });
+
+        if(!target_contact){
+            throw coded_error("CONTACT_REQUEST_NOT_FOUND");
+        }
+
+        const target_user_id = target_contact?.user_id;
+
+        if(!target_user_id){
+            throw coded_error("CONTACT_REQUEST_NOT_FOUND");
+        }
+
+        //update status
+        await prisma.trusted_contacts.update({
+            data: {
+                consent_status: status as ConsentStatus
+            },
+            where: {
+                contact_id
+            }
+        });
+
+        const fcm_tokens = await user_devices_services.get_user_fcm_tokens(target_user_id);
+
+        const sent_by = await get_user_fullname(user_id);
+
+        if(!sent_by) {
+            throw coded_error("USER_NOT_FOUND")
+        }
+
+        const statusStr = (status === "APPROVED")? "accepted" : "declined";
+
+        await add_notification({
+            user_ids: [target_user_id],
+            type: NotificationType.TRUSTED_CONTACT_RESPONSE,
+            title: "Trusted Contact",
+            body: `${sent_by} has ${statusStr} your Trusted Contact Request`,
+            reference_ids: [contact_id],
+            reference_type: "trusted_contact"
+        });
+
+        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus);
+
+        return {
+            contact_id,
+            message: "Status updated successfully"
+        };
+    },
+
+    /*
+    * Returns user's pending trusted contact requests where they are the contact
+    */
+   async get_received_contact_requests(user_id: string){
+
+        const requests = await prisma.trusted_contacts.findMany({
+            where: { contact_user_id: user_id,
+                consent_status: 'PENDING'
+            },
+            select: {
+                contact_id: true,
+                user_id: true,
+                created_at: true,
+
+                owner_user: {
+                    select:  {
+                        username: true,
+                    }
+                },
+            }
+        });
+
+        const requestsArr = requests? requests.map(r => ({
+            contact_id: r.contact_id,
+            created_at: r.created_at,
+            username: r.owner_user.username
+        })):[];
+
+        return requestsArr;   
+    },
+    
 };

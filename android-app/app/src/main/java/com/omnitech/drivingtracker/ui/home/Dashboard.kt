@@ -1,5 +1,10 @@
 package com.omnitech.drivingtracker.ui.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -7,17 +12,21 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.RecentTripCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
@@ -27,9 +36,9 @@ import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 fun Dashboard(navController: NavController? = null,
-              dashboardViewModel: DashboardViewModel = viewModel()
+              dashboardViewModel: DashboardViewModel = hiltViewModel()
 ){
-    val recentTrip by dashboardViewModel.recentTrip.collectAsState();
+    val recentTrip by dashboardViewModel.recentTrip.collectAsState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -41,7 +50,7 @@ fun Dashboard(navController: NavController? = null,
                     leftIcon = Icons.Default.Menu,
                     rightIcon = Icons.Default.Settings,
                     onLeftClick = { /* Open menu */ },
-                    onRightClick = { /* Open settings */ }
+                    onRightClick = {navController?.navigate(Screen.Settings.route)}
                 )
             },
             bottomBar = {
@@ -106,7 +115,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_distance),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Blue
+                            tint = Blue,
+                            onClick = {}
                         )
                         StatCard(
                             label = "Driving Time",
@@ -115,7 +125,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_time),
                             percentage = -5,
                             modifier = Modifier.weight(1f),
-                            tint = Purple
+                            tint = Purple,
+                            onClick = {}
                         )
                     }
                     Row(
@@ -129,7 +140,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_fuel),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Green
+                            tint = Green,
+                            onClick = {}
                         )
                         StatCard(
                             label = "Trips",
@@ -137,7 +149,8 @@ fun Dashboard(navController: NavController? = null,
                             icon = painterResource(id = R.drawable.stats_trips),
                             percentage = 5,
                             modifier = Modifier.weight(1f),
-                            tint = Blue
+                            tint = Blue,
+                            onClick = { navController?.navigate(Screen.Trips.route) }
                         )
                     }
                 }
@@ -167,7 +180,7 @@ fun Dashboard(navController: NavController? = null,
                         startLoc = "Office",
                         destination = "home",
                         distance = trip.distanceKm?.toInt()?:0,
-                        drivingTime = trip.durationMinutes?.toInt()?:0,
+                        drivingTime = trip.durationMinutes?:0,
                         startTime = trip.startTime,
                         tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt()?:0,
                     )

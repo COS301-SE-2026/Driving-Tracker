@@ -8,6 +8,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.Blue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
@@ -51,7 +53,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_starfilled),
+                    painter = painterResource(id = R.drawable.ic_nav_achievements),
                     contentDescription = "Achievements",
                     tint = if (color == "ach") Blue else Color.Gray
                 )
@@ -73,31 +75,32 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_nav_bell),
                     contentDescription = "Alerts",
-                    tint = if (color == "al") Blue else Color.Gray
+                    tint = if (color == "alerts") Blue else Color.Gray
                 )
             },
             label = {
                 Text(
                     text = "Alerts",
-                    color = if (color == "al") Blue else Color.Gray
+                    color = if (color == "alerts") Blue else Color.Gray
                 )
             },
             selected = false,
-            onClick = { /*Navigates to alerts*/ }
+            onClick = {navController?.navigate(Screen.Notifications.route)}
         )
 
         //More Item
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_contacts),
+                    painter = painterResource(id = R.drawable.ic_nav_menu),
                     contentDescription = "More"
                 )
             },
-            label = { Text(text = "Contacts") },
+            label = { Text(text = "More") },
             selected = false,
-            onClick = { navController?.navigate(Screen.Contacts.route) }
+            onClick = { navController?.navigate(Screen.More.route) }
         )
+
     }
 
 }

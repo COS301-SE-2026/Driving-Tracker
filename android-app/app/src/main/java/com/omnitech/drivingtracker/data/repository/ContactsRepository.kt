@@ -7,11 +7,13 @@ import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.ContactIdWrapper
 import com.omnitech.drivingtracker.data.models.CreateContactRequest
+import com.omnitech.drivingtracker.data.models.RequestDto
 import com.omnitech.drivingtracker.data.models.ShareLocationRequest
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
+import javax.inject.Inject
 
-class ContactsRepository(private val api: ApiService){
+class ContactsRepository @Inject constructor(private val api: ApiService){
     suspend fun fetchContacts(): Result<List<ContactDto>>{
         return try{
             val response = api.getContacts() //call API
@@ -24,11 +26,7 @@ class ContactsRepository(private val api: ApiService){
         }
     }
     suspend fun fetchApprovedContacts(): Result<List<ContactDto>> {
-        return fetchContacts().map{
-            contacts -> contacts.filter{ //filter approved
-                it.consentStatus == ConsentStatus.APPROVED
-            }
-        }
+        return fetchContacts()
     }
 
     suspend fun createContact(identifier: String): Result<Unit> {
@@ -40,6 +38,19 @@ class ContactsRepository(private val api: ApiService){
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to add contact"))
+        }catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+        }
+    }
+
+    suspend fun getContactRequests(): Result<List<RequestDto>> {
+        return try{
+            val response = api.getReceivedContactRequests()
+            val requests = response.data.requests
+            Result.success(requests)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get contact requests"))
         }catch(e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
         }

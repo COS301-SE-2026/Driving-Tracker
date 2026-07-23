@@ -13,6 +13,13 @@ val Border = Color(0xFFE6EAF0)
 
 val Gray = Color.LightGray
 
+//Dark Theme colors
+val DarkBackground = Color(0xFF0F172A)
+val DarkSurface = Color(0xFF1E293B)
+val DarkTextPrimary = Color(0xFFF8FAFC)
+val DarkTextSecondary = Color(0xFF94A3B8)
+
+
 //Text
 val TextPrimary = Color(0xFF1A1A1A)
 val TextSecondary = Color(0xFF6B7280)

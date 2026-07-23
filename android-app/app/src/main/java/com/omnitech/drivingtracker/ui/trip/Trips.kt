@@ -1,48 +1,7 @@
 package com.omnitech.drivingtracker.ui.trip
 
-//import androidx.compose.foundation.background
-//import androidx.compose.runtime.Composable
-//import androidx.compose.ui.tooling.preview.Preview
-//import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.layout.Arrangement
-//import androidx.compose.foundation.rememberScrollState
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.foundation.verticalScroll
-//import androidx.compose.material3.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.unit.dp
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.unit.sp
-//import com.omnitech.drivingtracker.ui.theme.Green
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Add
-//import androidx.compose.material.icons.filled.Settings
-//import androidx.compose.material.icons.filled.Tune
-//import com.omnitech.drivingtracker.ui.components.BottomNavBar
-//import com.omnitech.drivingtracker.ui.components.ScoreRing
-//import androidx.compose.foundation.Image
-//import androidx.compose.material.icons.automirrored.filled.ArrowBack
-//import androidx.compose.ui.res.painterResource
-//import com.omnitech.drivingtracker.R
-//import androidx.compose.ui.layout.ContentScale
-//import com.omnitech.drivingtracker.data.models.ConsentStatus
-//import com.omnitech.drivingtracker.data.models.ContactDto
-//import com.omnitech.drivingtracker.data.models.TripItemDto
-//import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
-//import com.omnitech.drivingtracker.ui.theme.Green
-//import java.time.Instant
-//import java.time.ZoneId
-//import java.time.format.DateTimeFormatter
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.collectAsState
-//import androidx.compose.runtime.getValue
-//import androidx.compose.runtime.mutableStateOf
-//import androidx.compose.runtime.remember
-//import androidx.compose.runtime.setValue
 import androidx.compose.foundation.Image
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,6 +31,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -106,6 +68,7 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.TripItemDto
+import com.omnitech.drivingtracker.data.models.VehicleDto
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -116,26 +79,35 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.services.TripTrackingService
+import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 
 @Composable
 fun Trips(
     navController: NavController? = null,
-    tripsViewModel: TripsViewModel = viewModel(),
-    tripViewModel: TripViewModel = viewModel(),
-    contactsViewModel: com.omnitech.drivingtracker.ui.contacts.ContactsViewModel = viewModel()
+    tripsViewModel: TripsViewModel = hiltViewModel(),
+    tripViewModel: TripViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()
-    val contactsState by contactsViewModel.uiState.collectAsState()
+    val vehiclesState by tripViewModel.vehiclesState.collectAsState()
+    val approvedContactsState by tripViewModel.approvedContactsState.collectAsState()
 
-    val approvedContacts = when (val state = contactsState) {
-        is com.omnitech.drivingtracker.ui.contacts.ContactsViewModel.UiState.Success -> {
-            state.contacts.filter { it.consentStatus == ConsentStatus.APPROVED }
-        }
+    val approvedContacts = when (val state = approvedContactsState) {
+        is TripViewModel.UiState.SuccessApprovedContacts -> state.data
         else -> emptyList()
     }
+
+    val vehicles = when (val state = vehiclesState) {
+        is TripViewModel.UiState.SuccessVehicles -> state.vehicles
+        else -> emptyList()
+    }
+
+    val context = LocalContext.current
 
     LaunchedEffect(tripStartState){
         val state = tripStartState
@@ -143,6 +115,8 @@ fun Trips(
             val tripId = state.data
 
             if (tripId.isNotEmpty()){
+                TripTrackingService.startTrip(context, tripId)
+
                 navController?.navigate(Screen.LiveTrip.createRoute(tripId))
             }
         }
@@ -152,6 +126,7 @@ fun Trips(
         tripsState = tripsState,
         tripStartState = tripStartState,
         approvedContacts = approvedContacts,
+        vehicles = vehicles,
         onRetryTrips = { tripsViewModel.loadTripsHistory() },
         onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
             tripViewModel.startTrip(
@@ -162,6 +137,13 @@ fun Trips(
                 selectedContactIds = contactIds.ifEmpty { null }
             )
         },
+        onRefreshContacts = {
+            tripViewModel.loadVehicles()
+            tripViewModel.loadApprovedContacts()
+        },
+        onApplyFilters = {status, start,end ->
+            tripsViewModel.loadTripsHistory(start,end,status)
+        },
         navController = navController
     )
 }
@@ -171,11 +153,15 @@ fun TripsContent(
     tripsState: TripsViewModel.UiState,
     tripStartState: TripViewModel.UiState,
     approvedContacts: List<ContactDto>,
+    vehicles: List<VehicleDto>,
     onRetryTrips: () -> Unit,
     onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
+    onRefreshContacts: () -> Unit,
+    onApplyFilters: (String?, String?, String?) -> Unit,
     navController: NavController? = null
 ) {
     var showStartTripDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -229,7 +215,10 @@ fun TripsContent(
                 Text("On the move again?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { showStartTripDialog = true },
+                    onClick = {
+                        onRefreshContacts()
+                        showStartTripDialog = true
+                              },
                     colors = ButtonDefaults.buttonColors(containerColor = Green)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -272,7 +261,10 @@ fun TripsContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Past", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
+            IconButton(onClick = {showFilterDialog= true}) {
+                Icon(Icons.Default.Tune, contentDescription = "Filter", tint = MaterialTheme.colorScheme.onBackground)
+            }
+
         }
 
         when (tripsState) {
@@ -321,18 +313,26 @@ fun TripsContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         trips.forEachIndexed { index, trip ->
-                            TripCard(trip = trip, isLatest = index == 0)
+                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {
+                                if(trip.status == "IN_PROGRESS"){
+                                    navController?.navigate(Screen.LiveTrip.createRoute(trip.tripId))
+                                }else{
+                                    navController?.navigate(Screen.TripSummary.createRoute(trip.tripId))
+                                    }
+                                }
+                            )
                         }
                     }
                 }
             }
         }
-        BottomNavBar(navController = navController)
+        BottomNavBar(navController = navController, "trip")
     }
 
     if (showStartTripDialog) {
         StartTripDialog(
             approvedContacts = approvedContacts,
+            vehicles = vehicles,
             onDismiss = { showStartTripDialog = false },
             onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
                 onStartTrip(vehicleId, dataSource, latitude, longitude, contactIds)
@@ -340,16 +340,108 @@ fun TripsContent(
             }
         )
     }
+    if(showFilterDialog){
+        FilterDialog(onDismiss = { showFilterDialog = false },
+            onApply = {status,start,end ->
+                onApplyFilters(status,start,end)
+            showFilterDialog= false
+            }
+        )
+    }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterDialog(
+    onDismiss: () -> Unit,
+    onApply: (status: String?, startDate: String?, endDate: String?) -> Unit
+) {
+    var selectedStatus by remember { mutableStateOf<String?>(null) }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val statusOptions = listOf("ALL", "COMPLETED", "ONGOING", "CANCELLED")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Filter Trips") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Status Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedStatus ?: "Select Status",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Status") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        statusOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selectedStatus = if (option == "ALL") null else option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Date inputs (Enter as YYYY-MM-DD)
+                OutlinedTextField(
+                    value = startDate,
+                    onValueChange = { startDate = it },
+                    label = { Text("Start Date (YYYY-MM-DD)") },
+                    placeholder = { Text("e.g. 2023-10-01") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = endDate,
+                    onValueChange = { endDate = it },
+                    label = { Text("End Date (YYYY-MM-DD)") },
+                    placeholder = { Text("e.g. 2023-10-31") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // Format dates to ISO before sending
+                val startIso = if (startDate.isNotBlank()) "${startDate}T00:00:00Z" else null
+                val endIso = if (endDate.isNotBlank()) "${endDate}T23:59:59Z" else null
+                onApply(selectedStatus, startIso, endIso)
+            }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun StartTripDialog(
     approvedContacts: List<ContactDto>,
+    vehicles: List<VehicleDto>,
     onDismiss: () -> Unit,
     onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, contactIds: List<String>) -> Unit
 ) {
-    var vehicleId by rememberSaveable { mutableStateOf("") }
+    var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }
+    var expanded by remember { mutableStateOf(false) }
     var dataSource by rememberSaveable { mutableStateOf("PHONE") }
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
@@ -384,13 +476,37 @@ private fun StartTripDialog(
         title = { Text("Start Trip") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = vehicleId,
-                    onValueChange = { vehicleId = it },
-                    label = { Text("Vehicle ID") },
-                    singleLine = true,
+                // Vehicle Selection Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
                     modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    OutlinedTextField(
+                        value = if (selectedVehicle != null) "${selectedVehicle?.make} ${selectedVehicle?.model}" else "Select Vehicle",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Vehicle") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        vehicles.forEach { vehicle ->
+                            DropdownMenuItem(
+                                text = { Text("${vehicle.make} ${vehicle.model} (${vehicle.registration})") },
+                                onClick = {
+                                    selectedVehicle = vehicle
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = dataSource,
                     onValueChange = { dataSource = it },
@@ -398,22 +514,8 @@ private fun StartTripDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = latitude,
-                        onValueChange = { latitude = it },
-                        label = { Text("Latitude") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = longitude,
-                        onValueChange = { longitude = it },
-                        label = { Text("Longitude") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                
+                // Location is captured in background, hidden from UI
 
                 Text(
                     text = "Share with approved contacts",
@@ -479,9 +581,10 @@ private fun StartTripDialog(
             TextButton(onClick = {
                 val lat = latitude.toDoubleOrNull()
                 val lng = longitude.toDoubleOrNull()
-                if (vehicleId.isNotBlank() && lat != null && lng != null) {
+                val vehicleId = selectedVehicle?.vehicleId
+                if (vehicleId != null && lat != null && lng != null) {
                     onStartTrip(
-                        vehicleId.trim(),
+                        vehicleId,
                         dataSource.trim(),
                         lat,
                         lng,
@@ -536,7 +639,7 @@ private fun formatTripScore(trip: TripItemDto): Int {
 
 
 @Composable
-fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
+fun TripCard(trip: TripItemDto, isLatest: Boolean = false, onSeeMoreClick: () -> Unit) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -607,7 +710,7 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
-                    onClick = {},
+                    onClick = onSeeMoreClick,
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(containerColor = Green),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -663,8 +766,11 @@ fun TripsPreview() {
             tripsState = TripsViewModel.UiState.Success(mockTrips),
             tripStartState = TripViewModel.UiState.Idle,
             approvedContacts = emptyList(),
+            vehicles = emptyList(),
             onRetryTrips = {},
-            onStartTrip = { _, _, _, _, _ -> }
+            onStartTrip = { _, _, _, _, _ -> },
+            onRefreshContacts = {},
+            onApplyFilters = { _, _, _ -> }
         )
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -16,10 +17,16 @@ import com.omnitech.drivingtracker.ui.theme.*
 
 @Composable
 //Reusable top bar component which will take in an icon as a parameter
-fun TopBar(leftIcon: ImageVector, rightIcon: ImageVector, onLeftClick: () -> Unit, onRightClick: () -> Unit, modifier: Modifier = Modifier) {
+fun TopBar(leftIcon: ImageVector,
+           rightIcon: ImageVector,
+           onLeftClick: () -> Unit,
+           onRightClick: () -> Unit,
+           modifier: Modifier = Modifier
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -46,10 +53,12 @@ fun TopBar(leftIcon: ImageVector, rightIcon: ImageVector, onLeftClick: () -> Uni
             )
         }
         //Right button
-        Icon(
-            imageVector = rightIcon,
-            contentDescription = "Settings",
-            tint = MaterialTheme.colorScheme.onBackground
-        )
+        IconButton(onClick = onRightClick) {
+            Icon(
+                imageVector = rightIcon,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
     }
 }
