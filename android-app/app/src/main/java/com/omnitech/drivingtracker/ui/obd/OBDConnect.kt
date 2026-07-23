@@ -1,4 +1,5 @@
 package com.omnitech.drivingtracker.ui.obd
+import android.Manifest
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +42,12 @@ import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.*
 
 data class Device(
     val name: String,
@@ -67,6 +74,37 @@ fun OBDConnect(navController: NavController? =null,
             address = btDevice.address, //this is MAC address
             isConnected = connectionState == ObdManager.ConnectionState.CONNECTED && btDevice.address == connectedAddress,
             adapter = "ELM327"
+        )
+    }
+
+    //Bluetooth Permissions
+    val requiredPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    }else{
+        emptyArray()
+    }
+
+    var permissionsGranted by remember {
+        mutableStateOf(requiredPermissions.all{
+            ContextCompat.checkSelfPermission(context,it) == PackageManager.PERMISSION_GRANTED
+        })
+    }
+
+    //show dialog if permissions are missing
+    if (!permissionsGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+        BluetoothRationale(
+            onPermissionHandled = {
+                permissionsGranted = requiredPermissions.all{
+                    ContextCompat.checkSelfPermission(context,it) == PackageManager.PERMISSION_GRANTED
+                }
+                if(permissionsGranted){
+                    viewModel.loadPairedDevices()
+                }
+                else{
+                    navController?.popBackStack()
+                }
+            },
+            viewModel = viewModel
         )
     }
 

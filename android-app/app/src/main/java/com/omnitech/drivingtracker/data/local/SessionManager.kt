@@ -49,6 +49,14 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
         return prefs.getBoolean("notification_requested", false)
     }
 
+    fun setBluetoothRequested(){
+        prefs.edit{ putBoolean("bluetooth_requested", true)}
+    }
+
+    fun hasRequestedBluetooth() : Boolean {
+        return prefs.getBoolean("bluetooth_requested", false)
+    }
+
     fun saveFcmToken(token: String) {
         prefs.edit { putString("fcm_token", token) }
     }
