@@ -143,13 +143,16 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
           EOF
 
-            mkdir -p backend
-            cat > backend/.env <<EOF
-            DATABASE_URL=${{ env.DATABASE_URL }}
-            SEED_USER_PASSWORD=ci-seed-password
-            AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
-            FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
-            EOF
+          mkdir -p backend
+          cat > backend/.env <<EOF
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          SEED_USER_PASSWORD=ci-seed-password
+          AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
+          FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          EOF
+
+          cp .env backend/.env.test
+
 
       - run: docker compose build
       - run: docker compose up -d

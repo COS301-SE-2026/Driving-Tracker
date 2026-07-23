@@ -303,3 +303,41 @@ describe('contact services.respond_to_contact_request', () => {
     });
 
 });
+
+describe('contact services.get_received_contact_requests',()=>{
+    beforeEach(async()=>{jest.clearAllMocks()});
+
+    it('returns list of trusted contacts', async () => {
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([
+            {
+                contact_id: 'c1',
+                user_id: 'user-1',
+                created_at: '2026-03-03',
+                owner_user: { username: 'johndoe' },
+            },
+            {
+                contact_id: 'c2',
+                user_id: 'user-2',
+                created_at: '2026-04-04',
+                owner_user: { username: 'janesmith' },
+            },
+        ]);
+
+        const result = await contact_services.get_received_contact_requests('u1');
+
+        expect(result.length).toBe(2);
+        expect(result[0].contact_id).toBe('c1');
+        expect(result[0].username).toBe('johndoe');
+        expect(result[1].contact_id).toBe('c2');
+        expect(result[1].username).toBe('janesmith');
+    });
+
+    it('returns empty list when no notifications', async () => {
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+
+        const result = await contact_services.get_received_contact_requests('u1');
+
+        expect(result.length).toBe(0);
+        
+    });
+});
