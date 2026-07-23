@@ -15,7 +15,7 @@ RUN corepack enable && corepack prepare yarn@4.6.0 --activate
 
 # Copy dependency files first - yarn install only re-runs when package.json changes
 COPY package.json yarn.lock .yarnrc.yml ./
-RUN yarn install --immutable
+RUN YARN_ENABLE_SCRIPTS=false yarn install --immutable
 #immutable better for reproducible builds because 
 #yarn is then not allowed to update yarn.lock to make the system "work"
 
