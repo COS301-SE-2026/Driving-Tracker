@@ -244,16 +244,4 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
             emptyList()
         }
     }
-
-    //start looking for new nearby devices
-    fun startDiscovery(){
-        try{
-            if(bluetoothAdapter?.isDiscovering == true){
-                bluetoothAdapter.cancelDiscovery()
-            }
-            bluetoothAdapter?.startDiscovery()
-        }catch(e: SecurityException){
-            
-        }
-    }
 }

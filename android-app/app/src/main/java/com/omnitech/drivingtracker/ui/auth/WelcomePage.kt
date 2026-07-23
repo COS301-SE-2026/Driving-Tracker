@@ -123,7 +123,7 @@ fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
         ) {
 
             Text(
-                text = "Do you have an account? ",
+                text = "Don't have an account? ",
                 style = MaterialTheme.typography.titleSmall
             )
 

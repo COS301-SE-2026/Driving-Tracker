@@ -174,7 +174,9 @@ class SensorFusionManager @Inject constructor(
     }
 
     //called when sensor accuracy changes
-    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        //usually left empty unless using specific calibrations
+    }
 
         //Event Detection - linear (braking/acceleration/crash)
         private fun checkForLinearEvents(){

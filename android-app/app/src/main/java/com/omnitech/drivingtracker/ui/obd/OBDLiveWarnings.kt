@@ -26,20 +26,22 @@ data class LiveWarning(
 @Composable
 fun OBDLiveWarnings(navController: NavController? =null){
 
+    val engineLightWarning = "Check Engine/Malfunction indicator Lamp (MIL)"
+    val fuelTrimWarning = "Indicates the engine is getting too much air and not enough fuel."
     //mock warnings
     val warnings = remember{
         listOf(
             LiveWarning(
-                title = "Check Engine/Malfunction indicator Lamp (MIL)",
-                description = "Indicates the engine is getting too much air and not enough fuel."
+                title = engineLightWarning,
+                description = fuelTrimWarning
             ),
             LiveWarning(
-                title = "Check Engine/Malfunction indicator Lamp (MIL)",
-                description = "Indicates the engine is getting too much air and not enough fuel."
+                title = engineLightWarning,
+                description = fuelTrimWarning
             ),
             LiveWarning(
-                title = "Check Engine/Malfunction indicator Lamp (MIL)",
-                description = "Indicates the engine is getting too much air and not enough fuel."
+                title = engineLightWarning,
+                description = fuelTrimWarning
             )
 
         )

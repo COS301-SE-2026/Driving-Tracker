@@ -135,7 +135,7 @@
         window.updateCamera = function(lat, lng, zoom) {
             if (!map || !mapReady) return;
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng), zoomN = Number.parseFloat(zoom);
-            if (isNaN(latN) || isNaN(lngN) || isNaN(zoomN)) return;
+            if (Number.isNaN(latN) || Number.isNaN(lngN) || Number.isNaN(zoomN)) return;
 
             updateMarker(latN, lngN);
             updateRoute(latN, lngN);
