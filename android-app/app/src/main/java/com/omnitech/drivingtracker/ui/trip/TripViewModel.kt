@@ -34,6 +34,7 @@ class TripViewModel @Inject constructor(
         ) : UiState()
     }
 
+    val unknownErrorVal = "Unknown error"
     val liveMetrics: StateFlow<LiveSensorMetrics> = sensorFusion.liveMetrics
     private val _approvedContactsState = MutableStateFlow<UiState>(UiState.Idle)
     val approvedContactsState : StateFlow<UiState> = _approvedContactsState
@@ -67,7 +68,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _vehiclesState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }
@@ -95,7 +96,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _approvedContactsState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }
@@ -128,7 +129,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _tripStartState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }

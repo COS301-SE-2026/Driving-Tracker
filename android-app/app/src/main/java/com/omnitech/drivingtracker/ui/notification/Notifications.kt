@@ -39,6 +39,7 @@ fun NotificationsScreen(
 
     //Ui state
     val state by viewModel.uiState.collectAsState()
+    val noNotificationError = "No notifications"
 
     LaunchedEffect(Unit) {
         viewModel.getContactRequests()
@@ -77,7 +78,7 @@ fun NotificationsScreen(
                         if(state is NotificationViewModel.UiState.SuccessPendingRequests){
                             val requests = (state as NotificationViewModel.UiState.SuccessPendingRequests).requests
                             if(requests.isEmpty()){
-                               Text(text = "No notifications",
+                               Text(text = noNotificationError,
                                    style = MaterialTheme.typography.bodyMedium,
                                    )
                             } else {
@@ -107,7 +108,7 @@ fun NotificationsScreen(
                             val notificationsToday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Today"]
 
                             if(notificationsToday.isNullOrEmpty()){
-                                Text(text = "No notifications",
+                                Text(text = noNotificationError,
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }else {
@@ -133,7 +134,7 @@ fun NotificationsScreen(
                             val notificationsYesterday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Yesterday"]
 
                             if(notificationsYesterday.isNullOrEmpty()){
-                                Text(text = "No notifications",
+                                Text(text = noNotificationError,
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }else {
@@ -159,7 +160,7 @@ fun NotificationsScreen(
                             val notificationsWeek = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["This Week"]
 
                             if(notificationsWeek.isNullOrEmpty()){
-                                Text(text = "No notifications",
+                                Text(text = noNotificationError,
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             } else {
@@ -185,7 +186,7 @@ fun NotificationsScreen(
                             val notificationsEarlier = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Earlier"]
 
                             if(notificationsEarlier.isNullOrEmpty()){
-                                Text(text = "No notifications",
+                                Text(text = noNotificationError,
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             } else {

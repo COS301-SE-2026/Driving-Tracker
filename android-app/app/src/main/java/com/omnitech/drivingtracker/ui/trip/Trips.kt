@@ -1,47 +1,5 @@
 package com.omnitech.drivingtracker.ui.trip
 
-//import androidx.compose.foundation.background
-//import androidx.compose.runtime.Composable
-//import androidx.compose.ui.tooling.preview.Preview
-//import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.layout.Arrangement
-//import androidx.compose.foundation.rememberScrollState
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.foundation.verticalScroll
-//import androidx.compose.material3.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.unit.dp
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.unit.sp
-//import com.omnitech.drivingtracker.ui.theme.Green
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Add
-//import androidx.compose.material.icons.filled.Settings
-//import androidx.compose.material.icons.filled.Tune
-//import com.omnitech.drivingtracker.ui.components.BottomNavBar
-//import com.omnitech.drivingtracker.ui.components.ScoreRing
-//import androidx.compose.foundation.Image
-//import androidx.compose.material.icons.automirrored.filled.ArrowBack
-//import androidx.compose.ui.res.painterResource
-//import com.omnitech.drivingtracker.R
-//import androidx.compose.ui.layout.ContentScale
-//import com.omnitech.drivingtracker.data.models.ConsentStatus
-//import com.omnitech.drivingtracker.data.models.ContactDto
-//import com.omnitech.drivingtracker.data.models.TripItemDto
-//import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
-//import com.omnitech.drivingtracker.ui.theme.Green
-//import java.time.Instant
-//import java.time.ZoneId
-//import java.time.format.DateTimeFormatter
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.collectAsState
-//import androidx.compose.runtime.getValue
-//import androidx.compose.runtime.mutableStateOf
-//import androidx.compose.runtime.remember
-//import androidx.compose.runtime.setValue
 import androidx.compose.foundation.Image
 import androidx.compose.material3.IconButton
 import androidx.compose.foundation.background
@@ -132,8 +90,7 @@ import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 fun Trips(
     navController: NavController? = null,
     tripsViewModel: TripsViewModel = hiltViewModel(),
-    tripViewModel: TripViewModel = hiltViewModel(),
-    contactsViewModel: ContactsViewModel = hiltViewModel()
+    tripViewModel: TripViewModel = hiltViewModel()
 ) {
     val tripsState by tripsViewModel.uiState.collectAsState()
     val tripStartState by tripViewModel.tripStartState.collectAsState()

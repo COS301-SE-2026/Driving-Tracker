@@ -25,6 +25,7 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
     private val contactsRepository: ContactsRepository,
     private val sessionManager: SessionManager): ViewModel(){
 
+    val somethingWentWrongError = "Something went wrong"
     sealed class UiState{
         object Idle : UiState() //initial state
         object Loading : UiState() //fetching data
@@ -59,12 +60,12 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                         exception is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Something went wrong"
+                                message = exception.errorMessage ?: somethingWentWrongError
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "Something went wrong"
+                                message = exception.message ?: somethingWentWrongError
                             )
                         }
                     }
@@ -87,12 +88,12 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                         exception is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Something went wrong"
+                                message = exception.errorMessage ?: somethingWentWrongError
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "Something went wrong"
+                                message = exception.message ?: somethingWentWrongError
                             )
                         }
                     }
@@ -115,12 +116,12 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                         exception is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Something went wrong"
+                                message = exception.errorMessage ?: somethingWentWrongError
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "Something went wrong"
+                                message = exception.message ?: somethingWentWrongError
                             )
                         }
                     }
@@ -146,10 +147,4 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
             }
         }
     }
-
-
-
-//    init {
-//        getContactRequests()
-//    }
 }
