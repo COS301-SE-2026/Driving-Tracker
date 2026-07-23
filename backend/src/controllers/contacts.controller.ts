@@ -313,6 +313,30 @@ const contacts_controller = {
             return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not respond to trusted contact request"});
         }
 
-    }
+    },
+
+    async get_receieved_contact_requests(req: AuthRequest, res: Response){
+        const user_id = get_user_id(req);
+
+        if(!user_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        try{
+
+            const response = await contact_services.get_received_contact_requests(user_id);
+
+            return res.status(200).json({
+                data: {
+                    requests: response
+                },
+                message: "Fetched received contact requests"
+            });
+
+        } catch(err: any){
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not get receieved trusted contact requests"});
+        }
+    },
 };
 export default contacts_controller;

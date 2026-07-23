@@ -1,7 +1,8 @@
 import prisma from '../db/prisma';
 import {notification_services} from  "../services/notification_service";
 import {user_devices_services} from  "../services/user_devices_services";
-import { ConsentStatus } from '@prisma/client';
+import { ConsentStatus, NotificationType } from '@prisma/client';
+import { add_notification } from '../utils/notification';
 
 //Helper: check if identifier looks like a UUID : uses Regex
 function is_uuid(value: string): boolean {
@@ -222,6 +223,8 @@ export const contact_services ={
             skipDuplicates: true,
         });
 
+        const contact_ids_arr = trusted.map(t => t.contact_id);
+
         const contact_user_ids = trusted.map(t => t.contact_user_id);
 
         const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
@@ -232,6 +235,15 @@ export const contact_services ={
 
             throw coded_error("USER_NOT_FOUND");
         }
+
+        await add_notification({
+            user_ids: contact_user_ids,
+            type: "TRIP_SHARED",
+            title: "Trusted Contact",
+            body: `${full_name} is sharing their live trip with you`,
+            reference_ids: contact_ids_arr,
+            reference_type: "trusted_contact",
+        });
 
         await notification_services.send_trip_shared_notification(fcm_tokens, full_name, trip_id);
 
@@ -288,12 +300,54 @@ export const contact_services ={
             throw coded_error("USER_NOT_FOUND")
         }
 
-        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus)
+        const statusStr = (status === "APPROVED")? "accepted" : "declined";
+
+        await add_notification({
+            user_ids: [target_user_id],
+            type: NotificationType.TRUSTED_CONTACT_RESPONSE,
+            title: "Trusted Contact",
+            body: `${sent_by} has ${statusStr} your Trusted Contact Request`,
+            reference_ids: [contact_id],
+            reference_type: "trusted_contact"
+        });
+
+        await notification_services.send_trusted_contact_response_notification(fcm_tokens, sent_by, status as ConsentStatus);
 
         return {
             contact_id,
             message: "Status updated successfully"
         };
-    }
+    },
+
+    /*
+    * Returns user's pending trusted contact requests where they are the contact
+    */
+   async get_received_contact_requests(user_id: string){
+
+        const requests = await prisma.trusted_contacts.findMany({
+            where: { contact_user_id: user_id,
+                consent_status: 'PENDING'
+            },
+            select: {
+                contact_id: true,
+                user_id: true,
+                created_at: true,
+
+                owner_user: {
+                    select:  {
+                        username: true,
+                    }
+                },
+            }
+        });
+
+        const requestsArr = requests? requests.map(r => ({
+            contact_id: r.contact_id,
+            created_at: r.created_at,
+            username: r.owner_user.username
+        })):[];
+
+        return requestsArr;   
+    },
     
 };

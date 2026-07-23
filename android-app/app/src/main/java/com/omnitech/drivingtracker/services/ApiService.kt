@@ -14,8 +14,17 @@ interface ApiService{
     @POST("contacts/alerts")
     suspend fun alertContacts(@Body body: AlertContactsRequest): GenericResponse
 
+    @GET("contacts/received_requests")
+    suspend fun getReceivedContactRequests(): ReceivedRequestResponse
+
     @POST("contacts/share_location")
     suspend fun shareLocation(@Body body: ShareLocationRequest): GenericResponse
+
+    @PATCH("contacts/{contact_id}/respond")
+    suspend fun respondToContactRequest(
+        @Path("contact_id") contactId: String,
+        @Body body: RespondContactRequest
+    ): RespondContactResponse
 
     @GET("vehicle/get_all_vehicles/")
     suspend fun getVehicles(): List<VehicleDto>
@@ -78,6 +87,9 @@ interface ApiService{
     @GET("map/token")
     suspend fun getMapToken(): MapTokenResponse
 
+    @GET("notifications")
+    suspend fun getNotifications(): NotificationsResponse
+  
     @POST("trips/{trip_id}/readings/record")
     suspend fun recordReading(
         @Path("trip_id") tripId: String,

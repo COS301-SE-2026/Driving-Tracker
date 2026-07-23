@@ -19,14 +19,9 @@ jobs:
     env:
       #Prisma v7 config expects DATABASE_URL to exist, uses dummy
       DATABASE_URL: postgresql://ci_user:ci_pass@localhost:5432/driving_tracker_ci?schema=public
+      FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create Firebase service account file
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - uses: actions/setup-node@v4
         with:
@@ -75,15 +70,10 @@ jobs:
       TEST_USER_PASSWORD: Password123!
       AZURE_MAPS_CLIENT_ID: ${{ secrets.AZURE_MAPS_CLIENT_ID }}
       AZURE_MAPS_SUBSCRIPTION_KEY: ${{ secrets.AZURE_MAPS_SUBSCRIPTION_KEY }}
+      FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create Firebase service account file
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - uses: actions/setup-node@v4
         with:
@@ -134,15 +124,10 @@ jobs:
       #azuremaps
       AZURE_MAPS_SUBSCRIPTION_KEY: ci-maps-token
       NEXT_PUBLIC_API_URL: http://localhost:3000
+      #Dummy firebase service json base64
+      FIREBASE_SERVICE_ACCOUNT_B64: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiY2ktdGVzdCIsCiAgInByaXZhdGVfa2V5X2lkIjogImNpIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdmdJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLZ3dnZ1NrQWdFQUFvSUJBUUNcbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJjaUBjaS10ZXN0LmlhbS5nc2VydmljZWFjY291bnQuY29tIgp9Cg==
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create Firebase service account file
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          mkdir -p backend
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > ./backend/drivingtracker-84d58-firebase-adminsdk-fbsvc-5b11b15155.json
 
       - name: Create .env for docker compose
         run: |
@@ -155,14 +140,19 @@ jobs:
           JWT_REFRESH_SECRET=${{ env.JWT_REFRESH_SECRET }}
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
           AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
+          FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
           EOF
 
-            mkdir -p backend
-            cat > backend/.env <<EOF
-            DATABASE_URL=${{ env.DATABASE_URL }}
-            SEED_USER_PASSWORD=ci-seed-password
-            AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
-            EOF
+          mkdir -p backend
+          cat > backend/.env <<EOF
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          SEED_USER_PASSWORD=ci-seed-password
+          AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
+          FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          EOF
+
+          cp .env backend/.env.test
+
 
       - run: docker compose build
       - run: docker compose up -d
