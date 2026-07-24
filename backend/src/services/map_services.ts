@@ -29,10 +29,15 @@ export interface get_directions_request {
     dest_lng: number;
 };
 export interface route_summary{
-    distance_km: number;
+     distance_km: number;
     travel_time_seconds: number;
-    traffic_delay_seconds:number;
+    traffic_delay_seconds: number;
+    points: { lat: number; lng: number }[];// points that that will display the shortest route
 };
+
+export interface search_address_request{
+    address:string;
+}
 //  (matches what Azure actually sends)
 const azure_route_response_schema = z.object({
     routes: z.array(
@@ -42,6 +47,16 @@ const azure_route_response_schema = z.object({
                 travelTimeInSeconds: z.number(),
                 trafficDelayInSeconds: z.number().optional(),
             }),
+            legs: z.array(
+                z.object({
+                    points: z.array(
+                        z.object({
+                            latitude: z.number(),
+                            longitude: z.number(),
+                        })
+                    ),
+                })
+            ),
         })
     ),
 });
@@ -76,29 +91,43 @@ export const map_services ={
             throw new Error(`Azure Maps route request failed (${response.status}): ${body}`);
         }
  
-        const json = await response.json();
+       const json = await response.json();
         const parsed = azure_route_response_schema.safeParse(json);
-        // console.log(parsed);
- 
+
         if (!parsed.success) {
             throw new Error(`Unexpected Azure Maps response shape: ${parsed.error.message}`);
         }
- 
-        if (parsed.data.routes.length === 0) {
-            throw new Error("No route found between the given start and destination points");
-        }
- 
-        // Azure can return alternative routes if maxAlternatives is set; we didn't
-        // request any, so routes[0] is the single best route by default.
-        const best = parsed.data.routes[0].summary;
-        // console.log(best,"MIght be null");
- 
+
+        const route = parsed.data.routes[0];
+        const summary = route.summary;
+        
+        // Map Azure points to  lat/lng format
+        const points = route.legs[0].points.map(p => ({
+            lat: p.latitude,
+            lng: p.longitude
+        }));
+
         return {
-            distance_km: best.lengthInMeters / 1000,
-            travel_time_seconds: best.travelTimeInSeconds,
-            traffic_delay_seconds: best.trafficDelayInSeconds ?? 0,
+            distance_km: summary.lengthInMeters / 1000,
+            travel_time_seconds: summary.travelTimeInSeconds,
+            traffic_delay_seconds: summary.trafficDelayInSeconds ?? 0,
+            points: points // Return the path
         };
 
+    },
+    async search_address(data: search_address_request){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+        const url = `https://atlas.microsoft.com/search/fuzzy/json?api-version=1.0&query=${encodeURIComponent(data.address)}&subscription-key=${key}&language=en-US&limit=5`;
+    
+
+        const response = await fetch(url);
+        const json = await response.json() as { results: any[] };
+    
+        return json.results.map((r: any) => ({
+            address: r.address.freeformAddress,
+            lat: r.position.lat,
+            lng: r.position.lon
+        }));
     }
     //further endpoints to be implemented relating to map integration
 }
