@@ -5,6 +5,8 @@ import { notification_services } from './notification_service';
 import { user_devices_services } from './user_devices_services';
 import { fetch_vehicle_benchmark } from './vehicle.services';
 import { map_services } from './map_services';
+import { add_notification } from '../utils/notification';
+
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
     if (value === null || value === undefined) {
@@ -236,11 +238,23 @@ export const trips_services ={
                         skipDuplicates: true
                     });
 
+
+
                     const contact_user_ids = valid.map(v => v.contact_user_id);
 
                     const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
 
                     const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+                    
+                    
+                    await add_notification({
+                        user_ids: contact_user_ids,
+                        type: "TRIP_SHARED",
+                        title: "Trusted Contact",
+                        body: `${full_name} is sharing their live trip with you`,
+                        reference_ids: validIds,
+                        reference_type: "trusted_contact",
+                    });
 
                     await notification_services.send_trip_shared_notification(fcm_tokens, full_name, newTrip.trip_id);
 

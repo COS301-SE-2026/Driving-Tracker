@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TripViewModel @Inject constructor(
     private val tripRepository: TripRepository,
-    private val contactsRepository: ContactsRepository
+    private val contactsRepository: ContactsRepository,
+    private val sensorFusion: SensorFusionManager
 ) : ViewModel(){
 
     sealed class UiState{
@@ -33,6 +36,8 @@ class TripViewModel @Inject constructor(
         data class SuccessSuggestions(val suggestions: List<AddressSearchResult>) : UiState()
     }
 
+    val unknownErrorVal = "Unknown error"
+    val liveMetrics: StateFlow<LiveSensorMetrics> = sensorFusion.liveMetrics
     private val _approvedContactsState = MutableStateFlow<UiState>(UiState.Idle)
     val approvedContactsState : StateFlow<UiState> = _approvedContactsState
 
@@ -90,7 +95,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _vehiclesState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }
@@ -118,7 +123,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _approvedContactsState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }
@@ -161,7 +166,7 @@ class TripViewModel @Inject constructor(
                         }
                         else -> {
                             _tripStartState.value = UiState.Error(
-                                message = exception.message ?: "Unknown error"
+                                message = exception.message ?: unknownErrorVal
                             )
                         }
                     }

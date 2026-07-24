@@ -35,23 +35,28 @@ import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
+import com.omnitech.drivingtracker.ui.components.ShareTripDialog
+import com.omnitech.drivingtracker.ui.contacts.*
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
 fun LiveTrip(
     tripId: String,
     viewModel: TripSummaryViewModel = hiltViewModel(),
+    contactsViewModel: ContactsViewModel = hiltViewModel(), //needed for share trip
     navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val endTripState by viewModel.endTripState.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
+    val contactsState by contactsViewModel.uiState.collectAsState()
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
@@ -191,10 +196,12 @@ fun LiveTrip(
         endTripState = currentEndTripState,
         mapToken = mapToken,
         liveLocation = liveLocation,
+        contactsState = contactsState,
         onEndTrip = { viewModel.endTrip(tripId) },
         navController = navController,
         destination = destinationLoc,
-        plannedRoute = plannedRoute
+        plannedRoute = plannedRoute,
+        onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) }
     )
 }
 
@@ -204,10 +211,12 @@ fun LiveTripContent(
     endTripState: TripSummaryViewModel.UiState = TripSummaryViewModel.UiState.Idle,
     mapToken: String? = null,
     liveLocation: android.location.Location? = null,
+    contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
     destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
-    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null
+    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null,
+    onShareTrip: (List<String>) -> Unit = {}
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -261,7 +270,9 @@ fun LiveTripContent(
                     onEndTrip = onEndTrip,
                     navController = navController,
                     destination = destination,
-                    plannedRoute = plannedRoute
+                    plannedRoute = plannedRoute,
+                    contactsState = contactsState,
+                    onShareTrip = onShareTrip
                 )
             }
             else -> {}
@@ -275,12 +286,17 @@ private fun TripDetails(
     endTripState: TripSummaryViewModel.UiState,
     mapToken: String?,
     liveLocation: android.location.Location?,
+    contactsState: ContactsViewModel.UiState,
     onEndTrip: () -> Unit,
     navController: NavController?,
     destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
-    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null
+    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null,
+    onShareTrip: (List<String>) -> Unit
 ) {
     var recenterCount by remember { mutableStateOf(0) }
+    var showShareDialog by remember {mutableStateOf(false)}
+    var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Map
         Box(modifier = Modifier
@@ -427,7 +443,7 @@ private fun TripDetails(
                 }
             }
             Button(
-                onClick = {},
+                onClick = {showShareDialog = true},
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {
@@ -504,6 +520,56 @@ private fun TripDetails(
         }
         Spacer(modifier = Modifier.weight(1f))
         BottomNavBar(navController = navController)
+    }
+    if (showShareDialog){
+        when (contactsState){
+
+            is ContactsViewModel.UiState.Success -> {
+
+                ShareTripDialog(
+                    //only users who have consented to share
+                    contacts = contactsState.contacts, //.filter {it.consentStatus == ConsentStatus.APPROVED},
+                    selectedContactIds = selectedContactIds,
+                    onSelectionChange = {selectedContactIds = it},
+                    onConfirm = {
+
+                        //SHARE TRIP LOGIC
+                        onShareTrip(selectedContactIds.toList())
+
+                        showShareDialog = false
+                    },
+                    onDismiss = {showShareDialog = false}
+                )
+            }
+
+            is ContactsViewModel.UiState.Loading, ContactsViewModel.UiState.Idle -> {
+
+                AlertDialog(
+                    onDismissRequest = {showShareDialog = false},
+                    title = {
+                        Text("Loading Contacts")
+                    },
+                    text = {CircularProgressIndicator()},
+                    confirmButton = {}
+                )
+            }
+
+            is ContactsViewModel.UiState.Error -> {
+
+                AlertDialog(
+                    onDismissRequest = {showShareDialog = false},
+                    title = {
+                        Text("Error")
+                    },
+                    text = {
+                        Text("Failed to load contacts.")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {showShareDialog = false}) {Text("OK") }
+                    }
+                )
+            }
+        }
     }
 }
 

@@ -11,6 +11,7 @@ import leaderboard_router from './routes/leaderboard.routes';
 import vehicle_router from './routes/vehicle.routes';
 import user_devices_router from './routes/user_devices.routes';
 import map_router from './routes/maps.routes';
+import notifications_router from './routes/notifications.routes';
 
 const app = express();
 
@@ -44,5 +45,6 @@ app.use('/leaderboard', leaderboard_router);
 app.use('/vehicle',vehicle_router);
 app.use('/devices', user_devices_router);
 app.use('/map', map_router);
+app.use('/notifications', notifications_router);
 
 export default app;

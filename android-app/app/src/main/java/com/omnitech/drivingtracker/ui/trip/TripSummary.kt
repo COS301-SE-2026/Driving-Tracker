@@ -1,10 +1,5 @@
 package com.omnitech.drivingtracker.ui.trip
-
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,17 +11,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.ScoreRingTwo
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 data class TripSummaryData(
     val date: String = "25 April 2026, 12:45",
-    val route: String = "Home --> Office",
+    val route: String = "Home → Office",
     val score: Int = 80,
     val rating: String = "Good",
     val distance: String = "18.6 km",
@@ -99,51 +94,12 @@ fun TripSummaryContent(
     trip: TripSummaryData,
     navController: NavController? = null
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = { navController?.popBackStack() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Row {
-                Text(
-                    text = "Driving ",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Tracker",
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
 
-        //Page title
-        Text(
-            text = "Trip Summary",
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
+    StandardScreen(
+        navController = navController,
+        title = "Trip Summary",
+        bottomBarColor = "trip"
+    ){
         //Trip time and location
         Card(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -215,8 +171,6 @@ fun TripSummaryContent(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        BottomNavBar(navController = navController)
     }
 }
 
