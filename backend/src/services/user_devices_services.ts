@@ -9,7 +9,10 @@ export const user_devices_services={
 
             await prisma.user_devices.upsert({
             where: {fcm_token: fcm_token },
-            update: {updated_at: new Date() },
+            update: {
+                user_id: user_id,
+                updated_at: new Date() 
+            },
             create: { 
                 user_id: user_id,
                 fcm_token: fcm_token
