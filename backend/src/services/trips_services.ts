@@ -177,7 +177,7 @@ export const trips_services ={
                     
                     const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
                     if (benchmark_trims.length === 0) {
-                        console.log("No Benchamrk data");
+                        console.log("No Benchmark data");
                         throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
                     }
     
