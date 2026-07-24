@@ -2,6 +2,7 @@ package com.omnitech.drivingtracker.ui.trip
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import com.omnitech.drivingtracker.ui.components.ShareTripDialog
@@ -107,6 +109,8 @@ fun LiveTrip(
         }
     }
 
+    var isMinimized by remember {mutableStateOf(false)}
+
     val currentEndTripState = endTripState
     
     if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
@@ -165,7 +169,9 @@ fun LiveTrip(
         contactsState = contactsState,
         onEndTrip = { viewModel.endTrip(tripId) },
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
-        navController = navController
+        navController = navController,
+        isMinimized = isMinimized,
+        onMinimizeClick = {isMinimized = !isMinimized}
     )
 }
 
@@ -178,7 +184,9 @@ fun LiveTripContent(
     contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
     onEndTrip: () -> Unit = {},
     onShareTrip: (List<String>) -> Unit = {},
-    navController: NavController? = null
+    navController: NavController? = null,
+    isMinimized: Boolean = false,
+    onMinimizeClick: () -> Unit = {}
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -193,21 +201,30 @@ fun LiveTripContent(
             Icon(
                 imageVector = Icons.Default.ArrowDownward,
                 contentDescription = "Make smaller",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.clickable(onClick = onMinimizeClick)
             )
             Row {
                 Text(
-                    text = "Live Trip ",
+                    text = "Live",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = " Trip ",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
+            IconButton(onClick = {navController?.navigate(Screen.Settings.route)}) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
         }
 
         val currentUiState = uiState
@@ -224,16 +241,25 @@ fun LiveTripContent(
                 }
             }
             is TripSummaryViewModel.UiState.Success -> {
-                TripDetails(
-                    trip = currentUiState.trip,
-                    endTripState = endTripState,
-                    mapToken = mapToken,
-                    liveLocation = liveLocation,
-                    onEndTrip = onEndTrip,
-                    navController = navController,
-                    contactsState = contactsState,
-                    onShareTrip = onShareTrip
-                )
+                if (isMinimized){
+                    MinimizedTrip(
+                        distance = currentUiState.trip.distanceKm ?: 0.0,
+                        arrivalTime = "20:00", //Connect to backend/maps
+                        onExpandClick = onMinimizeClick
+                    )
+                }
+                else{
+                    TripDetails(
+                        trip = currentUiState.trip,
+                        endTripState = endTripState,
+                        mapToken = mapToken,
+                        liveLocation = liveLocation,
+                        onEndTrip = onEndTrip,
+                        navController = navController,
+                        contactsState = contactsState,
+                        onShareTrip = onShareTrip
+                    )
+                }
             }
             else -> {}
         }
@@ -287,7 +313,8 @@ private fun TripDetails(
                     .align(Alignment.TopStart)
                     .padding(8.dp),
                 shape = RoundedCornerShape(50),
-                colors = CardDefaults.cardColors(containerColor = Color.Black)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -297,7 +324,7 @@ private fun TripDetails(
                         .size(8.dp)
                         .background(Color.Red, CircleShape))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Recording", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Recording", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 
@@ -307,11 +334,12 @@ private fun TripDetails(
                     .align(Alignment.TopEnd)
                     .padding(8.dp),
                 shape = RoundedCornerShape(50),
-                colors = CardDefaults.cardColors(containerColor = Color.Black)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Text(
                     "00:35:24", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White
+                    style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Black
                 )
             }
 
@@ -320,9 +348,13 @@ private fun TripDetails(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.End
             ) {
-                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
+                Card(shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -331,20 +363,22 @@ private fun TripDetails(
                             Icons.Default.Speed,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = Color.White
+                            tint = Color.Black
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
                                 "20 km/h",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold, color = Color.White
+                                fontWeight = FontWeight.Bold, color = Color.Black
                             )
-                            Text("Speed", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text("Speed", style = MaterialTheme.typography.labelSmall, color = Color.Black)
                         }
                     }
                 }
-                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
+                Card(shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(4.dp)) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -355,9 +389,9 @@ private fun TripDetails(
                             Text(
                                 "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} km/l",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold, color = Color.White
+                                fontWeight = FontWeight.Bold, color = Color.Black
                             )
-                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.Black)
                         }
                     }
                 }
@@ -375,7 +409,7 @@ private fun TripDetails(
                 onClick = onEndTrip,
                 enabled = endTripState !is TripSummaryViewModel.UiState.Loading,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (endTripState is TripSummaryViewModel.UiState.Loading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
@@ -386,7 +420,7 @@ private fun TripDetails(
             Button(
                 onClick = {showShareDialog = true},
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     Icons.Default.Share,
@@ -460,7 +494,7 @@ private fun TripDetails(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        BottomNavBar(navController = navController)
+
     }
     if (showShareDialog){
         when (contactsState){
