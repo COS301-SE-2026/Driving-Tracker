@@ -134,7 +134,7 @@ export const trips_services ={
                 throw new Error("Trip already in progress");
             }
             
-            console.log("Found user now fetching the vehicle info ");
+            // console.log("Found user now fetching the vehicle info ");
             //get the car info
             const vehicle_info = await prisma.vehicles.findUnique({
                 where: {

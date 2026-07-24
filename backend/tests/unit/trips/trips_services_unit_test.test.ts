@@ -1,60 +1,3 @@
-// jest.mock('../../../src/db/prisma', () => ({
-//   __esModule: true,
-//   default: {
-//     $transaction: jest.fn((callback:any) => callback({
-//         trips: {
-//             create: jest.fn(),
-//             update: jest.fn(),
-//             findUnique: jest.fn(),
-//             findFirst: jest.fn(),
-//             findMany: jest.fn(),
-//         },
-//         trip_location_shares: {
-//             create: jest.fn(),
-//             updateMany: jest.fn(),
-//         },
-//         trip_scores: {
-//             create: jest.fn(),
-//             upsert: jest.fn(),
-//             findFirst: jest.fn(),
-//         },
-//         trip_readings: {
-//             create: jest.fn(),
-//             findMany: jest.fn(),
-//         },
-//         trip_events: {
-//             create: jest.fn(),
-//         },
-//         users: {
-//             findUnique: jest.fn(),
-//         },
-//     })),
-//     users: {
-//       findUnique: jest.fn(),
-//     },
-//     trips: {
-//       findFirst: jest.fn(),
-//       findUnique: jest.fn(),
-//       create: jest.fn(),
-//       update: jest.fn(),
-//       findMany: jest.fn(),
-//     },
-//     trip_scores: {
-//       findFirst: jest.fn(),
-//       upsert: jest.fn(),
-//     },
-//     trip_readings: {
-//       findMany: jest.fn(),
-//       create: jest.fn(),
-//     },
-//     trip_events: {
-//       create: jest.fn(),
-//     },
-//     trip_location_shares: {
-//         updateMany: jest.fn(),
-//     },
-//   },
-// }));
 jest.mock('../../../src/db/prisma', () => {
     const trips = {
         create: jest.fn(),
@@ -63,6 +6,9 @@ jest.mock('../../../src/db/prisma', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+    };
+     const vehicles = {
+        findUnique: jest.fn(),
     };
     const trip_location_shares = {
         create: jest.fn(),
@@ -103,6 +49,7 @@ jest.mock('../../../src/db/prisma', () => {
         })),
         users,
         trips,
+        vehicles,
         trip_scores,
         trip_readings,
         trip_events,
@@ -135,6 +82,11 @@ describe('Trips services.create',()=>{
             trip_id: 't1',
             data_source: 'PHONE',
         });
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
+        });
 
         const result = await trips_services.create({
             user_id: 'u1',
@@ -144,7 +96,12 @@ describe('Trips services.create',()=>{
             start_location: { lat: -25.7461, lng: 28.2313 },
         });
 
-        expect(result).toEqual({ trip_id: 't1', data_source: 'PHONE' });
+        expect(result).toEqual({
+            trip_id: 't1',
+            data_source: 'PHONE',
+            planned_distance_km: null,
+            fuel_estimate: null,
+        });
     });
     it('throws when user_id is missing from body', async ()=>{
         await expect(
@@ -202,6 +159,11 @@ describe('Trips services.create',()=>{
         (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
         (mock_prisma.trips.findFirst ).mockResolvedValue(null);
         mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
+        });
 
         await expect(
             trips_services.create({
