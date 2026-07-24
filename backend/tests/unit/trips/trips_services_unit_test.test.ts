@@ -1,3 +1,19 @@
+jest.mock('../../../src/services/map_services', () => ({
+    map_services: {
+        get_map_token: jest.fn(),
+        suggested_routes: jest.fn<() => Promise<{
+            distance_km: number;
+            travel_time_seconds: number;
+            traffic_delay_seconds: number;
+        }>>().mockResolvedValue({
+            distance_km: 10,
+            travel_time_seconds: 600,
+            traffic_delay_seconds: 0,
+        }),
+        search_address: jest.fn(),
+    },
+}));
+
 jest.mock('../../../src/db/prisma', () => {
     const trips = {
         create: jest.fn(),
@@ -59,21 +75,6 @@ jest.mock('../../../src/db/prisma', () => {
     };
 });
 
-jest.mock('../../../src/services/map_services', () => ({
-    map_services: {
-        get_map_token: jest.fn(),
-        suggested_routes: jest.fn<() => Promise<{
-            distance_km: number;
-            travel_time_seconds: number;
-            traffic_delay_seconds: number;
-        }>>().mockResolvedValue({
-            distance_km: 10,
-            travel_time_seconds: 600,
-            traffic_delay_seconds: 0,
-        }),
-        search_address: jest.fn(),
-    },
-}));
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
