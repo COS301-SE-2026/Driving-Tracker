@@ -2,7 +2,7 @@ jest.mock('../../../src/services/contacts_services');
 
 import { describe, it, expect, jest,beforeEach } from '@jest/globals';
 import contacts_controller from '../../../src/controllers/contacts.controller';
-const { create_contact, get_contacts, alert_contacts, share_location, respond_to_contact_request } = contacts_controller;
+const { create_contact, get_contacts, alert_contacts, share_location, respond_to_contact_request, get_receieved_contact_requests } = contacts_controller;
 import { contact_services } from '../../../src/services/contacts_services';
 
 // jest.mock('../../../src/middleware/auth',()=>({}));//the auth
@@ -158,10 +158,33 @@ describe('Contact endpoints', ()=>{
             await share_location(req, res);
             expect(res.status).toHaveBeenCalledWith(201);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Location successfully shared' }));
-    });
-  });
+    	});
 
-  describe('respond_to_contact_request',()=>{
+		it('returns 403 when contact is not trusted', async () =>{
+			jest.spyOn(contact_services, 'share_trip_location').mockRejectedValueOnce({
+                code: 'NOT_TRUSTED_CONTACT'
+            });
+            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 't1', contacts: [{ contact_id: 'c1' }] } };
+            const res: any = make_res();
+            await share_location(req, res);
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NOT_TRUSTED_CONTACT', message: 'Cannot share location with non-trusted contacts' }));
+		});
+
+		it('returns 409 when user not found during share', async () =>{
+			jest.spyOn(contact_services, 'share_trip_location').mockRejectedValueOnce({
+                code: 'USER_NOT_FOUND'
+            });
+            const req: any = { user: { sub: 'user-1' }, body: { trip_id: 't1', contacts: [{ contact_id: 'c1' }] } };
+            const res: any = make_res();
+            await share_location(req, res);
+            expect(res.status).toHaveBeenCalledWith(409);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'Could not find user' }));
+		});
+
+  	});
+
+  	describe('respond_to_contact_request',()=>{
         it('returns 200 on success', async()=>{
             jest.spyOn(contact_services,'respond_to_contact_request').mockResolvedValueOnce({
                 contact_id: 'c1',
@@ -212,6 +235,32 @@ describe('Contact endpoints', ()=>{
 
             await respond_to_contact_request(req, res);
 
+            expect(res.status).toHaveBeenCalledWith(500);
+        }); 
+    });
+
+    describe('get received contacts requests endpoint',()=>{
+        it('returns 200 and trusted contact requests sent to user',async()=>{
+            const requests = [{ contact_id:'c1', created_at: '2026-07-07', username:'a'}];
+            jest.spyOn(contact_services,'get_received_contact_requests').mockResolvedValueOnce(requests as any);
+            const req: any = { user: { sub: 'user-1' } };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ data: { requests }, message: "Fetched received contact requests" }));
+        });
+
+        it('returns 401 when unauthenticated', async () => {
+            const req: any = { user: undefined };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
+            expect(res.status).toHaveBeenCalledWith(401);
+        });
+        it('handles other error', async () => {
+            jest.spyOn(contact_services, 'get_received_contact_requests').mockRejectedValueOnce({ code: 'CANNOT_ACCESS_REQUESTS' });
+            const req: any = { user: { sub: 'user-1' } };
+            const res: any = make_res();
+            await get_receieved_contact_requests(req, res);
             expect(res.status).toHaveBeenCalledWith(500);
         }); 
     });

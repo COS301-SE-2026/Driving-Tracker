@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.obd.Vehicle
@@ -39,116 +41,136 @@ fun VehicleCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFE5E5E5))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ){
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ){//Vehicle image box
-
-                VehicleImage(
-                    imageRes = vehicle.imageRes,
-                    imageUri = vehicle.imageUri,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            //Vehicle text Info
-            Column(modifier = Modifier.weight(1.0f)){
+            // Name, Mileage and Menu
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
                 Text(
                     text = vehicle.name,
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ){
-
-                    Text(text = vehicle.brand, style = MaterialTheme.typography.bodyMedium)
-
-                    //Formatting mileage with spaces as thousands separator
+                //Mileage pill
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF2D8CFF) //blue background
+                ) {
                     Text(
                         text = "${String.format("%,d", vehicle.mileage).replace(',', ' ')}km",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        fontWeight = FontWeight.Medium
                     )
-
                 }
 
-                Text(text = vehicle.model, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.weight(1f))
+
+                //Vertical 3 dots
+                Box{
+
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Options")
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color.White).clip(RoundedCornerShape(8.dp))
+                    ) {
+
+                        DropdownMenuItem(
+                            text = { Text("Edit Name", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            onClick = {
+                                showMenu = false
+                                onEditNameClick()
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                        DropdownMenuItem(
+                            text = { Text("Edit Image", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            onClick = {
+                                showMenu = false
+                                onEditImageClick()
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                        DropdownMenuItem(
+                            text = { Text("Driving Info", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            onClick = {
+                                showMenu = false
+                                onDrivingInfoClick()
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                        DropdownMenuItem(
+                            text = { Text("Remove Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            onClick = {
+                                showMenu = false
+                                onRemoveClick()
+                            }
+                        )
+
+                    }
+
+                }
 
             }
 
-            //Three dots menu
-            Box{
+            //Vehicle Image
+            VehicleImage(
+                imageRes = vehicle.imageRes,
+                imageUri = vehicle.imageUri,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            )
 
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(imageVector = Icons.Default.MoreHoriz, contentDescription = "Options")
-                }
+            //Vehicle Brand and Model
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ){
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(Color.White).clip(RoundedCornerShape(8.dp))
-                ) {
+                Text(
+                    text = vehicle.brand,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Gray
+                )
 
-                    DropdownMenuItem(
-                        text = { Text("Edit Name", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = {
-                            showMenu = false
-                            onEditNameClick()
-                        }
-                    )
+                Spacer(modifier = Modifier.width(12.dp))
 
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-
-                    DropdownMenuItem(
-                        text = { Text("Edit Image", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = {
-                            showMenu = false
-                            onEditImageClick()
-                        }
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-
-                    DropdownMenuItem(
-                        text = { Text("Driving Info", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = {
-                            showMenu = false
-                            onDrivingInfoClick()
-                        }
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-
-                    DropdownMenuItem(
-                        text = { Text("Remove Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                        onClick = {
-                            showMenu = false
-                            onRemoveClick()
-                        }
-                    )
-
-                }
+                Text(
+                    text = vehicle.model,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.Gray.copy(alpha = 0.7f)
+                )
 
             }
+
+
+
 
         }
     }

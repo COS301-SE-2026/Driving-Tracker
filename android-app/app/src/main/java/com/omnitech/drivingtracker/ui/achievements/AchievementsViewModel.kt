@@ -16,6 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AchievementsViewModel @Inject constructor(private val repository: AchievementsRepository) : ViewModel() {
 
+    val leaderboardFail = "Failed to load leaderboard"
+    val unknownErrorOccurred = "An unknown error occurred"
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -59,12 +61,12 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
                         is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                                message = exception.errorMessage ?: leaderboardFail
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "An unknown error occurred"
+                                message = exception.message ?: unknownErrorOccurred
                             )
                         }
                     }
@@ -91,12 +93,12 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
                         is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                                message = exception.errorMessage ?: leaderboardFail
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "An unknown error occurred"
+                                message = exception.message ?: unknownErrorOccurred
                             )
                         }
                     }
@@ -123,12 +125,12 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
                         is ApiException -> {
                             _uiState.value = UiState.Error(
                                 code = exception.errorCode,
-                                message = exception.errorMessage ?: "Failed to load leaderboard"
+                                message = exception.errorMessage ?: leaderboardFail
                             )
                         }
                         else -> {
                             _uiState.value = UiState.Error(
-                                message = exception.message ?: "An unknown error occurred"
+                                message = exception.message ?: unknownErrorOccurred
                             )
                         }
                     }

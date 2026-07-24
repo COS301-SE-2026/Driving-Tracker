@@ -55,7 +55,7 @@ fun AzureMapContainer(
     modifier: Modifier = Modifier,
     latitude: Double = -25.7479,
     longitude: Double = 28.2293,
-    zoom: Int = 10,
+    zoom: Int = 15,
     recenterTrigger: Int = 0,
     destination: LocationDto? = null,
     plannedRoute: List<LocationDto>? = null,

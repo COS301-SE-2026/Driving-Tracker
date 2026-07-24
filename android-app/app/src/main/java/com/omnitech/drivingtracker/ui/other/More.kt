@@ -27,7 +27,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import com.omnitech.drivingtracker.Screen
+import androidx.compose.foundation.shape.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.material3.*
 
 @Composable
 fun More(navController: NavController){
@@ -45,16 +50,20 @@ fun More(navController: NavController){
                 modifier = Modifier.padding(innerPadding)
             ){
                 Spacer(modifier = Modifier.height(25.dp))
+                ContentCard("Contacts"){navController.navigate(Screen.Contacts.route)}
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Weekly Challenges"){navController.navigate(Screen.WeeklyChallenges.route)}
-                HLine()
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("OBD"){navController.navigate(Screen.OBDMain.route)}
-                HLine()
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Vehicles"){navController.navigate(Screen.Vehicles.route)}
-                HLine()
+                Spacer(modifier = Modifier.height(25.dp))
+                ContentCard("Contacts"){navController.navigate(Screen.Contacts.route)}
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Notifications"){navController.navigate(Screen.Notifications.route)}
-                HLine()
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Profile"){navController.navigate(Screen.Profile.route)}
-                HLine()
+                Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Help"){navController.navigate(Screen.Help.route)}
             }
 
@@ -66,19 +75,34 @@ fun More(navController: NavController){
 fun ContentCard(name: String, onClick:()->Unit){
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ){
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ){
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyLarge
-            )
+        Column{
+            CRow(name, onClick)
         }
+    }
+}
+
+@Composable
+fun CRow(label: String, onClick:()->Unit){
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ){
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

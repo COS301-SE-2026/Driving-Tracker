@@ -74,6 +74,9 @@ fun OBDKeyData(
 
     val metrics by viewModel.vehicleMetrics.collectAsState()
 
+    val isScanning by viewModel.isScanningFaults.collectAsState()
+    val scanAttempted by viewModel.faultScanAttempted.collectAsState()
+
     val dat = listOf(
             //because our values can be changed
             KData("Engine RPM", "010C","${metrics.rpm}", "RPM", Icons.Default.Speed),
@@ -93,12 +96,20 @@ fun OBDKeyData(
         "temperature, fuel trim, and diagnostic trouble codes."
     ) {
             Button(
-                onClick = { viewModel.readFaultCodes()},
+                onClick = {
+                    viewModel.readFaultCodes() },
+                enabled = !isScanning,
                 modifier = Modifier.padding(16.dp)
             ){
-                Text("Scan fault codes")
+                if(isScanning){
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Scanning car...")
+                }else {
+                    Text("Scan fault codes")
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             //Data (2 cards per row)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -117,7 +128,7 @@ fun OBDKeyData(
             }
             Spacer(modifier = Modifier.height(14.dp))
 
-            DiagnosticsCard(codes = errorCodes)
+            DiagnosticsCard(codes = errorCodes, isScanning = isScanning, scanAttempted = scanAttempted)
         }
     }
 
@@ -157,7 +168,7 @@ fun DataCard(dat: KData, iconTint: Color, modifier: Modifier = Modifier){
 }
 
 @Composable
-fun DiagnosticsCard(codes: List<ErrorCode>){
+fun DiagnosticsCard(codes: List<ErrorCode>, isScanning: Boolean, scanAttempted: Boolean){
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
@@ -184,32 +195,49 @@ fun DiagnosticsCard(codes: List<ErrorCode>){
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            codes.forEach{ code->
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp)){
+            when{
+                isScanning -> {
                     Text(
-                        text = "!",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(
-                        text = code.code,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 8.dp),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = code.description,
+                        text = "Querying vehicle ECU, please wait...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
+                }
+                codes.isNotEmpty() -> {
+                    codes.forEach{ code->
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)){
+                            Text(
+                                text = "!",
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(
+                                text = code.code,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(end = 8.dp),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = code.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
+                }
+                scanAttempted -> {
+                    Text(
+                        text = "No fault codes detected. Your vehicle system is healthy.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
         }
     }
-
 }
 
 @Preview(showBackground = true)

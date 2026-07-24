@@ -1,39 +1,30 @@
 package com.omnitech.drivingtracker.ui.obd
+import android.Manifest
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.omnitech.drivingtracker.data.models.ConsentStatus
-import com.omnitech.drivingtracker.data.models.ContactDto
-import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.Green
 import androidx.navigation.NavController
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.Bluetooth
-//import androidx.glance.appwidget.compose
 import com.omnitech.drivingtracker.data.obd.ObdManager
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +32,14 @@ import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 
 data class Device(
     val name: String,
@@ -55,6 +54,10 @@ data class Device(
 fun OBDConnect(navController: NavController? =null,
                viewModel: ObdViewModel = hiltViewModel()){
 
+    LaunchedEffect(Unit) {
+        viewModel.loadPairedDevices()
+    }
+
     val context = LocalContext.current
     val bluetoothDevices by viewModel.pairedDevices.collectAsState() // Real data
     val connectionState by viewModel.connectionState.collectAsState() //real status
@@ -68,6 +71,52 @@ fun OBDConnect(navController: NavController? =null,
             isConnected = connectionState == ObdManager.ConnectionState.CONNECTED && btDevice.address == connectedAddress,
             adapter = "ELM327"
         )
+    }
+
+    //Bluetooth Permissions
+    val requiredPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    }else{
+        emptyArray()
+    }
+
+    var permissionsGranted by remember {
+        mutableStateOf(requiredPermissions.all{
+            ContextCompat.checkSelfPermission(context,it) == PackageManager.PERMISSION_GRANTED
+        })
+    }
+
+    //show dialog if permissions are missing
+    if (!permissionsGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        BluetoothRationale(
+            onPermissionHandled = {
+                permissionsGranted = requiredPermissions.all {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        it
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
+                if (permissionsGranted) {
+                    viewModel.loadPairedDevices()
+                } else {
+                    navController?.popBackStack()
+                }
+            },
+            viewModel = viewModel
+        )
+    }
+    //Automatically refresh the devices  list when the user returns to this screen
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME){
+                viewModel.loadPairedDevices()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     StandardScreen(
@@ -191,6 +240,7 @@ fun DeviceCard(device: Device, onConnect: () -> Unit){
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun OBDConnectPreview() {
