@@ -256,7 +256,7 @@ const contacts_controller = {
             }
 
             if (e?.code === "USER_NOT_FOUND") {
-                return res.status(409).json({
+                return res.status(404).json({
                 error: "USER_NOT_FOUND",
                 message: "Could not find user",
                 });
@@ -280,7 +280,7 @@ const contacts_controller = {
         const user_id = get_user_id(req);
 
         if(!user_id){
-            return res.status(409).json({error: "UNAUTHORIZED"});
+            return res.status(401).json({error: "UNAUTHORIZED"});
         }
 
         const {status} = req.body;
