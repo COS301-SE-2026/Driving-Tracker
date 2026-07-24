@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.ui.obd.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.notification.NotificationRationale
+import com.omnitech.drivingtracker.ui.obd.BluetoothRationale
 import androidx.lifecycle.Lifecycle
 import android.Manifest
 import dagger.hilt.android.AndroidEntryPoint
@@ -69,6 +70,8 @@ sealed class Screen(val route: String){
     }
 
     data object NotificationRationale: Screen("notification_rationale")
+
+    data object BluetoothRationale: Screen("bluetooth_rationale")
 
     data object WeeklyChallenges : Screen("weekly_challenges")
 
@@ -220,6 +223,16 @@ class MainActivity : ComponentActivity() {
                                 }
                         })
                     }
+
+                    composable(Screen.BluetoothRationale.route) { //ask about this
+                        BluetoothRationale(
+                            onPermissionHandled = {
+                                navController.navigate(Screen.OBDConnect.route) {
+                                    popUpTo(Screen.BluetoothRationale.route) { inclusive = true }
+                                }
+                            })
+                    }
+
                     composable(Screen.OBDConnect.route) {
                         val activity = LocalActivity.current as ComponentActivity
                         val obdViewModel: ObdViewModel = hiltViewModel(activity)
