@@ -13,5 +13,6 @@ jest.mock('../src/services/notification_service', () => ({
 		send_trip_alert_notification: jest.fn<any>().mockResolvedValue(undefined),
 		send_general_notification: jest.fn<any>().mockResolvedValue(undefined),
 		send_badge_notification: jest.fn<any>().mockResolvedValue(undefined),
+        fetch_notifications: jest.fn<any>().mockResolvedValue([]),
 	},
 }));
