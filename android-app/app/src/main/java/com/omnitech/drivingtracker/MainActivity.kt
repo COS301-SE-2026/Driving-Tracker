@@ -200,6 +200,9 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Notifications.route){
                         NotificationsScreen(navController = navController)
                     }
+                    composable(Screen.Help.route){
+                        Help(navController = navController)
+                    }
                     composable(
                         route = Screen.TripSummary.route,
                         arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
