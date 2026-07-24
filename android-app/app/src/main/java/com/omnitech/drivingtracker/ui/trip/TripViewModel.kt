@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
@@ -29,6 +30,7 @@ class TripViewModel @Inject constructor(
             val code: String? = null,
             val message: String? = null
         ) : UiState()
+        data class SuccessSuggestions(val suggestions: List<AddressSearchResult>) : UiState()
     }
 
     private val _approvedContactsState = MutableStateFlow<UiState>(UiState.Idle)
@@ -40,9 +42,34 @@ class TripViewModel @Inject constructor(
     private val _vehiclesState = MutableStateFlow<UiState>(UiState.Idle)
     val vehiclesState: StateFlow<UiState> = _vehiclesState
 
+    private val _suggestionsState = MutableStateFlow<UiState>(UiState.Idle)
+    val suggestionsState: StateFlow<UiState> = _suggestionsState
+
     init{
         loadApprovedContacts()
         loadVehicles()
+    }
+    fun searchAddress(query: String){
+        if (query.isBlank()) {
+            _suggestionsState.value = UiState.Idle
+            return
+        }
+        viewModelScope.launch {
+            _suggestionsState.value = UiState.Loading
+            tripRepository.searchAddress(query).fold(
+                onSuccess = { suggestions ->
+                    Log.d("Geocoding", "Translated '$query' to ${suggestions.size} results")
+                    suggestions.forEach {
+                        Log.d("Geocoding", " - ${it.address}: (${it.latitude}, ${it.longitude})")
+                    }
+                    _suggestionsState.value = UiState.SuccessSuggestions(suggestions)
+                },
+                onFailure = { exception ->
+                    Log.e("Geocoding", "Search failed for '$query': ${exception.message}")
+                    _suggestionsState.value = UiState.Error(message = exception.message)
+                }
+            )
+        }
     }
 
     fun loadVehicles() {
@@ -105,12 +132,22 @@ class TripViewModel @Inject constructor(
         dataSource: String,
         latitude: Double,
         longitude: Double,
+        destLat: Double? = null,
+        destLng: Double? = null,
         selectedContactIds: List<String>?
     ){
         viewModelScope.launch {
             _tripStartState.value = UiState.Loading
 
-            tripRepository.startTrip(vehicleId, dataSource, latitude, longitude, selectedContactIds).fold(
+            tripRepository.startTrip(
+                vehicleId = vehicleId,
+                dataSource = dataSource,
+                latitude = latitude,
+                longitude = longitude,
+                destLat = destLat,
+                destLng = destLng,
+                selectedContactIds = selectedContactIds
+            ).fold(
                 onSuccess = { tripId ->
                     _tripStartState.value = UiState.Success(tripId)
                 },

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -33,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
@@ -50,6 +52,9 @@ fun LiveTrip(
     val uiState by viewModel.uiState.collectAsState()
     val endTripState by viewModel.endTripState.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
+
+    val plannedRoute by viewModel.plannedRoute.collectAsState()
+    var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
 
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
         listOf(
@@ -93,6 +98,35 @@ fun LiveTrip(
         val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
         val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
         android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
+    }
+    LaunchedEffect(uiState, mapToken, liveLocation) {
+        val state = uiState
+        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
+            val trip = state.trip
+
+
+            if (trip.destinationLatitude != null && trip.destinationLongitude != null) {
+
+
+                //  remove the hardcoded Pretoria fallback here to avoid the route jumping
+                val startLat = liveLocation?.latitude ?: trip.events.firstOrNull()?.latitude
+                val startLng = liveLocation?.longitude ?: trip.events.firstOrNull()?.longitude
+
+                //  have valid coordinates
+                if (startLat != null && startLng != null) {
+                    destinationLoc = LocationDto(trip.destinationLatitude, trip.destinationLongitude)
+
+                    android.util.Log.d("LiveTrip", "Fetching route from real location: $startLat, $startLng")
+
+                    viewModel.suggestedRoute(
+                        startLat,
+                        startLng,
+                        trip.destinationLatitude,
+                        trip.destinationLongitude
+                    )
+                }
+            }
+        }
     }
 
     LaunchedEffect(tripId) {
@@ -158,7 +192,9 @@ fun LiveTrip(
         mapToken = mapToken,
         liveLocation = liveLocation,
         onEndTrip = { viewModel.endTrip(tripId) },
-        navController = navController
+        navController = navController,
+        destination = destinationLoc,
+        plannedRoute = plannedRoute
     )
 }
 
@@ -169,7 +205,9 @@ fun LiveTripContent(
     mapToken: String? = null,
     liveLocation: android.location.Location? = null,
     onEndTrip: () -> Unit = {},
-    navController: NavController? = null
+    navController: NavController? = null,
+    destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
+    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -221,7 +259,9 @@ fun LiveTripContent(
                     mapToken = mapToken,
                     liveLocation = liveLocation,
                     onEndTrip = onEndTrip,
-                    navController = navController
+                    navController = navController,
+                    destination = destination,
+                    plannedRoute = plannedRoute
                 )
             }
             else -> {}
@@ -236,8 +276,11 @@ private fun TripDetails(
     mapToken: String?,
     liveLocation: android.location.Location?,
     onEndTrip: () -> Unit,
-    navController: NavController?
+    navController: NavController?,
+    destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
+    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null
 ) {
+    var recenterCount by remember { mutableStateOf(0) }
     Column(modifier = Modifier.fillMaxSize()) {
         // Map
         Box(modifier = Modifier
@@ -250,8 +293,25 @@ private fun TripDetails(
                     subscriptionKey = mapToken,
                     latitude = liveLocation?.latitude ?: latestEvent?.latitude ?: -25.7479,
                     longitude = liveLocation?.longitude ?: latestEvent?.longitude ?: 28.2293,
+                    destination = destination,
+                    plannedRoute = plannedRoute,
+                    recenterTrigger = recenterCount,
                     modifier = Modifier.fillMaxSize()
                 )
+                IconButton(
+                    onClick = { recenterCount++ },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = "Recenter",
+                        tint = Color.Black
+                    )
+                }
             } else {
                 // Map placeholder
                 Image(
@@ -336,11 +396,11 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} km/l",
+                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} L",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold, color = Color.White
                             )
-                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text("Est Fuel", style = MaterialTheme.typography.labelSmall, color = Color.White)
                         }
                     }
                 }
@@ -411,8 +471,8 @@ private fun TripDetails(
                 ) {
                     SummaryItem(String.format(Locale.getDefault(), "%.2f", trip.distanceKm ?: 0.0), "km")
                     SummaryItem("${trip.durationMinutes ?: 0}", "min")
-                    SummaryItem("93", "avg speed") // Placeholder as not in DTO yet
-                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "km/l")
+                    SummaryItem("93", "avg speed") // Placeholder
+                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "est. fuel (L)")
                 }
             }
         }
