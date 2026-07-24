@@ -134,7 +134,7 @@ export const trips_services ={
                 throw new Error("Trip already in progress");
             }
             
-            console.log("Found user now fetching the vehicle info ");
+            // console.log("Found user now fetching the vehicle info ");
             //get the car info
             const vehicle_info = await prisma.vehicles.findUnique({
                 where: {
@@ -154,8 +154,8 @@ export const trips_services ={
             const make = vehicle_info?.make;
             const model = vehicle_info?.model;
             const year = vehicle_info?.year;
-            // const make = "Ford";
-            // const model = "Mustang"
+            // const make = "BMW";
+            // const model = "M3"
             // const year = 2018;
             let fuel_est: number | null = null;
             let planned_distance_km: number | null = null;
@@ -171,22 +171,24 @@ export const trips_services ={
                 });
                 planned_distance_km = route.distance_km;
  
-                console.log("Using the fetch vehicle benchmark");
-                const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
-                if (benchmark_trims.length === 0) {
-                    console.log("No Benchamrk data");
-                    throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
+                
+                if(year >= 2015 && year <= 2020){
+                    console.log("Using the fetch vehicle benchmark");
+                    
+                    const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
+                    if (benchmark_trims.length === 0) {
+                        console.log("No Benchamrk data");
+                        throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
+                    }
+    
+                    const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
+                    const lper100km = convert_mpg_to_lper_km(avg_mpg);
+    
+                    if (lper100km !== null) {
+                        fuel_est = (lper100km / 100) * planned_distance_km;
+                    }
                 }
- 
-                const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
-                const lper100km = convert_mpg_to_lper_km(avg_mpg);
- 
-                if (lper100km !== null) {
-                    // console.log("Getting fuel estimate")
-                    // previous code multiplied the per-100km rate directly by
-                    // full distance_km, overstating fuel by 100x. Correct scaling:
-                    fuel_est = (lper100km / 100) * planned_distance_km;
-                }
+                fuel_est = null;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
@@ -197,6 +199,8 @@ export const trips_services ={
                         start_time: data.start_date,
                         start_latitude: data.start_location.lat,
                         start_longitude: data.start_location.lng,
+                        end_latitude:data.end_location?.lat,
+                        end_longitude:data.end_location?.lng,
                         data_source: data.data_source,
                         fuel_estimate:fuel_est,
                         status: "IN_PROGRESS"
@@ -561,6 +565,8 @@ export const trips_services ={
                         overall_score: to_number(trip.trip_scores[0].overall_score)
                     } : null,
                     dtc_codes: all_dtc_codes,
+                    destination_latitude: to_number(trip.end_latitude),
+                    destination_longitude: to_number(trip.end_longitude),
                     events: trip.trip_events.map((event:any) => ({
                         event_id: event.event_id,
                         event_type: event.type,
