@@ -77,4 +77,16 @@ interface ApiService{
   
     @GET("map/token")
     suspend fun getMapToken(): MapTokenResponse
+
+    @GET("map/search")
+    suspend fun searchAddress(@Query("address")address: String): AddressSearchResponse
+
+    @GET("map/route")
+    suspend fun getSuggestedRoute(
+        @Query("start_lat") startLat: Double?,
+        @Query("start_lng") startLng: Double?,
+        @Query("dest_lat") destLat: Double?,
+        @Query("dest_lng") destLng: Double?
+    ): SuggestedRouteResponse
+
 }
