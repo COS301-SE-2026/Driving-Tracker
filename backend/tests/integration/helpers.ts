@@ -118,6 +118,28 @@ export const seedTripEVent = async(trip_id: string) => {
 	});
 };
 
+export const seedBadge = async(name: string, category: string = 'SAFETY') => {
+	return prisma.badges.create({
+		data: {
+			name, 
+			description: `Description for ${name}`,
+			category,
+			icon_url: `http://example.com/icons/${name.toLowerCase().replace(' ', '_')}.png`
+		}
+	});
+};
+
+export const seedBadgeCriteria = async(badge_id: string, metric: string, operator: string, threshold: number) => {
+	return prisma.badge_criteria.create({
+		data: {
+			badge_id,
+			metric,
+			operator,
+			threshold
+		}
+	});
+};
+
 export const cleanDatabase = async () => {
 	await prisma.alert_notifications.deleteMany();
 	await prisma.alerts.deleteMany()
@@ -127,6 +149,9 @@ export const cleanDatabase = async () => {
 	await prisma.trip_readings.deleteMany();
 	await prisma.trips.deleteMany();
 	await prisma.trusted_contacts.deleteMany();
+	await prisma.badge_criteria.deleteMany();
+	await prisma.user_badges.deleteMany();
+	await prisma.badges.deleteMany();
 	await prisma.vehicles.deleteMany();
 	await prisma.users_vehicles.deleteMany()
 	await prisma.users.deleteMany();

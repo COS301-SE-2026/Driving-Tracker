@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it, afterAll, beforeEach } from '@jest/globals';
 import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
-import { seedUserAndLogin, cleanTripsData, seedApprovedContact, seedContactUser } from '../helpers';
+import { seedUserAndLogin, cleanTripsData, } from '../helpers';
 
 describe('PATCH /contacts/:contact_id/respond integration test', () => {
     beforeEach(async () => {
