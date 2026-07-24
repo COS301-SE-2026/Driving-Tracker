@@ -241,11 +241,6 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Vehicles.route) {
                         Vehicles(navController = navController)
                     }
-
-                    composable(Screen.Help.route) {
-                        Help(navController = navController)
-                    }
-
                     composable(Screen.Settings.route){
                         Settings(
                             navController = navController,
