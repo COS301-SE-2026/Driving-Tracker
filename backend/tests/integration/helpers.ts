@@ -2,7 +2,6 @@ import request from 'supertest';
 import bcrypt from 'bcrypt';
 import app from '../../src/app';
 import prisma from '../../src/db/prisma';
-import { jest } from '@jest/globals';
 
 function getTestPassword(): string {
 	const password = process.env.TEST_USER_PASSWORD;
@@ -113,8 +112,8 @@ export const seedTripEVent = async(trip_id: string) => {
 			severity: 7.5,
 			sensor_source: 'ACCELEROMETER',
 			recorded_at: new Date(),
-			start_latitude: -25.77116,
-			start_longitude: 28.29979,
+			latitude: -25.77116,
+			longitude: 28.29979,
 		},
 	});
 };
@@ -135,15 +134,4 @@ export const cleanDatabase = async () => {
 
 export const cleanTripsData = cleanDatabase;
 
-//mock firebase delivery - third party
-jest.mock('../../../src/services/notification_service', () => ({
-	notification_services: {
-		send_trusted_contact_request_notification: jest.fn<any>().mockResolvedValue(undefined),
-		send_trusted_contact_response_notification: jest.fn<any>().mockResolvedValue(undefined),
-		send_trip_shared_notification: jest.fn<any>().mockResolvedValue(undefined),
-		send_trip_alert_notification: jest.fn<any>().mockResolvedValue(undefined),
-		send_general_notification: jest.fn<any>().mockResolvedValue(undefined),
-		send_badge_notification: jest.fn<any>().mockResolvedValue(undefined),
-	},
-}));
 
