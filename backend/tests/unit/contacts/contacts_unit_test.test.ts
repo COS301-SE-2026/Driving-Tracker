@@ -171,14 +171,14 @@ describe('Contact endpoints', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'NOT_TRUSTED_CONTACT', message: 'Cannot share location with non-trusted contacts' }));
 		});
 
-		it('returns 409 when user not found during share', async () =>{
+		it('returns 404 when user not found during share', async () =>{
 			jest.spyOn(contact_services, 'share_trip_location').mockRejectedValueOnce({
                 code: 'USER_NOT_FOUND'
             });
             const req: any = { user: { sub: 'user-1' }, body: { trip_id: 't1', contacts: [{ contact_id: 'c1' }] } };
             const res: any = make_res();
             await share_location(req, res);
-            expect(res.status).toHaveBeenCalledWith(409);
+            expect(res.status).toHaveBeenCalledWith(404);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'Could not find user' }));
 		});
 
@@ -206,12 +206,12 @@ describe('Contact endpoints', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Status updated successfully', data: { contact_id: 'c1' } }));
         });
 
-        it('returns 409 when unauthenticated', async () => {
+        it('returns 401 when unauthenticated', async () => {
             const req: any = { user: undefined, params: {contact_id:  'c1'}, body: { status: 'APPROVED' }};
             const res: any = make_res();
 
             await respond_to_contact_request(req, res);
-            expect(res.status).toHaveBeenCalledWith(409);
+            expect(res.status).toHaveBeenCalledWith(401);
         });
 
         it('returns 422 for invalid status', async () => {

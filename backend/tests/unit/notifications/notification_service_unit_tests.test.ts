@@ -27,6 +27,7 @@ jest.mock('../../../src/db/prisma', () => ({
 }));
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
+jest.unmock('../../../src/services/notification_service')
 import { getMessaging } from '../../../src/utils/firebase';
 import { notification_services } from '../../../src/services/notification_service';
 import prisma from '../../../src/db/prisma';

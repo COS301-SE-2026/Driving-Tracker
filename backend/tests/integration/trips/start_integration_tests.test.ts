@@ -7,7 +7,7 @@ import { seedUserAndLogin, cleanTripsData } from '../helpers';
 describe('POST trips/start_trip integration test', () => {
 	beforeEach(async () => {
 		await cleanTripsData();
-	})
+	});
 
 	afterAll(async () => {
 		await prisma.$disconnect();
