@@ -20,6 +20,8 @@ jobs:
       #Prisma v7 config expects DATABASE_URL to exist, uses dummy
       DATABASE_URL: postgresql://ci_user:ci_pass@localhost:5432/driving_tracker_ci?schema=public
       FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      AZURE_MAPS_CLIENT_ID: ${{ secrets.AZURE_MAPS_CLIENT_ID }}
+      AZURE_MAPS_SUBSCRIPTION_KEY: ${{ secrets.AZURE_MAPS_SUBSCRIPTION_KEY }}
     steps:
       - uses: actions/checkout@v4
 
