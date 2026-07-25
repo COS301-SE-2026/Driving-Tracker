@@ -1,3 +1,4 @@
+import { register } from "module";
 import prisma from "../db/prisma";
 
 
@@ -23,9 +24,8 @@ model vehicles {
 */
 export interface assign_vehicle{
     user_id: string,
-    vehicle_id: string,
-	name: string,
-    registration: string,
+	name?: string,
+    registration?: string,
 	make: string,
     model: string,
     year: number,
@@ -69,7 +69,7 @@ export const vehicle_services={
        //will it get the vehicle id from the vin number
        
        try{
-            if(!data.vehicle_id || !data.user_id){
+            if( !data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type){
                 throw new Error("Missing field(s)");
             } 
             const user = await prisma.users.findUnique({
@@ -79,63 +79,43 @@ export const vehicle_services={
             if(!user){
                 throw new Error("User does not exist");
             }
-            //if the vehicle exist already in the database
-             // Check if assignment already exists
-            const existing_assignment = await prisma.users_vehicles.findUnique({
-                where: {
-                    user_id_vehicle_id: {
-                    user_id: data.user_id,
-                    vehicle_id: data.vehicle_id
-                    }
-                }
-            });
-
-            if (existing_assignment) {
-                // Do nothing if the user already assigned to this vehicle
-                return {
+            //create unique vehicle
+            const result = await prisma.$transaction(async (tx) => {
+                const vehicle = await tx.vehicles.create({
                     data: {
-                    vehicle_id: data.vehicle_id,
-                    message: "User already assigned to this vehicle"
-                    }
-                };
-            }
-            //if the vehicle doesnt exist yet in the db 
-            let vehicle = await prisma.vehicles.findUnique({
-                where: { vehicle_id: data.vehicle_id }
-            });
-
-            //If vehicle doesn't exist, create it
-            if (!vehicle) {
-                vehicle = await prisma.vehicles.create({
-                    data: {
-                        vehicle_id: data.vehicle_id,  // VIN number
-						name: data.name,
+                        name: data.name,
                         registration: data.registration,
                         make: data.make,
-						model: data.model,
+                        model: data.model,
                         year: data.year,
                         fuel_type: data.fuel_type
                     }
                 });
-            }
-            // Assign user to vehicle if vehicle exists in database
-            await prisma.users_vehicles.create({
-                data: {
-                    user_id: data.user_id,
-                    vehicle_id: data.vehicle_id
-                }
+
+                await tx.users_vehicles.create({
+                    data: {
+                        user_id: data.user_id,
+                        vehicle_id: vehicle.vehicle_id
+                    }
+                });
+
+                return vehicle;
             });
 
-    
             return {
-                data:{
-                    vehicle_id: vehicle.vehicle_id,
-                    model: vehicle.model,
-                    registration: vehicle.registration
+                data: {
+                    vehicle_id: result.vehicle_id,
+                    name: result.name,
+                    registration: result.registration,
+                    make: result.make,
+                    model: result.model,
+                    year: result.year,
+                    fuel_type: result.fuel_type
                 }
             };
+            
        }catch(error){
-            throw error 
+            throw error; 
        }
     }
 }
