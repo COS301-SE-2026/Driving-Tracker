@@ -7,7 +7,7 @@ import { seedUserAndLogin, cleanTripsData, seedApprovedContact, seedContactUser 
 describe('GET /contacts integration test', () => {
     beforeEach(async () => {
 		await cleanTripsData();
-	})
+	});
 
 	afterAll(async () => {
 		await prisma.$disconnect();

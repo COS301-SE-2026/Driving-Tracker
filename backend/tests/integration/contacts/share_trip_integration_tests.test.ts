@@ -7,7 +7,7 @@ import { seedUserAndLogin, cleanTripsData, seedApprovedContact, seedContactUser,
 describe('POST /contacts/share_location integration test', () => {
     beforeEach(async () => {
 		await cleanTripsData();
-	})
+	});
 
 	afterAll(async () => {
 		await prisma.$disconnect();

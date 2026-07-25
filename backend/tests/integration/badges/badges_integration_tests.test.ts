@@ -7,7 +7,7 @@ import { seedUserAndLogin, cleanTripsData, seedTrip, seedBadge, seedBadgeCriteri
 describe('Badges integration tests', () => {
     beforeEach(async () => {
 		await cleanTripsData();
-	})
+	});
 
 	afterAll(async () => {
 		await prisma.$disconnect();

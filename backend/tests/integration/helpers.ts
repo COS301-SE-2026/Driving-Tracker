@@ -152,6 +152,7 @@ export const cleanDatabase = async () => {
 	await prisma.badge_criteria.deleteMany();
 	await prisma.user_badges.deleteMany();
 	await prisma.badges.deleteMany();
+	await prisma.leaderboard.deleteMany();
 	await prisma.vehicles.deleteMany();
 	await prisma.users_vehicles.deleteMany()
 	await prisma.users.deleteMany();

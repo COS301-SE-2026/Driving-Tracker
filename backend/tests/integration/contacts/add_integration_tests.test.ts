@@ -7,7 +7,7 @@ import { seedUserAndLogin, cleanTripsData, seedContactUser } from '../helpers';
 describe('POST /contacts integration test', () => {
 	beforeEach(async () => {
 		await cleanTripsData();
-	})
+	});
 
 	afterAll(async () => {
 		await prisma.$disconnect();
