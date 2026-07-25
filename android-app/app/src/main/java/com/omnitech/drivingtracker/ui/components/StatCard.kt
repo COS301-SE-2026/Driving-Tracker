@@ -37,8 +37,8 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ){
 
 
@@ -73,7 +73,9 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                     color = Green,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.End) //pushes text to the right
+                    modifier = Modifier
+                        .align(Alignment.End) //pushes text to the right
+                        .padding(bottom = 8.dp)
                 )
 
             } else if (percentage < 0) {
@@ -83,7 +85,9 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                     color = Error,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier
+                        .align(Alignment.End) //pushes text to the right
+                        .padding(bottom = 8.dp)
                 )
             }
 
