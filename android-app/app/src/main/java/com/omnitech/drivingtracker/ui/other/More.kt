@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.Screen
 import androidx.compose.foundation.shape.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.material3.*
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
 
 @Composable
 fun More(navController: NavController){
@@ -43,7 +44,8 @@ fun More(navController: NavController){
             rightIcon = Icons.Default.Settings,
             onLeftClick = {navController?.popBackStack()},
             onRightClick = {navController.navigate(Screen.Settings.route)}
-        )}
+        )},
+        bottomBar = {BottomNavBar(navController = navController, color = "more")}
     ){
         innerPadding ->
             Column(
