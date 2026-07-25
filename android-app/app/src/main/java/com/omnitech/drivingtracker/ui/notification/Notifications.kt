@@ -75,21 +75,18 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedRequests) {
                     Column {
-                        if(state is NotificationViewModel.UiState.SuccessPendingRequests){
-                            val requests = (state as NotificationViewModel.UiState.SuccessPendingRequests).requests
-                            if(requests.isEmpty()){
-                               Text(text = noNotificationError,
-                                   style = MaterialTheme.typography.bodyMedium,
-                                   )
-                            } else {
-                                requests.forEach { request ->
-                                    NotificationCard(NotificationItem(request.contactId, NotificationType.TRUSTED_CONTACT_REQUEST, request.username),
-                                        onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
-                                        onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
-                                    )
-                                }
-                            }
+                        if(state.requests.isNotEmpty()){
 
+                            state.requests.forEach { request ->
+                                NotificationCard(NotificationItem(request.contactId, NotificationType.TRUSTED_CONTACT_REQUEST, request.username),
+                                    onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
+                                    onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
+                                )
+                            }
+                        }else {
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
                     }
                 }
@@ -104,17 +101,15 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedToday) {
                     Column {
-                        if(state is NotificationViewModel.UiState.SuccessNotifications){
-                            val notificationsToday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Today"]
+                        val notificationsToday = state.groupedNotifications["Today"]
 
-                            if(notificationsToday.isNullOrEmpty()){
-                                Text(text = noNotificationError,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }else {
-                                notificationsToday.forEach{ notification ->
-                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
-                                }
+                        if(notificationsToday.isNullOrEmpty()){
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }else {
+                            notificationsToday.forEach{ notification ->
+                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
                             }
                         }
                     }
@@ -130,17 +125,15 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedYesterday) {
                     Column {
-                        if(state is NotificationViewModel.UiState.SuccessNotifications){
-                            val notificationsYesterday = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Yesterday"]
+                        val notificationsYesterday = state.groupedNotifications["Yesterday"]
 
-                            if(notificationsYesterday.isNullOrEmpty()){
-                                Text(text = noNotificationError,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }else {
-                                notificationsYesterday.forEach{ notification ->
-                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body= notification.body?:""))
-                                }
+                        if(notificationsYesterday.isNullOrEmpty()){
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }else {
+                            notificationsYesterday.forEach{ notification ->
+                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body= notification.body?:""))
                             }
                         }
                     }
@@ -156,17 +149,16 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedThisWeek) {
                     Column {
-                        if(state is NotificationViewModel.UiState.SuccessNotifications){
-                            val notificationsWeek = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["This Week"]
 
-                            if(notificationsWeek.isNullOrEmpty()){
-                                Text(text = noNotificationError,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            } else {
-                                notificationsWeek.forEach{ notification ->
-                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
-                                }
+                        val notificationsWeek = state.groupedNotifications["This Week"]
+
+                        if(notificationsWeek.isNullOrEmpty()){
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        } else {
+                            notificationsWeek.forEach{ notification ->
+                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
                             }
                         }
                     }
@@ -182,17 +174,15 @@ fun NotificationsScreen(
             item {
                 AnimatedVisibility(visible = expandedEarlier) {
                     Column {
-                        if(state is NotificationViewModel.UiState.SuccessNotifications){
-                            val notificationsEarlier = (state as NotificationViewModel.UiState.SuccessNotifications).groupedNotifications["Earlier"]
+                        val notificationsEarlier = state.groupedNotifications["Earlier"]
 
-                            if(notificationsEarlier.isNullOrEmpty()){
-                                Text(text = noNotificationError,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            } else {
-                                notificationsEarlier.forEach{ notification ->
-                                    NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
-                                }
+                        if(notificationsEarlier.isNullOrEmpty()){
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        } else {
+                            notificationsEarlier.forEach{ notification ->
+                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
                             }
                         }
                     }
