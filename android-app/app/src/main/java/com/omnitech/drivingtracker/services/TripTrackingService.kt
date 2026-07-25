@@ -20,6 +20,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -33,6 +34,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.repository.TripRepository
+import java.time.Instant
+import kotlin.String
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -43,6 +47,9 @@ class TripTrackingService: Service() {
     lateinit var sensorFusion: SensorFusionManager
     @Inject
     lateinit var apiService: ApiService
+
+    @Inject
+    lateinit var tripRepository: TripRepository
 
     private var currentTripId: String? = null
 
@@ -209,25 +216,51 @@ class TripTrackingService: Service() {
 
     private fun postEvent(event: FusedEvent){
         val tripId = currentTripId?: return
-        serviceScope.launch{
-            try{
-                val response = apiService.logEvent(
-                    tripId = tripId,
-                    body = LogEventRequest(
-                        event_type = event.type,
-                        location = LocationDto(
-                            lat = event.latitude,
-                            lng = event.longitude
-                        ),
-                        severity = event.severity,
-                        sensor_source = event.sensorSource,
-                        timestamp = event.timestamp
+
+        serviceScope.launch {
+
+            val recordedAt = runCatching {
+                Instant.parse(event.timestamp).toEpochMilli()
+            }.getOrDefault(System.currentTimeMillis())
+
+            //Save event to Room db
+            val entity = TripEventEntity(
+                tripId = tripId,
+                type = event.type,
+                severity = event.severity,
+                recordedAt = recordedAt,
+                latitude = event.latitude,
+                longitude = event.longitude,
+                sensorSource = event.sensorSource,
+                synced = false
+            )
+
+            tripRepository.saveEventLocally(entity)
+
+            if (event.type == "CRASH_LIKE" || event.type == "HARSH_BRAKE"){
+
+                try {
+                    val response = apiService.logEvent(
+                        tripId = tripId,
+                        body = LogEventRequest(
+                            event_type = event.type,
+                            location = LocationDto(
+                                lat = event.latitude,
+                                lng = event.longitude
+                            ),
+                            severity = event.severity,
+                            sensor_source = event.sensorSource,
+                            timestamp = event.timestamp
+                        )
                     )
-                )
-                Log.d(TAG, "Event posted: ${event.type} id=${response.data.event_id} speed=${event.speedKmh} severity=${event.severity}")
-            } catch(e: Exception){
-                //TODO: buffer to Room
-                Log.w(TAG, "Failed to post event ${e.message}")
+                    tripRepository.markEventAsSynced(entity.eventId)
+                    Log.d(
+                        TAG,
+                        "Event posted: ${event.type} id=${response.data.event_id} speed=${event.speedKmh} severity=${event.severity}"
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to post event ${e.message}, remains in Room for retry")
+                }
             }
         }
     }

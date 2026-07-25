@@ -2,13 +2,24 @@ package com.omnitech.drivingtracker.data.repository
 
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.db.daos.TripEventDao
+import com.omnitech.drivingtracker.data.db.daos.TripReadingDao
+import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
 import java.time.Instant
 import javax.inject.Inject
 
-class TripRepository @Inject constructor(private val api: ApiService){
+class TripRepository @Inject constructor(
+    private val api: ApiService,
+    private val tripEventDao: TripEventDao,
+    private val tripReadingDao: TripReadingDao
+    ){
+
+    suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
+
+    suspend fun markEventAsSynced(eventId: Int) = tripEventDao.markAsSynced(eventId)
 
     suspend fun getMapToken(): Result<MapTokenData> {
         return try{

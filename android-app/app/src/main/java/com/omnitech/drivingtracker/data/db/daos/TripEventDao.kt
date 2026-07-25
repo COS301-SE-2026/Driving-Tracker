@@ -11,10 +11,10 @@ import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 interface TripEventDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertEvent(reading: TripEventEntity)
+    suspend fun insertEvent(event: TripEventEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertEvents(readings: List<TripEventEntity>)
+    suspend fun insertEvents(events: List<TripEventEntity>)
 
     @Query("SELECT * FROM trip_events WHERE trip_id = :tripId ORDER BY recorded_at ASC")
     suspend fun getTripEvents(tripId: String): List<TripEventEntity>
@@ -27,4 +27,10 @@ interface TripEventDao {
 
     @Query("DELETE FROM trip_events WHERE trip_id = :tripId")
     suspend fun deleteAllTripEvents(tripId: String)
+
+    @Query("UPDATE trip_events SET synced=1 WHERE event_id IN (:eventIds)")
+    suspend fun markManyAsSynced(eventIds: List<Int>)
+
+    @Query("UPDATE trip_events SET synced=1 WHERE event_id = :eventId")
+    suspend fun markAsSynced(eventId: Int)
 }
