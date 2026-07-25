@@ -1,5 +1,11 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -241,24 +247,44 @@ fun LiveTripContent(
                 }
             }
             is TripSummaryViewModel.UiState.Success -> {
-                if (isMinimized){
-                    MinimizedTrip(
-                        distance = currentUiState.trip.distanceKm ?: 0.0,
-                        arrivalTime = "20:00", //Connect to backend/maps
-                        onExpandClick = onMinimizeClick
-                    )
-                }
-                else{
-                    TripDetails(
-                        trip = currentUiState.trip,
-                        endTripState = endTripState,
-                        mapToken = mapToken,
-                        liveLocation = liveLocation,
-                        onEndTrip = onEndTrip,
-                        navController = navController,
-                        contactsState = contactsState,
-                        onShareTrip = onShareTrip
-                    )
+
+                AnimatedContent(
+                    targetState = isMinimized,
+                    transitionSpec = {
+                        if (targetState){
+                            //slide down
+                            (slideInVertically { height -> height } + fadeIn())
+                                .togetherWith(slideOutVertically { height->height } + fadeOut())
+                        }
+                        else{
+                            //slide up (going from minimized)
+                            (slideInVertically { height -> height } + fadeIn())
+                                .togetherWith(slideOutVertically { height->height } + fadeOut())
+                        }
+                    },
+                    label = "Trip Transition"
+                ) {
+                    isMinimized ->
+                    if (isMinimized){
+                        MinimizedTrip(
+                            distance = currentUiState.trip.distanceKm ?: 0.0,
+                            arrivalTime = "20:00", //Connect to backend/maps
+                            onExpandClick = onMinimizeClick
+                        )
+                    }
+                    else{
+                        TripDetails(
+                            trip = currentUiState.trip,
+                            endTripState = endTripState,
+                            mapToken = mapToken,
+                            liveLocation = liveLocation,
+                            onEndTrip = onEndTrip,
+                            navController = navController,
+                            contactsState = contactsState,
+                            onShareTrip = onShareTrip
+                        )
+                    }
+
                 }
             }
             else -> {}
