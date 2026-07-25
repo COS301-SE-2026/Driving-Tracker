@@ -35,6 +35,7 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 
 import androidx.navigation.NavController
+import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 @Composable
 fun Contacts(
@@ -46,49 +47,11 @@ fun Contacts(
     var showAddContactDialog by remember { mutableStateOf(false) }
     var contactIdentifier by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    StandardScreen(
+        navController = navController,
+        title = "Contacts",
+        bottomBarColor = "more"
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-            Row {
-                Text(
-                    text = "Driving ",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Tracker",
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        // Page title
-        Text(
-            text = "Contacts",
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
 
         Box(modifier = Modifier.weight(1f)) {
             when (state) {
@@ -173,8 +136,6 @@ fun Contacts(
                 }
             }
         }
-
-        BottomNavBar(navController = navController, color = "none")
     }
 
     if(showAddContactDialog){

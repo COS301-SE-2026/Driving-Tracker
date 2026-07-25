@@ -259,3 +259,6 @@ MIGRATION_NAME=example_name docker compose up --build migrate-dev
 
 #Running integration tests through docker
 docker compose run --rm api-test
+
+#Loading migrations into DB
+DATABASE_URL='...' docker compose run --rm prisma-migrate
