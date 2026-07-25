@@ -520,6 +520,7 @@ private fun TripDetails(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
+        BottomNavBar(navController = navController, color = "trip")
 
     }
     if (showShareDialog){
