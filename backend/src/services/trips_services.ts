@@ -4,6 +4,7 @@ import prisma from '../db/prisma';
 import { notification_services } from './notification_service';
 import { user_devices_services } from './user_devices_services';
 import { add_notification } from '../utils/notification';
+import { contact_services } from './contacts_services';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -20,6 +21,34 @@ function to_number(value: any): number | null {
     }
     // Otherwise try to convert to number
     return Number(value);
+}
+
+async function get_trip_shared_contacts(trip_id: string){
+
+    const contacts = await prisma.trip_location_shares.findMany({
+        where: {
+            trip_id, revoked_at: null
+        },
+        select: {
+            contact: {
+                select: {
+                    contact_user_id: true
+                }
+            },
+            contact_id: true
+        } 
+    });
+
+    if(!contacts||contacts.length){
+        return { contact_user_ids: [], contact_ids: [] };
+    }
+
+    const contact_user_ids = contacts.map((c) => c.contact.contact_user_id);
+
+    const contact_ids = contacts.map((c) => c.contact_id);
+
+    return {contact_user_ids, contact_ids};
+
 }
 
 export interface create_trip{
@@ -527,6 +556,15 @@ export const trips_services ={
         if(!data.location.lat || !data.location.lng){
             throw new Error("Invalid location");
         }
+
+        const user = await prisma.users.findUnique({
+            where: { user_id: data.user_id }
+            });
+
+        if(!user){
+            throw new Error("User not found");
+        }
+
         try{
             const trip = await prisma.trips.findUnique({
                 where: { trip_id:data.trip_id}
@@ -549,6 +587,45 @@ export const trips_services ={
                 recorded_at: data.recorded_at
             }
         });
+
+        //Get contacts who had the ship shared with them
+        const { contact_user_ids, contact_ids } = await get_trip_shared_contacts(data.trip_id);
+
+
+        if (contact_user_ids.length > 0){
+            
+            const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+            const message = `${full_name} had a ${data.event_type} event at ${data.recorded_at}`;
+
+            const alert = await contact_services.alert_contacts_for_event({
+                user_id: data.user_id, 
+                event_type: data.event_type,
+                event_id: newEvent.event_id,
+                message,
+                contact_ids
+            });
+
+            const alert_ids = new Array(contact_user_ids.length).fill(alert.alert_id);
+            
+            await add_notification({
+                user_ids: contact_user_ids,
+                type: "TRIP_ALERT",
+                title: "Trip Alert",
+                body: message,
+                reference_ids: alert_ids,
+                reference_type: "alert",
+            });
+
+            //Get tokens for sending push notifications to contacts
+            const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+            const alert_type = data.event_type.replace("_"," ");
+
+            await notification_services.send_trip_alert_notification(fcm_tokens, data.trip_id, alert_type, message);
+
+        }
+        
         
         return {
             data: {

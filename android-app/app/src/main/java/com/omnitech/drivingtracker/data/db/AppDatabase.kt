@@ -2,6 +2,7 @@ package com.omnitech.drivingtracker.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.omnitech.drivingtracker.data.db.daos.TripDao
 import com.omnitech.drivingtracker.data.db.daos.TripEventDao
 import com.omnitech.drivingtracker.data.db.daos.TripReadingDao
@@ -12,6 +13,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 
 @Database(entities = [UserEntity::class, TripEntity::class, TripReadingEntity::class, TripEventEntity::class], version = 1, exportSchema = false)
+@TypeConverters(Converters::class)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao

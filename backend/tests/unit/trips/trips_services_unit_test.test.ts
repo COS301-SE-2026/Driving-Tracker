@@ -68,6 +68,7 @@ jest.mock('../../../src/db/prisma', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         createMany: jest.fn(),
+        findMany: jest.fn()
     };
     const trip_scores = {
         create: jest.fn(),
@@ -112,12 +113,20 @@ jest.mock('../../../src/db/prisma', () => {
     };
 });
 
+jest.mock('../../../src/utils/notification');
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
+import { contact_services } from '../../../src/services/contacts_services';
+import { add_notification } from '../../../src/utils/notification';
+import { user_devices_services } from '../../../src/services/user_devices_services';
+import { notification_services } from '../../../src/services/notification_service';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mock_prisma = prisma as any;
+
+const mock_add_notification = add_notification as jest.MockedFunction<typeof add_notification>
 
 class MockDecimal {
     constructor(private value: number) {}
@@ -575,6 +584,13 @@ describe('Trips services.events_log', () => {
     beforeEach(async() => jest.clearAllMocks());
 
     it('logs event successfully', async () => {
+
+        jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens').mockResolvedValue(['token-1','token-2']);
+
+        jest.spyOn(notification_services, 'send_trip_alert_notification').mockResolvedValue(undefined);
+
+        jest.spyOn(contact_services, 'alert_contacts_for_event').mockResolvedValue({alert_id: 'a1'});
+
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
             user_id: 'u1',
@@ -587,6 +603,30 @@ describe('Trips services.events_log', () => {
             sensor_source: 'ACCELEROMETER',
             recorded_at: new Date(),
         });
+
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
+        });
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValueOnce([
+            {
+                contact_id: "c1",
+                contact: {
+                    contact_user_id: "u2"
+                }
+            },
+            {
+                contact_id: "c2",
+                contact: {
+                    contact_user_id: "u3"
+                }
+            }
+        ]);
+
+        mock_add_notification.mockResolvedValue(undefined);
 
         const result = await trips_services.events_log({
             trip_id: 't1',
@@ -619,6 +659,13 @@ describe('Trips services.events_log', () => {
     it('throws when trip not found', async () => {
         mock_prisma.trips.findUnique.mockResolvedValue(null);
 
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
+        });
+
         await expect(
             trips_services.events_log({
                 trip_id: 't1',
@@ -636,6 +683,13 @@ describe('Trips services.events_log', () => {
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
             user_id: 'u2',
+        });
+
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
         });
 
         await expect(

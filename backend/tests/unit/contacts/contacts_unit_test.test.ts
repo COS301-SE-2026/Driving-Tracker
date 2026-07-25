@@ -91,7 +91,7 @@ describe('Contact endpoints', ()=>{
     //The alert contacts endpoint
     describe('Alert_contacts',()=>{
         it('Returns  200 when it successfully alerts the users contact', async () =>{
-            jest.spyOn(contact_services,'alert_contacts_for_event').mockResolvedValueOnce(undefined);
+            jest.spyOn(contact_services,'alert_contacts_for_event').mockResolvedValueOnce({alert_id: "a1"});
             const req: any = { 
                 user:{sub:'tester-1' },
                 body:{event_type: 'accident', event_id: 'e1', contacts: [{ contact_id: 'c1' }]}
