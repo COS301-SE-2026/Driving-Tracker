@@ -141,8 +141,10 @@ export const seedBadgeCriteria = async(badge_id: string, metric: string, operato
 };
 
 export const cleanDatabase = async () => {
+	await prisma.notifications.deleteMany();
+	await prisma.user_devices.deleteMany();
 	await prisma.alert_notifications.deleteMany();
-	await prisma.alerts.deleteMany()
+	await prisma.alerts.deleteMany();
 	await prisma.trip_location_shares.deleteMany();
 	await prisma.trip_events.deleteMany();
 	await prisma.trip_scores.deleteMany();
@@ -154,7 +156,7 @@ export const cleanDatabase = async () => {
 	await prisma.badges.deleteMany();
 	await prisma.leaderboard.deleteMany();
 	await prisma.vehicles.deleteMany();
-	await prisma.users_vehicles.deleteMany()
+	await prisma.users_vehicles.deleteMany();
 	await prisma.users.deleteMany();
 };
 
