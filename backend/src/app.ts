@@ -17,6 +17,9 @@ const app = express();
 
 //security middleware
 
+//trust proxy for rate limiting support
+app.set('trust proxy', 1);
+
 //security headers added to responses
 app.use(helmet());
 //prevents browser from blocking api requests

@@ -1,6 +1,7 @@
 import {Router} from "express";
 import contacts_controller from "../controllers/contacts.controller";
 import {verify_token} from '../middleware/auth';
+import { user_based_limiter } from "../middleware/rate_limit";
 
 const contacts_router = Router();
 /**
@@ -10,16 +11,16 @@ const contacts_router = Router();
  */
 
 //add trusted contact for logged-in user
-contacts_router.post("/", verify_token, contacts_controller.create_contact);
+contacts_router.post("/", verify_token, user_based_limiter, contacts_controller.create_contact);
 //lists all trusted contacts for logged in user
-contacts_router.get("/", verify_token, contacts_controller.get_contacts);
+contacts_router.get("/", verify_token, user_based_limiter, contacts_controller.get_contacts);
 //creates alert for event and notifies selected contacts
-contacts_router.post("/alerts", verify_token, contacts_controller.alert_contacts);
+contacts_router.post("/alerts", verify_token, user_based_limiter, contacts_controller.alert_contacts);
 //persists location sharing for a trip until end
-contacts_router.post("/share_location", verify_token, contacts_controller.share_location);
+contacts_router.post("/share_location", verify_token, user_based_limiter, contacts_controller.share_location);
 //reponds to trusted contact request and changes the status
-contacts_router.patch("/:contact_id/respond", verify_token, contacts_controller.respond_to_contact_request);
+contacts_router.patch("/:contact_id/respond", verify_token, user_based_limiter, contacts_controller.respond_to_contact_request);
 //gets trusted contact requests received by a user
-contacts_router.get("/received_requests", verify_token, contacts_controller.get_receieved_contact_requests);
+contacts_router.get("/received_requests", verify_token, user_based_limiter, contacts_controller.get_receieved_contact_requests);
 
 export default contacts_router;
