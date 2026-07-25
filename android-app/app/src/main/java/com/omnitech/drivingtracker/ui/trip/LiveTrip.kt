@@ -251,16 +251,8 @@ fun LiveTripContent(
                 AnimatedContent(
                     targetState = isMinimized,
                     transitionSpec = {
-                        if (targetState){
-                            //slide down
-                            (slideInVertically { height -> height } + fadeIn())
-                                .togetherWith(slideOutVertically { height->height } + fadeOut())
-                        }
-                        else{
-                            //slide up (going from minimized)
-                            (slideInVertically { height -> height } + fadeIn())
-                                .togetherWith(slideOutVertically { height->height } + fadeOut())
-                        }
+                        (slideInVertically { height -> height } + fadeIn())
+                            .togetherWith(slideOutVertically { height->height } + fadeOut())
                     },
                     label = "Trip Transition"
                 ) {
@@ -461,64 +453,23 @@ private fun TripDetails(
         Spacer(modifier = Modifier.height(25.dp))
 
         //Trip summary card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row {
-                    Text(
-                        "Trip Summary ",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        "(Live)",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SummaryItem(String.format(Locale.getDefault(), "%.2f", trip.distanceKm ?: 0.0), "km")
-                    SummaryItem("${trip.durationMinutes ?: 0}", "min")
-                    SummaryItem("93", "avg speed") // Placeholder as not in DTO yet
-                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "km/l")
-                }
-            }
-        }
+        TripSummaryCard(
+            distanceKm = trip.distanceKm,
+            durationMinutes = trip.durationMinutes,
+            fuelEstimate = trip.fuelEstimate,
+            avgSpeed = "9", //placeholder
+            isLive = true
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         //Alerts section (alerts not made but count used)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "Alerts",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                //Counting alerts from trip events
-                val hardBrakingCount = trip.events.count { it.eventType=="HARSH_BRAKE" }
-                val hardAccelCount = trip.events.count { it.eventType=="HARSH_ACCELERATION" }
 
-                AlertItem("Hard Braking", hardBrakingCount)
-                Spacer(modifier = Modifier.height(4.dp))
-                AlertItem("Hard Acceleration", hardAccelCount)
-            }
-        }
+        TripAlertsCard(
+            hardBrakingCount = trip.events.count {it.eventType == "HARSH_BRAKE"},
+            hardAccelerationCount = trip.events.count {it.eventType == "ACCELERATION"},
+        )
+
         Spacer(modifier = Modifier.weight(1f))
         BottomNavBar(navController = navController, color = "trip")
 
