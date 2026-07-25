@@ -29,6 +29,9 @@ interface ApiService{
     @GET("vehicle/get_all_vehicles/")
     suspend fun getVehicles(): List<VehicleDto>
 
+	@POST("vehicle/assign_vehicle")
+	suspend fun assignVehicle(@Body body: AssignVehicleRequest): GenericResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 

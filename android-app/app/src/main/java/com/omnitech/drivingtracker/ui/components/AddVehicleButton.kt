@@ -44,8 +44,10 @@ fun AddVehicleDialog(
 ) {
 
     var name by remember { mutableStateOf("") }
-    var brand by remember { mutableStateOf("") }
+    var make by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
+	var year by remember { mutableStateOf("") }
+	var fuelType by remember { mutableStateOf("") }
 
     AlertDialog(
 
@@ -68,8 +70,10 @@ fun AddVehicleDialog(
                 }
 
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-                OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text("Brand") })
+                OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
+				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") })
+				OutlinedTextField(value = fuelType, onValueChange = { fuelType = it }, label = { Text("Fuel Type") })
             }
         },
         confirmButton = {

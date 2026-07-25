@@ -24,7 +24,9 @@ model vehicles {
 export interface assign_vehicle{
     user_id: string,
     vehicle_id: string,
+	name: string,
     registration: string,
+	make: string,
     model: string,
     year: number,
     fuel_type: string
@@ -107,8 +109,10 @@ export const vehicle_services={
                 vehicle = await prisma.vehicles.create({
                     data: {
                         vehicle_id: data.vehicle_id,  // VIN number
+						name: data.name,
                         registration: data.registration,
-                        model: data.model,
+                        make: data.make,
+						model: data.model,
                         year: data.year,
                         fuel_type: data.fuel_type
                     }

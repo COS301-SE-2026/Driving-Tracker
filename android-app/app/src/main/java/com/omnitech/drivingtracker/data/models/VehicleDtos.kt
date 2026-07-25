@@ -13,3 +13,13 @@ data class VehicleDto(
     @SerializedName("fuel_type")
     val fuelType: String? = null
 )
+
+data class AssignVehicleRequest(
+	@SerializedName("vehicle_id") val vehicleId: String,
+	val name: String,
+	val registration: String,
+	val make: String,
+	val model: String,
+	val year: Int,
+	@SerializedName("fuel_type") val fuelType: String
+)
