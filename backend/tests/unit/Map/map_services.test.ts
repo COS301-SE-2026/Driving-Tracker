@@ -159,7 +159,7 @@ describe('map services search address', ()=>{
                 json: async ()=>({
                     results:[
                         {
-                            address:{ freeformAddress: '1 Microsoft way, Redmond, WA'},
+                            address:{ freeformAddress: '1 Microsoft Way, Redmond, WA'},
                             position:{ lat: 47.6423, lon: -122.1367}
                         },
                         {
