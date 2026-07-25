@@ -30,7 +30,7 @@ interface ApiService{
     suspend fun getVehicles(): List<VehicleDto>
 
 	@POST("vehicle/assign_vehicle")
-	suspend fun assignVehicle(@Body body: AssignVehicleRequest): GenericResponse
+	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
 
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse

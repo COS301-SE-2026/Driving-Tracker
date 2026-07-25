@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.FilterChip
 
 @Composable
 fun AddVehicleButton(onClick: () -> Unit) {
@@ -38,16 +40,17 @@ fun AddVehicleButton(onClick: () -> Unit) {
 @Composable
 fun AddVehicleDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String?) -> Unit,
+    onConfirm: (String, String?, String, String, Int, String) -> Unit,
     onPickImage: () -> Unit,
     selectedImageUri: String?
 ) {
 
     var name by remember { mutableStateOf("") }
+    var registration by remember { mutableStateOf("") }
     var make by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
 	var year by remember { mutableStateOf("") }
-	var fuelType by remember { mutableStateOf("") }
+	var fuelType by remember { mutableStateOf("PETROL") }
 
     AlertDialog(
 
@@ -70,16 +73,36 @@ fun AddVehicleDialog(
                 }
 
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+                OutlinedTextField(value = registration, onValueChange = { registration = it }, label = { Text("Registration") })
                 OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
 				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") })
-				OutlinedTextField(value = fuelType, onValueChange = { fuelType = it }, label = { Text("Fuel Type") })
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Fuel Type", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val options = listOf("Petrol", "Diesel", "Electric")
+                    options.forEach { option ->
+                        val isSelected = fuelType.equals(option, ignoreCase = true)
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { fuelType = option.uppercase()},
+                            label = { Text(option)},
+                            leadingIcon = if(isSelected){
+                                {Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))}
+                            }else null
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, brand, model, selectedImageUri) },
-                enabled = name.isNotBlank() && brand.isNotBlank() && model.isNotBlank()
+                onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType) },
+                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank()
             ) {
                 Text("Add")
             }
