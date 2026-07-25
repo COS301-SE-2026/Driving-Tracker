@@ -208,9 +208,7 @@ fun LiveTripContent(
                 imageVector = Icons.Default.ArrowDownward,
                 contentDescription = "Make smaller",
                 tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.clickable{navController?.navigate(Screen.Dashboard.route){
-                    popUpTo(Screen.Dashboard.route){inclusive = true}
-                }}
+                modifier = Modifier.clickable(onClick = onMinimizeClick)
             )
             Row {
                 Text(

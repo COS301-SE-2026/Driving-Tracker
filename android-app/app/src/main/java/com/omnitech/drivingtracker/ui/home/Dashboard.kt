@@ -28,24 +28,17 @@ import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
-import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 import com.omnitech.drivingtracker.ui.components.RecentTripCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.StatCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.*
-import com.omnitech.drivingtracker.ui.trip.TripViewModel
 
 @Composable
 fun Dashboard(navController: NavController? = null,
-              dashboardViewModel: DashboardViewModel = hiltViewModel(),
-              tripViewModel: TripViewModel = hiltViewModel()
+              dashboardViewModel: DashboardViewModel = hiltViewModel()
 ){
     val recentTrip by dashboardViewModel.recentTrip.collectAsState()
-    val tripState by tripViewModel.tripStartState.collectAsState()
-    val isActiveTrip = tripState is TripViewModel.UiState.Success
-    val liveMetrics by tripViewModel.liveMetrics.collectAsState()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -203,21 +196,6 @@ fun Dashboard(navController: NavController? = null,
 //                    tripScore = 78
 //                )
             }
-        }
-        //Current trip in progress popup
-        if (isActiveTrip){
-            val tripId = (tripState as TripViewModel.UiState.Success).data
-            Box(
-                modifier = Modifier.align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
-            ){
-                MinimizedTrip(
-                    distance = liveMetrics.speedKmh.toDouble(), //FIX: Use the distance
-                    arrivalTime = "20:00",
-                    onExpandClick = {navController?.navigate(Screen.LiveTrip.createRoute(tripId))} //With the current trip id
-                )
-            }
-
         }
     }
 }
