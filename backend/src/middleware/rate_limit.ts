@@ -62,7 +62,7 @@ export const register_fcm_token_limiter = isTestEnv? (req: any, res: any, next: 
 
 export const register_limiter = isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
     windowMs: 15*60*1000,
-    max: 3, //Stricter than login
+    max: 10, 
     standardHeaders: true,
     legacyHeaders: false,
     message: {error: "TOO_MANY_ATTEMPTS", message: "Too many registration attempts, please try again later" }
@@ -90,7 +90,7 @@ const ip_limiter = new RateLimiterMemory({
     duration: 60
 });
 
-//identifier for catches bots rotating IP's
+//identifier for catching bots rotating IP's
 export const identifier_limiter = new RateLimiterMemory({
     points: 10,
     duration: 15*60 //15 minutes
@@ -98,7 +98,6 @@ export const identifier_limiter = new RateLimiterMemory({
 
 export async function login_limiter_sliding(req: AuthRequest, res: Response, next: NextFunction) {
 
-    //if(isTestEnv) return next();
     
     const identifier = req.body?.identifier ?? 'unknown';
     const ip = req.ip ?? 'unknown';
