@@ -13,7 +13,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             res.status(403).json({error: 'UNAUTHORIZED'});
             return ;
         }
-        const { vehicle_id, start_date, data_source, start_location, share_with_contacts}= req.body;
+        const { vehicle_id, start_date, data_source, start_location, share_with_contacts,end_location}= req.body;
 
         //sending to services
         const new_trip = await trips_services.create({
@@ -22,6 +22,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             start_date,
             data_source,
             start_location,
+            end_location,
             share_with_contacts
         });
 
