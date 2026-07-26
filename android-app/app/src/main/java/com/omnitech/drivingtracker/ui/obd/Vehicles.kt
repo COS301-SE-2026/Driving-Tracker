@@ -205,7 +205,7 @@ fun Vehicles(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        //TODO implement backend removal logic
+                        viewModel.removeVehicle(vehicle.id)
                         vehicleToRemove = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)

@@ -38,6 +38,9 @@ interface ApiService{
         @Body body: UpdateVehicleNameRequest
     ): GenericResponse
 
+    @DELETE("vehicle/{vehicle_id}")
+    suspend fun removeVehicle(@Path("vehicle_id") vehicleId: String) : GenericResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
