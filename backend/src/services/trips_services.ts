@@ -726,5 +726,71 @@ export const trips_services ={
             throw error;
         }
 
-    }
+    },
+    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data[]){
+        
+        if(!trip_id){
+            throw new Error("Missing required fields");
+        }
+
+        const trip = await prisma.trips.findUnique({
+                where: { trip_id: trip_id },
+                select: { user_id: true }
+            });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+        //verifying if the trip exists
+        if(trip.user_id !== user_id){
+            throw new Error("You do not own this trip");
+        }
+
+        await prisma.$transaction(async (tx) => {
+
+            await tx.trip_readings.createMany({
+                data: readings.map(r =>({
+                    trip_id: r.trip_id,
+                    recorded_at: r.recorded_at,
+                    data_source: r.data_source,
+                    longitude: r.location.lng,
+                    latitude: r.location.lat,
+                    speed_kmh: r.speed_kmh,
+                    accelerometer: r.accelerometer,
+                    gyroscope_x: r.gyroscope_x,
+                    gyroscope_y: r.gyroscope_y,
+                    gyroscope_z: r.gyroscope_z,
+                    rpm: r.rpm,
+                    coolant_temp_c: r.coolant_temp,
+                    fuel_trim_percent: r.fuel_trim_percent,
+                    throttle_position: r.throttle_position,
+                    dtc_codes: r.dtc_codes ?? [],
+                }))
+            });
+
+            const latest = readings[readings.length - 1]?? null;
+
+            if(latest && latest.location.lat != null && latest.location.lng != null){
+                await tx.trips.update({
+                    where: { trip_id },
+                    data: {
+                        last_latitude: latest.location.lat,
+                        last_longitude: latest.location.lng,
+                        last_speed_kmh: latest.speed_kmh ?? null,
+                        last_recorded_at: latest.recorded_at,
+                    }
+                });
+            }
+
+
+        });
+
+
+        const active_share_count = await prisma.trip_location_shares.count({
+            where: { trip_id, revoked_at: null },
+        });
+
+        return active_share_count;
+        
+    },
 };

@@ -173,6 +173,47 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
 		}
     }
 };
+//Records readings in a batch
+export const record_batch_readings = async (req: AuthRequest, res: Response) => {
+    const user_id = req.user?.sub;
+	const { trip_id } = req.params;
+
+    if(!user_id){
+        res.status(403).json({
+            error:"UNAUTHORIZED"
+        });
+        return;
+    }
+
+    const { readings } = req.body
+
+    try{
+        //returns how many users are currently viewing the trip
+        const active_share_count = await trips_services.record_batch_trip_readings(user_id, trip_id, readings);
+
+        return res.status(201).json({ message: "Readings added successfully", data: { active_share_count }});
+
+    }catch(error: any){
+
+        if(error.message === "Missing required fields"){
+
+			res.status(401).json({
+                error: "MISSING_REQUIRED_FIELDS"
+            });
+
+        }else if(error.message === "Trip not found"){
+            res.status(404).json({
+                error:"TRIP_NOT_FOUND",
+				message:"Trip not found"
+            });
+        }else if(error.message === "You do not own this trip"){
+            res.status(400).json({error:"UNAUTHORIZED"});
+        }else{
+			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message?? "Could not record readings" });
+		}
+    }
+
+}
 
 export const get_history = async (req:AuthRequest, res:Response)=>{
     try{

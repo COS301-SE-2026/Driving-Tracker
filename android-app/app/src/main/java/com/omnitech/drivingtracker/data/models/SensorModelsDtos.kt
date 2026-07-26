@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.data.models
 
+import com.google.gson.annotations.SerializedName
 import org.checkerframework.checker.units.qual.Current
 
 data class RecordReadingRequest(
@@ -16,6 +17,21 @@ data class RecordReadingRequest(
     val fuel_trim_percent: Float?,
     val throttle_position:Float?,
     val dtc_codes: List<String>
+)
+
+data class BatchReadingRequest(
+    val readings: List<RecordReadingRequest>
+)
+
+
+data class BatchReadingResponse(
+    val message: String,
+    val data: BatchReadingResponseData
+)
+
+data class BatchReadingResponseData(
+    @SerializedName("active_share_count")
+    val activeShareCount: Int
 )
 
 data class LogEventRequest(

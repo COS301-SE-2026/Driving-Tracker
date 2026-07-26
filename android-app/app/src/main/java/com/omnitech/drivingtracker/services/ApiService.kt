@@ -113,6 +113,13 @@ interface ApiService{
         @Body body: RecordReadingRequest
     )
 
+    @POST("trips/{trip_id}/batch_readings/record")
+    suspend fun recordBatchReadings(
+        @Path("trip_id") tripId: String,
+        @Body body: BatchReadingRequest
+    )
+
+
     @POST("trips/{trip_id}/events/log")
     suspend fun logEvent(
         @Path("trip_id") tripId: String,
