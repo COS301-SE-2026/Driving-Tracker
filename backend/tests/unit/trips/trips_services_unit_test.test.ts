@@ -83,7 +83,11 @@ jest.mock('../../../src/services/notification_service', () => ({
         send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
 }));
-
+jest.mock('../../../src/services/vehicle.services', () => ({
+    fetch_vehicle_benchmark: jest.fn<() => Promise<{ combined_mpg: number }[]>>().mockResolvedValue([
+        { combined_mpg: 25 },
+    ]),
+}));
 jest.mock('../../../src/services/user_devices_services', () => ({
     user_devices_services: {
         get_multiple_users_fcm_tokens: jest.fn<() => Promise<string[]>>().mockResolvedValue(['fcm-token-1']),
@@ -94,13 +98,10 @@ import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
 import { add_notification } from '../../../src/utils/notification';
-import { notification_services } from '../../../src/services/notification_service';
-import { user_devices_services } from '../../../src/services/user_devices_services';
+import { fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+const mock_fetch_vehicle_benchmark = fetch_vehicle_benchmark as jest.MockedFunction<typeof fetch_vehicle_benchmark>;
 import { map_services } from '../../../src/services/map_services';
  
-const mock_add_notification = add_notification as jest.Mock;
-const mock_notification_services = notification_services as any;
-const mock_user_devices_services = user_devices_services as any;
 const mock_map_services = map_services as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mock_prisma = prisma as any;
@@ -126,6 +127,7 @@ describe('Trips services.create - wu=ith end location (fuel estimate flow) ', ()
                 trip_id: 't1',
                 data_source: 'PHONE',
             });   
+            mock_fetch_vehicle_benchmark.mockResolvedValue([{combined_mpg: 25}as any]);
             const result = await trips_services.create({
                 user_id: 'u1' ,
                 vehicle_id: 'v1',
@@ -726,4 +728,44 @@ describe('Trips services.events_log', () => {
             })
         ).rejects.toThrow('Invalid location');
     });
+});
+describe('trips get_history additional tests', () =>{
+
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('it returns zero trips when there are no trips', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1' ,
+            username: 'testuser',
+        });
+
+        mock_prisma.trips.findMany.mockResolvedValue([]);
+
+        const result = await trips_services.get_history({ user_id: 'u1' });
+        expect(result.total_trips).toBe(0);
+        expect(result.trips).toEqual([]);
+        expect(result.meta).toEqual({ mean_distance: 0, mean_minutes: 0 });
+    });
+    it('throws when end_date is invalid', async () => {
+        await expect(
+            trips_services.get_history({
+                user_id: 'u1',
+                end_date: new Date('not-a-date'),
+            })
+        ).rejects.toThrow('Invalid end date');
+    });
+ 
+    it('filters by status when provided', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            username: 'testuser',
+        });
+        mock_prisma.trips.findMany.mockResolvedValue([]);
+ 
+        await trips_services.get_history({ user_id: 'u1', status: 'ABORTED' });
+ 
+        const call_args = mock_prisma.trips.findMany.mock.calls[0][0];
+        expect(call_args.where.status).toBe('ABORTED');
+    });
+    
 });
