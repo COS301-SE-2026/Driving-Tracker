@@ -21,6 +21,7 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
+import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -35,6 +36,7 @@ import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import kotlinx.coroutines.delay
 import java.time.Instant
 import kotlin.String
 
@@ -52,6 +54,8 @@ class TripTrackingService: Service() {
     lateinit var tripRepository: TripRepository
 
     private var currentTripId: String? = null
+
+    private var lastKnownSpeed: Float = 0f
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -181,36 +185,104 @@ class TripTrackingService: Service() {
         )
     }
 
-    //API posting
+    //Adding readings to Room
     private fun postReading(reading: FusedReading){
         val tripId = currentTripId?: return
+
+        lastKnownSpeed = reading.speedKmh
         serviceScope.launch {
+
+            val recordedAt = runCatching {
+                Instant.parse(reading.timestamp).toEpochMilli()
+            }.getOrDefault(System.currentTimeMillis())
+
+            val reading = TripReadingEntity(
+                tripId = tripId,
+                recordedAt = recordedAt,
+                dataSource = "PHONE",
+                latitude = reading.latitude,
+                longitude = reading.longitude,
+                speedKmh = reading.speedKmh,
+                accelerometer = reading.linearAccelY,
+                gyroscopeX = reading.gyroX,
+                gyroscopeY = reading.gyroY,
+                gyroscopeZ = reading.gyroZ,
+                rpm = null,
+                coolantTemp = null,
+                fuelTrimPercent = null,
+                throttlePosition = null,
+                dtcCodes = emptyList()
+            )
+
+            tripRepository.saveReadingLocally(reading)
+
             try{
-                apiService.recordReading(
-                    tripId = tripId,
-                    body = RecordReadingRequest(
-                        recorded_at = reading.timestamp,
-                        data_source = "PHONE",
-                        location = LocationDto(
-                            lat = reading.latitude,
-                            lng = reading.longitude
-                        ),
-                        speed_kmh = reading.speedKmh,
-                        accelerometer = reading.linearAccelY,
-                        gyroscope_x = reading.gyroX,
-                        gyroscope_y = reading.gyroY,
-                        gyroscope_z = reading.gyroZ,
-                        rpm = null,
-                        coolant_temp_c = null,
-                        fuel_trim_percent = null,
-                        throttle_position = null,
-                        dtc_codes = emptyList()
-                    )
-                )
+//                apiService.recordReading(
+//                    tripId = tripId,
+//                    body = RecordReadingRequest(
+//                        recorded_at = reading.timestamp,
+//                        data_source = "PHONE",
+//                        location = LocationDto(
+//                            lat = reading.latitude,
+//                            lng = reading.longitude
+//                        ),
+//                        speed_kmh = reading.speedKmh,
+//                        accelerometer = reading.linearAccelY,
+//                        gyroscope_x = reading.gyroX,
+//                        gyroscope_y = reading.gyroY,
+//                        gyroscope_z = reading.gyroZ,
+//                        rpm = null,
+//                        coolant_temp_c = null,
+//                        fuel_trim_percent = null,
+//                        throttle_position = null,
+//                        dtc_codes = emptyList()
+//                    )
+//                )
             } catch(e: Exception){
-                //TODO: buffer to Room, retry on reconnect
+
                 Log.w(TAG, "Failed to post reading ${e.message}")
             }
+        }
+    }
+
+    private fun computeSyncDelay(): Long {
+        return when {
+            lastKnownSpeed > 10f -> 8_000L
+            else -> 45_000L
+        }
+    }
+
+    private fun startSyncLoop() {
+        serviceScope.launch {
+            while(true) {
+                val nextDelay = if (lastKnownSpeed > 10f) {
+                    10_000L
+                } else {
+                    45_000L
+                }
+                delay(nextDelay)
+                syncPendingReadings()
+            }
+        }
+    }
+
+    //Syncs readings from room to backend
+    private suspend fun syncPendingReadings() {
+        val tripId = currentTripId?: return
+
+        val unsynced = tripRepository.getUnsyncedReadings(tripId)
+        if (unsynced.isEmpty()) return
+
+        try{
+
+            //val request = BatchReadingRequest(unsynced.map { it.toDto() })
+            //apiService.recordBatchReadings()
+
+            val readingIds = unsynced.map {  it.readingId }
+            tripRepository.markReadingsAsSynced(readingIds)
+
+        } catch (e: Exception){
+            Log.w("SyncReadings", "Batch sync failed, will retry")
         }
     }
 

@@ -5,6 +5,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.db.daos.TripEventDao
 import com.omnitech.drivingtracker.data.db.daos.TripReadingDao
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
+import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
@@ -20,6 +21,12 @@ class TripRepository @Inject constructor(
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
 
     suspend fun markEventAsSynced(eventId: Int) = tripEventDao.markAsSynced(eventId)
+
+    suspend fun saveReadingLocally(reading: TripReadingEntity) = tripReadingDao.insertReading(reading)
+
+    suspend fun getUnsyncedReadings(tripId: String) =  tripReadingDao.getUnsyncedTripReadings(tripId)
+
+    suspend fun markReadingsAsSynced(readingIds: List<Int>) = tripReadingDao.markAsSynced(readingIds)
 
     suspend fun getMapToken(): Result<MapTokenData> {
         return try{

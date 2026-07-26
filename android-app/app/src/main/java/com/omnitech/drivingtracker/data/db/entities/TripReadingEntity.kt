@@ -24,7 +24,6 @@ data class TripReadingEntity(
     val latitude: Double,
     val longitude: Double,
     val speedKmh: Float?,
-    val accuracy: Float?,
     val accelerometer: Float?,
     val gyroscopeX: Float?,
     val gyroscopeY: Float?,
