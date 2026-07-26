@@ -7,10 +7,14 @@ jest.mock('../../../src/db/prisma', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
     };
     const users_vehicles = {
         findUnique: jest.fn(),
         create: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
     };
 
     const $transaction = jest.fn(async (fn: any) => await fn({
@@ -217,6 +221,43 @@ describe ('vehicle services update vehicle name', () =>{
                 name: 'New Name'
             })
         ).rejects.toThrow('You do not own this vehicle');
+    });
+});
+
+describe ('vehicle services remove vehicle', () =>{
+    beforeEach(async () => jest.clearAllMocks());
+
+    it('removes the vehicle assignment successfully', async ()=> {
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.users_vehicles.delete.mockResolvedValue({ });
+        mock_prisma.users_vehicles.count.mockResolvedValue(1);
+
+        const result = await vehicle_services.remove_vehicle('u1', 'v1');
+
+        expect(mock_prisma.users_vehicles.delete).toHaveBeenCalledWith({
+            where: { user_id_vehicle_id: {user_id: 'u1', vehicle_id: 'v1'} }
+        });
+        expect(result.message).toBe('Vehicle removed successfully');
+        expect(mock_prisma.vehicles.delete).not.toHaveBeenCalled();
+    });
+    
+    it('deletes the vehicle entirely if no owners remain', async()=>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.users_vehicles.delete.mockResolvedValue({});
+        mock_prisma.users_vehicles.count.mockResolvedValue(0);
+
+        await vehicle_services.remove_vehicle('u1', 'v1');
+
+        expect(mock_prisma.vehicles.delete).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1'}
+        });
+    });
+
+    it('throws error if the vehice is not found or is not owned by the user', async()=>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
+        await expect(
+            vehicle_services.remove_vehicle('u1', 'v1')
+        ).rejects.toThrow('Vehicle not found or not owned by you');
     });
 });
 

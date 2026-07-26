@@ -78,7 +78,7 @@ export const update_name = async (req: AuthRequest, res: Response) => {
         const { vehicle_id } = req.params;
         const{ name } = req.body;
 
-        if(!user_id) return res.status(403).json({ message: 'Unauthorized'});
+        if(!user_id) return res.status(401).json({ message: 'Unauthorized'});
 
         const result = await vehicle_services.update_vehicle_name({
             user_id,
@@ -88,5 +88,25 @@ export const update_name = async (req: AuthRequest, res: Response) => {
         res.status(200).json(result);
     }catch(error: any){
         res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+export const remove_vehicle = async (req: AuthRequest, res: Response) => {
+    try{
+        const user_id = req.user?.sub;
+        const { vehicle_id } = req.params;
+
+        if(!user_id) return res.status(401).json({ message: 'Unauthorized'});
+
+        const result = await vehicle_services.remove_vehicle(
+            user_id,
+            vehicle_id,
+        );
+        res.status(200).json(result);
+    }catch(error: any){
+        if(error.message.includes("Vehicle not found or not owned")){
+            return res.status(404).json({message: error.message });
+        }
+        res.status(500).json({ message: "Internal server error" });
     }
 };

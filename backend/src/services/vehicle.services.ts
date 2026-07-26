@@ -165,6 +165,25 @@ export const vehicle_services={
        }catch(error){
             throw error; 
        }
+    },
+
+    async remove_vehicle(user_id: string, vehicle_id: string){
+        const assignment = await prisma.users_vehicles.findUnique({
+            where: { user_id_vehicle_id: { user_id, vehicle_id }}
+        });
+
+        if(!assignment) throw new Error("Vehicle not found or not owned by you");
+        await prisma.users_vehicles.delete({
+            where: { user_id_vehicle_id: { user_id, vehicle_id }}
+        });
+
+        const remainingOwners = await prisma.users_vehicles.count({
+            where: { vehicle_id }
+        });
+        if(remainingOwners===0){
+            await prisma.vehicles.delete({ where: { vehicle_id }});
+        }
+        return { message: "Vehicle removed successfully"};
     }
 };
 
