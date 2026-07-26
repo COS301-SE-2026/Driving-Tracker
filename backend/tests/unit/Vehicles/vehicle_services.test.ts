@@ -11,6 +11,12 @@ jest.mock('../../../src/db/prisma', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
     };
+
+    const $transaction = jest.fn(async (fn: any) => await fn({
+        users,
+        vehicles,
+        users_vehicles
+    }));
  
     return {
         __esModule: true,
@@ -18,6 +24,7 @@ jest.mock('../../../src/db/prisma', () => {
             users,
             vehicles,
             users_vehicles,
+            $transaction
         },
     };
 });
@@ -91,7 +98,7 @@ describe('vehicle services assign user to vehicle', ()=>{
     beforeEach(async()=> jest.clearAllMocks());
     const base_payload = {
         user_id: 'u1',
-        vehicle_id: 'v1',
+        name: 'My Car',
         registration: 'ABC123GP',
         make: "BMW",
         model: 'M3',
@@ -102,7 +109,7 @@ describe('vehicle services assign user to vehicle', ()=>{
 
     it('Throws when the user or vehicle id is missing', async()=>{
         await expect(
-            vehicle_services.assign_user_to_vehicle({...base_payload,vehicle_id:''})
+            vehicle_services.assign_user_to_vehicle({...base_payload, make: ''})
         ).rejects.toThrow('Missing field(s)');
     });
      it('throws when the user does not exist', async () => {
@@ -112,55 +119,70 @@ describe('vehicle services assign user to vehicle', ()=>{
             vehicle_services.assign_user_to_vehicle(base_payload)
         ).rejects.toThrow('User does not exist');
     });
-    it('returns early with a message when the assignment already exists', async () => {
-        mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
-        mock_prisma.users_vehicles.findUnique.mockResolvedValue({
-            user_id: 'u1',
-            vehicle_id: 'v1',
-        });
+
+    // it('returns early with a message when the assignment already exists', async () => {
+    //     mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
+    //     mock_prisma.users_vehicles.findUnique.mockResolvedValue({
+    //         user_id: 'u1',
+    //         vehicle_id: 'v1',
+    //     });
  
-        const result = await vehicle_services.assign_user_to_vehicle(base_payload);
+    //     const result = await vehicle_services.assign_user_to_vehicle(base_payload);
  
-        expect(result).toEqual({
-            data: {
-                vehicle_id: 'v1',
-                message: 'User already assigned to this vehicle',
-            },
-        });
-        // should not attempt to create a new assignment row
-        expect(mock_prisma.users_vehicles.create).not.toHaveBeenCalled();
-    });
+    //     expect(result).toEqual({
+    //         data: {
+    //             vehicle_id: 'v1',
+    //             message: 'User already assigned to this vehicle',
+    //         },
+    //     });
+    //     // should not attempt to create a new assignment row
+    //     expect(mock_prisma.users_vehicles.create).not.toHaveBeenCalled();
+    // });
 
     it('creates the vehicle when it does not exist yet, then assigns it', async() =>{
         mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
-        mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
-        mock_prisma.vehicles.findUnique.mockResolvedValue(null);
+        
+        // mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
+        // mock_prisma.vehicles.findUnique.mockResolvedValue(null);
+
         mock_prisma.vehicles.create.mockResolvedValue({
-            vehicle_id: 'v1',
+            vehicle_id: 'v-new-uuid',
+            name:'My Car',
             make: 'BMW',
             model: 'M3',
             registration: 'ABC123GP',
+            year: 2018,
+            fuel_type: 'PETROL'
         });
+
         mock_prisma.users_vehicles.create.mockResolvedValue({});
+
         const result = await vehicle_services.assign_user_to_vehicle(base_payload);
+
+        expect(mock_prisma.$transaction).toHaveBeenCalled();
 
         expect(mock_prisma.vehicles.create).toHaveBeenCalledWith({
             data: {
-                vehicle_id: 'v1',
+                name: 'My Car',
                 registration: 'ABC123GP',
+                make: 'BMW',
                 model: 'M3',
                 year: 2018,
                 fuel_type: 'PETROL',
             },
         });
         expect(mock_prisma.users_vehicles.create).toHaveBeenCalledWith({
-            data: { user_id: 'u1', vehicle_id: 'v1' },
+            data: { user_id: 'u1', vehicle_id: 'v-new-uuid' },
         });
         expect(result).toEqual({
             data: {
-                vehicle_id: 'v1',
-                model: 'M3',
+                vehicle_id: 'v-new-uuid',
+                name: 'My Car',
                 registration: 'ABC123GP',
+                make: 'BMW',
+                model: 'M3',
+                year: 2018,
+                fuel_type: 'PETROL'
             },
         });
     });
