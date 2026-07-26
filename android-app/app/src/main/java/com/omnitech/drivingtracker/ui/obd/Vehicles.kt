@@ -127,9 +127,9 @@ fun Vehicles(
                             name = dto.name?: "Unnamed",
                             brand = dto.make ?: "",
                             model = dto.model ?: "",
-                            mileage = 0, // Backend doesn't provide yet
-                            trips = 0,
-                            fuelEfficiency = 0.0,
+                            mileage = dto.mileage?: 0,
+                            trips = dto.tripCount?: 0,
+                            fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
                             needsService = false,
                             registration = dto.registration,
                             year = dto.year,
@@ -190,7 +190,7 @@ fun Vehicles(
             vehicle = vehicle,
             onDismiss = { vehicleToEditName = null },
             onConfirm = { newName ->
-                //TODO implement backend update logic
+                viewModel.updateVehicleName(vehicle.id, newName)
                 vehicleToEditName = null
             }
         )
@@ -205,7 +205,7 @@ fun Vehicles(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        //TODO implement backend removal logic
+                        viewModel.removeVehicle(vehicle.id)
                         vehicleToRemove = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)

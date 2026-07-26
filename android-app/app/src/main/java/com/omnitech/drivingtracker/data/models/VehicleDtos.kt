@@ -11,9 +11,15 @@ data class VehicleDto(
     val model: String? = null,
     val year: Int? = null,
     @SerializedName("fuel_type")
-    val fuelType: String? = null
+    val fuelType: String? = null,
+    val mileage: Int? = null,
+    @SerializedName("trip_count")
+    val tripCount: Int? = null,
+    @SerializedName("avg_fuel_efficiency")
+    val avgFuelEfficiency: Double? = null
 )
 
+data class UpdateVehicleNameRequest(val name: String)
 data class AssignVehicleRequest(
 	val name: String?,
 	val registration: String?,
