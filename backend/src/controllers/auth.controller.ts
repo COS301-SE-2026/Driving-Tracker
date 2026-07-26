@@ -115,6 +115,27 @@ const auth_controller={
 
             res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
         }
+    },
+
+    async get_profile(req: AuthRequest, res: Response){
+        try{ 
+            const user_id = req.user?.sub;
+            if(!user_id){
+                return res.status(401).json({
+                    error: "UNAUTHORIZED"
+                });
+            }
+            const profile = await auth_services.get_profile(user_id);
+            return res.status(200).json({
+                data: profile,
+                message: "Profile retrieved successfully"
+            });
+        }catch(err: any){
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to retrieve profile"
+            });
+        }
     }
 
 };
