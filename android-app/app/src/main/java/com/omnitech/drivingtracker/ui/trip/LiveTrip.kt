@@ -509,44 +509,11 @@ private fun TripDetails(
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        //Trip summary card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row {
-                    Text(
-                        "Trip Summary ",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        "(Live)",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SummaryItem(String.format(Locale.getDefault(), "%.2f", trip.distanceKm ?: 0.0), "km")
-                    SummaryItem("${trip.durationMinutes ?: 0}", "min")
-                    SummaryItem("93", "avg speed") // Placeholder
-                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "est. fuel (L)")
-                }
-            }
-        }
         TripSummaryCard(
             distanceKm = trip.distanceKm,
             durationMinutes = trip.durationMinutes,
             fuelEstimate = trip.fuelEstimate,
-            avgSpeed = "9", //placeholder
+            avgSpeed = "93", //placeholder
             isLive = true
         )
 
