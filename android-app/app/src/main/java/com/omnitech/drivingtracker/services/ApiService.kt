@@ -41,6 +41,9 @@ interface ApiService{
     @POST("api/auth/logout")
     suspend fun logout()
 
+    @GET("api/auth/profile")
+    suspend fun getProfile(): ProfileResponse
+
     @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
 

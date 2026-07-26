@@ -10,6 +10,7 @@ import com.omnitech.drivingtracker.data.models.RegisterFcmRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
+import com.omnitech.drivingtracker.data.models.ProfileData
 
 class AuthRepository @Inject constructor(
     private val api: ApiService,
@@ -65,6 +66,18 @@ class AuthRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message?: "An error occurred"))
         }catch(e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
+        }
+    }
+
+    suspend fun getProfile(): Result<ProfileData>{
+        return try {
+            val response = api.getProfile()
+            Result.success(response.data)
+        }catch (e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message?: "Failed to fetch profile"))
+        }catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error"))
         }
     }
 
