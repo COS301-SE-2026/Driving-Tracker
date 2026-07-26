@@ -29,6 +29,9 @@ interface ApiService{
     @GET("vehicle/get_all_vehicles/")
     suspend fun getVehicles(): List<VehicleDto>
 
+	@POST("vehicle/assign_vehicle")
+	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
@@ -37,6 +40,9 @@ interface ApiService{
 
     @POST("api/auth/logout")
     suspend fun logout()
+
+    @GET("api/auth/profile")
+    suspend fun getProfile(): ProfileResponse
 
     @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse

@@ -239,6 +239,43 @@ export const auth_services = {
         });
 
         return {user, new_refresh_token};
+    },
+
+    async get_profile(user_id: string){
+        const user = await prisma.users.findUnique({
+            where: { user_id },
+            select: {
+                user_id: true,
+                username: true,
+                name: true,
+                surname: true,
+                email: true,
+                phone_number: true,
+                dob: true,
+                _count: {
+                    select: {
+                        trips: true,
+                        user_badges: true,
+                        users_vehicles: true,
+                    }
+                }
+            }
+        });
+
+        if(!user) throw new Error('User not found');
+
+        return {
+            user_id: user.user_id,
+            username: user.username,
+            name: user.name,
+            surname: user.surname,
+            email: user.email,
+            phone_number: user.phone_number,
+            dob: user.dob,
+            trip_count: user._count.trips,
+            badge_count: user._count.user_badges,
+            vehicle_count: user._count.users_vehicles,
+        }
     }
 };
 

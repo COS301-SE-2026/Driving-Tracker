@@ -177,3 +177,37 @@ describe('Auth services.refresh', () => {
         await expect(auth_services.refresh('u99')).rejects.toThrow();
     });
 });
+
+describe('Auth services.get_profile', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns user profile successfully', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            username: 'testuser',
+            name: 'Test',
+            surname: 'User',
+            email: 'test@example.com',
+            phone_number: '+27123456789',
+            dob: new Date('2000-01-01'),
+            _count: {
+                trips: 5,
+                user_badges: 3,
+                users_vehicles: 1
+            }
+        });
+
+        const result = await auth_services.get_profile('u1');
+
+        expect(result.user_id).toBe('u1');
+        expect(result.trip_count).toBe(5);
+        expect(result.badge_count).toBe(3);
+        expect(result.vehicle_count).toBe(1);
+    });
+
+    it('throws when user not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue(null);
+
+        await expect(auth_services.get_profile('nonexistent')).rejects.toThrow('User not found');
+    });
+}); 

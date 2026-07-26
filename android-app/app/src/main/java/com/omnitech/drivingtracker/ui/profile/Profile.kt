@@ -43,9 +43,15 @@ import coil.compose.AsyncImage
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.ui.Alignment
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.auth.ProfileViewModel
 
 @Composable
-fun Profile(navController: NavController? = null) {
+fun Profile(navController: NavController? = null,
+            viewModel: ProfileViewModel = hiltViewModel()
+) {
+
+    val uiState by viewModel.uiState.collectAsState()
 
     var showImagePicker by remember { mutableStateOf(false) }
     var profileImageUri by remember { mutableStateOf<String?>(null) }
@@ -63,41 +69,51 @@ fun Profile(navController: NavController? = null) {
         }
 
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                ProfileHeader(name = "John Doe", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUri)
-            }
-            item {
-                //Account Information
-                Spacer(modifier = Modifier.width(20.dp))
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)){
+            when(val state = uiState){
+                is ProfileViewModel.UiState.Loading -> CircularProgressIndicator(Modifier.align(
+                    Alignment.Center))
+                is ProfileViewModel.UiState.Success -> {
+                    val profile = state.profile
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            ProfileHeader(name = "${profile.name} ${profile.surname}", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUri)
+                        }
+                        item {
+                            //Account Information
+                            Spacer(modifier = Modifier.width(20.dp))
 
-                AccountInformation(
-                    fullName = "John Doe",
-                    username = "JohnnyBoy123",
-                    email = "JohnD@gmail.com",
-                    phoneNumber = "081 854 0565"
-                )
-            }
-            item {
-                //App Activity
-                AppActivity(
-                    vehicleCount = 2,
-                    badgeCount = 2,
-                    tripCount = 12
-                )
-            }
-            item {
-                //Delete Account (remember to confirm and ask if user is sure)
-                DeleteAccount(onClick = {})
+                            AccountInformation(
+                                fullName = "${profile.name} ${profile.surname}",
+                                username = profile.username,
+                                email = profile.email,
+                                phoneNumber = profile.phoneNumber
+                            )
+                        }
+                        item {
+                            //App Activity
+                            AppActivity(
+                                vehicleCount = profile.vehicleCount,
+                                badgeCount = profile.badgeCount,
+                                tripCount = profile.tripCount
+                            )
+                        }
+                        item {
+                            //Delete Account (remember to confirm and ask if user is sure)
+                            DeleteAccount(onClick = {})
+                        }
+                    }
+                }
+                is ProfileViewModel.UiState.Error -> Text(state.message, color = Color.Red)
             }
         }
     }
+
     //Image Picker Logic
     if (showImagePicker) {
 
