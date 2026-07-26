@@ -2,6 +2,7 @@ import request from 'supertest';
 import bcrypt from 'bcrypt';
 import app from '../../src/app';
 import prisma from '../../src/db/prisma';
+import { resetIdentifierLimiter } from '../../src/middleware/rate_limit';
 
 function getTestPassword(): string {
 	const password = process.env.TEST_USER_PASSWORD;
@@ -141,6 +142,7 @@ export const seedBadgeCriteria = async(badge_id: string, metric: string, operato
 };
 
 export const cleanDatabase = async () => {
+	resetIdentifierLimiter();
 	await prisma.notifications.deleteMany();
 	await prisma.user_devices.deleteMany();
 	await prisma.alert_notifications.deleteMany();
