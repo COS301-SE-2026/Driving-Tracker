@@ -1,8 +1,10 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,6 +41,22 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
                 _mapToken.value = data.token
             }.onFailure {
                 _mapToken.value = null
+            }
+        }
+    }
+    private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
+    val plannedRoute: StateFlow<List<LocationDto>?> = _plannedRoute
+
+    fun suggestedRoute(startLat: Double?, startLng: Double?, destLat: Double, destLng: Double) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getSuggestedRoute(
+                    LocationDto(startLat, startLng),
+                    LocationDto(destLat, destLng)
+                )
+                _plannedRoute.value = response.getOrNull()?.points
+            } catch (e: Exception) {
+                Log.e("TripSummaryVM", "Route fetch failed: ${e.message}")
             }
         }
     }

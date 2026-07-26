@@ -38,6 +38,8 @@ class TripRepository @Inject constructor(
         dataSource: String,
         latitude: Double,
         longitude: Double,
+        destLat: Double? = null,
+        destLng: Double? = null,
         selectedContactIds: List<String>?
     ) : Result<String>{
         return try{
@@ -46,6 +48,7 @@ class TripRepository @Inject constructor(
                 startDate = Instant.now().toString(),
                 dataSource = dataSource,
                 startLocation = LocationDto(lat = latitude, lng = longitude),
+                endLocation = if (destLat != null && destLng != null) LocationDto(lat = destLat, lng = destLng) else null,
                 shareWithContacts = selectedContactIds
             )
 
@@ -150,6 +153,25 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to end trip"))
         }catch (e: Exception) {
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+    suspend fun searchAddress(query: String): Result<List<AddressSearchResult>> {
+        return try {
+            val response = api.searchAddress(query)
+            Result.success(response.data) // Return the list from the 'data' field
+        } catch (e: HttpException) {
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to search address"))
+        } catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+    suspend fun getSuggestedRoute(start: LocationDto, dest: LocationDto): Result<SuggestedRouteData> {
+        return try {
+            val response = api.getSuggestedRoute(start.lat, start.lng, dest.lat, dest.lng)
+            Result.success(response.data)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

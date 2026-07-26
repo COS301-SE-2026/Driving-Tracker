@@ -1,60 +1,19 @@
-// jest.mock('../../../src/db/prisma', () => ({
-//   __esModule: true,
-//   default: {
-//     $transaction: jest.fn((callback:any) => callback({
-//         trips: {
-//             create: jest.fn(),
-//             update: jest.fn(),
-//             findUnique: jest.fn(),
-//             findFirst: jest.fn(),
-//             findMany: jest.fn(),
-//         },
-//         trip_location_shares: {
-//             create: jest.fn(),
-//             updateMany: jest.fn(),
-//         },
-//         trip_scores: {
-//             create: jest.fn(),
-//             upsert: jest.fn(),
-//             findFirst: jest.fn(),
-//         },
-//         trip_readings: {
-//             create: jest.fn(),
-//             findMany: jest.fn(),
-//         },
-//         trip_events: {
-//             create: jest.fn(),
-//         },
-//         users: {
-//             findUnique: jest.fn(),
-//         },
-//     })),
-//     users: {
-//       findUnique: jest.fn(),
-//     },
-//     trips: {
-//       findFirst: jest.fn(),
-//       findUnique: jest.fn(),
-//       create: jest.fn(),
-//       update: jest.fn(),
-//       findMany: jest.fn(),
-//     },
-//     trip_scores: {
-//       findFirst: jest.fn(),
-//       upsert: jest.fn(),
-//     },
-//     trip_readings: {
-//       findMany: jest.fn(),
-//       create: jest.fn(),
-//     },
-//     trip_events: {
-//       create: jest.fn(),
-//     },
-//     trip_location_shares: {
-//         updateMany: jest.fn(),
-//     },
-//   },
-// }));
+jest.mock('../../../src/services/map_services', () => ({
+    map_services: {
+        get_map_token: jest.fn(),
+        suggested_routes: jest.fn<() => Promise<{
+            distance_km: number;
+            travel_time_seconds: number;
+            traffic_delay_seconds: number;
+        }>>().mockResolvedValue({
+            distance_km: 10,
+            travel_time_seconds: 600,
+            traffic_delay_seconds: 0,
+        }),
+        search_address: jest.fn(),
+    },
+}));
+
 jest.mock('../../../src/db/prisma', () => {
     const trips = {
         create: jest.fn(),
@@ -63,6 +22,9 @@ jest.mock('../../../src/db/prisma', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+    };
+     const vehicles = {
+        findUnique: jest.fn(),
     };
     const trip_location_shares = {
         create: jest.fn(),
@@ -104,6 +66,7 @@ jest.mock('../../../src/db/prisma', () => {
         })),
         users,
         trips,
+        vehicles,
         trip_scores,
         trip_readings,
         trip_events,
@@ -112,6 +75,25 @@ jest.mock('../../../src/db/prisma', () => {
         },
     };
 });
+jest.mock('../../../src/utils/notification', () => ({
+    add_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../../src/services/notification_service', () => ({
+    notification_services: {
+        send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    },
+}));
+jest.mock('../../../src/services/vehicle.services', () => ({
+    fetch_vehicle_benchmark: jest.fn<() => Promise<{ combined_mpg: number }[]>>().mockResolvedValue([
+        { combined_mpg: 25 },
+    ]),
+}));
+jest.mock('../../../src/services/user_devices_services', () => ({
+    user_devices_services: {
+        get_multiple_users_fcm_tokens: jest.fn<() => Promise<string[]>>().mockResolvedValue(['fcm-token-1']),
+    },
+}));
 
 jest.mock('../../../src/utils/notification');
 
@@ -122,7 +104,11 @@ import { contact_services } from '../../../src/services/contacts_services';
 import { add_notification } from '../../../src/utils/notification';
 import { user_devices_services } from '../../../src/services/user_devices_services';
 import { notification_services } from '../../../src/services/notification_service';
-
+import { fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+const mock_fetch_vehicle_benchmark = fetch_vehicle_benchmark as jest.MockedFunction<typeof fetch_vehicle_benchmark>;
+import { map_services } from '../../../src/services/map_services';
+ 
+const mock_map_services = map_services as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mock_prisma = prisma as any;
 
@@ -133,13 +119,49 @@ class MockDecimal {
     toNumber() {
         return this.value;
     }
-}
-describe('Trips services.create',()=>{
+};
+describe('Trips services.create - wu=ith end location (fuel estimate flow) ', () => {
     beforeEach(async()=> jest.clearAllMocks());
-
-    it('creates a trip when valid input comes in', async()=>{
-        (mock_prisma.users.findUnique ).mockResolvedValue({ user_id: 'u1' });
-        (mock_prisma.trips.findFirst ).mockResolvedValue(null);
+    it("Calls map services. suggested routes and returns planned distance and end location",
+        async()=>{
+            (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
+            (mock_prisma.trips.findFirst).mockResolvedValue(null);
+            (mock_prisma.vehicles.findUnique).mockResolvedValue({
+                make: 'BMW',
+                model: 'M3',
+                year: 2018,
+            });
+            (mock_prisma.trips.create).mockResolvedValue({
+                trip_id: 't1',
+                data_source: 'PHONE',
+            });   
+            mock_fetch_vehicle_benchmark.mockResolvedValue([{combined_mpg: 25}as any]);
+            const result = await trips_services.create({
+                user_id: 'u1' ,
+                vehicle_id: 'v1',
+                data_source: 'PHONE',
+                start_date: new Date('2026-05-20'),
+                start_location: { lat: -25.7461, lng: 28.2313},
+                end_location: { lat: -25.75, lng: 28.24},
+            });
+            expect(mock_map_services.suggested_routes).toHaveBeenCalledWith({
+                start_lat: -25.7461,
+                start_lng: 28.2313,
+                dest_lat: -25.75,
+                dest_lng: 28.24,
+            });
+            expect(result?.planned_distance_km).toBe(10);
+            expect(result?.fuel_estimate).toBeNull();
+        }
+    );
+    it('does not call fetch_vehicle_benchmark when vehicle is outside 2015-2020', async ()=>{
+        (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
+        (mock_prisma.trips.findFirst).mockResolvedValue(null);
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2024,
+        });
         (mock_prisma.trips.create).mockResolvedValue({
             trip_id: 't1',
             data_source: 'PHONE',
@@ -151,9 +173,45 @@ describe('Trips services.create',()=>{
             data_source: 'PHONE',
             start_date: new Date('2026-05-20'),
             start_location: { lat: -25.7461, lng: 28.2313 },
+            end_location: { lat: -25.75, lng: 28.24 },
+        });
+ 
+        expect(result?.fuel_estimate).toBeNull();
+        expect(result?.planned_distance_km).toBe(10);
+    });
+
+});
+
+describe('Trips services.create',()=>{
+    beforeEach(async()=> jest.clearAllMocks());
+
+    it('creates a trip when valid input comes in', async()=>{
+        (mock_prisma.users.findUnique ).mockResolvedValue({ user_id: 'u1' });
+        (mock_prisma.trips.findFirst ).mockResolvedValue(null);
+        (mock_prisma.trips.create).mockResolvedValue({
+            trip_id: 't1',
+            data_source: 'PHONE',
+        });
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
         });
 
-        expect(result).toEqual({ trip_id: 't1', data_source: 'PHONE' });
+        const result = await trips_services.create({
+            user_id: 'u1',
+            vehicle_id: 'v1',
+            data_source: 'PHONE',
+            start_date: new Date('2026-05-20'),
+            start_location: { lat: -25.7461, lng: 28.2313 },
+        });
+
+        expect(result).toEqual({
+            trip_id: 't1',
+            data_source: 'PHONE',
+            planned_distance_km: null,
+            fuel_estimate: null,
+        });
     });
     it('throws when user_id is missing from body', async ()=>{
         await expect(
@@ -211,6 +269,11 @@ describe('Trips services.create',()=>{
         (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
         (mock_prisma.trips.findFirst ).mockResolvedValue(null);
         mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
+        });
 
         await expect(
             trips_services.create({
@@ -718,4 +781,44 @@ describe('Trips services.events_log', () => {
             })
         ).rejects.toThrow('Invalid location');
     });
+});
+describe('trips get_history additional tests', () =>{
+
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('it returns zero trips when there are no trips', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1' ,
+            username: 'testuser',
+        });
+
+        mock_prisma.trips.findMany.mockResolvedValue([]);
+
+        const result = await trips_services.get_history({ user_id: 'u1' });
+        expect(result.total_trips).toBe(0);
+        expect(result.trips).toEqual([]);
+        expect(result.meta).toEqual({ mean_distance: 0, mean_minutes: 0 });
+    });
+    it('throws when end_date is invalid', async () => {
+        await expect(
+            trips_services.get_history({
+                user_id: 'u1',
+                end_date: new Date('not-a-date'),
+            })
+        ).rejects.toThrow('Invalid end date');
+    });
+ 
+    it('filters by status when provided', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            username: 'testuser',
+        });
+        mock_prisma.trips.findMany.mockResolvedValue([]);
+ 
+        await trips_services.get_history({ user_id: 'u1', status: 'ABORTED' });
+ 
+        const call_args = mock_prisma.trips.findMany.mock.calls[0][0];
+        expect(call_args.where.status).toBe('ABORTED');
+    });
+    
 });

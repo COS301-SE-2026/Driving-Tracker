@@ -3,6 +3,8 @@
 import prisma from '../db/prisma';
 import { notification_services } from './notification_service';
 import { user_devices_services } from './user_devices_services';
+import { fetch_vehicle_benchmark } from './vehicle.services';
+import { map_services } from './map_services';
 import { add_notification } from '../utils/notification';
 import { contact_services } from './contacts_services';
 
@@ -21,6 +23,17 @@ function to_number(value: any): number | null {
     }
     // Otherwise try to convert to number
     return Number(value);
+};
+//helper to convert mpg to l/km 
+function convert_mpg_to_lper_km(value:number):number|null{
+    const mpg = to_number(value);
+    if(!mpg){
+        return null;
+    }
+    if( mpg <= 0){
+        return 0;
+    }
+    return 235.215/mpg;
 }
 
 async function get_trip_shared_contacts(trip_id: string){
@@ -61,6 +74,11 @@ export interface create_trip{
         lng: number;
     };
     share_with_contacts?: string[]; //optional
+    end_location?:{
+        lat:number;
+        lng:number;
+    };
+    // distance_km?: number;
 };
 export interface trip_summary_filter {
     trip_id: string;
@@ -120,10 +138,12 @@ export interface trip_events_log{
 
 export const trips_services ={
     async create(data: create_trip){
+        console.log("Starting trip");
         if(!data.user_id || !data.vehicle_id ){
             throw new Error("Missing required fields");
         }
         if(!data.start_location.lat|| !data.start_location.lng){
+            console.log("start location not found in data ");
             throw new Error("Unknown start location");
         }// the trip can not start if the start location is not known
 
@@ -145,7 +165,63 @@ export const trips_services ={
             if (activeTrip) {
                 throw new Error("Trip already in progress");
             }
+            
+            // console.log("Found user now fetching the vehicle info ");
+            //get the car info
+            const vehicle_info = await prisma.vehicles.findUnique({
+                where: {
+                    vehicle_id: data.vehicle_id
+                },
+                select: {
+                    make:true,
+                    model:true,
+                    year:true,
+                }
+            });
+            if (!vehicle_info?.make || !vehicle_info?.model || !vehicle_info?.year) {
+                console.log("Null info but my return ")
+                return ;
+            }
 
+            const make = vehicle_info?.make;
+            const model = vehicle_info?.model;
+            const year = vehicle_info?.year;
+            // const make = "BMW";
+            // const model = "M3"
+            // const year = 2018;
+            let fuel_est: number | null = null;
+            let planned_distance_km: number | null = null;
+            if (data.end_location?.lat && data.end_location?.lng) {
+                // Distance is computed server-side from Azure Maps, NOT taken from
+                // data.distance_km — a client-supplied distance can't be trusted for
+                // a number that feeds directly into the fuel-efficiency feature.
+                const route = await map_services.suggested_routes({
+                    start_lat: data.start_location.lat,
+                    start_lng: data.start_location.lng,
+                    dest_lat: data.end_location.lat,
+                    dest_lng: data.end_location.lng,
+                });
+                planned_distance_km = route.distance_km;
+ 
+                
+                if(year >= 2015 && year <= 2020){
+                    console.log("Using the fetch vehicle benchmark");
+                    
+                    const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
+                    if (benchmark_trims.length === 0) {
+                        console.log("No Benchmark data");
+                        throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
+                    }
+    
+                    const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
+                    const lper100km = convert_mpg_to_lper_km(avg_mpg);
+    
+                    if (lper100km !== null) {
+                        fuel_est = (lper100km / 100) * planned_distance_km;
+                    }
+                }
+                fuel_est = null;
+            }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
                 const newTrip = await tx.trips.create({
@@ -155,7 +231,10 @@ export const trips_services ={
                         start_time: data.start_date,
                         start_latitude: data.start_location.lat,
                         start_longitude: data.start_location.lng,
+                        end_latitude:data.end_location?.lat,
+                        end_longitude:data.end_location?.lng,
                         data_source: data.data_source,
+                        fuel_estimate:fuel_est,
                         status: "IN_PROGRESS"
                     }
                 });
@@ -215,7 +294,9 @@ export const trips_services ={
 
             return {
                 trip_id: createdTrip.trip_id,
-                data_source: createdTrip.data_source
+                data_source: createdTrip.data_source,
+                planned_distance_km,
+                fuel_estimate:fuel_est,
             };
         }catch(error){
             throw error;
@@ -528,6 +609,8 @@ export const trips_services ={
                         overall_score: to_number(trip.trip_scores[0].overall_score)
                     } : null,
                     dtc_codes: all_dtc_codes,
+                    destination_latitude: to_number(trip.end_latitude),
+                    destination_longitude: to_number(trip.end_longitude),
                     events: trip.trip_events.map((event:any) => ({
                         event_id: event.event_id,
                         event_type: event.type,

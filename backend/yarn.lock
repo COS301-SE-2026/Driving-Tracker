@@ -1282,7 +1282,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prisma/client@npm:^7.8.0":
+"@prisma/client@npm:7.8.0":
   version: 7.8.0
   resolution: "@prisma/client@npm:7.8.0"
   dependencies:
@@ -2408,7 +2408,7 @@ __metadata:
   dependencies:
     "@faker-js/faker": "npm:^10.4.0"
     "@prisma/adapter-pg": "npm:^7.8.0"
-    "@prisma/client": "npm:^7.8.0"
+    "@prisma/client": "npm:7.8.0"
     "@types/bcrypt": "npm:^6.0.0"
     "@types/cors": "npm:^2.8.19"
     "@types/express": "npm:^4.17.21"
@@ -2421,13 +2421,15 @@ __metadata:
     cors: "npm:^2.8.6"
     dotenv: "npm:^17.4.2"
     express: "npm:^5.2.1"
+    express-rate-limit: "npm:^8.6.0"
     firebase-admin: "npm:^14.1.0"
     helmet: "npm:^8.1.0"
     jest: "npm:^30.3.0"
     jsonwebtoken: "npm:^9.0.3"
     nodemon: "npm:^3.1.14"
     pg: "npm:^8.20.0"
-    prisma: "npm:^7.0.0"
+    prisma: "npm:7.8.0"
+    rate-limiter-flexible: "npm:^11.2.0"
     supertest: "npm:^7.2.2"
     ts-jest: "npm:^29.4.10"
     tsx: "npm:4.7.0"
@@ -3341,6 +3343,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"express-rate-limit@npm:^8.6.0":
+  version: 8.6.0
+  resolution: "express-rate-limit@npm:8.6.0"
+  dependencies:
+    debug: "npm:^4.4.3"
+    ip-address: "npm:^10.2.0"
+  peerDependencies:
+    express: ">= 4.11"
+  checksum: 10c0/cce72e87963d90797ddced59de71046b90ca3ca088ab8e73587b50e812aaefa0b79f5a779743034f3ada01fd27d5c7f82063992a02981c7bc9ac74f8b01bb41a
+  languageName: node
+  linkType: hard
+
 "express@npm:^5.2.1":
   version: 5.2.1
   resolution: "express@npm:5.2.1"
@@ -4238,6 +4252,13 @@ __metadata:
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 10c0/4e531f648b29039fb7426fb94075e6545faa1eb9fe83c29f0b6d9e7263aceb4289d2d4557db0d428188eeb449cc7c5e77b0a0b2c4e248ff2a65933a0dee49ef2
+  languageName: node
+  linkType: hard
+
+"ip-address@npm:^10.2.0":
+  version: 10.3.1
+  resolution: "ip-address@npm:10.3.1"
+  checksum: 10c0/45b1c31e2cc53d6354ea39f276d70c365a9b0332e7ca2140a9ad4cdb7fdb9d73b6a7ec0d8bf19993d8dce7ab636cd86c46c3e417b98db5ccb8c25546fe8c0b17
   languageName: node
   linkType: hard
 
@@ -5928,7 +5949,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prisma@npm:^7.0.0":
+"prisma@npm:7.8.0":
   version: 7.8.0
   resolution: "prisma@npm:7.8.0"
   dependencies:
@@ -6042,6 +6063,13 @@ __metadata:
   version: 1.2.1
   resolution: "range-parser@npm:1.2.1"
   checksum: 10c0/96c032ac2475c8027b7a4e9fe22dc0dfe0f6d90b85e496e0f016fbdb99d6d066de0112e680805075bd989905e2123b3b3d002765149294dce0c1f7f01fcc2ea0
+  languageName: node
+  linkType: hard
+
+"rate-limiter-flexible@npm:^11.2.0":
+  version: 11.2.0
+  resolution: "rate-limiter-flexible@npm:11.2.0"
+  checksum: 10c0/7cc37d61237a1bf61b8e2bd7cca8f9ab6956392661d0bc3094709f4e7996048d89ee6debc65534146ef9d96798079798fdb21ffa08e47d158c10c16bfe397394
   languageName: node
   linkType: hard
 

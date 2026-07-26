@@ -16,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.omnitech.drivingtracker.data.models.LocationDto
+import com.google.gson.Gson
 import org.json.JSONObject
 import java.util.Locale
 
@@ -53,7 +55,10 @@ fun AzureMapContainer(
     modifier: Modifier = Modifier,
     latitude: Double = -25.7479,
     longitude: Double = 28.2293,
-    zoom: Int = 8,
+    zoom: Int = 15,
+    recenterTrigger: Int = 0,
+    destination: LocationDto? = null,
+    plannedRoute: List<LocationDto>? = null,
     onMapReady: () -> Unit = {}
 ) {
     var isMapStable by remember { mutableStateOf(false) }
@@ -67,6 +72,32 @@ fun AzureMapContainer(
         val lng = String.format(Locale.US, "%.8f", longitude)
         webViewRef?.evaluateJavascript("javascript:window.updateCamera($lat, $lng, $zoom)", null)
     }
+    // Automatic Marker Update (No camera move)
+    LaunchedEffect(latitude, longitude, isMapStable) {
+        if (!isMapStable) return@LaunchedEffect
+        webViewRef?.evaluateJavascript("javascript:window.updateUserLocation($latitude, $longitude)", null)
+    }
+
+    // Manual Camera Recenter (Triggered by button)
+    LaunchedEffect(recenterTrigger) {
+        if (isMapStable && recenterTrigger > 0) {
+            webViewRef?.evaluateJavascript("javascript:window.centerOnUser($zoom)", null)
+        }
+    }
+    // destination that will be on the map
+    LaunchedEffect(destination, isMapStable) {
+        if (isMapStable && destination != null) {
+            webViewRef?.evaluateJavascript("javascript:window.setDestination(${destination.lat}, ${destination.lng})", null)
+        }
+    }
+    //shortest route
+    LaunchedEffect(plannedRoute, isMapStable) {
+        if (isMapStable && plannedRoute != null) {
+            val pointsJson = Gson().toJson(plannedRoute)
+            webViewRef?.evaluateJavascript("javascript:window.setPlannedRoute('$pointsJson')", null)
+        }
+    }
+
 
     AndroidView(
         factory = { context ->
