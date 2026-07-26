@@ -82,7 +82,7 @@ export const vehicle_services={
                     fuel_type: v.fuel_type,
                     mileage: Math.round(total_distance),
                     trip_count: v.trips.length,
-                    avg_efficiency: parseFloat(avg_efficiency.toFixed(2))
+                    avg_fuel_efficiency: parseFloat(avg_efficiency.toFixed(2))
                 };
             });
         }catch(error){
