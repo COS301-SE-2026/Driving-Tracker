@@ -38,4 +38,11 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
     }catch (e: Exception){
         Result.failure(e)
     }
+
+    suspend fun removeVehicle(vehicleId: String): Result<Unit> = try {
+        apiService.removeVehicle(vehicleId)
+        Result.success(Unit)
+    }catch (e: Exception){
+        Result.failure(e)
+    }
 }
