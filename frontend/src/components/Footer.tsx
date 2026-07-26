@@ -19,7 +19,7 @@ export default function Footer() {
       {/*Download*/}
       <div className = "flex flex-col gap-2">
         <span className = "font-semibold">Download the App</span>
-        <button className = "rounded-full border px-6 py-2 w-fit">
+        <button type = "button" className = "rounded-full border px-6 py-2 w-fit">
           Download
         </button>
       </div>

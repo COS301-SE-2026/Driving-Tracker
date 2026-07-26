@@ -29,7 +29,7 @@ export default function Navbar() {
       <div className = "relative"
       onMouseEnter = {() => setFeaturesOpen(true)}
       onMouseLeave= {() => setFeaturesOpen(false)}>
-        <button className = "flex items-center gap-1">
+        <button type = "button" className = "flex items-center gap-1">
           Features
         </button>
         {featuresOpen && (
@@ -47,7 +47,7 @@ export default function Navbar() {
     </div>
 
     {/* Mobile menu to account for devices since we are android */}
-    <button className = "md:hidden"
+    <button type = "button" className = "md:hidden"
     onClick = {() => setMobileMenuOpen((prev) => !prev)}
     aria-label = "Toggle menu"
     >

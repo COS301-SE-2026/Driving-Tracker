@@ -22,8 +22,8 @@ export default function Solutions() {
       </div>
 
       <div className = "flex flex-col gap-10">
-        {PROBLEMSANDSOLUTIONS.map((pair,i) => (
-          <div key = {i} className = "flex items-center gap-6">
+        {PROBLEMSANDSOLUTIONS.map((pair) => (
+          <div key = {pair.problem} className = "flex items-center gap-6">
             <div className = "flex-1 rounded-2xl border p-6">
               <p>{pair.problem}</p>
             </div>
