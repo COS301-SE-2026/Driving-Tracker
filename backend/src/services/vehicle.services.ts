@@ -1,5 +1,6 @@
 import { register } from "module";
 import prisma from "../db/prisma";
+import { parse } from "path";
 
 
 // what do you need to process ?
@@ -7,6 +8,12 @@ import prisma from "../db/prisma";
 //then it gets all vehicles associated with that user 
 export interface get_vehicles{
     user_id:string;
+}
+
+export interface update_vehicle_name{
+    user_id: string;
+    vehicle_id: string;
+    name: string;
 }
 
 /*
@@ -31,6 +38,7 @@ export interface assign_vehicle{
     year: number,
     fuel_type: string
 }
+
 export const vehicle_services={
     async get_all_vehicles(data:get_vehicles): Promise<any[]>{
         const user_id = data.user_id;
@@ -50,14 +58,54 @@ export const vehicle_services={
                     users_vehicles: {
                         some: {user_id: data.user_id}
                     }
+                },
+                include: {
+                    trips: {
+                        where: { status: "COMPLETED" },
+                        select: { distance_km: true, fuel_estimate: true}
+                    }
                 }
             });
-            return vehicles
+
+            return vehicles.map(v => {
+                const total_distance = v.trips.reduce((acc, t) => acc + Number(t.distance_km || 0), 0);
+                const total_fuel = v.trips.reduce((acc, t) => acc + Number(t.fuel_estimate || 0), 0);
+                const avg_efficiency = total_fuel > 0? total_distance / total_fuel : 0;
+
+                return{
+                    vehicle_id: v.vehicle_id,
+                    name: v.name,
+                    registration: v.registration,
+                    make: v.make,
+                    model: v.model,
+                    year: v.year,
+                    fuel_type: v.fuel_type,
+                    mileage: Math.round(total_distance),
+                    trip_count: v.trips.length,
+                    avg_efficiency: parseFloat(avg_efficiency.toFixed(2))
+                };
+            });
         }catch(error){
             throw error;
         }
-        
     },
+
+    async update_vehicle_name(data: update_vehicle_name){
+        const assignment = await prisma.users_vehicles.findUnique({
+            where: {user_id_vehicle_id: {
+                user_id: data.user_id,
+                vehicle_id: data.vehicle_id
+            }}
+        });
+
+        if(!assignment) throw new Error("You do not own this vehicle");
+
+        return await prisma.vehicles.update({
+            where: { vehicle_id: data.vehicle_id },
+            data: { name: data.name}
+        });
+    },
+
     /*
     POST /api/vehicle/assign_vehicle{
         user_id,

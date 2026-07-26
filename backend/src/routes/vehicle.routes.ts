@@ -14,5 +14,5 @@ vehicle_router.get("/get_all_vehicles", user_based_limiter, verify_token,vehicle
 //delete 
 
 //Update 
-
+vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
 export default vehicle_router;

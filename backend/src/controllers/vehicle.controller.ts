@@ -25,6 +25,7 @@ export const get_all_vehicles = async(req: AuthRequest, res: Response)=>{
         }
     }
 };
+
 export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
     try{
         const user_id = req.user?.sub;
@@ -68,5 +69,24 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
             message: "Internal server error",
             error: error.message
         });
+    }
+};
+
+export const update_name = async (req: AuthRequest, res: Response) => {
+    try{
+        const user_id = req.user?.sub;
+        const { vehicle_id } = req.params;
+        const{ name } = req.body;
+
+        if(!user_id) return res.status(403).json({ message: 'Unauthorized'});
+
+        const result = await vehicle_services.update_vehicle_name({
+            user_id,
+            vehicle_id, 
+            name
+        });
+        res.status(200).json(result);
+    }catch(error: any){
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
