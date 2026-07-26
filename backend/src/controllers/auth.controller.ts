@@ -2,6 +2,9 @@ import {Request, Response} from 'express';
 import {auth_services} from  "../services/auth_services";
 import {generate_token, AuthRequest} from "../middleware/auth";//the file containing the tokens 
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
+import { identifier_limiter } from '../middleware/rate_limit';
+
+const isTestEnv = process.env.NODE_ENV === 'test';
 
 const auth_controller={
     //Register controller method
@@ -43,6 +46,17 @@ const auth_controller={
 
         const {identifier, password}=req.body;
 
+        //rate limiting ignored in test environment
+        if(!isTestEnv){
+            const fail_res = await identifier_limiter.get(identifier);
+
+            if(fail_res && fail_res.remainingPoints <= 0){
+
+                return res.status(429).json({ error: "TOO_MANY_ATTEMPTS", message: "Too many login attempts, try again later"})
+            }
+            
+        }
+
         try{
             //User and refresh token returned from service
             const {user, refresh_token}=await auth_services.login(identifier,password);
@@ -58,6 +72,11 @@ const auth_controller={
         }catch(err:any){
 
             if((err instanceof ValidationError)){
+
+                //rate limiting ignored in test environment
+                if(!isTestEnv){
+                    await identifier_limiter.consume(identifier).catch(() => {});
+                }
 
                 res.status(401).json({error:err.errorCode, message: err.message});
                 return; 

@@ -2429,6 +2429,7 @@ __metadata:
     nodemon: "npm:^3.1.14"
     pg: "npm:^8.20.0"
     prisma: "npm:7.8.0"
+    rate-limiter-flexible: "npm:^11.2.0"
     supertest: "npm:^7.2.2"
     ts-jest: "npm:^29.4.10"
     tsx: "npm:4.7.0"
@@ -6062,6 +6063,13 @@ __metadata:
   version: 1.2.1
   resolution: "range-parser@npm:1.2.1"
   checksum: 10c0/96c032ac2475c8027b7a4e9fe22dc0dfe0f6d90b85e496e0f016fbdb99d6d066de0112e680805075bd989905e2123b3b3d002765149294dce0c1f7f01fcc2ea0
+  languageName: node
+  linkType: hard
+
+"rate-limiter-flexible@npm:^11.2.0":
+  version: 11.2.0
+  resolution: "rate-limiter-flexible@npm:11.2.0"
+  checksum: 10c0/7cc37d61237a1bf61b8e2bd7cca8f9ab6956392661d0bc3094709f4e7996048d89ee6debc65534146ef9d96798079798fdb21ffa08e47d158c10c16bfe397394
   languageName: node
   linkType: hard
 
