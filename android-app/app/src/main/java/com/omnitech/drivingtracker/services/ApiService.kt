@@ -32,6 +32,12 @@ interface ApiService{
 	@POST("vehicle/assign_vehicle")
 	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
 
+    @PATCH("vehicle/{vehicle_id}/name")
+    suspend fun updateVehicleName(
+        @Path("vehicle_id") vehicleId: String,
+        @Body body: UpdateVehicleNameRequest
+    ): GenericResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
