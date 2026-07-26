@@ -51,6 +51,8 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import javax.inject.Inject
+import com.omnitech.drivingtracker.data.local.SessionManager
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -100,6 +102,23 @@ sealed class Screen(val route: String){
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    //Injecting SessionManager
+    @Inject lateinit var sessionManager: SessionManager
+
+    //Logic to determine starting route
+    private fun getStartDestination(): String {
+        val token = sessionManager.getAccessToken()
+
+        return if (token != null) {
+            //User logged in, usinmg permission-aware destination
+            getPostAuthDestination()
+        } else {
+            //No session, shows welcome screen
+            Screen.Welcome.route
+        }
+
+    }
+
     private fun checkNotificationPermission(): Boolean {
         return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
             ContextCompat
@@ -120,6 +139,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val startRoute = getStartDestination()
+
         enableEdgeToEdge()
         setContent {
 
@@ -151,7 +173,7 @@ class MainActivity : ComponentActivity() {
                     val observer = LifecycleEventObserver { _, event ->
 
                         if(event == Lifecycle.Event.ON_RESUME){
-                           handleNotificationNavigation()
+                            handleNotificationNavigation()
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -160,7 +182,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                NavHost(navController = navController, startDestination = startRoute){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -224,7 +246,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.Dashboard.route) {
                                     popUpTo(Screen.NotificationRationale.route) { inclusive = true }
                                 }
-                        })
+                            })
                     }
 
                     composable(Screen.BluetoothRationale.route) { //ask about this
