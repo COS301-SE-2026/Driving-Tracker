@@ -32,19 +32,20 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
             res.status(403).json({ message: 'Unauthorized' });
             return;
         }
-        const { vehicle_id, registration, model, year, fuel_type } = req.body;
+        const { name, registration, make, model, year, fuel_type } = req.body;
 
         //Validate required fields
-        if(!vehicle_id || !registration || !model || !year || !fuel_type){
+        if( !make || !model || !year || !fuel_type){
             res.status(400).json({
-                message: "Missing required fields: vehicle_id, registration, model, year, fuel_type"
+                message: "Missing required fields: make, model, year, fuel_type"
             });
             return;
         }
         const result = await vehicle_services.assign_user_to_vehicle({
             user_id,
-            vehicle_id,
+			name,
             registration,
+			make,
             model,
             year,
             fuel_type

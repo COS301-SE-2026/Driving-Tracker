@@ -79,10 +79,13 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
@@ -129,12 +132,14 @@ fun Trips(
         approvedContacts = approvedContacts,
         vehicles = vehicles,
         onRetryTrips = { tripsViewModel.loadTripsHistory() },
-        onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
+        onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng, contactIds ->
             tripViewModel.startTrip(
                 vehicleId = vehicleId,
                 dataSource = dataSource,
                 latitude = latitude,
                 longitude = longitude,
+                destLat = destLat,
+                destLng = destLng,
                 selectedContactIds = contactIds.ifEmpty { null }
             )
         },
@@ -156,7 +161,7 @@ fun TripsContent(
     approvedContacts: List<ContactDto>,
     vehicles: List<VehicleDto>,
     onRetryTrips: () -> Unit,
-    onStartTrip: (String, String, Double, Double, List<String>) -> Unit,
+    onStartTrip: (String, String, Double, Double, Double?, Double?, List<String>) -> Unit,
     onRefreshContacts: () -> Unit,
     onApplyFilters: (String?, String?, String?) -> Unit,
     navController: NavController? = null
@@ -297,8 +302,8 @@ fun TripsContent(
             approvedContacts = approvedContacts,
             vehicles = vehicles,
             onDismiss = { showStartTripDialog = false },
-            onStartTrip = { vehicleId, dataSource, latitude, longitude, contactIds ->
-                onStartTrip(vehicleId, dataSource, latitude, longitude, contactIds)
+            onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds ->
+                onStartTrip(vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds)
                 showStartTripDialog = false
             }
         )
@@ -324,7 +329,7 @@ private fun FilterDialog(
     var endDate by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
 
-    val statusOptions = listOf("ALL", "COMPLETED", "ONGOING", "CANCELLED")
+    val statusOptions = listOf("ALL", "COMPLETED", "IN_PROGRESS", "CANCELLED")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -401,14 +406,20 @@ private fun StartTripDialog(
     approvedContacts: List<ContactDto>,
     vehicles: List<VehicleDto>,
     onDismiss: () -> Unit,
-    onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, contactIds: List<String>) -> Unit
-) {
+    onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, destLat: Double?, destLng: Double?, contactIds: List<String>) -> Unit, // Updated here
+    tripViewModel: TripViewModel = hiltViewModel()
+){
     var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }
     var expanded by remember { mutableStateOf(false) }
     var dataSource by rememberSaveable { mutableStateOf("PHONE") }
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
+    var destinationQuery by remember { mutableStateOf("") }
+    val suggestionsState by tripViewModel.suggestionsState.collectAsState()
+    val suggestions = (suggestionsState as? TripViewModel.UiState.SuccessSuggestions)?.suggestions ?: emptyList()
+
+    var selectedDestination by remember { mutableStateOf<AddressSearchResult?>(null) }
 
     val context = LocalContext.current
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -431,6 +442,13 @@ private fun StartTripDialog(
             }
         } else {
             locationPermissionState.launchPermissionRequest()
+        }
+    }
+    LaunchedEffect(destinationQuery){
+        if (destinationQuery.length > 3) {
+
+            Log.d("Geocoding", "UI: Triggering search for '$destinationQuery'")
+            tripViewModel.searchAddress(destinationQuery)
         }
     }
 
@@ -477,7 +495,34 @@ private fun StartTripDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+                OutlinedTextField(
+                    value = destinationQuery,
+                    onValueChange = {
+                        destinationQuery = it
+                        selectedDestination = null
+                    },
+                    label = { Text("Destination Address") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (suggestions.isNotEmpty() && selectedDestination == null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            suggestions.forEach { suggestion ->
+                                DropdownMenuItem(
+                                    text = { Text(suggestion.address) },
+                                    onClick = {
+                                        Log.d("Geocoding", "UI: Selected address '${suggestion.address}'")
+                                        destinationQuery = suggestion.address
+                                        selectedDestination = suggestion
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
                 // Location is captured in background, hidden from UI
 
                 Text(
@@ -545,12 +590,17 @@ private fun StartTripDialog(
                 val lat = latitude.toDoubleOrNull()
                 val lng = longitude.toDoubleOrNull()
                 val vehicleId = selectedVehicle?.vehicleId
+
+                val destLat = if (selectedDestination?.latitude != 0.0) selectedDestination?.latitude else null
+                val destLng = if (selectedDestination?.longitude != 0.0) selectedDestination?.longitude else null
                 if (vehicleId != null && lat != null && lng != null) {
                     onStartTrip(
                         vehicleId,
                         dataSource.trim(),
                         lat,
                         lng,
+                        selectedDestination?.latitude,
+                        selectedDestination?.longitude,
                         selectedContactIds.toList()
                     )
                 }
@@ -731,7 +781,7 @@ fun TripsPreview() {
             approvedContacts = emptyList(),
             vehicles = emptyList(),
             onRetryTrips = {},
-            onStartTrip = { _, _, _, _, _ -> },
+            onStartTrip = { _, _, _, _, _,_,_-> },
             onRefreshContacts = {},
             onApplyFilters = { _, _, _ -> }
         )
