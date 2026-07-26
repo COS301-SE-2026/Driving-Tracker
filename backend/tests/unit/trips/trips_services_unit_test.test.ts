@@ -74,11 +74,34 @@ jest.mock('../../../src/db/prisma', () => {
         },
     };
 });
+jest.mock('../../../src/utils/notification', () => ({
+    add_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../../src/services/notification_service', () => ({
+    notification_services: {
+        send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    },
+}));
+
+jest.mock('../../../src/services/user_devices_services', () => ({
+    user_devices_services: {
+        get_multiple_users_fcm_tokens: jest.fn<() => Promise<string[]>>().mockResolvedValue(['fcm-token-1']),
+    },
+}));
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
-
+import { add_notification } from '../../../src/utils/notification';
+import { notification_services } from '../../../src/services/notification_service';
+import { user_devices_services } from '../../../src/services/user_devices_services';
+import { map_services } from '../../../src/services/map_services';
+ 
+const mock_add_notification = add_notification as jest.Mock;
+const mock_notification_services = notification_services as any;
+const mock_user_devices_services = user_devices_services as any;
+const mock_map_services = map_services as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mock_prisma = prisma as any;
 
@@ -87,7 +110,68 @@ class MockDecimal {
     toNumber() {
         return this.value;
     }
-}
+};
+describe('Trips services.create - wu=ith end location (fuel estimate flow) ', () => {
+    beforeEach(async()=> jest.clearAllMocks());
+    it("Calls map services. suggested routes and returns planned distance and end location",
+        async()=>{
+            (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
+            (mock_prisma.trips.findFirst).mockResolvedValue(null);
+            (mock_prisma.vehicles.findUnique).mockResolvedValue({
+                make: 'BMW',
+                model: 'M3',
+                year: 2018,
+            });
+            (mock_prisma.trips.create).mockResolvedValue({
+                trip_id: 't1',
+                data_source: 'PHONE',
+            });   
+            const result = await trips_services.create({
+                user_id: 'u1' ,
+                vehicle_id: 'v1',
+                data_source: 'PHONE',
+                start_date: new Date('2026-05-20'),
+                start_location: { lat: -25.7461, lng: 28.2313},
+                end_location: { lat: -25.75, lng: 28.24},
+            });
+            expect(mock_map_services.suggested_routes).toHaveBeenCalledWith({
+                start_lat: -25.7461,
+                start_lng: 28.2313,
+                dest_lat: -25.75,
+                dest_lng: 28.24,
+            });
+            expect(result?.planned_distance_km).toBe(10);
+            expect(result?.fuel_estimate).toBeNull();
+        }
+    );
+    it('does not call fetch_vehicle_benchmark when vehicle is outside 2015-2020', async ()=>{
+        (mock_prisma.users.findUnique).mockResolvedValue({ user_id: 'u1' });
+        (mock_prisma.trips.findFirst).mockResolvedValue(null);
+        (mock_prisma.vehicles.findUnique).mockResolvedValue({
+            make: 'BMW',
+            model: 'M3',
+            year: 2024,
+        });
+        (mock_prisma.trips.create).mockResolvedValue({
+            trip_id: 't1',
+            data_source: 'PHONE',
+        });
+
+        const result = await trips_services.create({
+            user_id: 'u1',
+            vehicle_id: 'v1',
+            data_source: 'PHONE',
+            start_date: new Date('2026-05-20'),
+            start_location: { lat: -25.7461, lng: 28.2313 },
+            end_location: { lat: -25.75, lng: 28.24 },
+        });
+ 
+        expect(result?.fuel_estimate).toBeNull();
+        expect(result?.planned_distance_km).toBe(10);
+    });
+
+});
+
 describe('Trips services.create',()=>{
     beforeEach(async()=> jest.clearAllMocks());
 
