@@ -93,6 +93,7 @@ describe('vehicle services assign user to vehicle', ()=>{
         user_id: 'u1',
         vehicle_id: 'v1',
         registration: 'ABC123GP',
+        make: "BMW",
         model: 'M3',
         year: 2018,
         fuel_type: 'PETROL',
@@ -136,6 +137,7 @@ describe('vehicle services assign user to vehicle', ()=>{
         mock_prisma.vehicles.findUnique.mockResolvedValue(null);
         mock_prisma.vehicles.create.mockResolvedValue({
             vehicle_id: 'v1',
+            make: 'BMW',
             model: 'M3',
             registration: 'ABC123GP',
         });
