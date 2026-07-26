@@ -98,7 +98,7 @@ export const identifier_limiter = new RateLimiterMemory({
 
 export async function login_limiter_sliding(req: AuthRequest, res: Response, next: NextFunction) {
 
-    if(isTestEnv) return next();
+    //if(isTestEnv) return next();
     
     const identifier = req.body?.identifier ?? 'unknown';
     const ip = req.ip ?? 'unknown';
@@ -117,5 +117,11 @@ export async function login_limiter_sliding(req: AuthRequest, res: Response, nex
         });
     }
     
+}
+
+export const resetIdentifierLimiter = () => {
+    const snapshot = identifier_limiter.dump();
+
+    snapshot.storage.forEach((item) => identifier_limiter.delete(item.key));
 }
 

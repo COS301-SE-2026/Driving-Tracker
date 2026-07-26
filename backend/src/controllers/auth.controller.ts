@@ -46,16 +46,15 @@ const auth_controller={
 
         const {identifier, password}=req.body;
 
-        //rate limiting ignored in test environment
-        if(!isTestEnv){
-            const fail_res = await identifier_limiter.get(identifier);
+        
+        const fail_res = await identifier_limiter.get(identifier);
 
-            if(fail_res && fail_res.remainingPoints <= 0){
+        if(fail_res && fail_res.remainingPoints <= 0){
 
-                return res.status(429).json({ error: "TOO_MANY_ATTEMPTS", message: "Too many login attempts, try again later"})
-            }
-            
+            return res.status(429).json({ error: "TOO_MANY_ATTEMPTS", message: "Too many login attempts, try again later"})
         }
+            
+        
 
         try{
             //User and refresh token returned from service
@@ -73,11 +72,9 @@ const auth_controller={
 
             if((err instanceof ValidationError)){
 
-                //rate limiting ignored in test environment
-                if(!isTestEnv){
-                    await identifier_limiter.consume(identifier).catch(() => {});
-                }
-
+               
+                await identifier_limiter.consume(identifier).catch(() => {});
+                
                 res.status(401).json({error:err.errorCode, message: err.message});
                 return; 
             }
