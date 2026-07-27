@@ -133,10 +133,87 @@ const output_schema = z.union([
 type output_s = z.infer<typeof output_schema>
 
 
+//still need to merge the eco, safety and overall scores to the output schema 
+
+//build the input according to the schema 
+async function build_input(user_id: string, recent_trip_id?: string): Promise<input_s>{
+    const trips = await prisma.trips.aggregate({
+        where: {user_id, status: "COMPLETED"},
+        _count:{trip_id:true},
+        _sum:{ distance_km:true},
+    });
+
+    const total_trips = trips._count.trip_id;
+    const total_distance_km = trips._sum.distance_km ? Number(trips._sum.distance_km): 0 ;
+
+    const event_group = await prisma.trip_events.groupBy({
+        by: ['type'],
+        where:{ trips:{ user_id, status: "COMPLETED"}},
+        _count: { event_id: true},
+    });
+
+    const event_counts = { harsh_brake: 0, harsh_acceleration: 0, sharp_corner: 0, crash_like: 0 };
+
+    //loop through all the events the user has gone through and count them 
+    for(const row of event_group){
+        if(row.type === "HARSH_BRAKE"){
+            event_counts.harsh_brake = row._count.event_id;
+        }
+        if(row.type === " HARSH_ACCELERATION"){
+            event_counts.harsh_acceleration = row._count.event_id;
+        }
+        if(row.type === "SHARP_CORNER"){
+            event_counts.sharp_corner = row._count.event_id;
+        }
+        if(row.type === "CRASH_LIKE"){
+            event_counts.crash_like = row._count.event_id;
+        }
+    }// if these events aren't found the count stays 0 
+
+    // now find the recent trip 
+    let recent_trip :input_s["recent_trip"]= null;
+    if(recent_trip){
+        const trip = await prisma.trips.findUnique({
+            where: { trip_id: recent_trip_id},
+            select: {trip_id:true, distance_km:true}
+        });
+        if(trip){
+            const recent_events = await prisma.trip_events.groupBy({
+                by: ['type'],
+                where: { trip_id:recent_trip_id},
+                _count:{ event_id:true},
+            });
+
+            const recent_counts =  { harsh_brake: 0, harsh_acceleration: 0, sharp_corner: 0, crash_like: 0 };
+
+            for(const row of recent_events){
+                if(row.type === "HARSH_BRAKE"){
+                    recent_counts.harsh_brake = row._count.event_id;
+                }
+                if(row.type === " HARSH_ACCELERATION"){
+                    recent_counts.harsh_acceleration = row._count.event_id;
+                }
+                if(row.type === "SHARP_CORNER"){
+                    recent_counts.sharp_corner = row._count.event_id;
+                }
+                if(row.type === "CRASH_LIKE"){
+                    recent_counts.crash_like = row._count.event_id;
+                }
+            }
+
+            recent_trip ={
+                trip_id: trip.trip_id,
+                distance_km: trip.distance_km ? Number(trip.distance_km) : 0,
+                event_counts: recent_counts,
+            };
+        }
+    }
+    return input_schema.parse({ user_id, total_trips, total_distance_km,event_counts,recent_trip});
+}
 
 //will average out the overall score based on what is returned 
-const interactions = await ai.interactions.create({
-    model: "gemini-2.5-flash",
-    input: system_prompt_at_end,
-});
+async function average_scores(user_id: string){
+    
+    
+}
 
