@@ -134,6 +134,11 @@ type output_s = z.infer<typeof output_schema>
 
 
 //still need to merge the eco, safety and overall scores to the output schema 
+export type driver_profile = output_s &{
+    eco_score: number | null ;
+    safety_score: number | null ;
+    overall_score: number | null ;
+}
 
 //build the input according to the schema 
 async function build_input(user_id: string, recent_trip_id?: string): Promise<input_s>{
@@ -213,7 +218,38 @@ async function build_input(user_id: string, recent_trip_id?: string): Promise<in
 
 //will average out the overall score based on what is returned 
 async function average_scores(user_id: string){
-    
-    
+    // only way to get the scores is the trip_scores table 
+    const current_scores = await prisma.trip_scores.aggregate({
+        where:{trips:{user_id,status:"COMPLeTED"}},
+        _avg: { eco_score:true,safety_score: true, overall_score: true}
+    });    
+    return{
+        eco_score: current_scores._avg.eco_score != null ? Math.round(Number(current_scores._avg.eco_score)) : null,
+        safety_score : current_scores._avg.safety_score != null ? Math.round(Number(current_scores._avg.safety_score)): null,
+        overall_score: current_scores._avg.overall_score != null ? Math.round(Number(current_scores._avg.overall_score)): null,
+    };  
 }
 
+export async function driver_profile(user_id: string, recent_trip_id?: string): Promise<driver_profile>{
+    const [input_s,scores] = await Promise.all([
+        build_input(user_id, recent_trip_id),
+        average_scores(user_id),
+    ]);
+
+    //call ai to get the scores calculated... 
+
+    const response = await ai.models.generateContent({
+        model:"gemini-2.5-flash",
+        contents: JSON.stringify(input_s),
+        config:{
+            systemInstruction: system_prompt_at_end,
+            responseMimeType:"application/json",
+            responseSchema: gemini_response_schema,
+        },
+    });
+
+    const raw = JSON.parse(response.text ?? "{}");
+    const classification = output_schema.parse(raw);
+
+    return {...classification,...scores};
+}
