@@ -82,8 +82,6 @@ sealed class Screen(val route: String){
 
     data object OBDKeyData : Screen("obd_key_data")
 
-    data object OBDLiveWarnings : Screen("obd_live_warnings")
-
     data object  OBDConnect : Screen("obd_connect")
 
     data object Settings : Screen("settings")
@@ -261,9 +259,6 @@ class MainActivity : ComponentActivity() {
                         val activity = LocalActivity.current as ComponentActivity
                         val obdViewModel: ObdViewModel = hiltViewModel(activity)
                         OBDKeyData(navController = navController, viewModel = obdViewModel)
-                    }
-                    composable(Screen.OBDLiveWarnings.route){
-                        OBDLiveWarnings(navController = navController)
                     }
                     composable(Screen.Profile.route){
                         Profile(navController = navController)

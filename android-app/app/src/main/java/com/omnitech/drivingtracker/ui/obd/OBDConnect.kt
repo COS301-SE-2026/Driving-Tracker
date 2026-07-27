@@ -122,7 +122,8 @@ fun OBDConnect(navController: NavController? =null,
     StandardScreen(
         navController = navController,
         title = "OBD Connections",
-        description = "Connect your OBD-|| Adapter via bluetooth to establish communication and access real-time vehicle diagnostic data."
+        description = "Connect your OBD-|| Adapter via bluetooth to establish communication and access real-time vehicle diagnostic data.",
+        bottomBarColor = "obd"
     ){
 
         //Devices
