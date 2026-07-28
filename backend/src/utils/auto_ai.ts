@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import prisma from "../../src/db/prisma";// so i can get access to db 
 
-const ai = new GoogleGenAI({apiKey: process.env.GOOGLE_APPLICATION_CREDENTIALS});
+const ai = new GoogleGenAI({apiKey: process.env.GOOGLE_API_KEY});
 
 
 //need a stronger system prompt to make it some what deterministic 
@@ -109,7 +109,7 @@ type input_s = z.infer<typeof input_schema>;
 const output_schema = z.union([
     z.object({
         user_id: z.string(),
-        driver_scope: z.number().min(0).max(100),
+        driver_score: z.number().min(0).max(100),
          driver_type: z.enum(["SAFE_DRIVER", "CAUTIOUS_DRIVER", "MODERATE_RISK_DRIVER", "AGGRESSIVE_DRIVER"]),
         confidence: z.enum(["low", "medium", "high"]),
         events_per_100km: z.object({
@@ -239,7 +239,7 @@ export async function driver_profile(user_id: string, recent_trip_id?: string): 
     //call ai to get the scores calculated... 
 
     const response = await ai.models.generateContent({
-        model:"gemini-2.5-flash",
+        model:"gemini-3.6-flash",
         contents: JSON.stringify(input_s),
         config:{
             systemInstruction: system_prompt_at_end,

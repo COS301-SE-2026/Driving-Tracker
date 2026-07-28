@@ -47,7 +47,10 @@ function mpg_to_lper100km(mpg: number): number | null {//helper function for con
     return 235.215 / mpg;
 }
 async function calculate_eco_score(distance_km: number, vehicle_id: string,fuel_estimate: number){
-
+    if (fuel_estimate == null || fuel_estimate <= 0) {
+        return null;
+    }
+    
     const vehicle = await prisma.vehicles.findUnique({
         where:{ vehicle_id:vehicle_id}
     });
@@ -86,6 +89,9 @@ async function calculate_eco_score(distance_km: number, vehicle_id: string,fuel_
 }
 
 export async function calculate_trip_scores(trip_id: string, vehicle_id:string,distance_km:number,fuel_estimate:number):Promise<trip_scores_results>{
+    // if(!fuel_estimate){
+    //     throw new Error("null fuel estimate");
+    // }
     const [safety_score, eco_score] = await Promise.all([
         calculate_safety_score(trip_id, distance_km),
         calculate_eco_score(distance_km,vehicle_id, fuel_estimate),
