@@ -282,7 +282,7 @@ fun TripsContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         trips.forEachIndexed { index, trip ->
-                            TripCard(trip = trip, isLatest = index == 0,onSeeMoreClick = {
+                            TripCard(trip = trip, isLatest = index == 0,vehicles,onSeeMoreClick = {
                                 if(trip.status == "IN_PROGRESS"){
                                     navController?.navigate(Screen.LiveTrip.createRoute(trip.tripId))
                                 }else{
@@ -652,8 +652,10 @@ private fun formatTripScore(trip: TripItemDto): Int {
 
 
 @Composable
-fun TripCard(trip: TripItemDto, isLatest: Boolean = false, onSeeMoreClick: () -> Unit) {
-
+fun TripCard(trip: TripItemDto, isLatest: Boolean = false, vehicles: List<VehicleDto>, onSeeMoreClick: () -> Unit) {
+    val vehicleName = remember(trip.vehicleId,vehicles){
+        vehicles.find {it.vehicleId == trip.vehicleId}?.let { "${it.make} ${it.model}" }?:trip.vehicleId?: "vehicle not set"
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -695,10 +697,7 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false, onSeeMoreClick: () ->
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                val vehicle = "VW Polo"
-//                Text(trip.from, style = MaterialTheme.typography.bodyMedium)
-//                Text(trip.to, style = MaterialTheme.typography.bodyMedium)
-                Text(vehicle?: "Vehicle not set", style = MaterialTheme.typography.bodyMedium)
+                Text(vehicleName, style = MaterialTheme.typography.bodyMedium)
                 Text(trip.status, style = MaterialTheme.typography.bodyMedium)
             }
 

@@ -93,13 +93,44 @@ jest.mock('../../../src/services/user_devices_services', () => ({
         get_multiple_users_fcm_tokens: jest.fn<() => Promise<string[]>>().mockResolvedValue(['fcm-token-1']),
     },
 }));
+jest.mock("../../../src/utils/trip_scores_cal", () =>({
+    calculate_trip_scores: jest.fn<() => Promise<{
+        safety_score: number;
+        eco_score: number | null;
+        overall_score: number;
+    }>>().mockResolvedValue({
+        safety_score: 95,
+        eco_score: 88,
+        overall_score: 91,
+    }),
+}));
+
+jest.mock('../../../src/utils/auto_ai', () => ({
+    driver_profile: jest.fn<() => Promise<any>>().mockResolvedValue({
+        user_id: 'u1',
+        driver_score: 90,
+        driver_type: 'SAFE_DRIVER',
+        confidence: 'medium',
+        events_per_100km: { harsh_brake: 0, harsh_acceleration: 0, sharp_corner: 0, crash_like: 0 },
+        crash_override_applied: false,
+        rationale: 'mocked',
+        recent_trip_impact: null,
+        eco_score: 88,
+        safety_score: 95,
+        overall_score: 91,
+    }),
+}));
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
 import { add_notification } from '../../../src/utils/notification';
 import { fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+import { calculate_trip_scores } from '../../../src/utils/trip_scores_cal';
+import { driver_profile } from '../../../src/utils/auto_ai';
 const mock_fetch_vehicle_benchmark = fetch_vehicle_benchmark as jest.MockedFunction<typeof fetch_vehicle_benchmark>;
+const mock_calculate_trip_scores = calculate_trip_scores as jest.MockedFunction<typeof calculate_trip_scores>;
+const mock_driver_profile = driver_profile as jest.MockedFunction<typeof driver_profile>;
 import { map_services } from '../../../src/services/map_services';
  
 const mock_map_services = map_services as any;
@@ -286,6 +317,8 @@ describe('Trips services end_trip',()=>{
         (mock_prisma.trips.findUnique).mockResolvedValue({trip_id: 't1',
             user_id: 'u1',
             status: 'IN_PROGRESS',
+            vehicle_id: 'v1',
+            fuel_estimate: 3.2, 
         });
         (mock_prisma.trips.update).mockResolvedValue({trip_id: 't1',
             distance_km: 45.5,
@@ -310,9 +343,7 @@ describe('Trips services end_trip',()=>{
             duration_minutes: 60,
             fuel_estimate: 3.2,
             status: 'COMPLETED',
-            safety_score: 95,
-            eco_score: 88,
-            overall_score: 91,
+            
         });
 
         expect(result.trip_id).toBe('t1');
@@ -323,6 +354,8 @@ describe('Trips services end_trip',()=>{
         (mock_prisma.trips.findUnique).mockResolvedValue({trip_id: 't1',
             user_id: 'u1',
             status: 'IN_PROGRESS',
+            vehicle_id: 'v1',
+            fuel_estimate: 3.2,
         });
         (mock_prisma.trips.update).mockResolvedValue({trip_id: 't1',
             distance_km: 45.5,
@@ -348,9 +381,7 @@ describe('Trips services end_trip',()=>{
             duration_minutes: 60,
             fuel_estimate: 3.2,
             status: 'COMPLETED',
-            safety_score: 90,
-            eco_score: 87,
-            overall_score: 89,
+            
         });
 
         expect(result.trip_id).toBe('t1');
@@ -369,9 +400,7 @@ describe('Trips services end_trip',()=>{
                 duration_minutes: 60,
                 fuel_estimate: 3.2,
                 status: 'COMPLETED',
-                safety_score: 95,
-                eco_score: 88,
-                overall_score: 91,
+                
             })
         ).rejects.toThrow('Trip not found');
     });
@@ -393,9 +422,7 @@ describe('Trips services end_trip',()=>{
                 duration_minutes: 60,
                 fuel_estimate: 3.2,
                 status: 'COMPLETED',
-                safety_score: 95,
-                eco_score: 88,
-                overall_score: 91,
+               
             })
         ).rejects.toThrow('You do not own this trip');
     });
@@ -417,9 +444,7 @@ describe('Trips services end_trip',()=>{
                 duration_minutes: 60,
                 fuel_estimate: 3.2,
                 status: 'COMPLETED',
-                safety_score: 95,
-                eco_score: 88,
-                overall_score: 91,
+                
             })
         ).rejects.toThrow('Cannot end a trip with status');
     });
