@@ -93,7 +93,8 @@ fun OBDKeyData(
         navController = navController,
         title = "Key Data",
         description = "View essential vehicle metrics such as engine RPM, coolant " +
-        "temperature, fuel trim, and diagnostic trouble codes."
+        "temperature, fuel trim, and diagnostic trouble codes.",
+        bottomBarColor = "obd"
     ) {
             Button(
                 onClick = {

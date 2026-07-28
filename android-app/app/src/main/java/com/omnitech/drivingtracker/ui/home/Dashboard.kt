@@ -51,7 +51,7 @@ fun Dashboard(navController: NavController? = null,
                 TopBar(
                     leftIcon = Icons.Default.Menu,
                     rightIcon = Icons.Default.Settings,
-                    onLeftClick = { /* Open menu */ },
+                    onLeftClick = {navController?.navigate(Screen.More.route)},
                     onRightClick = {navController?.navigate(Screen.Settings.route)}
                 )
             },

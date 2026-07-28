@@ -60,7 +60,7 @@ fun More(navController: NavController){
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Contacts"){navController.navigate(Screen.Contacts.route)}
                 Spacer(modifier = Modifier.height(25.dp))
-                ContentCard("Notifications"){navController.navigate(Screen.Notifications.route)}
+                ContentCard("Alerts"){navController.navigate(Screen.Notifications.route)}
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Profile"){navController.navigate(Screen.Profile.route)}
                 Spacer(modifier = Modifier.height(25.dp))
