@@ -65,6 +65,10 @@ export interface end_trip {
     duration_minutes: number;
     fuel_estimate: number;
     status: "COMPLETED" | "ABORTED";
+    end_location?:{
+        lat:number;
+        lng:number;
+    };
     // safety_score: number;
     // eco_score: number;
     // overall_score: number;
@@ -306,6 +310,8 @@ export const trips_services ={
                     distance_km: data.distance_km,
                     duration_minutes: data.duration_minutes,
                     fuel_estimate: data.fuel_estimate,
+                    end_latitude:data.end_location?.lat,
+                    end_longitude:data.end_location?.lng,
                     status: data.status
                 }
             });
