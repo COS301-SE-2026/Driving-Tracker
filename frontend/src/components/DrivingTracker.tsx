@@ -1,9 +1,12 @@
+import PhoneAnimation from "@/components/PhoneAnimation";
+
 export default function DrivingTracker() {
   
   return(
 
-    <section id = "home" className = "flex flex-col md:flex-row items-center gap-12 px-6 py-16">
+    <section id = "home" className = "flex flex-col md:flex-row items-center justify-between gap-12 px-6 py-16 reverseHero-gradient">
       {/*Phone animation that rotates with the cursor*/}
+      <PhoneAnimation />
   
 
     {/*All about our app*/}
