@@ -38,6 +38,7 @@ import com.omnitech.drivingtracker.ui.home.Dashboard
 
 
 import androidx.navigation.NavController
+import com.omnitech.drivingtracker.Screen
 
 @Composable
 fun AchievementsScreen(
@@ -81,8 +82,8 @@ fun AchievementsContent(
             TopBar(
                 leftIcon = Icons.Default.ArrowBackIosNew,
                 rightIcon = Icons.Default.Settings,
-                onLeftClick = {/*Open menu*/ },
-                onRightClick = {/*Open settings*/ }
+                onLeftClick = {navController?.popBackStack() },
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
 

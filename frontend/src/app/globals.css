@@ -1,2 +1,31 @@
 @import "tailwindcss";
 
+:root{
+    --color-primary: #0095FF;
+    --color-secondary: #22C55E;
+    --color-tertiary: #8B5CF6;
+
+    --color-text: #0F172A;
+    --color-muted: #64748b;
+    --color-bg: #FFFFFF;
+    --color-border: #E2E8F0;
+
+    --navbar-height: 4rem;
+}
+
+html{
+    scroll-behavior: smooth;
+}
+
+body{
+    color: var(--color-text);
+    background: var(--color-bg);
+}
+
+.hero-gradient{
+    background: linear-gradient(
+        to right,
+        #FFFFFF 27%,
+        #0095FF 91%
+    );
+}

@@ -49,6 +49,7 @@ import com.omnitech.drivingtracker.ui.other.More
 import com.omnitech.drivingtracker.ui.vehicles.VehiclesViewModel
 import kotlin.collections.forEach
 import java.util.UUID
+import com.omnitech.drivingtracker.Screen
 
 
 //Data model for vehicle UI
@@ -98,7 +99,7 @@ fun Vehicles(
                 leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 rightIcon = Icons.Default.Settings,
                 onLeftClick = { navController?.popBackStack() },
-                onRightClick = { /*handle settings click*/ }
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
         bottomBar = {

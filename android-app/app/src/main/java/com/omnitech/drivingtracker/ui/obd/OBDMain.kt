@@ -21,15 +21,14 @@ fun OBDMain(navController: NavController? =null){
     StandardScreen(
         navController = navController,
         title = "OBD Diagnostics",
-        description = "Connect your OBD-|| adapter to view your vehicle health, fault codes, and live diagnostics."
+        description = "Connect your OBD-|| adapter to view your vehicle health, fault codes, and live diagnostics.",
+        bottomBarColor = "obd"
     ) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
             //Different page options
             MenuCard("OBD Adapters") {navController?.navigate(Screen.OBDConnect.route) }
-            Spacer(modifier = Modifier.height(25.dp))
-            MenuCard("Live Warnings") {navController?.navigate(Screen.OBDLiveWarnings.route) }
             Spacer(modifier = Modifier.height(25.dp))
             MenuCard("Key OBD data") {navController?.navigate(Screen.OBDKeyData.route) }
         }
