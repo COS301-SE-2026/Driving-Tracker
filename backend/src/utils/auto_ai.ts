@@ -13,7 +13,6 @@ let system_prompt_at_end = `You are a driver classification agent for a driving 
  
 INPUT
 {
-  "user_id": string,
   "total_trips": number,
   "total_distance_km": number,
   "event_counts": { "harsh_brake": number, "harsh_acceleration": number, "sharp_corner": number, "crash_like": number },
@@ -95,7 +94,7 @@ const event_count_schema = z.object({
 });
 
 const input_schema = z.object({
-     user_id: z.string().uuid(),
+    //  user_id: z.string().uuid(),
     total_trips: z.number().int().nonnegative(),
     total_distance_km: z.number().nonnegative(),
     event_counts: event_count_schema, 
@@ -109,7 +108,7 @@ type input_s = z.infer<typeof input_schema>;
 
 const output_schema = z.union([
     z.object({
-        user_id: z.string(),
+        // user_id: z.string(),
         driver_score: z.number().min(0).max(100),
          driver_type: z.enum(["SAFE_DRIVER", "CAUTIOUS_DRIVER", "MODERATE_RISK_DRIVER", "AGGRESSIVE_DRIVER"]),
         confidence: z.enum(["low", "medium", "high"]),

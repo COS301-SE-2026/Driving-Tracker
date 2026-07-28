@@ -197,7 +197,7 @@ export const trips_services ={
                         fuel_est = (lper100km / 100) * planned_distance_km;
                     }
                 }
-                fuel_est = null;
+                // fuel_est = null;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
