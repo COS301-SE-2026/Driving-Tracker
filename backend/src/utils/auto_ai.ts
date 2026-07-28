@@ -230,7 +230,7 @@ async function average_scores(user_id: string){
     };  
 }
 
-export async function driver_profile(user_id: string, recent_trip_id?: string): Promise<driver_profile>{
+export async function driver_profile(user_id: string, recent_trip_id: string): Promise<driver_profile>{
     const [input_s,scores] = await Promise.all([
         build_input(user_id, recent_trip_id),
         average_scores(user_id),
@@ -250,6 +250,20 @@ export async function driver_profile(user_id: string, recent_trip_id?: string): 
 
     const raw = JSON.parse(response.text ?? "{}");
     const classification = output_schema.parse(raw);
+    if (classification.driver_type !== "insufficient_data" && classification.driver_score != null) {
+        
+        const existing_score = await prisma.trip_scores.findFirst({
+            where: { trip_id: recent_trip_id }
+        });
+ 
+        if (existing_score) {
+            await prisma.trip_scores.update({
+                where: { score_id: existing_score.score_id },
+                data: { overall_score: classification.driver_score }
+            });
+        }
+        
+    }
 
     return {...classification,...scores};
 }
