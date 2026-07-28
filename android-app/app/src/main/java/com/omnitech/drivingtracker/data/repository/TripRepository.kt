@@ -120,9 +120,8 @@ class TripRepository @Inject constructor(private val api: ApiService){
         distanceKm: Double? = null,
         durationMinutes: Int? = null,
         fuelEstimate: Double? = null,
-        safetyScore: Double? = null,
-        ecoScore: Double? = null,
-        overallScore: Double? = null
+        overallScore: Double? = null,
+        endLocation: LocationDto? = null,
     ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(
@@ -131,9 +130,8 @@ class TripRepository @Inject constructor(private val api: ApiService){
                 distanceKm = distanceKm,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
-                safetyScore = safetyScore,
-                ecoScore = ecoScore,
-                overallScore = overallScore
+                overallScore = overallScore,
+                endLocation = endLocation
             )
             val response = api.endTrip(tripId, request)
             Result.success(response.data)
