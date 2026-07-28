@@ -130,4 +130,7 @@ interface ApiService{
     suspend fun getLatestLocation(
         @Path("trip_id") tripId: String
     ): LatestLocationResponse
+
+    @GET("trips/shared_with_me")
+    suspend fun getTripsSharedWithMe(): SharedWithMeResponse
 }

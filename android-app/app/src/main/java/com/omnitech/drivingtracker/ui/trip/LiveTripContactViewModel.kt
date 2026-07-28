@@ -23,7 +23,7 @@ class LiveTripContactViewModel @Inject constructor(private val api: ApiService) 
         viewModelScope.launch {
             while(isActive){
                 try{
-                    val result = api.getLatestLocation()
+                    //val result = api.getLatestLocation()
 
                 } catch(e: Exception){
 

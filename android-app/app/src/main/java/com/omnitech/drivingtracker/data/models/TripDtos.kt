@@ -20,10 +20,31 @@ data class LatestLocationResponse(
 )
 
 data class LatestLocationData(
-    val last_latitude: Double,
-    val last_longitude: Double,
-    val last_speed_kmh: Double?,
+    @SerializedName("latest_latitude")
+    val lastLatitude: Double,
+    @SerializedName("latest_longitude")
+    val lastLongitude: Double,
+    @SerializedName("latest_speed_kmh")
+    val lastSpeedKmh: Double,
     val status: String
+)
+
+data class SharedWithMeResponse(
+    val message: String,
+    val data: SharedWithMeData
+)
+
+data class SharedWithMeData(
+    val trips: List<SharedWithMeDto>
+)
+
+data class SharedWithMeDto(
+    @SerializedName("trip_id")
+    val tripId: String,
+    val owner: String,
+    val status: String,
+    @SerializedName("started_at")
+    val startedAt: String
 )
 
 @Suppress("unused")

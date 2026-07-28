@@ -21,7 +21,9 @@ enum class NotificationType {
     TRUSTED_CONTACT_RESPONSE,
     BADGE_UNLOCKED,
     TRIP_SHARED,
-    GENERAL
+    GENERAL,
+
+    VIEW_SHARED_TRIP
 }
 
 data class NotificationItem(
@@ -86,6 +88,9 @@ fun NotificationCard(
                         color = Color.Black
                     )
                 }
+                NotificationType.VIEW_SHARED_TRIP -> {
+                    ViewSharedTripContent(notification.body, onAccept, onIgnore)
+                }
             }
         }
     }
@@ -142,6 +147,67 @@ private fun ContactRequestCardContent(
             ) {
                 Text(
                     text = "Accept",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+        }
+
+    }
+
+}
+
+@Composable
+private fun ViewSharedTripContent(
+    body: String,
+    onAccept: () -> Unit,
+    onIgnore: () -> Unit
+) {
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            //
+//            TextButton(
+//                onClick = onIgnore,
+//                contentPadding = PaddingValues(horizontal = 8.dp)
+//            ) {
+//                Text(
+//                    text = "Ignore",
+//                    color = Color.Gray,
+//                    fontSize = 14.sp
+//                )
+//            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            //Accept Button: Blue outline, blue text, same background as card
+            OutlinedButton(
+                onClick = onAccept,
+                border = BorderStroke(1.dp, Blue),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = Blue
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                Text(
+                    text = "View",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
