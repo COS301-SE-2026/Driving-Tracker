@@ -621,6 +621,16 @@ fun TripTimer(startedAt:String){
             Instant.now()
         }
     }
+    LaunchedEffect(startTime){
+        while(true){
+            val seconds = java.time.Duration.between(startTime, Instant.now()).seconds
+            elapsedText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            delay(1000)
+        }
+    }
+    Text(text = elapsedText, style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold, color = Color.Black)
 }
 
 @Preview(showBackground = true)
