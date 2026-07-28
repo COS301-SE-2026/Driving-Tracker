@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.testTag
 fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 32.dp),
