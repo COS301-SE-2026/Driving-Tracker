@@ -18,9 +18,12 @@ import com.omnitech.drivingtracker.ui.components.ScoreRingTwo
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import com.omnitech.drivingtracker.ui.components.StandardScreen
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 data class TripSummaryData(
-    val date: String = "25 April 2026, 12:45",
+    val date: String = "25 April 2026 • 12:45",
     val route: String = "Home → Office",
     val score: Int = 80,
     val rating: String = "Good",
@@ -63,9 +66,16 @@ fun TripSummary(
         }
         is TripSummaryViewModel.UiState.Success -> {
             val trip = state.trip
+            val formattedDate = try{
+                val zdt = ZonedDateTime.parse(trip.startedAt).withZoneSameInstant(ZoneId.systemDefault())
+                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy • HH:mm")
+                zdt.format(formatter)
+            }catch(e: Exception){
+                trip.startedAt
+            }
             val mappedData = TripSummaryData(
-                date = trip.startedAt,
-                route = "Trip to ${trip.vehicleId ?: "Destination"}",
+                date = formattedDate,
+                route = "Trip ${trip.tripId}",
                 score = trip.scores?.overallScore?.toInt() ?: 0,
                 rating = when {
                     (trip.scores?.overallScore ?: 0.0) >= 80 -> "Great"
