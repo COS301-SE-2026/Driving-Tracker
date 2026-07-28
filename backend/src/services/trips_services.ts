@@ -6,6 +6,7 @@ import { user_devices_services } from './user_devices_services';
 import { fetch_vehicle_benchmark } from './vehicle.services';
 import { map_services } from './map_services';
 import { add_notification } from '../utils/notification';
+import { driver_profile } from '../utils/auto_ai';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -63,9 +64,9 @@ export interface end_trip {
     duration_minutes: number;
     fuel_estimate: number;
     status: "COMPLETED" | "ABORTED";
-    safety_score: number;
-    eco_score: number;
-    overall_score: number;
+    // safety_score: number;
+    // eco_score: number;
+    // overall_score: number;
 };
 export interface record_data{
     user_id: string;
@@ -150,7 +151,7 @@ export const trips_services ={
             });
             if (!vehicle_info?.make || !vehicle_info?.model || !vehicle_info?.year) {
                 console.log("Null info but my return ")
-                return ;
+               throw new Error("No car info found in database");
             }
 
             const make = vehicle_info?.make;
@@ -315,27 +316,30 @@ export const trips_services ={
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
-
-            let tripScore;
-            if (existing_score) {
-                tripScore = await prisma.trip_scores.update({
-                    where: { score_id: existing_score.score_id },
-                    data: {
-                        safety_score: data.safety_score,
-                        eco_score: data.eco_score,
-                        overall_score: data.overall_score
-                    }
-                });
-            } else {
-                tripScore = await prisma.trip_scores.create({
-                    data: {
-                        trip_id: data.trip_id,
-                        safety_score: data.safety_score,
-                        eco_score: data.eco_score,
-                        overall_score: data.overall_score
-                    }
-                });
-            }
+            //will need to calculate the scores separately to ensure the ai wont get in accurate readings from kotlin
+            //calculations for scores 
+            
+            
+            // let tripScore;
+            // if (existing_score) {
+            //     tripScore = await prisma.trip_scores.update({
+            //         where: { score_id: existing_score.score_id },
+            //         data: {
+            //             safety_score: data.safety_score,
+            //             eco_score: data.eco_score,
+            //             overall_score: data.overall_score
+            //         }
+            //     });
+            // } else {
+            //     tripScore = await prisma.trip_scores.create({
+            //         data: {
+            //             trip_id: data.trip_id,
+            //             safety_score: data.safety_score,
+            //             eco_score: data.eco_score,
+            //             overall_score: data.overall_score
+            //         }
+            //     });
+            // }
 
             //getting the user info
              const user = await prisma.users.findUnique({
@@ -346,6 +350,7 @@ export const trips_services ={
             const completedTripCount = await prisma.trips.count({
                 where: { user_id: data.user_id, status: "COMPLETED" }
             });
+            //before return the ai must eval ??
 
             return {
                 trip_id: updatedTrip.trip_id,
@@ -355,9 +360,9 @@ export const trips_services ={
                 duration_minutes: updatedTrip.duration_minutes,
                 fuel_estimate: updatedTrip.fuel_estimate,
                 scores: {
-                    safety_score: tripScore.safety_score,
-                    eco_score: tripScore.eco_score,
-                    overall_score: tripScore.overall_score
+                    // safety_score: tripScore.safety_score,
+                    // eco_score: tripScore.eco_score,
+                    // overall_score: tripScore.overall_score
                 },
                 is_first_trip: completedTripCount === 1
             };
