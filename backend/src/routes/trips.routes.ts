@@ -17,6 +17,7 @@ trips_router.post("/:trip_id/batch_readings/record", verify_token, trip_reading_
 trips_router.get("/history",verify_token, user_based_limiter, trips_controller.get_history);
 trips_router.get("/:trip_id/summary", verify_token, user_based_limiter, trips_controller.get_trip_summary);
 trips_router.get("/:trip_id/latest_location", verify_token, trip_reading_limiter , requireTripAccess, trips_controller.get_trip_latest_location);
+trips_router.get("/shared_with_me", verify_token, user_based_limiter, trips_controller.get_trips_shared_with_me);
 //delete 
 
 //Update 

@@ -835,5 +835,46 @@ export const trips_services ={
         });
 
         return trip;
+    },
+    //Gets trips shared with user
+    async get_trips_shared_with_me(user_id: string){
+
+        const shares = await prisma.trip_location_shares.findMany({
+            where: {
+                revoked_at: null,
+                contact: {
+                    contact_user_id: user_id,
+                    consent_status: "APPROVED"
+                },
+                trip: {
+                    status: "IN_PROGRESS"
+                },
+            },
+            include:{
+                trip: {
+                    select: {
+                        trip_id: true,
+                        status: true,
+                        start_time: true,
+                    }
+                },
+                owner: {
+                    select: {
+                        username: true
+                    },
+                }
+            },
+            orderBy: { shared_at: 'desc'}
+        });
+
+        const result = shares.map((s)=>({
+            trip_id: s.trip_id,
+            owner: s.owner.username,
+            shared_at: s.shared_at,
+            status: s.trip.status,
+            started_at: s.trip.start_time
+        }))??[];
+
+        return result;
     }
 };

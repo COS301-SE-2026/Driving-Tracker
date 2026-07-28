@@ -14,6 +14,18 @@ data class LocationDto(
     val lng: Double?
 )
 
+data class LatestLocationResponse(
+    val message: String,
+    val data: LatestLocationData
+)
+
+data class LatestLocationData(
+    val last_latitude: Double,
+    val last_longitude: Double,
+    val last_speed_kmh: Double?,
+    val status: String
+)
+
 @Suppress("unused")
 data class StartTripRequest(
     @SerializedName("vehicle_id")

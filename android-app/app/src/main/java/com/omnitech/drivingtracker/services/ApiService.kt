@@ -125,4 +125,9 @@ interface ApiService{
         @Path("trip_id") tripId: String,
         @Body body: LogEventRequest
     ): LogEventResponse
+
+    @GET("trips/{trip_id}/latest_location")
+    suspend fun getLatestLocation(
+        @Path("trip_id") tripId: String
+    ): LatestLocationResponse
 }

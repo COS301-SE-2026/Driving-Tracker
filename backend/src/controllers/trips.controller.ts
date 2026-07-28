@@ -353,13 +353,50 @@ export const get_trip_latest_location = async (req: AuthRequest, res: Response) 
 
         try{
 
-            const trip = await trips_services.get_trip_latest_location(trip_id);
+            const latest_data = await trips_services.get_trip_latest_location(trip_id);
+
+            return res.status(200).json({
+                message: "Latest location successfully retrieved",
+                data: {
+                    latest_data
+                }
+            });
 
         }catch(error: any){
 
             res.status(500).json({ 
                 error: "INTERNAL_SERVER_ERROR" 
             });
-
         }    
 };
+
+export const get_trips_shared_with_me = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+    try{
+
+        const result = await trips_services.get_trips_shared_with_me(user_id);
+
+        return res.status(200).json({ 
+            message: "Successfully fetched trips shared with you",
+            data: {
+                trips: result
+            }
+        });
+
+    } catch(error: any){
+
+        res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR" 
+        });
+    }
+}
