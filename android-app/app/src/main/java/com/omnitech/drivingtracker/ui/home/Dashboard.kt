@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.StatCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.*
+import androidx.compose.foundation.clickable
 
 @Composable
 fun Dashboard(navController: NavController? = null,
@@ -171,7 +172,8 @@ fun Dashboard(navController: NavController? = null,
                     Text(
                         "View more",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Blue
+                        color = Blue,
+                        modifier = Modifier.clickable{ navController?.navigate(Screen.Trips.route) }
                     )
                 }
 
