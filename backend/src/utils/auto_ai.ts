@@ -142,6 +142,37 @@ export type driver_profile = output_s &{
 }
 
 //build the input according to the schema 
+function countEventsFromGroups(groups: Array<{ type: string|null; _count: { event_id: number } }>) {
+    const counts = {
+        harsh_brake: 0,
+        harsh_acceleration: 0,
+        sharp_corner: 0,
+        crash_like: 0,
+    };
+
+    for (const row of groups) {
+
+        const type = row.type?.trim();
+        if(!type) continue;
+        switch (type) {
+            case "HARSH_BRAKE":
+                counts.harsh_brake = row._count.event_id;
+                break;
+            case "HARSH_ACCELERATION":
+                counts.harsh_acceleration = row._count.event_id;
+                break;
+            case "SHARP_CORNER":
+                counts.sharp_corner = row._count.event_id;
+                break;
+            case "CRASH_LIKE":
+                counts.crash_like = row._count.event_id;
+                break;
+            // other types are ignored (stay 0)
+        }
+    }
+    return counts;
+}
+
 async function build_input(user_id: string, recent_trip_id?: string): Promise<input_s>{
     const trips = await prisma.trips.aggregate({
         where: {user_id, status: "COMPLETED"},
@@ -158,23 +189,7 @@ async function build_input(user_id: string, recent_trip_id?: string): Promise<in
         _count: { event_id: true},
     });
 
-    const event_counts = { harsh_brake: 0, harsh_acceleration: 0, sharp_corner: 0, crash_like: 0 };
-
-    //loop through all the events the user has gone through and count them 
-    for(const row of event_group){
-        if(row.type === "HARSH_BRAKE"){
-            event_counts.harsh_brake = row._count.event_id;
-        }
-        if(row.type === " HARSH_ACCELERATION"){
-            event_counts.harsh_acceleration = row._count.event_id;
-        }
-        if(row.type === "SHARP_CORNER"){
-            event_counts.sharp_corner = row._count.event_id;
-        }
-        if(row.type === "CRASH_LIKE"){
-            event_counts.crash_like = row._count.event_id;
-        }
-    }// if these events aren't found the count stays 0 
+   const event_counts = countEventsFromGroups(event_group);
 
     // now find the recent trip 
     let recent_trip :input_s["recent_trip"]= null;
@@ -190,22 +205,8 @@ async function build_input(user_id: string, recent_trip_id?: string): Promise<in
                 _count:{ event_id:true},
             });
 
-            const recent_counts =  { harsh_brake: 0, harsh_acceleration: 0, sharp_corner: 0, crash_like: 0 };
+           const recent_counts = countEventsFromGroups(recent_events);
 
-            for(const row of recent_events){
-                if(row.type === "HARSH_BRAKE"){
-                    recent_counts.harsh_brake = row._count.event_id;
-                }
-                if(row.type === " HARSH_ACCELERATION"){
-                    recent_counts.harsh_acceleration = row._count.event_id;
-                }
-                if(row.type === "SHARP_CORNER"){
-                    recent_counts.sharp_corner = row._count.event_id;
-                }
-                if(row.type === "CRASH_LIKE"){
-                    recent_counts.crash_like = row._count.event_id;
-                }
-            }
 
             recent_trip ={
                 trip_id: trip.trip_id,
