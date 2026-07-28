@@ -2,13 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import { animate, createTimeline, stagger, type JSAnimation } from "animejs";
-import styles from "./Welcome.module.css";
 
 type WelcomeProps = {
     onFinish: () => void;
 };
 
-const TAGLINE = ["TRACK •", "ANALYZE •", "IMPROVE"];
+
+const TAGLINE = [
+    {text: "TRACK •", color: "text-[var(--color-primary)]" }, 
+    {text: "ANALYZE •", color: "text-[var(--color-tertiary)]" }, 
+    {text: "IMPROVE", color: "text-[var(--color-secondary)]" }
+];
 
 export default function Welcome({ onFinish }: WelcomeProps) {
 
@@ -45,21 +49,21 @@ export default function Welcome({ onFinish }: WelcomeProps) {
         entrance.add(words, {
             opacity: [0, 1],
             translateY: [10, 0],
-            delay: stagger(350),
-            duration: 500,
+            delay: stagger(600),
+            duration: 300,
             ease: "outQuad",
 
             onComplete: () => {
                 
-               
-                spinAnimationRef.current?.pause();
-                
-
                 animate(rootRef.current!, {
                     opacity: [1, 0],
                     duration: 700,
+                    delay: 400,
                     ease: "inOutQuad",
                     onComplete: () => {
+                        //Pausing spin only after screen fades out
+                        spinAnimationRef.current?.pause();
+
                         if (!finishedRef.current) {
                             finishedRef.current = true;
                             onFinish();
@@ -81,28 +85,39 @@ export default function Welcome({ onFinish }: WelcomeProps) {
 
     return (
 
-        <div ref={rootRef} className={styles.welcome}>
-            <div ref={wheelRef} className={styles.wheel} aria-hidden="true">
-                <div className={styles.spoke}/>
-                <div className={styles.spoke}/>
-                <div className={styles.spoke}/>
-                <div className={styles.spoke}/>
-                <div className={styles.spoke}/>
-                <div className={styles.spoke}/>
-                <div className={styles.core}/>
+        <div 
+            ref={rootRef} 
+            className="min-h-screen bg-[var(--color-bg)] flex flex-col items-center justify-center gap-14 opacity-100"
+        >
+            <div 
+                ref={wheelRef} 
+                className="w-[180px] h-[180px] relative rounded-full border-[12px] border-[var(--color-primary)] box-border opacity-0" 
+                aria-hidden="true"
+            >
+                {/*Dynamically displaying spokes for wheel */}
+                {[0, 60, 120, 180, 240, 300].map((deg) => (
+                    <div
+                    key={deg}
+                    className="absolute top-1/2 left-1/2 w-[18px] h-[72px] bg-[var(--color-primary)] rounded-full orirgin-bottom"
+                    style={{ transform: `translate(-50%, -100%) rotate(${deg}deg)`}}
+                    />
+                ))}
+
+                {/*Wheel center */}
+                <div className="absolute top-1/2 left-1/2 w-[34px] h-[34px] rounded-full bg-[var(--color-primary)] -translate-x-1/2 -translate-y-1/2"/>
             </div>
 
-            <div className={styles.tagline}>
+            <div className="flex items-center gap-5 text-[2rem] font-medium tracking-[0.04em] uppercase">
                 {TAGLINE.map((word, index) => (
 
                     <span
-                        key={word}
+                        key={word.text}
                         ref={(node) => {
                             wordRefs.current[index] = node;
                         }}
-                        className={styles.word}
+                        className={`opacity-0 ${word.color}`}
                     >
-                        {word}
+                        {word.text}
                     </span>
 
                 ))}
