@@ -818,4 +818,22 @@ export const trips_services ={
         return active_share_count;
         
     },
+    //Get latest trip location
+    async get_trip_latest_location(trip_id: string){
+
+        const trip = await prisma.trips.findUnique({
+            where: {
+                trip_id
+            },
+            select: {
+                last_latitude: true,
+                last_longitude: true,
+                last_recorded_at: true,
+                last_speed_kmh: true,
+                status: true
+            }
+        });
+
+        return trip;
+    }
 };

@@ -1,6 +1,7 @@
 import {Router, request, response } from "express";
 import * as trips_controller from "../controllers/trips.controller";
 import {verify_token} from '../middleware/auth';
+import {requireTripAccess} from '../middleware/trip_access';
 import { user_based_limiter, trip_event_limiter, trip_reading_limiter } from "../middleware/rate_limit";
 
 const trips_router = Router();
@@ -15,6 +16,7 @@ trips_router.post("/:trip_id/batch_readings/record", verify_token, trip_reading_
 //read basically get 
 trips_router.get("/history",verify_token, user_based_limiter, trips_controller.get_history);
 trips_router.get("/:trip_id/summary", verify_token, user_based_limiter, trips_controller.get_trip_summary);
+trips_router.get("/:trip_id/latest_location", verify_token, trip_reading_limiter , requireTripAccess, trips_controller.get_trip_latest_location);
 //delete 
 
 //Update 

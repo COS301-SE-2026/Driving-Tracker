@@ -337,3 +337,29 @@ export const log_event = async (req: AuthRequest, res: Response) => {
         }
     }
 };
+
+export const get_trip_latest_location = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+    const { trip_id } = req.params;
+
+        if (!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+        try{
+
+            const trip = await trips_services.get_trip_latest_location(trip_id);
+
+        }catch(error: any){
+
+            res.status(500).json({ 
+                error: "INTERNAL_SERVER_ERROR" 
+            });
+
+        }    
+};
