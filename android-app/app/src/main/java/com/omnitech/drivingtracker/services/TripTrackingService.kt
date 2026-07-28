@@ -22,6 +22,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
+import com.omnitech.drivingtracker.data.models.BatchReadingRequest
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -37,6 +38,7 @@ import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.Instant
 import kotlin.String
 
@@ -56,6 +58,10 @@ class TripTrackingService: Service() {
     private var currentTripId: String? = null
 
     private var lastKnownSpeed: Float = 0f
+
+    private var cachedActiveShareCount: Int = 0
+
+    private var isTrackingStarted = false
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -101,9 +107,15 @@ class TripTrackingService: Service() {
 
         when(intent?.action){
             ACTION_START_TRIP -> {
-                startForegroundWithPermissionCheck()
-                startLocationUpdates()
-                startSensorFusion()
+                if(!isTrackingStarted){
+                    startForegroundWithPermissionCheck()
+                    startLocationUpdates()
+                    startSensorFusion()
+                    startSyncLoop()
+                } else {
+                    Log.d("Tracking", "Service already tracking")
+                }
+
             }
             ACTION_STOP_TRIP -> {
                 stopEverything()
@@ -176,6 +188,7 @@ class TripTrackingService: Service() {
 
     private fun stopLocationUpdates(){
         fusedLocationClient.removeLocationUpdates(locationCallback)
+            .addOnCompleteListener { Log.d(TAG, "Location updates successfully removed from GPS") }
     }
 
     private fun startSensorFusion(){
@@ -196,7 +209,7 @@ class TripTrackingService: Service() {
                 Instant.parse(reading.timestamp).toEpochMilli()
             }.getOrDefault(System.currentTimeMillis())
 
-            val reading = TripReadingEntity(
+            val readingEntity = TripReadingEntity(
                 tripId = tripId,
                 recordedAt = recordedAt,
                 dataSource = "PHONE",
@@ -214,54 +227,32 @@ class TripTrackingService: Service() {
                 dtcCodes = emptyList()
             )
 
-            tripRepository.saveReadingLocally(reading)
+            tripRepository.saveReadingLocally(readingEntity)
+            Log.d(TAG, "Saved reading: ${readingEntity}")
 
-            try{
-//                apiService.recordReading(
-//                    tripId = tripId,
-//                    body = RecordReadingRequest(
-//                        recorded_at = reading.timestamp,
-//                        data_source = "PHONE",
-//                        location = LocationDto(
-//                            lat = reading.latitude,
-//                            lng = reading.longitude
-//                        ),
-//                        speed_kmh = reading.speedKmh,
-//                        accelerometer = reading.linearAccelY,
-//                        gyroscope_x = reading.gyroX,
-//                        gyroscope_y = reading.gyroY,
-//                        gyroscope_z = reading.gyroZ,
-//                        rpm = null,
-//                        coolant_temp_c = null,
-//                        fuel_trim_percent = null,
-//                        throttle_position = null,
-//                        dtc_codes = emptyList()
-//                    )
-//                )
-            } catch(e: Exception){
-
-                Log.w(TAG, "Failed to post reading ${e.message}")
-            }
         }
     }
 
     private fun computeSyncDelay(): Long {
+        val hasActiveViewers = tripHasActiveShares()
         return when {
-            lastKnownSpeed > 10f -> 8_000L
-            else -> 45_000L
+            hasActiveViewers  && lastKnownSpeed > 10f -> 8_000L
+            hasActiveViewers -> 20_000L
+            lastKnownSpeed > 10f -> 15_000L
+            else -> 60_000L
         }
     }
 
     private fun startSyncLoop() {
         serviceScope.launch {
-            while(true) {
-                val nextDelay = if (lastKnownSpeed > 10f) {
-                    10_000L
-                } else {
-                    45_000L
+            while(isActive) {
+                try{
+                    syncPendingReadings()
+                } catch(e: Exception){
+                    Log.w("SyncReadings", "Sync failed, retry later")
                 }
-                delay(nextDelay)
-                syncPendingReadings()
+
+                delay(computeSyncDelay())
             }
         }
     }
@@ -270,21 +261,19 @@ class TripTrackingService: Service() {
     private suspend fun syncPendingReadings() {
         val tripId = currentTripId?: return
 
-        val unsynced = tripRepository.getUnsyncedReadings(tripId)
-        if (unsynced.isEmpty()) return
+        val response = tripRepository.syncPendingReadings(tripId)
 
-        try{
-
-            //val request = BatchReadingRequest(unsynced.map { it.toDto() })
-            //apiService.recordBatchReadings()
-
-            val readingIds = unsynced.map {  it.readingId }
-            tripRepository.markReadingsAsSynced(readingIds)
-
-        } catch (e: Exception){
-            Log.w("SyncReadings", "Batch sync failed, will retry")
-        }
+        response.fold(
+            onSuccess = { response ->
+                cachedActiveShareCount = response?.data?.activeShareCount?:0
+            },
+            onFailure = { exception ->
+                Log.d("SyncReadings", exception.message?: "Sync failed")
+                }
+            )
     }
+
+    private fun tripHasActiveShares(): Boolean = cachedActiveShareCount > 0
 
     private fun postEvent(event: FusedEvent){
         val tripId = currentTripId?: return
@@ -338,10 +327,12 @@ class TripTrackingService: Service() {
     }
 
     private fun stopEverything(){
-        sensorFusion.stop()
+        Log.d(TAG, "Stopping all tracking tasks")
         stopLocationUpdates()
+        sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
     }
 }

@@ -26,7 +26,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "drive_local"
-            ).build()
+            )
+            .fallbackToDestructiveMigration(true)
+            .build()
     }
 
     @Provides

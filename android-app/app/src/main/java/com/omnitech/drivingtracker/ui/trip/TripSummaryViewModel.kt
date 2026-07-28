@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 @HiltViewModel
-class TripSummaryViewModel @Inject constructor(private val repository: TripRepository) : ViewModel() {
+class TripSummaryViewModel @Inject constructor(private val repository: TripRepository, private val sensorFusionManager: SensorFusionManager) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -25,6 +26,8 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
         ) : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
+
+    val liveMetrics = sensorFusionManager.liveMetrics
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState

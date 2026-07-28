@@ -1,11 +1,15 @@
 package com.omnitech.drivingtracker.data.repository
 
+import android.util.Log
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.db.daos.TripDao
 import com.omnitech.drivingtracker.data.db.daos.TripEventDao
 import com.omnitech.drivingtracker.data.db.daos.TripReadingDao
+import com.omnitech.drivingtracker.data.db.entities.TripEntity
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
+import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.*
 import com.omnitech.drivingtracker.services.ApiService
 import retrofit2.HttpException
@@ -15,7 +19,9 @@ import javax.inject.Inject
 class TripRepository @Inject constructor(
     private val api: ApiService,
     private val tripEventDao: TripEventDao,
-    private val tripReadingDao: TripReadingDao
+    private val tripReadingDao: TripReadingDao,
+    private val tripDao: TripDao,
+    private val sessionManager: SessionManager
     ){
 
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
@@ -27,6 +33,56 @@ class TripRepository @Inject constructor(
     suspend fun getUnsyncedReadings(tripId: String) =  tripReadingDao.getUnsyncedTripReadings(tripId)
 
     suspend fun markReadingsAsSynced(readingIds: List<Int>) = tripReadingDao.markAsSynced(readingIds)
+
+    suspend fun saveTripLocally(trip: TripEntity) = tripDao.insertTrip(trip)
+
+    //Sends unsynced readings in room db to backend
+    suspend fun syncPendingReadings(tripId: String): Result<BatchReadingResponse?>{
+        val unsynced = tripReadingDao.getUnsyncedTripReadings(tripId)
+        if (unsynced.isEmpty()) return Result.success(null)
+
+        try{
+
+            //convert Room Entities to request shape (DTOs)
+            val request = BatchReadingRequest(unsynced.map { entity ->
+
+                val recordedAt = Instant.ofEpochMilli(entity.recordedAt).toString()
+                RecordReadingRequest(
+                    recorded_at = recordedAt,
+                    data_source = "PHONE",
+                    location = LocationDto(
+                        lat = entity.latitude,
+                        lng = entity.longitude
+                    ),
+                    speed_kmh = entity.speedKmh?: 0f,
+                    accelerometer = entity.accelerometer?: 0f,
+                    gyroscope_x = entity.gyroscopeX?: 0f,
+                    gyroscope_y = entity.gyroscopeY?: 0f,
+                    gyroscope_z = entity.gyroscopeZ?: 0f,
+                    rpm = null,
+                    coolant_temp_c = null,
+                    fuel_trim_percent = null,
+                    throttle_position = null,
+                    dtc_codes = entity.dtcCodes?: emptyList()
+                )
+            })
+            //Batch upload
+            val response = api.recordBatchReadings(tripId, request)
+
+            val readingIds = unsynced.map {  it.readingId }
+            tripReadingDao.markAsSynced(readingIds)
+            Log.d("TripTrackingService", "Synced ${unsynced.size} readings. Viewers = ${response.data.activeShareCount}")
+
+            return Result.success(response)
+
+        } catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            return Result.failure(ApiException(error.error, error.message ?: "Failed to start trip"))
+        }catch(e: Exception){
+            throw e
+        }
+
+    }
 
     suspend fun getMapToken(): Result<MapTokenData> {
         return try{
@@ -50,9 +106,11 @@ class TripRepository @Inject constructor(
         selectedContactIds: List<String>?
     ) : Result<String>{
         return try{
+
+            val startTime = Instant.now()
             val request = StartTripRequest(
                 vehicleId = vehicleId,
-                startDate = Instant.now().toString(),
+                startDate = startTime.toString(),
                 dataSource = dataSource,
                 startLocation = LocationDto(lat = latitude, lng = longitude),
                 endLocation = if (destLat != null && destLng != null) LocationDto(lat = destLat, lng = destLng) else null,
@@ -60,6 +118,25 @@ class TripRepository @Inject constructor(
             )
 
             val response = api.startTrip(request)
+
+            val tripId = response.data.tripId
+
+            val startTimeLong = runCatching {
+                startTime.toEpochMilli()
+            }.getOrDefault(System.currentTimeMillis())
+
+            val localTrip = TripEntity(
+                tripId = tripId,
+                userId = sessionManager.getUserId()?: "unknown",
+                vehicleId = vehicleId,
+                status = "IN_PROGRESS",
+                startLatitude = latitude,
+                startLongitude = longitude,
+                startTime = startTimeLong,
+            )
+
+            tripDao.insertTrip(localTrip)
+
             Result.success(response.data.tripId)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)

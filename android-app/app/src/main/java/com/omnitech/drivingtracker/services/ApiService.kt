@@ -117,7 +117,7 @@ interface ApiService{
     suspend fun recordBatchReadings(
         @Path("trip_id") tripId: String,
         @Body body: BatchReadingRequest
-    )
+    ): BatchReadingResponse
 
 
     @POST("trips/{trip_id}/events/log")

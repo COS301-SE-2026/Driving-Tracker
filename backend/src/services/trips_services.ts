@@ -117,6 +117,25 @@ export interface record_data{
     throttle_position: number;
     dtc_codes: string [];
 };
+
+export interface record_data_raw{
+    recorded_at: Date;
+    location:{
+        lng : number;
+        lat: number;
+    }
+    data_source:"OBD"|"PHONE";
+    speed_kmh: number;
+    accelerometer: number;
+    gyroscope_x: number;
+    gyroscope_y: number;
+    gyroscope_z: number;
+    rpm: number;
+    coolant_temp: number;
+    fuel_trim_percent: number;
+    throttle_position: number;
+    dtc_codes: string [];
+};
 export interface trip_history_filter {
     user_id: string;
     start_date?: Date;
@@ -727,7 +746,7 @@ export const trips_services ={
         }
 
     },
-    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data[]){
+    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data_raw[]){
         
         if(!trip_id){
             throw new Error("Missing required fields");
@@ -750,7 +769,7 @@ export const trips_services ={
 
             await tx.trip_readings.createMany({
                 data: readings.map(r =>({
-                    trip_id: r.trip_id,
+                    trip_id: trip_id,
                     recorded_at: r.recorded_at,
                     data_source: r.data_source,
                     longitude: r.location.lng,
@@ -789,6 +808,12 @@ export const trips_services ={
         const active_share_count = await prisma.trip_location_shares.count({
             where: { trip_id, revoked_at: null },
         });
+
+        if(readings.length>0){
+            console.log("Recorded: " +readings[0]);
+        }else {
+            console.log("No readings");
+        }
 
         return active_share_count;
         

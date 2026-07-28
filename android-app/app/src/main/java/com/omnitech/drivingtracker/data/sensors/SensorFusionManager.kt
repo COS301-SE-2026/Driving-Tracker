@@ -332,6 +332,8 @@ class SensorFusionManager @Inject constructor(
             linearAccelY = reading.linearAccelY,
             gyroZ = reading.gyroZ
         )
+
+        Log.d(TAG, "Reading emitted ${_liveMetrics.value.speedKmh} lat: ${_liveMetrics.value.latitude}  lng:${_liveMetrics.value.longitude}")
     }
 
     //speed adaptive threshold helpers
