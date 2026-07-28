@@ -311,7 +311,9 @@ fun LiveTripContent(
                             onEndTrip = onEndTrip,
                             navController = navController,
                             contactsState = contactsState,
-                            onShareTrip = onShareTrip
+                            onShareTrip = onShareTrip,
+                            destination = destination,
+                            plannedRoute = plannedRoute
                         )
                     }
 
