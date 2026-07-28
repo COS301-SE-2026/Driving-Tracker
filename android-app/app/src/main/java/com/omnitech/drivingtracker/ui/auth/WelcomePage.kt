@@ -21,6 +21,7 @@ import com.omnitech.drivingtracker.ui.theme.*
 import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.res.painterResource
 import com.omnitech.drivingtracker.R
+import androidx.compose.ui.platform.testTag
 
 
 @Composable
@@ -107,7 +108,8 @@ fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .padding(horizontal = 30.dp),
+                .padding(horizontal = 30.dp)
+                .testTag("welcomeLoginButton"),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Green)
         ) {
@@ -132,7 +134,7 @@ fun WelcomePage(onLoginClick: () -> Unit = {}, onSignUpClick: () -> Unit = {}) {
                 color = Blue,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onSignUpClick() }
+                modifier = Modifier.clickable { onSignUpClick() }.testTag("welcomeSignupLink")
             )
 
         }
