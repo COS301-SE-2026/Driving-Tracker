@@ -51,6 +51,7 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -69,8 +70,8 @@ sealed class Screen(val route: String){
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
 
-    data object LiveTripContacts : Screen("live_trip_contacts/{trip_id}") {
-        fun createRoute(tripId: String) = "live_trip_contacts/$tripId"
+    data object LiveTripContacts : Screen("live_trip_contacts/{trip_id}/{name}") {
+        fun createRoute(tripId: String, name: String) = "live_trip_contacts/$tripId/$name"
     }
 
     data object NotificationRationale: Screen("notification_rationale")
@@ -277,8 +278,9 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
                     ) { backStackEntry->
                         val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+                        val name = backStackEntry.arguments?.getString("name") ?: ""
 
-                        LiveTrip(tripId = tripId, navController = navController)
+                        LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
                 }
             }

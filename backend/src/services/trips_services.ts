@@ -355,10 +355,10 @@ export const trips_services ={
                 }
             });
             // revoke any active shares for this trip
-            await prisma.trip_location_shares.updateMany({
-                where: { trip_id: data.trip_id, revoked_at: null },
-                data: { revoked_at: new Date() }
-            });
+            // await prisma.trip_location_shares.updateMany({
+            //     where: { trip_id: data.trip_id, revoked_at: null },
+            //     data: { revoked_at: new Date() }
+            // });
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({

@@ -20,11 +20,13 @@ data class LatestLocationResponse(
 )
 
 data class LatestLocationData(
-    @SerializedName("latest_latitude")
+    @SerializedName("last_latitude")
     val lastLatitude: Double,
-    @SerializedName("latest_longitude")
+    @SerializedName("last_longitude")
     val lastLongitude: Double,
-    @SerializedName("latest_speed_kmh")
+    @SerializedName("last_recorded_at")
+    val lastRecordedAt: String,
+    @SerializedName("last_speed_kmh")
     val lastSpeedKmh: Double,
     val status: String
 )

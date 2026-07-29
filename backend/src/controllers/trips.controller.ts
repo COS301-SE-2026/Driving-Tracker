@@ -358,7 +358,11 @@ export const get_trip_latest_location = async (req: AuthRequest, res: Response) 
             return res.status(200).json({
                 message: "Latest location successfully retrieved",
                 data: {
-                    latest_data
+                    last_latitude: latest_data?.last_latitude,
+                    last_longitude: latest_data?.last_longitude,
+                    last_recorded_at: latest_data?.last_recorded_at,
+                    last_speed_kmh: latest_data?.last_speed_kmh,
+                    status: latest_data?.status
                 }
             });
 
