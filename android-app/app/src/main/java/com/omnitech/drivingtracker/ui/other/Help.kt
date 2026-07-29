@@ -47,7 +47,16 @@ fun Help(navController: NavController?=null){
             "Yes, all trip data is encrypted and never sold to third parties."),
         FaqItem("Connections", "How do I connect my OBD device?",
             "Open the More page from the navbar, press OBD, and then press OBD Adapters. " +
-                    "After this press the 'Add device' button and then follow the steps.")
+                    "After this press the 'Add device' button and then follow the steps."),
+        FaqItem("General", "What are driver profiles","Driver profiles are the classification of how a "+
+                "drives. This classification is based on the events that occur from all their past trips and will classify drivers into these chatagories: "+
+                "Safe driver , Aggressive accelerator and good driver "),
+        FaqItem("Connections","Do I need OBD device to use the app ?","No "+
+                ", you can track trips using just your smartphone's sensors (GPS and accelerometer). However, using an "+
+                "OBD device provides moee accurate data like RPM, engine temperature, and speed"),
+        FaqItem("General","How is my Safety score calculated ?","We monitor "+
+                "events that occur during a trip, events are characterised like Harsh brake , harsh aceleration etc, "+
+                "Smoother trip with less events results in a higher score.")
     )
 
     val contactItems = listOf(
