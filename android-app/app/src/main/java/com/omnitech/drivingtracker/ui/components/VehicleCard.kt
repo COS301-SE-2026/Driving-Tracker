@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.obd.Vehicle
 import com.omnitech.drivingtracker.ui.components.VehicleImage
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun VehicleCard(
@@ -55,35 +57,43 @@ fun VehicleCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
-                Text(
-                    text = vehicle.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                //Mileage pill
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF2D8CFF) //blue background
-                ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ){
                     Text(
-                        text = "${String.format("%,d", vehicle.mileage).replace(',', ' ')}km",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        fontWeight = FontWeight.Medium
+                        text = vehicle.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill=false)
                     )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    //Mileage pill
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF2D8CFF) //blue background
+                    ) {
+                        Text(
+                            text = "${String.format("%,d", vehicle.mileage).replace(',', ' ')}km",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                //Spacer(modifier = Modifier.weight(1f))
 
                 //Vertical 3 dots
                 Box{
 
-                    IconButton(onClick = { showMenu = true }) {
+                    IconButton(onClick = { showMenu = true },
+                        modifier = Modifier.testTag("buttonVehicleOptions${vehicle.name}")) {
                         Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Options")
                     }
 

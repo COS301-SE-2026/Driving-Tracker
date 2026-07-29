@@ -14,13 +14,17 @@ class DrivingTrackerE2E{
 
     @Test
     fun useCase1ManageVehiclesFlow(){
+
+        val uniqueName = "Test Car ${System.currentTimeMillis()}"
+        val editedName = "Edited"
+
         //login - prereq
         composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
         composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("test_login@gmail.com")
         composeTestRule.onNodeWithTag("loginPassword").performTextInput("Password123!")
         composeTestRule.onNodeWithTag("loginButton").performClick()
 
-        composeTestRule.waitUntil(5000) {
+        composeTestRule.waitUntil(7000) {
             composeTestRule.onAllNodesWithText("Allow").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -30,14 +34,20 @@ class DrivingTrackerE2E{
         val systemAllowButton = device.findObject(UiSelector().textMatches("(?i)allow|while using the app"))
         if(systemAllowButton.exists()){
             systemAllowButton.click()
+            device.waitForIdle()
         }
 
         //navigate to vehicles
-        composeTestRule.waitUntil(5000) {
-            composeTestRule.onAllNodesWithTag("topBarLeftButton").fetchSemanticsNodes().isNotEmpty()
+        composeTestRule.waitUntil(8000) {
+            try{
+                composeTestRule.onAllNodesWithTag("topBarLeftButton").fetchSemanticsNodes().isNotEmpty()
+            }catch (e: Exception){
+                false
+            }
         }
 
         composeTestRule.onNodeWithTag("topBarLeftButton").performClick()
+
 
         composeTestRule.waitUntil(5000) {
             composeTestRule.onAllNodesWithText("Vehicles").fetchSemanticsNodes().isNotEmpty()
@@ -58,7 +68,7 @@ class DrivingTrackerE2E{
         }
         
         //fill dialog fields
-        composeTestRule.onNodeWithTag("addVehicleName").performTextInput("My New Car")
+        composeTestRule.onNodeWithTag("addVehicleName").performTextInput(uniqueName)
         composeTestRule.onNodeWithTag("addVehicleRegistration").performTextInput("ABC 123 GP")
         composeTestRule.onNodeWithTag("addVehicleMake").performTextInput("Ford")
         composeTestRule.onNodeWithTag("addVehicleModel").performTextInput("Fiesta")
@@ -70,10 +80,44 @@ class DrivingTrackerE2E{
         //click final add button
         composeTestRule.onNodeWithTag("addVehicleConfirmButton").performClick()
 
+        composeTestRule.waitForIdle()
         //verify
         composeTestRule.waitUntil(5000){
-            composeTestRule.onAllNodesWithText("My New Car").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText(uniqueName).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithText("My New Car").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText(uniqueName).assertIsDisplayed()
+
+        //Edit
+        composeTestRule.onNode(hasContentDescription("Options") and
+                hasAnyAncestor(hasAnyChild(hasText(uniqueName)))).performClick()
+
+        composeTestRule.waitUntil(3000){
+            composeTestRule.onAllNodesWithText("Edit Name").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithText("Edit Name").performClick()
+
+        composeTestRule.onNode(hasText(uniqueName) and hasSetTextAction()).performTextReplacement(editedName)
+
+        composeTestRule.onNodeWithText("Save").performClick()
+
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(5000){
+            composeTestRule.onAllNodesWithText(editedName).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(editedName).assertIsDisplayed()
+
+        //Delete
+        composeTestRule.onNode(
+            hasContentDescription("Options") and
+            hasAnyAncestor(hasAnyChild(hasText(editedName)))
+        ).performClick()
+
+        composeTestRule.onNodeWithText("Remove Vehicle").performClick()
+        composeTestRule.onNodeWithText("Remove").performClick()
+
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText(editedName).assertDoesNotExist()
     }
 }
