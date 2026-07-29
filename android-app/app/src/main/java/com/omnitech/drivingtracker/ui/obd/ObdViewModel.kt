@@ -93,4 +93,11 @@ class ObdViewModel @Inject constructor(
             obdManager.clearTroubleCodes()
         }
     }
+
+    //Bluetooth Permissions
+    fun hasRequestedBefore() : Boolean = sessionManager.hasRequestedBluetooth()
+
+    fun markAsRequested() {
+        sessionManager.setBluetoothRequested()
+    }
 }

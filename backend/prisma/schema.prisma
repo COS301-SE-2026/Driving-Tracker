@@ -138,6 +138,10 @@ model trips {
   data_source      DataSource?     @default(OBD)
   status           String?         @default("IN_PROGRESS") @db.VarChar(20)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  last_longitude   Decimal?        @db.Decimal(9, 6)
+  last_latitude    Decimal?        @db.Decimal(9, 6)
+  last_speed_kmh   Decimal?        @db.Decimal(6, 2)
+  last_recorded_at DateTime?       @db.Timestamptz(6)
   alerts           alerts[]
   trip_events      trip_events[]
   trip_readings    trip_readings[]
@@ -268,6 +272,7 @@ model users_vehicles {
 
 model vehicles {
   vehicle_id   String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name		   String? @db.VarChar(25)
   registration String? @db.VarChar(20)
   make         String? @db.VarChar(50)
   model        String? @db.VarChar(50)

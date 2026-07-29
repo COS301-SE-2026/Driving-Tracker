@@ -1,12 +1,20 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -33,15 +41,23 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.ConsentStatus
+import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
+import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import com.omnitech.drivingtracker.ui.components.ShareTripDialog
 import com.omnitech.drivingtracker.ui.contacts.*
+import com.omnitech.drivingtracker.ui.obd.ObdViewModel
+import com.omnitech.drivingtracker.data.obd.VehicleMetrics
+import java.time.Duration
+import java.time.Instant
+import kotlinx.coroutines.delay
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -49,12 +65,18 @@ fun LiveTrip(
     tripId: String,
     viewModel: TripSummaryViewModel = hiltViewModel(),
     contactsViewModel: ContactsViewModel = hiltViewModel(), //needed for share trip
+    vehicleViewModel: ObdViewModel = hiltViewModel(),
     navController: NavController? = null
 ) {
+    val metrics by vehicleViewModel.vehicleMetrics.collectAsState() //for speed
     val uiState by viewModel.uiState.collectAsState()
     val endTripState by viewModel.endTripState.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
+    val liveMetrics by viewModel.liveMetrics.collectAsState()
+
+    val plannedRoute by viewModel.plannedRoute.collectAsState()
+    var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
 
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
         listOf(
@@ -70,34 +92,65 @@ fun LiveTrip(
     }
 
     val context = LocalContext.current
-    val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
-    var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
+    //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
+    //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
-    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
-        if (locationPermissionState.allPermissionsGranted) {
-            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
-            ).build()
+//    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
+//        if (locationPermissionState.allPermissionsGranted) {
+//            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+//                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
+//            ).build()
+//
+//            val callback = object : com.google.android.gms.location.LocationCallback() {
+//                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+//                    liveLocation = result.lastLocation
+//                }
+//            }
+//
+//            try {
+//                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
+//            } catch (e: SecurityException) {
+//                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
+//            }
+//        }
+//    }
 
-            val callback = object : com.google.android.gms.location.LocationCallback() {
-                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-                    liveLocation = result.lastLocation
+//    LaunchedEffect(liveLocation, uiState) {
+//        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+//        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
+//        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
+//        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
+//    }
+    LaunchedEffect(uiState, mapToken, liveMetrics) {
+        val state = uiState
+        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
+            val trip = state.trip
+
+
+            if (trip.destinationLatitude != null && trip.destinationLongitude != null) {
+
+
+                //  remove the hardcoded Pretoria fallback here to avoid the route jumping
+//                val startLat = liveLocation?.latitude ?: trip.events.firstOrNull()?.latitude
+//                val startLng = liveLocation?.longitude ?: trip.events.firstOrNull()?.longitude
+                val startLat = liveMetrics.latitude
+                val startLng = liveMetrics.longitude
+
+                //  have valid coordinates
+                if (startLat != null && startLng != null) {
+                    destinationLoc = LocationDto(trip.destinationLatitude, trip.destinationLongitude)
+
+                    android.util.Log.d("LiveTrip", "Fetching route from real location: $startLat, $startLng")
+
+                    viewModel.suggestedRoute(
+                        startLat,
+                        startLng,
+                        trip.destinationLatitude,
+                        trip.destinationLongitude
+                    )
                 }
             }
-
-            try {
-                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
-            } catch (e: SecurityException) {
-                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
-            }
         }
-    }
-
-    LaunchedEffect(liveLocation, uiState) {
-        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
-        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
-        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
-        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
     }
 
     LaunchedEffect(tripId) {
@@ -106,6 +159,8 @@ fun LiveTrip(
             viewModel.fetchMapToken()
         }
     }
+
+    var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
     
@@ -161,11 +216,37 @@ fun LiveTrip(
         uiState = uiState,
         endTripState = currentEndTripState,
         mapToken = mapToken,
-        liveLocation = liveLocation,
+        liveLocation = liveMetrics,
         contactsState = contactsState,
-        onEndTrip = { viewModel.endTrip(tripId) },
+        onEndTrip = {
+            // Get the live trip data from the current state
+            val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+            val durationMin = currentTrip?.startedAt?.let { startIso ->
+                try {
+                    val startTime = java.time.Instant.parse(startIso)
+                    val now = java.time.Instant.now()
+                    java.time.Duration.between(startTime, now).toMinutes().toInt()
+                } catch (e: Exception) { 0 }
+            } ?: 0
+            // Pass the actual totals to the ViewModel
+            viewModel.endTrip(
+                tripId = tripId,
+                latitude = liveMetrics.latitude,
+                longitude = liveMetrics.longitude,
+                distance = currentTrip?.distanceKm?:0.0,
+                durationMinutes = durationMin,
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+            )
+        },
+        navController = navController,
+        destination = destinationLoc,
+        plannedRoute = plannedRoute,
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
-        navController = navController
+        isMinimized = isMinimized,
+        onMinimizeClick = {navController?.navigate(Screen.Dashboard.route){
+            popUpTo(Screen.Dashboard.route){inclusive = true}
+        } },
+        vehicleMetrics = metrics
     )
 }
 
@@ -174,11 +255,16 @@ fun LiveTripContent(
     uiState: TripSummaryViewModel.UiState,
     endTripState: TripSummaryViewModel.UiState = TripSummaryViewModel.UiState.Idle,
     mapToken: String? = null,
-    liveLocation: android.location.Location? = null,
+    liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
     onEndTrip: () -> Unit = {},
+    navController: NavController? = null,
+    destination: LocationDto? = null,
+    plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
-    navController: NavController? = null
+    isMinimized: Boolean = false,
+    onMinimizeClick: () -> Unit = {},
+    vehicleMetrics: VehicleMetrics = VehicleMetrics(),
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -193,21 +279,30 @@ fun LiveTripContent(
             Icon(
                 imageVector = Icons.Default.ArrowDownward,
                 contentDescription = "Make smaller",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.clickable(onClick = onMinimizeClick)
             )
             Row {
                 Text(
-                    text = "Live Trip ",
+                    text = "Live",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = " Trip ",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
+            IconButton(onClick = {navController?.navigate(Screen.Settings.route)}) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
         }
 
         val currentUiState = uiState
@@ -224,16 +319,40 @@ fun LiveTripContent(
                 }
             }
             is TripSummaryViewModel.UiState.Success -> {
-                TripDetails(
-                    trip = currentUiState.trip,
-                    endTripState = endTripState,
-                    mapToken = mapToken,
-                    liveLocation = liveLocation,
-                    onEndTrip = onEndTrip,
-                    navController = navController,
-                    contactsState = contactsState,
-                    onShareTrip = onShareTrip
-                )
+
+                AnimatedContent(
+                    targetState = isMinimized,
+                    transitionSpec = {
+                        (slideInVertically { height -> height } + fadeIn())
+                            .togetherWith(slideOutVertically { height->height } + fadeOut())
+                    },
+                    label = "Trip Transition"
+                ) {
+                    isMinimized ->
+                    if (isMinimized){
+                        MinimizedTrip(
+                            distance = currentUiState.trip.distanceKm ?: 0.0,
+                            arrivalTime = "20:00", //Connect to backend/maps
+                            onExpandClick = onMinimizeClick
+                        )
+                    }
+                    else{
+                        TripDetails(
+                            trip = currentUiState.trip,
+                            endTripState = endTripState,
+                            mapToken = mapToken,
+                            liveLocation = liveLocation,
+                            onEndTrip = onEndTrip,
+                            navController = navController,
+                            contactsState = contactsState,
+                            onShareTrip = onShareTrip,
+                            destination = destination,
+                            plannedRoute = plannedRoute,
+                            vehicleMetrics = vehicleMetrics
+                        )
+                    }
+
+                }
             }
             else -> {}
         }
@@ -245,13 +364,16 @@ private fun TripDetails(
     trip: TripSummaryDto,
     endTripState: TripSummaryViewModel.UiState,
     mapToken: String?,
-    liveLocation: android.location.Location?,
+    liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState,
     onEndTrip: () -> Unit,
+    navController: NavController?,
+    destination: LocationDto? = null,
+    plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
-    navController: NavController?
+    vehicleMetrics: VehicleMetrics
 ) {
-
+    var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
 
@@ -267,8 +389,25 @@ private fun TripDetails(
                     subscriptionKey = mapToken,
                     latitude = liveLocation?.latitude ?: latestEvent?.latitude ?: -25.7479,
                     longitude = liveLocation?.longitude ?: latestEvent?.longitude ?: 28.2293,
+                    destination = destination,
+                    plannedRoute = plannedRoute,
+                    recenterTrigger = recenterCount,
                     modifier = Modifier.fillMaxSize()
                 )
+                IconButton(
+                    onClick = { recenterCount++ },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = "Recenter",
+                        tint = Color.Black
+                    )
+                }
             } else {
                 // Map placeholder
                 Image(
@@ -287,7 +426,8 @@ private fun TripDetails(
                     .align(Alignment.TopStart)
                     .padding(8.dp),
                 shape = RoundedCornerShape(50),
-                colors = CardDefaults.cardColors(containerColor = Color.Black)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -297,7 +437,7 @@ private fun TripDetails(
                         .size(8.dp)
                         .background(Color.Red, CircleShape))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Recording", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Recording", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
 
@@ -307,12 +447,10 @@ private fun TripDetails(
                     .align(Alignment.TopEnd)
                     .padding(8.dp),
                 shape = RoundedCornerShape(50),
-                colors = CardDefaults.cardColors(containerColor = Color.Black)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
-                Text(
-                    "00:35:24", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.White
-                )
+                TripTimer(startedAt = trip.startedAt)
             }
 
             //Speed and fuel for trips
@@ -320,9 +458,13 @@ private fun TripDetails(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.End
             ) {
-                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
+                Card(shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -331,20 +473,22 @@ private fun TripDetails(
                             Icons.Default.Speed,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = Color.White
+                            tint = Color.Black
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "20 km/h",
+                                "${vehicleMetrics.speed} km/h",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold, color = Color.White
+                                fontWeight = FontWeight.Bold, color = Color.Black
                             )
-                            Text("Speed", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text("Speed", style = MaterialTheme.typography.labelSmall, color = Color.Black)
                         }
                     }
                 }
-                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black)) {
+                Card(shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(4.dp)) {
                     Row(
                         modifier = Modifier.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -353,11 +497,11 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} km/l",
+                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} L",
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold, color = Color.White
+                                fontWeight = FontWeight.Bold, color = Color.Black
                             )
-                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.Black)
                         }
                     }
                 }
@@ -375,7 +519,7 @@ private fun TripDetails(
                 onClick = onEndTrip,
                 enabled = endTripState !is TripSummaryViewModel.UiState.Loading,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (endTripState is TripSummaryViewModel.UiState.Loading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
@@ -386,7 +530,7 @@ private fun TripDetails(
             Button(
                 onClick = {showShareDialog = true},
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     Icons.Default.Share,
@@ -400,67 +544,25 @@ private fun TripDetails(
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        //Trip summary card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row {
-                    Text(
-                        "Trip Summary ",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        "(Live)",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SummaryItem(String.format(Locale.getDefault(), "%.2f", trip.distanceKm ?: 0.0), "km")
-                    SummaryItem("${trip.durationMinutes ?: 0}", "min")
-                    SummaryItem("93", "avg speed") // Placeholder as not in DTO yet
-                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "km/l")
-                }
-            }
-        }
+        TripSummaryCard(
+            distanceKm = trip.distanceKm,
+            durationMinutes = trip.durationMinutes,
+            fuelEstimate = trip.fuelEstimate,
+            avgSpeed = vehicleMetrics.speed.toString(),
+            isLive = true
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         //Alerts section (alerts not made but count used)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    "Alerts",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                //Counting alerts from trip events
-                val hardBrakingCount = trip.events.count { it.eventType=="HARSH_BRAKE" }
-                val hardAccelCount = trip.events.count { it.eventType=="HARSH_ACCELERATION" }
 
-                AlertItem("Hard Braking", hardBrakingCount)
-                Spacer(modifier = Modifier.height(4.dp))
-                AlertItem("Hard Acceleration", hardAccelCount)
-            }
-        }
+        TripAlertsCard(
+            hardBrakingCount = trip.events.count {it.eventType == "HARSH_BRAKE"},
+            hardAccelerationCount = trip.events.count {it.eventType == "ACCELERATION"},
+        )
+
         Spacer(modifier = Modifier.weight(1f))
-        BottomNavBar(navController = navController)
+
     }
     if (showShareDialog){
         when (contactsState){
@@ -530,6 +632,29 @@ fun AlertItem(label: String, count: Int) {
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(count.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
     }
+}
+
+@Composable
+fun TripTimer(startedAt:String){
+    var elapsedText by remember { mutableStateOf("00.00.00") }
+    val startTime = remember(startedAt) {
+        try{
+            Instant.parse(startedAt)
+        }
+        catch (e: Exception){
+            Instant.now()
+        }
+    }
+    LaunchedEffect(startTime){
+        while(true){
+            val seconds = java.time.Duration.between(startTime, Instant.now()).seconds
+            elapsedText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            delay(1000)
+        }
+    }
+    Text(text = elapsedText, style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold, color = Color.Black)
 }
 
 @Preview(showBackground = true)

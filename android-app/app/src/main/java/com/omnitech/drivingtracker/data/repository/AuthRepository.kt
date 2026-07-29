@@ -4,17 +4,23 @@ import android.util.Log
 import retrofit2.HttpException
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.db.daos.UserDao
+import com.omnitech.drivingtracker.data.db.entities.UserEntity
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.LoginRequest
 import com.omnitech.drivingtracker.data.models.RegisterFcmRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
+import com.omnitech.drivingtracker.data.models.ProfileData
 
 class AuthRepository @Inject constructor(
     private val api: ApiService,
-    private val session_manager: SessionManager
+    private val session_manager: SessionManager,
+    private val userDao: UserDao
 ) {
+
+    suspend fun insertUser(userEntity: UserEntity) = userDao.insertUser(userEntity)
     suspend fun register(
         username: String,
         name: String,
@@ -33,6 +39,23 @@ class AuthRepository @Inject constructor(
 
             session_manager.getFcmToken()?.let{
                 api.registerFcmToken(RegisterFcmRequest(it))
+            }
+
+            val userId = session_manager.getUserIdFromToken()
+
+            if(!userId.isNullOrEmpty()){
+
+                val entity = UserEntity(
+                    userId = userId,
+                    username = username,
+                    name = name,
+                    surname = surname,
+                    email = email
+                )
+
+                session_manager.saveUserId(userId)
+
+                insertUser(entity)
             }
 
             Result.success(Unit)
@@ -58,13 +81,43 @@ class AuthRepository @Inject constructor(
                 Log.d("FCM_SENT", response.message)
             }
 
+            val userId = session_manager.getUserIdFromToken()
+
+            if(!userId.isNullOrEmpty()){
+
+                val entity = UserEntity(
+                    userId = userId,
+                    username = null,
+                    name = null,
+                    surname = null,
+                    email = null
+                )
+
+                session_manager.saveUserId(userId)
+
+                insertUser(entity)
+            }
+
             Result.success(Unit)
 
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message?: "An error occurred"))
         }catch(e: Exception){
+            Log.e("Login_error", "Something wrong", e)
             Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
+        }
+    }
+
+    suspend fun getProfile(): Result<ProfileData>{
+        return try {
+            val response = api.getProfile()
+            Result.success(response.data)
+        }catch (e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message?: "Failed to fetch profile"))
+        }catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error"))
         }
     }
 

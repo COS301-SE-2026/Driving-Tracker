@@ -33,12 +33,14 @@ import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.StatCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.*
+import androidx.compose.foundation.clickable
 
 @Composable
 fun Dashboard(navController: NavController? = null,
               dashboardViewModel: DashboardViewModel = hiltViewModel()
 ){
-    val recentTrip by dashboardViewModel.recentTrip.collectAsState()
+    val uiState by dashboardViewModel.uiState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,7 +51,7 @@ fun Dashboard(navController: NavController? = null,
                 TopBar(
                     leftIcon = Icons.Default.Menu,
                     rightIcon = Icons.Default.Settings,
-                    onLeftClick = { /* Open menu */ },
+                    onLeftClick = {navController?.navigate(Screen.More.route)},
                     onRightClick = {navController?.navigate(Screen.Settings.route)}
                 )
             },
@@ -73,7 +75,7 @@ fun Dashboard(navController: NavController? = null,
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    ScoreCard(score = 85)
+                    ScoreCard(score = uiState.overallScore)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -110,20 +112,20 @@ fun Dashboard(navController: NavController? = null,
                     ) {
                         StatCard(
                             label = "Distance",
-                            value = 250,
+                            value = uiState.weeklyDistance,
                             unit = "km",
                             icon = painterResource(id = R.drawable.stats_distance),
-                            percentage = 5,
+                            percentage = uiState.weeklyDistanceChange,
                             modifier = Modifier.weight(1f),
                             tint = Blue,
                             onClick = {}
                         )
                         StatCard(
                             label = "Driving Time",
-                            value = 25,
+                            value = uiState.weeklyTime,
                             unit = "mins",
                             icon = painterResource(id = R.drawable.stats_time),
-                            percentage = -5,
+                            percentage = uiState.weeklyTimeChange,
                             modifier = Modifier.weight(1f),
                             tint = Purple,
                             onClick = {}
@@ -135,19 +137,19 @@ fun Dashboard(navController: NavController? = null,
                     ) {
                         StatCard(
                             label = "Fuel Efficiency",
-                            value = 250,
+                            value = uiState.weeklyFuel,
                             unit = "km/l",
                             icon = painterResource(id = R.drawable.stats_fuel),
-                            percentage = 5,
+                            percentage = uiState.weeklyFuelChange,
                             modifier = Modifier.weight(1f),
                             tint = Green,
                             onClick = {}
                         )
                         StatCard(
                             label = "Trips",
-                            value = 15,
+                            value = uiState.weeklyTrips,
                             icon = painterResource(id = R.drawable.stats_trips),
-                            percentage = 5,
+                            percentage = uiState.weeklyTripsChange,
                             modifier = Modifier.weight(1f),
                             tint = Blue,
                             onClick = { navController?.navigate(Screen.Trips.route) }
@@ -170,15 +172,16 @@ fun Dashboard(navController: NavController? = null,
                     Text(
                         "View more",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Blue
+                        color = Blue,
+                        modifier = Modifier.clickable{ navController?.navigate(Screen.Trips.route) }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                recentTrip?.let { trip->
+                uiState.recentTrip?.let { trip->
                     RecentTripCard(
-                        startLoc = "Office",
-                        destination = "home",
+                        startLoc = "Last Destination",
+                        destination = trip.status,
                         distance = trip.distanceKm?.toInt()?:0,
                         drivingTime = trip.durationMinutes?:0,
                         startTime = trip.startTime,

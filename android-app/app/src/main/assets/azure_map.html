@@ -15,19 +15,17 @@
         var map = null;
         var mapReady = false;
         var userMarker = null;
-        var datasource = null;
+        var destinationMarker = null;
+        var datasource = null; // For actual route
+        var plannedDatasource = null; // For suggested route
         var routePath = [];
         var lastLat, lastLng, lastZoom;
         var lastRouteUpdateTime = 0;
         var minDistanceThreshold = 5;
 
-
-        console.log("JS: Script loaded and waiting for initialization...");
-
         function waitForDimensions(callback) {
             var el = document.getElementById("map");
             if (!el) {
-                console.error("JS: Element 'map' not found in DOM");
                 setTimeout(function() { waitForDimensions(callback); }, 100);
                 return;
             }
@@ -39,23 +37,24 @@
                 setTimeout(function() { waitForDimensions(callback); }, 100);
             }
         }
+
         function calculateDistance(pos1, pos2) {
-            var earthRadius = 6371e3; // Earth radius in meters
+            var earthRadius = 6371e3; // meters
             var dLat = (pos2[1] - pos1[1]) * Math.PI / 180;
             var dLon = (pos2[0] - pos1[0]) * Math.PI / 180;
-            var angularDistanceFactor  = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            var angularDistanceFactor = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                     Math.cos(pos1[1] * Math.PI / 180) * Math.cos(pos2[1] * Math.PI / 180) *
                     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            return earthRadius * 2 * Math.atan2(Math.sqrt(angularDistanceFactor ), Math.sqrt(1 - angularDistanceFactor ));
+            return earthRadius * 2 * Math.atan2(Math.sqrt(angularDistanceFactor), Math.sqrt(1 - angularDistanceFactor));
         }
+
         function updateMarker(lat, lng) {
             if (!map) return;
             var pos = [Number.parseFloat(lng), Number.parseFloat(lat)];
             if (!userMarker) {
                 userMarker = new atlas.HtmlMarker({
                     htmlContent: '<div style="background-color:Red;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
-                    position: pos,
-                    pixelOffset: [0, 0]
+                    position: pos
                 });
                 map.markers.add(userMarker);
             } else {
@@ -63,11 +62,34 @@
             }
         }
 
+        window.setDestination = function(lat, lng) {
+            if (!map) return;
+            var pos = [Number.parseFloat(lng), Number.parseFloat(lat)];
+            if (!destinationMarker) {
+                destinationMarker = new atlas.HtmlMarker({
+                    htmlContent: '<div style="background-color:Green;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+                    position: pos
+                });
+                map.markers.add(destinationMarker);
+            } else {
+                destinationMarker.setOptions({ position: pos });
+            }
+        };
+
+        window.setPlannedRoute = function(pointsJson) {
+            if (!plannedDatasource) return;
+            try {
+                var points = JSON.parse(pointsJson);
+                var path = points.map(function(p) { return [p.lng, p.lat]; });
+                plannedDatasource.setShapes([new atlas.data.LineString(path)]);
+            } catch (e) {
+                console.error("JS: Error parsing planned route: " + e.message);
+            }
+        };
+
         function updateRoute(lat, lng) {
             if (!datasource) return;
             var pos = [Number.parseFloat(lng), Number.parseFloat(lat)];
-
-            // Only add point if it's the first point, or we've moved > 5 meters
             var shouldAddPoint = routePath.length === 0 ||
                                 calculateDistance(routePath[routePath.length - 1], pos) > minDistanceThreshold;
 
@@ -75,7 +97,6 @@
                 routePath.push(pos);
                 var now = Date.now();
                 if (routePath.length > 1 && (now - lastRouteUpdateTime > 1000)) {
-                    // Use setShapes for better performance than clear/add
                     datasource.setShapes([new atlas.data.LineString(routePath)]);
                     lastRouteUpdateTime = now;
                 }
@@ -88,20 +109,25 @@
                     map = new atlas.Map("map", {
                         center: [Number.parseFloat(lng), Number.parseFloat(lat)],
                         zoom: Number.parseFloat(zoom),
-                        authOptions: {
-                            authType: "subscriptionKey",
-                            subscriptionKey: subscriptionKey
-                        }
+                        authOptions: { authType: "subscriptionKey", subscriptionKey: subscriptionKey }
                     });
 
                     map.events.add("ready", function () {
                         map.resize();
 
-                        // Create a data source and add it to the map.
+                     //Suggested Route (Lighter Blue)
+                        plannedDatasource = new atlas.source.DataSource();
+                        map.sources.add(plannedDatasource);
+                        map.layers.add(new atlas.layer.LineLayer(plannedDatasource, null, {
+                            strokeColor: '#A0CFFF',
+                            strokeWidth: 6,
+                            lineJoin: 'round',
+                            lineCap: 'round'
+                        }));
+
+                        // Actual Route (Darker Blue)
                         datasource = new atlas.source.DataSource();
                         map.sources.add(datasource);
-
-                        // Add a layer for rendering the route line.
                         map.layers.add(new atlas.layer.LineLayer(datasource, null, {
                             strokeColor: '#2D8CFF',
                             strokeWidth: 5,
@@ -110,8 +136,6 @@
                         }));
 
                         updateMarker(lat, lng);
-                        updateRoute(lat, lng);
-
                         if (window.Android) { window.Android.onMapReady(); }
                     });
 
@@ -123,8 +147,7 @@
                     });
 
                     map.events.add('error', function (e) {
-                        var msg = e.error ? e.error.message : 'Unknown map error';
-                        if (window.Android) { window.Android.onMapError(msg); }
+                        if (window.Android) { window.Android.onMapError(e.error ? e.error.message : 'Map error'); }
                     });
                 } catch (e) {
                     if (window.Android) { window.Android.onMapError('Init exception: ' + e.message); }
@@ -132,30 +155,29 @@
             });
         };
 
-        window.updateCamera = function(lat, lng, zoom) {
-            if (!map || !mapReady) return;
-            var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng), zoomN = Number.parseFloat(zoom);
-            if (Number.isNaN(latN) || Number.isNaN(lngN) || Number.isNaN(zoomN)) return;
+        window.updateUserLocation = function(lat, lng) {
+            var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
+            if (isNaN(latN) || isNaN(lngN)) return;
 
             updateMarker(latN, lngN);
             updateRoute(latN, lngN);
+            lastLat = latN; lastLng = lngN;
+        };
 
-            if (latN === lastLat && lngN === lastLng && zoomN === lastZoom) return;
-
+        window.centerOnUser = function(zoom) {
+            if (!map || !mapReady || isNaN(lastLat)) return;
             try {
                 map.setCamera({
-                    center: [lngN, latN],
-                    zoom: 15,
+                    center: [lastLng, lastLat],
+                    zoom: zoom || 15,
                     type: 'jump'
                 });
-                lastLat = latN; lastLng = lngN; lastZoom = zoomN;
-            } catch (e) {
-                if (window.Android) { window.Android.onMapError('setCamera failed: ' + e.message); }
-            }
+            } catch (e) {}
         };
+
     </script>
 </head>
 <body>
-    <main><div id="map"></div></main>
+<main><div id="map"></div></main>
 </body>
 </html>

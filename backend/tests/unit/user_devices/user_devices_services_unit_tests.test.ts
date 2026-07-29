@@ -34,7 +34,7 @@ describe('user_devices_services', ()=> {
 
             expect(mockPrisma.user_devices.upsert).toHaveBeenCalledWith({
                 where: { fcm_token: 'token-1' },
-                update: { updated_at: expect.any(Date) },
+                update: { user_id: 'u1', updated_at: expect.any(Date) },
                 create: {
                     user_id: 'u1',
                     fcm_token: 'token-1'

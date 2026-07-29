@@ -29,6 +29,18 @@ interface ApiService{
     @GET("vehicle/get_all_vehicles/")
     suspend fun getVehicles(): List<VehicleDto>
 
+	@POST("vehicle/assign_vehicle")
+	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
+
+    @PATCH("vehicle/{vehicle_id}/name")
+    suspend fun updateVehicleName(
+        @Path("vehicle_id") vehicleId: String,
+        @Body body: UpdateVehicleNameRequest
+    ): GenericResponse
+
+    @DELETE("vehicle/{vehicle_id}")
+    suspend fun removeVehicle(@Path("vehicle_id") vehicleId: String) : GenericResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
@@ -37,6 +49,9 @@ interface ApiService{
 
     @POST("api/auth/logout")
     suspend fun logout()
+
+    @GET("api/auth/profile")
+    suspend fun getProfile(): ProfileResponse
 
     @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
@@ -87,6 +102,17 @@ interface ApiService{
     @GET("map/token")
     suspend fun getMapToken(): MapTokenResponse
 
+    @GET("map/search")
+    suspend fun searchAddress(@Query("address")address: String): AddressSearchResponse
+
+    @GET("map/route")
+    suspend fun getSuggestedRoute(
+        @Query("start_lat") startLat: Double?,
+        @Query("start_lng") startLng: Double?,
+        @Query("dest_lat") destLat: Double?,
+        @Query("dest_lng") destLng: Double?
+    ): SuggestedRouteResponse
+
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
   
@@ -96,9 +122,24 @@ interface ApiService{
         @Body body: RecordReadingRequest
     )
 
+    @POST("trips/{trip_id}/batch_readings/record")
+    suspend fun recordBatchReadings(
+        @Path("trip_id") tripId: String,
+        @Body body: BatchReadingRequest
+    ): BatchReadingResponse
+
+
     @POST("trips/{trip_id}/events/log")
     suspend fun logEvent(
         @Path("trip_id") tripId: String,
         @Body body: LogEventRequest
     ): LogEventResponse
+
+    @GET("trips/{trip_id}/latest_location")
+    suspend fun getLatestLocation(
+        @Path("trip_id") tripId: String
+    ): LatestLocationResponse
+
+    @GET("trips/shared_with_me")
+    suspend fun getTripsSharedWithMe(): SharedWithMeResponse
 }

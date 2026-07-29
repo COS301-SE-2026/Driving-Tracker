@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.Screen
 import androidx.compose.foundation.shape.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.material3.*
+import com.omnitech.drivingtracker.ui.components.BottomNavBar
 
 @Composable
 fun More(navController: NavController){
@@ -43,14 +44,15 @@ fun More(navController: NavController){
             rightIcon = Icons.Default.Settings,
             onLeftClick = {navController?.popBackStack()},
             onRightClick = {navController.navigate(Screen.Settings.route)}
-        )}
+        )},
+        bottomBar = {BottomNavBar(navController = navController, color = "more")}
     ){
         innerPadding ->
             Column(
                 modifier = Modifier.padding(innerPadding)
             ){
-                Spacer(modifier = Modifier.height(25.dp))
-                ContentCard("Weekly Challenges"){navController.navigate(Screen.WeeklyChallenges.route)}
+//                Spacer(modifier = Modifier.height(25.dp))
+//                ContentCard("Weekly Challenges"){navController.navigate(Screen.WeeklyChallenges.route)}
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("OBD"){navController.navigate(Screen.OBDMain.route)}
                 Spacer(modifier = Modifier.height(25.dp))
@@ -58,7 +60,7 @@ fun More(navController: NavController){
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Contacts"){navController.navigate(Screen.Contacts.route)}
                 Spacer(modifier = Modifier.height(25.dp))
-                ContentCard("Notifications"){navController.navigate(Screen.Notifications.route)}
+                ContentCard("Alerts"){navController.navigate(Screen.Notifications.route)}
                 Spacer(modifier = Modifier.height(25.dp))
                 ContentCard("Profile"){navController.navigate(Screen.Profile.route)}
                 Spacer(modifier = Modifier.height(25.dp))

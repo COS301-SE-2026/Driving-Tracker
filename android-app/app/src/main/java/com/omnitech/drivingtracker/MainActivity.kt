@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.ui.obd.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.omnitech.drivingtracker.ui.notification.NotificationRationale
+import com.omnitech.drivingtracker.ui.obd.BluetoothRationale
 import androidx.lifecycle.Lifecycle
 import android.Manifest
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,6 +51,7 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -68,7 +70,13 @@ sealed class Screen(val route: String){
         fun createRoute(tripId: String) = "live_trip/$tripId"
     }
 
+    data object LiveTripContacts : Screen("live_trip_contacts/{trip_id}/{name}") {
+        fun createRoute(tripId: String, name: String) = "live_trip_contacts/$tripId/$name"
+    }
+
     data object NotificationRationale: Screen("notification_rationale")
+
+    data object BluetoothRationale: Screen("bluetooth_rationale")
 
     data object WeeklyChallenges : Screen("weekly_challenges")
 
@@ -78,8 +86,6 @@ sealed class Screen(val route: String){
     data object OBDMain : Screen("obd_main")
 
     data object OBDKeyData : Screen("obd_key_data")
-
-    data object OBDLiveWarnings : Screen("obd_live_warnings")
 
     data object  OBDConnect : Screen("obd_connect")
 
@@ -197,6 +203,9 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Notifications.route){
                         NotificationsScreen(navController = navController)
                     }
+                    composable(Screen.Help.route){
+                        Help(navController = navController)
+                    }
                     composable(
                         route = Screen.TripSummary.route,
                         arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
@@ -220,6 +229,16 @@ class MainActivity : ComponentActivity() {
                                 }
                         })
                     }
+
+                    composable(Screen.BluetoothRationale.route) { //ask about this
+                        BluetoothRationale(
+                            onPermissionHandled = {
+                                navController.navigate(Screen.OBDConnect.route) {
+                                    popUpTo(Screen.BluetoothRationale.route) { inclusive = true }
+                                }
+                            })
+                    }
+
                     composable(Screen.OBDConnect.route) {
                         val activity = LocalActivity.current as ComponentActivity
                         val obdViewModel: ObdViewModel = hiltViewModel(activity)
@@ -246,11 +265,17 @@ class MainActivity : ComponentActivity() {
                         val obdViewModel: ObdViewModel = hiltViewModel(activity)
                         OBDKeyData(navController = navController, viewModel = obdViewModel)
                     }
-                    composable(Screen.OBDLiveWarnings.route){
-                        OBDLiveWarnings(navController = navController)
-                    }
                     composable(Screen.Profile.route){
                         Profile(navController = navController)
+                    }
+                    composable(
+                        route = Screen.LiveTripContacts.route,
+                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                    ) { backStackEntry->
+                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+                        val name = backStackEntry.arguments?.getString("name") ?: ""
+
+                        LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
                 }
             }

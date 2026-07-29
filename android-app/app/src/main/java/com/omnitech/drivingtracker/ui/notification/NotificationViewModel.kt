@@ -8,12 +8,15 @@ import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.NotificationDto
 import com.omnitech.drivingtracker.data.models.RequestDto
 import com.omnitech.drivingtracker.data.models.RespondContactRequest
+import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -26,19 +29,27 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
     private val sessionManager: SessionManager): ViewModel(){
 
     val somethingWentWrongError = "Something went wrong"
-    sealed class UiState{
-        object Idle : UiState() //initial state
-        object Loading : UiState() //fetching data
-        data class SuccessContactReqResponse(val contactId: String, val message: String? = null) : UiState()
-        data class SuccessPendingRequests(val requests: List<RequestDto>) : UiState()
-        data class SuccessNotifications(val groupedNotifications: Map<String, List<NotificationDto>>):  UiState()
-        //data class Success(val notifications: List<>) : UiState()//Got data
-        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occurred
-    }
+
+    data class NotificationUiState(
+        val requests: List<RequestDto> = emptyList(),
+        val groupedNotifications: Map<String, List<NotificationDto>> = emptyMap(),
+        val trips: List<SharedWithMeDto> = emptyList(),
+        val isLoading: Boolean = false,
+        val error: String? = null
+    )
+//    sealed class UiState{
+//        object Idle : UiState() //initial state
+//        object Loading : UiState() //fetching data
+//        data class SuccessContactReqResponse(val contactId: String, val message: String? = null) : UiState()
+//        data class SuccessPendingRequests(val requests: List<RequestDto>) : UiState()
+//        data class SuccessNotifications(val groupedNotifications: Map<String, List<NotificationDto>>):  UiState()
+//        //data class Success(val notifications: List<>) : UiState()//Got data
+//        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occurred
+//    }
 
     //Expose state to UI as StateFlow
-    private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
-    val uiState: StateFlow<UiState> = _uiState  //Read-only, UI observes this
+    private val _uiState = MutableStateFlow(NotificationUiState())
+    val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()  //Read-only, UI observes this
     fun hasRequestedBefore(): Boolean = repository.hasRequestedBefore()
 
     fun markAsRequested() {
@@ -48,25 +59,20 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
     //Respond to a trusted contact request with Status "ACCEPTED" or "DENIED"
     fun respondTrustedContactRequest(contactId: String, status: String) {
         viewModelScope.launch{
-            _uiState.value = UiState.Loading
+            _uiState.update  { it.copy(isLoading = true) }
 
             repository.respondTrustedContactRequest(contactId, status).fold(
-                onSuccess = { response ->
-                    _uiState.value = UiState.SuccessContactReqResponse(response.data.contactId, response.message)
+                onSuccess = { _ ->
+                    _uiState.update  { it.copy(isLoading = false) }
                     getContactRequests()
                 },
                 onFailure = {exception ->
                     when{
                         exception is ApiException -> {
-                            _uiState.value = UiState.Error(
-                                code = exception.errorCode,
-                                message = exception.errorMessage ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
                         }
                         else -> {
-                            _uiState.value = UiState.Error(
-                                message = exception.message ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
                         }
                     }
                 }
@@ -77,24 +83,19 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
     //Fetch pending received contact requests
     fun getContactRequests() {
         viewModelScope.launch{
-            _uiState.value = UiState.Loading
+            _uiState.update { it.copy(isLoading = true) }
 
             contactsRepository.getContactRequests().fold(
                 onSuccess = { requests ->
-                    _uiState.value = UiState.SuccessPendingRequests(requests)
+                    _uiState.update { it.copy(requests = requests, isLoading = false)}
                 },
                 onFailure = {exception ->
                     when{
                         exception is ApiException -> {
-                            _uiState.value = UiState.Error(
-                                code = exception.errorCode,
-                                message = exception.errorMessage ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
                         }
                         else -> {
-                            _uiState.value = UiState.Error(
-                                message = exception.message ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
                         }
                     }
                 }
@@ -104,25 +105,20 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
 
     fun getNotifications() {
         viewModelScope.launch{
-            _uiState.value = UiState.Loading
+            _uiState.update { it.copy(isLoading = true) }
 
             repository.getNotifications().fold(
                 onSuccess = { notifications ->
                     val groupedNotifications = groupNotifications(notifications)
-                    _uiState.value = UiState.SuccessNotifications(groupedNotifications)
+                    _uiState.update { it.copy(groupedNotifications = groupedNotifications, isLoading = false) }
                 },
                 onFailure = {exception ->
                     when{
                         exception is ApiException -> {
-                            _uiState.value = UiState.Error(
-                                code = exception.errorCode,
-                                message = exception.errorMessage ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
                         }
                         else -> {
-                            _uiState.value = UiState.Error(
-                                message = exception.message ?: somethingWentWrongError
-                            )
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
                         }
                     }
                 }
@@ -145,6 +141,28 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                 !date.isBefore(startOfWeek) -> "This Week"
                 else -> "Earlier"
             }
+        }
+    }
+
+    fun getTripsSharedWithMe(){
+        viewModelScope.launch{
+            _uiState.update { it.copy(isLoading = true) }
+
+            repository.getTripsSharedWithMe().fold(
+                onSuccess = { trips ->
+                    _uiState.update { it.copy(trips = trips, isLoading = false)}
+                },
+                onFailure = {exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
+                        }
+                        else -> {
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
+                        }
+                    }
+                }
+            )
         }
     }
 }

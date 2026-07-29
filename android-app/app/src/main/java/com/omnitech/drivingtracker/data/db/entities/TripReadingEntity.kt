@@ -24,10 +24,7 @@ data class TripReadingEntity(
     val latitude: Double,
     val longitude: Double,
     val speedKmh: Float?,
-    val accuracy: Float?,
-    val accelerometerX: Float?,
-    val accelerometerY: Float?,
-    val accelerometerZ: Float?,
+    val accelerometer: Float?,
     val gyroscopeX: Float?,
     val gyroscopeY: Float?,
     val gyroscopeZ: Float?,
@@ -35,6 +32,6 @@ data class TripReadingEntity(
     val coolantTemp: Float?,
     val fuelTrimPercent: Float?,
     val throttlePosition: Float?,
-    val dtcCodes: String?,
+    val dtcCodes: List<String>?,
     val synced: Boolean=false
 )

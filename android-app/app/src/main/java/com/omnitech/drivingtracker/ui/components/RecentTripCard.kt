@@ -30,13 +30,14 @@ import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.*
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 @Composable
 fun RecentTripCard(startLoc: String, destination: String, distance: Int, drivingTime: Int, startTime: String, tripScore: Int, modifier: Modifier = Modifier) {
 
     //Formatting raw ISO date string
     val formattedDate = try  {
-        val zdt = ZonedDateTime.parse(startTime)
+        val zdt = ZonedDateTime.parse(startTime).withZoneSameInstant(ZoneId.systemDefault())
         val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy • HH:mm")
         zdt.format(formatter)
     } catch (e: Exception) {

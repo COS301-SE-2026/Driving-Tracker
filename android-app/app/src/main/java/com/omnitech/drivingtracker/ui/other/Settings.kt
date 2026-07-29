@@ -50,43 +50,10 @@ fun Settings(navController: NavController? =null,
             rightSide = {Switch(checked = true, onCheckedChange = {/*I dont know what should be done yet*/})}
         )
 
-        HLine()
-
-        SettingOption(
-            icon = Icons.Default.ShieldMoon,
-            label = "Dark Mode",
-            rightSide = {Switch(checked = darkMode, onCheckedChange = onDarkModeChange)}
-        )
 
         HLine()
         Spacer(modifier = Modifier.height(18.dp))
 
-        SettingOption(
-            icon = Icons.Default.StarRate,
-            label = "Rate App",
-            onClick = {}
-        )
-
-        HLine()
-        Spacer(modifier = Modifier.height(18.dp))
-
-        SettingOption(
-            icon = Icons.Default.Share,
-            label = "Share App",
-            onClick = {}
-        )
-
-        HLine()
-        Spacer(modifier = Modifier.height(18.dp))
-
-        SettingOption(
-            icon = Icons.Default.Lock,
-            label = "Privacy Policy",
-            onClick = {}
-        )
-
-        HLine()
-        Spacer(modifier = Modifier.height(18.dp))
 
         SettingOption(
             icon = Icons.AutoMirrored.Filled.Logout,

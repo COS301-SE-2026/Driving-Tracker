@@ -42,9 +42,14 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.components.VehicleInfoCard
+import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
+import com.omnitech.drivingtracker.ui.other.More
+import com.omnitech.drivingtracker.ui.vehicles.VehiclesViewModel
 import kotlin.collections.forEach
 import java.util.UUID
+import com.omnitech.drivingtracker.Screen
 
 
 //Data model for vehicle UI
@@ -58,13 +63,19 @@ data class Vehicle(
     val fuelEfficiency: Double,
     val needsService: Boolean,
     val imageRes: Int? = null,
-    val imageUri: String? = null
+    val imageUri: String? = null,
+    val registration: String? = null,
+    val year: Int? = null,
+    val fuelType: String? = null
 )
 
 @Composable
 fun Vehicles(
-    navController: NavController? = null
+    navController: NavController? = null,
+    viewModel: VehiclesViewModel = hiltViewModel()
 ) {
+
+    val uiState by viewModel.uiState.collectAsState()
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleToEditName by remember { mutableStateOf<Vehicle?>(null) }
@@ -75,12 +86,12 @@ fun Vehicles(
     var vehicleToRemove by remember { mutableStateOf<Vehicle?>(null) }
 
     //sample data
-    val vehicleList = remember {
-        mutableStateListOf(
-            Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, true),
-            Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 13.2, false),
-        )
-    }
+//    val vehicleList = remember {
+//        mutableStateListOf(
+//            Vehicle("1", "Lucile", "BMW", "M3 Competition", 100000, 17, 8.0, true),
+//            Vehicle("2", "Khaleesi", "Range Rover", "Sport", 50000, 10, 13.2, false),
+//        )
+//    }
 
     Scaffold(
         topBar = {
@@ -88,50 +99,81 @@ fun Vehicles(
                 leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 rightIcon = Icons.Default.Settings,
                 onLeftClick = { navController?.popBackStack() },
-                onRightClick = { /*handle settings click*/ }
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
         bottomBar = {
             BottomNavBar(navController = navController, color = "none")
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier =  Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
-        ) {
-            item{//Header section
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.Center
-                ){
-                    Text("Your ", style = MaterialTheme.typography.titleMedium )
-                    Text("Vehicles", style = MaterialTheme.typography.titleLarge, color = Blue)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)){
+            when(val state = uiState){
+                is VehiclesViewModel.UiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align ( Alignment.Center ))
+                }
+                is VehiclesViewModel.UiState.Error -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ){
+                        Text(text = state.message, color = Color.Red)
+                        Button(onClick = { viewModel.loadVehicles() }) { Text("Retry")}
+                    }
+                }
+                is VehiclesViewModel.UiState.Success -> {
+                    val vehicles = state.vehicles.map {
+                        dto -> Vehicle(
+                            id = dto.vehicleId,
+                            name = dto.name?: "Unnamed",
+                            brand = dto.make ?: "",
+                            model = dto.model ?: "",
+                            mileage = dto.mileage?: 0,
+                            trips = dto.tripCount?: 0,
+                            fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
+                            needsService = false,
+                            registration = dto.registration,
+                            year = dto.year,
+                            fuelType = dto.fuelType
+                        )
+                    }
+                    LazyColumn(
+                        modifier =  Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
+                    ) {
+                        item{//Header section
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ){
+                                Text("Your ", style = MaterialTheme.typography.titleMedium )
+                                Text("Vehicles", style = MaterialTheme.typography.titleLarge, color = Blue)
+                            }
+                        }
+
+                        items(vehicles, key = { it.id }) { vehicle ->
+                            VehicleCard(
+                                vehicle = vehicle,
+                                onDrivingInfoClick = { selectedVehicleForStats = vehicle },
+                                onEditNameClick = { vehicleToEditName = vehicle },
+                                onEditImageClick = {
+                                    vehicleToEditImage = vehicle
+                                    showImagePicker = true
+                                },
+                                onRemoveClick = { vehicleToRemove = vehicle }
+                            )
+                        }
+                        item {
+                            AddVehicleButton(onClick = { showAddVehicleDialog = true })
+                        }
+                    }
                 }
             }
-
-            items(vehicleList, key = { it.id }) { vehicle ->
-                VehicleCard(
-                    vehicle = vehicle,
-                    onDrivingInfoClick = { selectedVehicleForStats = vehicle },
-                    onEditNameClick = { vehicleToEditName = vehicle },
-                    onEditImageClick = {
-                        vehicleToEditImage = vehicle
-                        showImagePicker = true
-                    },
-                    onRemoveClick = { vehicleToRemove = vehicle }
-                )
-            }
-
-            item {
-                AddVehicleButton(onClick = { showAddVehicleDialog = true })
-            }
-
         }
     }
 
@@ -149,10 +191,7 @@ fun Vehicles(
             vehicle = vehicle,
             onDismiss = { vehicleToEditName = null },
             onConfirm = { newName ->
-                val index = vehicleList.indexOfFirst { it.id == vehicle.id }
-                if (index != -1) {
-                    vehicleList[index] = vehicleList[index].copy(name = newName)
-                }
+                viewModel.updateVehicleName(vehicle.id, newName)
                 vehicleToEditName = null
             }
         )
@@ -167,7 +206,7 @@ fun Vehicles(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        vehicleList.remove(vehicle)
+                        viewModel.removeVehicle(vehicle.id)
                         vehicleToRemove = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)
@@ -188,25 +227,15 @@ fun Vehicles(
 
         ImagePickerSheet(
             onImageSelected = { uri ->
-                if (vehicleToEditImage != null) {
-                    //Updating existing vehicle image
-                    val index = vehicleList.indexOfFirst { it.id == vehicleToEditImage!!.id }
-                    if (index != -1) {
-                        vehicleList[index] = vehicleList[index].copy(imageUri = uri.toString())
-                    }
-                    vehicleToEditImage = null
-                } else {
-                    //Setting image for new vehicle
-                    tempNewVehicleImage = uri.toString()
-                }
+                //TODO implement image upload logic
                 showImagePicker = false
+                vehicleToEditImage = null
             },
             onDismiss = {
                 showImagePicker = false
                 vehicleToEditImage = null
             }
         )
-
     }
 
     //Add Vehicle
@@ -218,8 +247,8 @@ fun Vehicles(
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             },
-            onConfirm = { name, brand, model, uri ->
-                vehicleList.add(Vehicle(UUID.randomUUID().toString(), name, brand, model, 0, 0, 0.0, false, imageUri = uri))
+            onConfirm = { name, registration, make, model, year, fuelType ->
+                viewModel.addVehicle( name, registration, make, model, year, fuelType)
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             }

@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.core.content.edit
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.util.Base64
 
 @Singleton
 class SessionManager @Inject constructor(@ApplicationContext context: Context) {
@@ -49,11 +52,43 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
         return prefs.getBoolean("notification_requested", false)
     }
 
+    fun setBluetoothRequested(){
+        prefs.edit{ putBoolean("bluetooth_requested", true)}
+    }
+
+    fun hasRequestedBluetooth() : Boolean {
+        return prefs.getBoolean("bluetooth_requested", false)
+    }
+
     fun saveFcmToken(token: String) {
         prefs.edit { putString("fcm_token", token) }
     }
 
     fun getFcmToken(): String? {
         return prefs.getString("fcm_token", null)
+    }
+
+    fun saveUserId(userId: String) {
+        prefs.edit { putString("user_id", userId)}
+    }
+
+    fun getUserId(): String? {
+        return prefs.getString("user_id", null)
+    }
+
+    fun getUserIdFromToken(): String? {
+        val token = getAccessToken() ?: return null
+        return try{
+            val parts = token.split(".")
+            if (parts.size < 2) return null
+
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
+
+            val jsonObject = Gson().fromJson(payload, JsonObject::class.java)
+            jsonObject.get("sub")?.asString
+
+        }catch(e: Exception){
+            null
+        }
     }
 }

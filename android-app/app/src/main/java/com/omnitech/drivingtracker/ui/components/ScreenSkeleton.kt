@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.verticalScroll
+import com.omnitech.drivingtracker.Screen
 
 
 @Composable
@@ -24,9 +25,9 @@ fun StandardScreen(
     title: String,
     description: String = "",
     showBottomBar: Boolean = true,
-    bottomBarColor: String = "ach",
-    onLeftClick: ()-> Unit = {},
-    onRightClick: ()-> Unit = {},
+    bottomBarColor: String = "",
+    onLeftClick: ()-> Unit = {navController?.popBackStack()},
+    onRightClick: ()-> Unit = {navController?.navigate(Screen.Settings.route)},
     content : @Composable ColumnScope.() -> Unit
 ){
     Scaffold(
