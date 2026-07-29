@@ -16,18 +16,17 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
-import com.omnitech.drivingtracker.BuildConfig
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    //const val BASE_URL = "http://10.0.2.2:3000/"
+    const val BASE_URL = "http://10.0.2.2:3000/"
     //const val BASE_URL = "http://:3000/"
 
     @Provides
     @Named("baseUrl")
-    fun provideBaseUrl(): String = BuildConfig.BASE_URL
+    fun provideBaseUrl(): String = BASE_URL
 
     @Provides
     @Singleton
@@ -50,7 +49,7 @@ object NetworkModule {
     @Singleton
     fun provideApiService(okHttpClient: OkHttpClient): ApiService{
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

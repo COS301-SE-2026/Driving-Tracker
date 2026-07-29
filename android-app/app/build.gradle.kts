@@ -31,16 +31,12 @@ android {
     }
 
     buildTypes {
-        debug{
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://omnitech-api-f8cyd2ghe8hmgheu.southafricanorth-01.azurewebsites.net/\"")
         }
     }
     compileOptions {
@@ -49,7 +45,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
