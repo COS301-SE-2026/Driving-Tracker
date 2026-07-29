@@ -20,8 +20,8 @@ export default function Navbar() {
 
     <nav className = "flex items-center justify-between px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
       <Link href = "/" className = "text-2xl md:text-3xl tracking-tight font-semibold">
-        <span className = "text-[var(--color-text)]">Driving </span>
-        <span className = "text-[var(--color-primary)]">Tracker</span>
+        <span className = "text-[var(--color-primary)]">Driving </span>
+        <span className = "text-[var(--color-text)]">Tracker</span>
       </Link>
 
     {/*Links*/}
