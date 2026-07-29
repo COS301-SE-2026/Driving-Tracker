@@ -6,7 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "trip_readings",
+@Entity(tableName = "trip_events",
     foreignKeys=[ForeignKey(
         entity = TripEntity::class,
         parentColumns = ["trip_id"],
@@ -16,22 +16,14 @@ import androidx.room.PrimaryKey
     ],
     indices=[Index("trip_id")]
 )
-data class TripReadingEntity(
-    @ColumnInfo(name="reading_id") @PrimaryKey(autoGenerate = true) val readingId: Int=0,
+data class TripEventEntity(
+    @ColumnInfo(name="event_id") @PrimaryKey(autoGenerate = true) val eventId: Int=0,
     @ColumnInfo(name="trip_id") val tripId: String,
+    val type: String,
+    val latitude: Double?,
+    val longitude: Double?,
+    val severity: Float?,
+    @ColumnInfo(name="sensor_source") val sensorSource: String?,
     @ColumnInfo(name="recorded_at") val recordedAt: Long,
-    @ColumnInfo(name="data_source") val dataSource: String?,
-    val latitude: Double,
-    val longitude: Double,
-    val speedKmh: Float?,
-    val accelerometer: Float?,
-    val gyroscopeX: Float?,
-    val gyroscopeY: Float?,
-    val gyroscopeZ: Float?,
-    val rpm: Int?,
-    val coolantTemp: Float?,
-    val fuelTrimPercent: Float?,
-    val throttlePosition: Float?,
-    val dtcCodes: List<String>?,
     val synced: Boolean=false
 )

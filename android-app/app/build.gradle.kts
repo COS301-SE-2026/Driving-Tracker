@@ -104,4 +104,6 @@ dependencies {
 
     //Coil for loading images from URLs
     implementation(libs.coil.compose)
+
+    implementation(libs.play.services.base)
 }

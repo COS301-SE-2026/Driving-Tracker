@@ -122,9 +122,24 @@ interface ApiService{
         @Body body: RecordReadingRequest
     )
 
+    @POST("trips/{trip_id}/batch_readings/record")
+    suspend fun recordBatchReadings(
+        @Path("trip_id") tripId: String,
+        @Body body: BatchReadingRequest
+    ): BatchReadingResponse
+
+
     @POST("trips/{trip_id}/events/log")
     suspend fun logEvent(
         @Path("trip_id") tripId: String,
         @Body body: LogEventRequest
     ): LogEventResponse
+
+    @GET("trips/{trip_id}/latest_location")
+    suspend fun getLatestLocation(
+        @Path("trip_id") tripId: String
+    ): LatestLocationResponse
+
+    @GET("trips/shared_with_me")
+    suspend fun getTripsSharedWithMe(): SharedWithMeResponse
 }

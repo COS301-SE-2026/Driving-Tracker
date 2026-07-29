@@ -30,6 +30,8 @@ jest.mock('../../../src/db/prisma', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         createMany: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn()
     };
     const trip_scores = {
         create: jest.fn(),
@@ -40,6 +42,7 @@ jest.mock('../../../src/db/prisma', () => {
     const trip_readings = {
         create: jest.fn(),
         findMany: jest.fn(),
+        createMany: jest.fn()
     };
     const trip_events = {
         create: jest.fn(),
@@ -121,10 +124,15 @@ jest.mock('../../../src/utils/auto_ai', () => ({
     }),
 }));
 
+jest.mock('../../../src/utils/notification');
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { trips_services } from '../../../src/services/trips_services';
+import { contact_services } from '../../../src/services/contacts_services';
 import { add_notification } from '../../../src/utils/notification';
+import { user_devices_services } from '../../../src/services/user_devices_services';
+import { notification_services } from '../../../src/services/notification_service';
 import { fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
 import { calculate_trip_scores } from '../../../src/utils/trip_scores_cal';
 import { driver_profile } from '../../../src/utils/auto_ai';
@@ -136,6 +144,8 @@ import { map_services } from '../../../src/services/map_services';
 const mock_map_services = map_services as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mock_prisma = prisma as any;
+
+const mock_add_notification = add_notification as jest.MockedFunction<typeof add_notification>
 
 class MockDecimal {
     constructor(private value: number) {}
@@ -664,6 +674,13 @@ describe('Trips services.events_log', () => {
     beforeEach(async() => jest.clearAllMocks());
 
     it('logs event successfully', async () => {
+
+        jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens').mockResolvedValue(['token-1','token-2']);
+
+        //jest.spyOn(notification_services, 'send_trip_alert_notification').mockResolvedValue(undefined);
+
+        jest.spyOn(contact_services, 'alert_contacts_for_event').mockResolvedValue({alert_id: 'a1'});
+
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
             user_id: 'u1',
@@ -676,6 +693,30 @@ describe('Trips services.events_log', () => {
             sensor_source: 'ACCELEROMETER',
             recorded_at: new Date(),
         });
+
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
+        });
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValueOnce([
+            {
+                contact_id: "c1",
+                contact: {
+                    contact_user_id: "u2"
+                }
+            },
+            {
+                contact_id: "c2",
+                contact: {
+                    contact_user_id: "u3"
+                }
+            }
+        ]);
+
+        mock_add_notification.mockResolvedValue(undefined);
 
         const result = await trips_services.events_log({
             trip_id: 't1',
@@ -708,6 +749,13 @@ describe('Trips services.events_log', () => {
     it('throws when trip not found', async () => {
         mock_prisma.trips.findUnique.mockResolvedValue(null);
 
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
+        });
+
         await expect(
             trips_services.events_log({
                 trip_id: 't1',
@@ -725,6 +773,13 @@ describe('Trips services.events_log', () => {
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
             user_id: 'u2',
+        });
+
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            name: 'john',
+            surname: 'doe',
+            username: 'doe123'
         });
 
         await expect(
@@ -793,4 +848,209 @@ describe('trips get_history additional tests', () =>{
         expect(call_args.where.status).toBe('ABORTED');
     });
     
+});
+
+describe('Trips services.get_trip_latest_location', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns latest location data', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            last_latitude: 25.23,
+            last_longitude: -26.08,
+            last_recorded_at: new Date('2026-05-01'),
+            last_speed_kmh: 76.00,
+            status: "IN_PROGRESS"
+        });
+
+        const result = await trips_services.get_trip_latest_location("trip-1");
+
+        expect(result?.status).toBe("IN_PROGRESS");
+        expect(result.last_longitude).toBe(-26.08);
+    });
+
+    it('throws when trip not found', async () => {
+
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.get_trip_latest_location('t1')
+        ).rejects.toThrow('Trip not found');
+    });
+});
+
+describe('Trips services.get_trips_shared_with_me', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns trips', async () => {
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([
+                {
+                    trip_id: 'trip-1',
+                    owner: { username: 'john' },
+                    shared_at: new Date().toISOString(),
+                    trip: {
+                        status: 'IN_PROGRESS',
+                        start_time: new Date().toISOString(),
+                        start_latitude: 25.23,
+                        start_longitude: 26.08,
+                        fuel_estimate: 3.2
+                    }
+                },
+                {
+                    trip_id: 'trip-2',
+                    owner: { username: 'bob' },
+                    shared_at: new Date().toISOString(),
+                    trip: {
+                        status: 'IN_PROGRESS',
+                        start_time: new Date().toISOString(),
+                        start_latitude: 25.23,
+                        start_longitude: 26.08,
+                        fuel_estimate: 3.2
+                    }
+                },
+            ]);
+
+        const result = await trips_services.get_trips_shared_with_me("u1");
+
+        expect(result.length).toBe(2);
+        expect(result[0].status).toBe("IN_PROGRESS");
+        expect(result[1].owner).toBe("bob");
+    });
+    
+});
+
+describe('Trips services.record_batch_trip_readings', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('records batch trip data successfully', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u1',
+        });
+
+        mock_prisma.trip_readings.createMany.mockResolvedValue(undefined);
+
+        mock_prisma.trip_location_shares.count.mockResolvedValue(0);
+
+        await trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            );
+
+        expect(mock_prisma.trip_readings.createMany).toHaveBeenCalled();
+    });
+
+    it('throws when trip not found', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            )
+        ).rejects.toThrow('Trip not found');
+    });
+
+    it('throws when user does not own trip', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u2',
+        });
+
+        await expect(
+            trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            )
+        ).rejects.toThrow('You do not own this trip');
+    });
 });

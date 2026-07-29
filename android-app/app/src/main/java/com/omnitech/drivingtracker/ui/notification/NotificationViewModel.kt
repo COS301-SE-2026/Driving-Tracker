@@ -8,6 +8,7 @@ import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.NotificationDto
 import com.omnitech.drivingtracker.data.models.RequestDto
 import com.omnitech.drivingtracker.data.models.RespondContactRequest
+import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
@@ -32,18 +33,19 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
     data class NotificationUiState(
         val requests: List<RequestDto> = emptyList(),
         val groupedNotifications: Map<String, List<NotificationDto>> = emptyMap(),
+        val trips: List<SharedWithMeDto> = emptyList(),
         val isLoading: Boolean = false,
         val error: String? = null
     )
-    sealed class UiState{
-        object Idle : UiState() //initial state
-        object Loading : UiState() //fetching data
-        data class SuccessContactReqResponse(val contactId: String, val message: String? = null) : UiState()
-        data class SuccessPendingRequests(val requests: List<RequestDto>) : UiState()
-        data class SuccessNotifications(val groupedNotifications: Map<String, List<NotificationDto>>):  UiState()
-        //data class Success(val notifications: List<>) : UiState()//Got data
-        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occurred
-    }
+//    sealed class UiState{
+//        object Idle : UiState() //initial state
+//        object Loading : UiState() //fetching data
+//        data class SuccessContactReqResponse(val contactId: String, val message: String? = null) : UiState()
+//        data class SuccessPendingRequests(val requests: List<RequestDto>) : UiState()
+//        data class SuccessNotifications(val groupedNotifications: Map<String, List<NotificationDto>>):  UiState()
+//        //data class Success(val notifications: List<>) : UiState()//Got data
+//        data class Error(val code: String? = null, val message: String? = null) : UiState() //error occurred
+//    }
 
     //Expose state to UI as StateFlow
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -139,6 +141,28 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                 !date.isBefore(startOfWeek) -> "This Week"
                 else -> "Earlier"
             }
+        }
+    }
+
+    fun getTripsSharedWithMe(){
+        viewModelScope.launch{
+            _uiState.update { it.copy(isLoading = true) }
+
+            repository.getTripsSharedWithMe().fold(
+                onSuccess = { trips ->
+                    _uiState.update { it.copy(trips = trips, isLoading = false)}
+                },
+                onFailure = {exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
+                        }
+                        else -> {
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
+                        }
+                    }
+                }
+            )
         }
     }
 }

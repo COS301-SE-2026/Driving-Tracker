@@ -6,6 +6,7 @@ import { user_devices_services } from './user_devices_services';
 import { fetch_vehicle_benchmark } from './vehicle.services';
 import { map_services } from './map_services';
 import { add_notification } from '../utils/notification';
+import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 
@@ -36,6 +37,35 @@ function convert_mpg_to_lper_km(value:number):number|null{
     }
     return 235.215/mpg;
 }
+
+async function get_trip_shared_contacts(trip_id: string){
+
+    const contacts = await prisma.trip_location_shares.findMany({
+        where: {
+            trip_id, revoked_at: null
+        },
+        select: {
+            contact: {
+                select: {
+                    contact_user_id: true
+                }
+            },
+            contact_id: true
+        } 
+    });
+
+    if(!contacts||contacts.length){
+        return { contact_user_ids: [], contact_ids: [] };
+    }
+
+    const contact_user_ids = contacts.map((c) => c.contact.contact_user_id);
+
+    const contact_ids = contacts.map((c) => c.contact_id);
+
+    return {contact_user_ids, contact_ids};
+
+}
+
 export interface create_trip{
     user_id: string ;
     vehicle_id: string;
@@ -77,6 +107,25 @@ export interface record_data{
     user_id: string;
     recorded_at: Date;
     trip_id: string;
+    location:{
+        lng : number;
+        lat: number;
+    }
+    data_source:"OBD"|"PHONE";
+    speed_kmh: number;
+    accelerometer: number;
+    gyroscope_x: number;
+    gyroscope_y: number;
+    gyroscope_z: number;
+    rpm: number;
+    coolant_temp: number;
+    fuel_trim_percent: number;
+    throttle_position: number;
+    dtc_codes: string [];
+};
+
+export interface record_data_raw{
+    recorded_at: Date;
     location:{
         lng : number;
         lat: number;
@@ -317,10 +366,10 @@ export const trips_services ={
             });
             console.log("updated the trip status");
             // revoke any active shares for this trip
-            await prisma.trip_location_shares.updateMany({
-                where: { trip_id: data.trip_id, revoked_at: null },
-                data: { revoked_at: new Date() }
-            });
+            // await prisma.trip_location_shares.updateMany({
+            //     where: { trip_id: data.trip_id, revoked_at: null },
+            //     data: { revoked_at: new Date() }
+            // });
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
@@ -640,6 +689,15 @@ export const trips_services ={
         if(!data.location.lat || !data.location.lng){
             throw new Error("Invalid location");
         }
+
+        const user = await prisma.users.findUnique({
+            where: { user_id: data.user_id }
+            });
+
+        if(!user){
+            throw new Error("User not found");
+        }
+
         try{
             const trip = await prisma.trips.findUnique({
                 where: { trip_id:data.trip_id}
@@ -662,6 +720,45 @@ export const trips_services ={
                 recorded_at: data.recorded_at
             }
         });
+
+        //Get contacts who had the ship shared with them
+        const { contact_user_ids, contact_ids } = await get_trip_shared_contacts(data.trip_id);
+
+
+        if (contact_user_ids.length > 0){
+            
+            const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+            const message = `${full_name} had a ${data.event_type} event at ${data.recorded_at}`;
+
+            const alert = await contact_services.alert_contacts_for_event({
+                user_id: data.user_id, 
+                event_type: data.event_type,
+                event_id: newEvent.event_id,
+                message,
+                contact_ids
+            });
+
+            const alert_ids = new Array(contact_user_ids.length).fill(alert.alert_id);
+            
+            await add_notification({
+                user_ids: contact_user_ids,
+                type: "TRIP_ALERT",
+                title: "Trip Alert",
+                body: message,
+                reference_ids: alert_ids,
+                reference_type: "alert",
+            });
+
+            //Get tokens for sending push notifications to contacts
+            const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+            const alert_type = data.event_type.replace("_"," ");
+
+            await notification_services.send_trip_alert_notification(fcm_tokens, data.trip_id, alert_type, message);
+
+        }
+        
         
         return {
             data: {
@@ -679,5 +776,140 @@ export const trips_services ={
             throw error;
         }
 
+    },
+    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data_raw[]){
+        
+        if(!trip_id){
+            throw new Error("Missing required fields");
+        }
+
+        const trip = await prisma.trips.findUnique({
+                where: { trip_id: trip_id },
+                select: { user_id: true }
+            });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+        //verifying if the trip exists
+        if(trip.user_id !== user_id){
+            throw new Error("You do not own this trip");
+        }
+
+        await prisma.$transaction(async (tx) => {
+
+            await tx.trip_readings.createMany({
+                data: readings.map(r =>({
+                    trip_id: trip_id,
+                    recorded_at: r.recorded_at,
+                    data_source: r.data_source,
+                    longitude: r.location.lng,
+                    latitude: r.location.lat,
+                    speed_kmh: r.speed_kmh,
+                    accelerometer: r.accelerometer,
+                    gyroscope_x: r.gyroscope_x,
+                    gyroscope_y: r.gyroscope_y,
+                    gyroscope_z: r.gyroscope_z,
+                    rpm: r.rpm,
+                    coolant_temp_c: r.coolant_temp,
+                    fuel_trim_percent: r.fuel_trim_percent,
+                    throttle_position: r.throttle_position,
+                    dtc_codes: r.dtc_codes ?? [],
+                }))
+            });
+
+            const latest = readings[readings.length - 1]?? null;
+
+            if(latest && latest.location.lat != null && latest.location.lng != null){
+                await tx.trips.update({
+                    where: { trip_id },
+                    data: {
+                        last_latitude: latest.location.lat,
+                        last_longitude: latest.location.lng,
+                        last_speed_kmh: latest.speed_kmh ?? null,
+                        last_recorded_at: latest.recorded_at,
+                    }
+                });
+            }
+
+
+        });
+
+
+        const active_share_count = await prisma.trip_location_shares.count({
+            where: { trip_id, revoked_at: null },
+        });
+
+        return active_share_count;
+        
+    },
+    //Get latest trip location
+    async get_trip_latest_location(trip_id: string){
+
+        const trip = await prisma.trips.findUnique({
+            where: {
+                trip_id
+            },
+            select: {
+                last_latitude: true,
+                last_longitude: true,
+                last_recorded_at: true,
+                last_speed_kmh: true,
+                status: true
+            }
+        });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+
+        return trip;
+    },
+    //Gets trips shared with user
+    async get_trips_shared_with_me(user_id: string){
+
+        const shares = await prisma.trip_location_shares.findMany({
+            where: {
+                revoked_at: null,
+                contact: {
+                    contact_user_id: user_id,
+                    consent_status: "APPROVED"
+                },
+                trip: {
+                    status: "IN_PROGRESS"
+                },
+            },
+            include:{
+                trip: {
+                    select: {
+                        trip_id: true,
+                        status: true,
+                        start_time: true,
+                        start_latitude: true,
+                        start_longitude: true,
+                        fuel_estimate: true
+                    }
+                },
+                owner: {
+                    select: {
+                        username: true
+                    },
+                }
+            },
+            orderBy: { shared_at: 'desc'}
+        });
+
+        const result = shares.map((s)=>({
+            trip_id: s.trip_id,
+            owner: s.owner.username,
+            shared_at: s.shared_at,
+            status: s.trip.status,
+            started_at: s.trip.start_time,
+            start_latitude: s.trip.start_latitude,
+            start_longitude: s.trip.start_longitude,
+            fuel_estimate: s.trip.fuel_estimate
+        }))??[];
+
+        return result;
     }
 };

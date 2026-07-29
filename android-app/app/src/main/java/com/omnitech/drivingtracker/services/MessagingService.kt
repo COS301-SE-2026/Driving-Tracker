@@ -49,7 +49,7 @@ class MessagingService: FirebaseMessagingService() {
                 "SHARED_TRIP" -> {
                     val sharedBy = message.data["shared_by"]
 
-                    notificationHelper.showContactAlert(
+                    notificationHelper.showTripSharedAlert(
                         message.notification?.title ?: "Trip Shared With You",
                         message.notification?.body ?: "$sharedBy is sharing their live trip with you")
                 }

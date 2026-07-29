@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.omnitech.drivingtracker.data.db.AppDatabase
 import com.omnitech.drivingtracker.data.db.daos.TripDao
+import com.omnitech.drivingtracker.data.db.daos.TripEventDao
 import com.omnitech.drivingtracker.data.db.daos.TripReadingDao
 import com.omnitech.drivingtracker.data.db.daos.UserDao
 import dagger.Module
@@ -25,7 +26,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "drive_local"
-            ).build()
+            )
+            .fallbackToDestructiveMigration(true)
+            .build()
     }
 
     @Provides
@@ -36,5 +39,8 @@ object DatabaseModule {
 
     @Provides
     fun provideTripReadingDao(db: AppDatabase): TripReadingDao = db.tripReadingDao()
+
+    @Provides
+    fun provideTripEventDao(db: AppDatabase): TripEventDao = db.tripEventDao()
 
 }
