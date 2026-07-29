@@ -809,12 +809,6 @@ export const trips_services ={
             where: { trip_id, revoked_at: null },
         });
 
-        if(readings.length>0){
-            console.log("Recorded: " +readings[0]);
-        }else {
-            console.log("No readings");
-        }
-
         return active_share_count;
         
     },
@@ -833,6 +827,10 @@ export const trips_services ={
                 status: true
             }
         });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
 
         return trip;
     },

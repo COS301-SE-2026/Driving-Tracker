@@ -30,7 +30,8 @@ jest.mock('../../../src/db/prisma', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         createMany: jest.fn(),
-        findMany: jest.fn()
+        findMany: jest.fn(),
+        count: jest.fn()
     };
     const trip_scores = {
         create: jest.fn(),
@@ -41,6 +42,7 @@ jest.mock('../../../src/db/prisma', () => {
     const trip_readings = {
         create: jest.fn(),
         findMany: jest.fn(),
+        createMany: jest.fn()
     };
     const trip_events = {
         create: jest.fn(),
@@ -821,4 +823,209 @@ describe('trips get_history additional tests', () =>{
         expect(call_args.where.status).toBe('ABORTED');
     });
     
+});
+
+describe('Trips services.get_trip_latest_location', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns latest location data', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            last_latitude: 25.23,
+            last_longitude: -26.08,
+            last_recorded_at: new Date('2026-05-01'),
+            last_speed_kmh: 76.00,
+            status: "IN_PROGRESS"
+        });
+
+        const result = await trips_services.get_trip_latest_location("trip-1");
+
+        expect(result?.status).toBe("IN_PROGRESS");
+        expect(result.last_longitude).toBe(-26.08);
+    });
+
+    it('throws when trip not found', async () => {
+
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.get_trip_latest_location('t1')
+        ).rejects.toThrow('Trip not found');
+    });
+});
+
+describe('Trips services.get_trips_shared_with_me', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns trips', async () => {
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([
+                {
+                    trip_id: 'trip-1',
+                    owner: { username: 'john' },
+                    shared_at: new Date().toISOString(),
+                    trip: {
+                        status: 'IN_PROGRESS',
+                        start_time: new Date().toISOString(),
+                        start_latitude: 25.23,
+                        start_longitude: 26.08,
+                        fuel_estimate: 3.2
+                    }
+                },
+                {
+                    trip_id: 'trip-2',
+                    owner: { username: 'bob' },
+                    shared_at: new Date().toISOString(),
+                    trip: {
+                        status: 'IN_PROGRESS',
+                        start_time: new Date().toISOString(),
+                        start_latitude: 25.23,
+                        start_longitude: 26.08,
+                        fuel_estimate: 3.2
+                    }
+                },
+            ]);
+
+        const result = await trips_services.get_trips_shared_with_me("u1");
+
+        expect(result.length).toBe(2);
+        expect(result[0].status).toBe("IN_PROGRESS");
+        expect(result[1].owner).toBe("bob");
+    });
+    
+});
+
+describe('Trips services.record_batch_trip_readings', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('records batch trip data successfully', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u1',
+        });
+
+        mock_prisma.trip_readings.createMany.mockResolvedValue(undefined);
+
+        mock_prisma.trip_location_shares.count.mockResolvedValue(0);
+
+        await trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            );
+
+        expect(mock_prisma.trip_readings.createMany).toHaveBeenCalled();
+    });
+
+    it('throws when trip not found', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            )
+        ).rejects.toThrow('Trip not found');
+    });
+
+    it('throws when user does not own trip', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u2',
+        });
+
+        await expect(
+            trips_services.record_batch_trip_readings('u1','t1',
+             [
+                {
+                    recorded_at: new Date(),
+                    data_source: 'PHONE',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lng: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]
+            )
+        ).rejects.toThrow('You do not own this trip');
+    });
 });

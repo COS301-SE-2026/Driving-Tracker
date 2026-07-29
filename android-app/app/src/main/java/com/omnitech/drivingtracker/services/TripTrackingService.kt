@@ -232,7 +232,7 @@ class TripTrackingService: Service() {
             var dataSource: DataSource = DataSource.PHONE
 
 
-            if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
+            if(obdConnected){
                 rpm = obdManager.metrics.value.rpm
                 speed = obdManager.metrics.value.speed.toFloat()
                 coolantTemp = obdManager.metrics.value.coolantTemp

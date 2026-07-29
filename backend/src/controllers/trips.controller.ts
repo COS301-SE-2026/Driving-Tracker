@@ -197,7 +197,7 @@ export const record_batch_readings = async (req: AuthRequest, res: Response) => 
 
         if(error.message === "Missing required fields"){
 
-			res.status(401).json({
+			res.status(400).json({
                 error: "MISSING_REQUIRED_FIELDS"
             });
 
@@ -207,7 +207,7 @@ export const record_batch_readings = async (req: AuthRequest, res: Response) => 
 				message:"Trip not found"
             });
         }else if(error.message === "You do not own this trip"){
-            res.status(400).json({error:"UNAUTHORIZED"});
+            res.status(403).json({error:"UNAUTHORIZED", message: "You do not own this trip"});
         }else{
 			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message?? "Could not record readings" });
 		}
@@ -367,6 +367,13 @@ export const get_trip_latest_location = async (req: AuthRequest, res: Response) 
             });
 
         }catch(error: any){
+
+            if (error.message.includes("Trip not found")){
+                res.status(404).json({ 
+                    error: "TRIP_NOT_FOUND", 
+                    message: "Trip not found" 
+                });
+            }
 
             res.status(500).json({ 
                 error: "INTERNAL_SERVER_ERROR" 
