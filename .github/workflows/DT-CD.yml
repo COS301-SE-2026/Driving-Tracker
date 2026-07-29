@@ -15,20 +15,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 #v4.4.0
 
       - name: Login to Azure
-        uses: azure/login@v2
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474 #v2.3.0
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: $AZURE_CLIENT_ID
+          client-secret: $AZURE_CLIENT_SECRET
+          tenant-id: $AZURE_TENANT_ID
+          subscription-id: $AZURE_SUBSCRIPTION_ID
 
       - name: Login to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
         run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login $REGISTRY \
-            --username "${{ secrets.ACR_USERNAME }}" \
+          echo "$ACR_PASSWORD" | docker login $REGISTRY \
+            --username "$ACR_USERNAME" \
             --password-stdin
 
       - name: Build Docker image
@@ -42,11 +50,14 @@ jobs:
 
       # Save currently deployed image 
       - name: Save current image
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         id: previous
         run: |
           CURRENT_IMAGE=$(az webapp config container show \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
             --query dockerCustomImageName \
             -o tsv)
 
@@ -56,28 +67,38 @@ jobs:
       
       # Deploy new image
       - name: Deploy image
+        env: 
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         run: |
           az webapp config container set \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
             --container-image-name $REGISTRY/$IMAGE_NAME:$IMAGE_TAG \
             --container-registry-url https://$REGISTRY \
-            --container-registry-user "${{ secrets.ACR_USERNAME }}" \
-            --container-registry-password "${{ secrets.ACR_PASSWORD }}"
+            --container-registry-user "$ACR_USERNAME" \
+            --container-registry-password "$ACR_PASSWORD"
 
       - name: Restart App Service
+        env:
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          ACR_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
         run: |
           az webapp restart \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME }}"
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$ACR_WEBAPP_NAME"
 
       - name: Wait for application
         run: sleep 45
 
       - name: Health Check
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net/health)
+            https://$AZURE_WEBAPP_NAME.azurewebsites.net/health)
 
           echo "Status: $STATUS"
 
@@ -85,21 +106,26 @@ jobs:
             exit 1
           fi
 
-      # Automatic rollback
+      # Automatic to previous good image
       - name: Roll back
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         if: failure()
         run: |
           echo "Rolling back to:"
           echo "${{ steps.previous.outputs.previous_image }}"
 
           az webapp config container set \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
             --container-image-name "${{ steps.previous.outputs.previous_image }}" \
             --container-registry-url https://$REGISTRY \
-            --container-registry-user "${{ secrets.ACR_USERNAME }}" \
-            --container-registry-password "${{ secrets.ACR_PASSWORD }}"
+            --container-registry-user "$ACR_USERNAME" \
+            --container-registry-password "$ACR_PASSWORD"
 
           az webapp restart \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ secrets.AZURE_WEBAPP_NAME }}"
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME"
