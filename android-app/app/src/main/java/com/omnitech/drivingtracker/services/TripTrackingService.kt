@@ -12,6 +12,8 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.app.ServiceCompat
 import androidx.core.content.PermissionChecker
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -23,6 +25,7 @@ import com.google.android.gms.location.Priority
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.BatchReadingRequest
+import com.omnitech.drivingtracker.data.models.DataSource
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -36,6 +39,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -51,6 +55,9 @@ class TripTrackingService: Service() {
     lateinit var sensorFusion: SensorFusionManager
     @Inject
     lateinit var apiService: ApiService
+
+    @Inject
+    lateinit var obdManager: ObdManager
 
     @Inject
     lateinit var tripRepository: TripRepository
@@ -198,31 +205,56 @@ class TripTrackingService: Service() {
         )
     }
 
+    private fun isObdConnected(): Boolean = obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED
+
     //Adding readings to Room
     private fun postReading(reading: FusedReading){
         val tripId = currentTripId?: return
 
-        lastKnownSpeed = reading.speedKmh
+        val obdConnected = isObdConnected()
+
+        lastKnownSpeed = if(obdConnected){
+            obdManager.metrics.value.speed.toFloat()
+        } else {
+            reading.speedKmh
+        }
+
         serviceScope.launch {
 
             val recordedAt = runCatching {
                 Instant.parse(reading.timestamp).toEpochMilli()
             }.getOrDefault(System.currentTimeMillis())
 
+            var rpm: Int? = null
+            var speed: Float? = reading.speedKmh
+            var coolantTemp: Int? = null
+            var fuelTrim: Double? = null
+            var dataSource: DataSource = DataSource.PHONE
+
+
+            if(obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED){
+                rpm = obdManager.metrics.value.rpm
+                speed = obdManager.metrics.value.speed.toFloat()
+                coolantTemp = obdManager.metrics.value.coolantTemp
+                fuelTrim = obdManager.metrics.value.fuelTrim
+                dataSource = DataSource.OBD
+            }
+
+
             val readingEntity = TripReadingEntity(
                 tripId = tripId,
                 recordedAt = recordedAt,
-                dataSource = "PHONE",
+                dataSource = dataSource.toString(),
                 latitude = reading.latitude,
                 longitude = reading.longitude,
-                speedKmh = reading.speedKmh,
+                speedKmh = speed,
                 accelerometer = reading.linearAccelY,
                 gyroscopeX = reading.gyroX,
                 gyroscopeY = reading.gyroY,
                 gyroscopeZ = reading.gyroZ,
-                rpm = null,
-                coolantTemp = null,
-                fuelTrimPercent = null,
+                rpm = rpm,
+                coolantTemp = coolantTemp?.toFloat(),
+                fuelTrimPercent = fuelTrim?.toFloat(),
                 throttlePosition = null,
                 dtcCodes = emptyList()
             )
@@ -298,8 +330,6 @@ class TripTrackingService: Service() {
 
             tripRepository.saveEventLocally(entity)
 
-            if (event.type == "CRASH_LIKE" || event.type == "HARSH_BRAKE"){
-
                 try {
                     val response = apiService.logEvent(
                         tripId = tripId,
@@ -322,7 +352,6 @@ class TripTrackingService: Service() {
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to post event ${e.message}, remains in Room for retry")
                 }
-            }
         }
     }
 
