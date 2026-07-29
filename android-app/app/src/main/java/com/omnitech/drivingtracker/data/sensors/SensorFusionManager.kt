@@ -23,7 +23,7 @@ import java.time.Instant
 @Singleton
 class SensorFusionManager @Inject constructor(
     @param:ApplicationContext private val context: Context
-): SensorEventListener {
+): ISensorFusionManager, SensorEventListener {
 
     companion object{
         private const val TAG = "SensorFusion"
@@ -93,7 +93,7 @@ class SensorFusionManager @Inject constructor(
 
     //stateflow for UI
     private val _liveMetrics = MutableStateFlow(LiveSensorMetrics())
-    val liveMetrics: StateFlow<LiveSensorMetrics> = _liveMetrics.asStateFlow()
+    override val liveMetrics: StateFlow<LiveSensorMetrics> = _liveMetrics.asStateFlow()
 
     //Debounce tracking
     private var lastBrakeTime = 0L
@@ -109,7 +109,7 @@ class SensorFusionManager @Inject constructor(
 
 
     //Lifecycle
-    fun start(
+    override fun start(
         onReadingAvailable: (FusedReading) -> Unit,
         onEventDetected: (FusedEvent) -> Unit
     ){
@@ -136,7 +136,7 @@ class SensorFusionManager @Inject constructor(
         Log.d(TAG, "Sensor fusion started")
     }
 
-    fun stop(){
+    override fun stop(){
         sensorManager.unregisterListener(this)
         onReading = null
         onEvent = null
@@ -146,7 +146,7 @@ class SensorFusionManager @Inject constructor(
         Log.d(TAG, "Sensor fusion stopped")
     }
 
-    fun updateLocation(location: Location){
+    override fun updateLocation(location: Location){
         currentLocation = location
     }
 
@@ -176,6 +176,10 @@ class SensorFusionManager @Inject constructor(
     //called when sensor accuracy changes
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
         //usually left empty unless using specific calibrations
+    }
+
+    override fun triggerFakeEvent(type: String) {
+        Log.d("SensorFusion", "Fake event ignored in production mode")
     }
 
         //Event Detection - linear (braking/acceleration/crash)

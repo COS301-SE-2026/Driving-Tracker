@@ -27,7 +27,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.omnitech.drivingtracker.CustomTestRunner"
     }
 
     buildTypes {
@@ -106,4 +106,8 @@ dependencies {
 
     //Coil for loading images from URLs
     implementation(libs.coil.compose)
+
+    //hilt testing
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
 }

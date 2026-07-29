@@ -1,5 +1,8 @@
 package com.omnitech.drivingtracker.data.sensors
 
+import kotlinx.coroutines.flow.StateFlow
+import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
+
 //fused sensor reading representation
 //built from multiple sensor events
 data class FusedReading(
@@ -25,3 +28,12 @@ data class FusedEvent(
     val speedKmh: Float,
     val sensorSource: String
 )
+
+//mocking interface
+interface ISensorFusionManager{
+    val liveMetrics : StateFlow<LiveSensorMetrics>
+    fun start(onReadingAvailable: (FusedReading) -> Unit, onEventDetected: (FusedEvent) -> Unit)
+    fun stop()
+    fun updateLocation(location: android.location.Location)
+    fun triggerFakeEvent(type: String)
+}
