@@ -84,6 +84,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.services.TripTrackingService
@@ -604,7 +605,9 @@ private fun StartTripDialog(
                         selectedContactIds.toList()
                     )
                 }
-            }) {
+            },
+                modifier = Modifier.testTag("startTripConfirmButton")
+            ) {
                 Text("Start")
             }
         },

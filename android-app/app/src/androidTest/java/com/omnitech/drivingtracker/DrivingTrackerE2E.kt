@@ -32,8 +32,8 @@ class DrivingTrackerE2E{
 
     private fun performLoginAndHandlePermissions(){
         composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
-        composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("test_login@gmail.com")
-        composeTestRule.onNodeWithTag("loginPassword").performTextInput("Password123!")
+        composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("omnitech@gmail.com")
+        composeTestRule.onNodeWithTag("loginPassword").performTextInput("MySecretPassword123!")
         composeTestRule.onNodeWithTag("loginButton").performClick()
 
         composeTestRule.waitUntil(7000) {
@@ -58,8 +58,8 @@ class DrivingTrackerE2E{
 
         //performLoginAndHandlePermissions()
         composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
-        composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("test_login@gmail.com")
-        composeTestRule.onNodeWithTag("loginPassword").performTextInput("Password123!")
+        composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("omnitech@gmail.com")
+        composeTestRule.onNodeWithTag("loginPassword").performTextInput("MySecretPassword123!")
         composeTestRule.onNodeWithTag("loginButton").performClick()
 
         //navigate to vehicles
@@ -154,27 +154,47 @@ class DrivingTrackerE2E{
         composeTestRule.onNodeWithText(editedName).assertDoesNotExist()
     }
 
+    private fun handleSystemPermission() {
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+        // List of selectors for different Android versions and buttons
+        val selectors = listOf(
+            UiSelector().resourceId("com.android.permissioncontroller:id/permission_allow_foreground_only_button"), // "While using the app"
+            UiSelector().resourceId("com.android.permissioncontroller:id/permission_allow_button"), // "Allow"
+            UiSelector().resourceId("com.android.packageinstaller:id/permission_allow_button"), // Older Android "Allow"
+            UiSelector().textMatches("(?i).*While using the app.*"),
+            UiSelector().textMatches("(?i).*Allow.*")
+        )
+
+        // Try to find and click any of the buttons with a retry loop
+        for (retry in 1..20) {
+            for (selector in selectors) {
+                val button = device.findObject(selector)
+                if (button.exists()) {
+                    button.click()
+                    device.waitForIdle(3000)
+                    return // Exit once clicked
+                }
+            }
+            Thread.sleep(500) // Wait for system dialog to render
+        }
+    }
+
     @Test
     fun useCase4SafetyAlertFlow(){
-        performLoginAndHandlePermissions()
-
+//        performLoginAndHandlePermissions()
+        val isWelcomeVisible = composeTestRule.onAllNodesWithTag("welcomeLoginButton").fetchSemanticsNodes().isNotEmpty()
+        if (isWelcomeVisible) {
+            performLoginAndHandlePermissions()
+        }
         composeTestRule.onNodeWithContentDescription("Trips", useUnmergedTree = true).performClick()
 
         composeTestRule.onNodeWithText("Start new trip").performClick()
+        composeTestRule.waitForIdle()
 
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val systemAllowButton = device.findObject(UiSelector().text("While using the app"))
-        val buttonDidAppear = systemAllowButton.waitForExists(5000)
-        val systemAllowButtonBackup = device.findObject(UiSelector().textMatches("(?i)Allow"))
-        if(buttonDidAppear){
-            systemAllowButton.click()
-        }else if(systemAllowButtonBackup.exists()){
-            systemAllowButtonBackup.click()
-        }
+        handleSystemPermission()
 
-        device.waitForIdle()
-
-        composeTestRule.waitUntil(7000){
+        composeTestRule.waitUntil(15000){
             try{
                 composeTestRule.onAllNodesWithText("Select Vehicle").fetchSemanticsNodes().isNotEmpty()
             }catch(e: Exception){
@@ -183,17 +203,23 @@ class DrivingTrackerE2E{
         }
         composeTestRule.onNodeWithText("Select Vehicle").performClick()
 
-        composeTestRule.onAllNodes(hasClickAction()).onFirst().performClick()
+        composeTestRule.onAllNodes(hasClickAction()).onLast().performClick()
 
-        composeTestRule.onNodeWithText("Start").performClick()
+//        Thread.sleep(3000)
 
-        composeTestRule.waitUntil(8000){
-            composeTestRule.onAllNodesWithText("Recording").fetchSemanticsNodes().isNotEmpty()
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onAllNodesWithTag("startTripConfirmButton").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithTag("startTripConfirmButton").performClick()
+
+        composeTestRule.waitUntil(30000){
+            composeTestRule.onAllNodesWithText("Fuel Efficiency").fetchSemanticsNodes().isNotEmpty()
         }
 
         sensorManager.triggerFakeEvent("HARSH_BRAKE")
 
-        composeTestRule.waitUntil(8000){
+        composeTestRule.waitUntil(10000){
             composeTestRule.onAllNodesWithTag("liveTripAlertBanner").fetchSemanticsNodes().isNotEmpty()
         }
 
