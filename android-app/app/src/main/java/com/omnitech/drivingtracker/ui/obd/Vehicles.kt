@@ -49,6 +49,7 @@ import com.omnitech.drivingtracker.ui.other.More
 import com.omnitech.drivingtracker.ui.vehicles.VehiclesViewModel
 import kotlin.collections.forEach
 import java.util.UUID
+import com.omnitech.drivingtracker.Screen
 
 
 //Data model for vehicle UI
@@ -98,7 +99,7 @@ fun Vehicles(
                 leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 rightIcon = Icons.Default.Settings,
                 onLeftClick = { navController?.popBackStack() },
-                onRightClick = { /*handle settings click*/ }
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
         bottomBar = {
@@ -127,9 +128,9 @@ fun Vehicles(
                             name = dto.name?: "Unnamed",
                             brand = dto.make ?: "",
                             model = dto.model ?: "",
-                            mileage = 0, // Backend doesn't provide yet
-                            trips = 0,
-                            fuelEfficiency = 0.0,
+                            mileage = dto.mileage?: 0,
+                            trips = dto.tripCount?: 0,
+                            fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
                             needsService = false,
                             registration = dto.registration,
                             year = dto.year,
@@ -190,7 +191,7 @@ fun Vehicles(
             vehicle = vehicle,
             onDismiss = { vehicleToEditName = null },
             onConfirm = { newName ->
-                //TODO implement backend update logic
+                viewModel.updateVehicleName(vehicle.id, newName)
                 vehicleToEditName = null
             }
         )
@@ -205,7 +206,7 @@ fun Vehicles(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        //TODO implement backend removal logic
+                        viewModel.removeVehicle(vehicle.id)
                         vehicleToRemove = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)

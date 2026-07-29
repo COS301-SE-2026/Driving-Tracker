@@ -7,6 +7,8 @@ import { fetch_vehicle_benchmark } from './vehicle.services';
 import { map_services } from './map_services';
 import { add_notification } from '../utils/notification';
 import { contact_services } from './contacts_services';
+import { driver_profile } from '../utils/auto_ai';
+import { calculate_trip_scores } from '../utils/trip_scores_cal';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -93,9 +95,13 @@ export interface end_trip {
     duration_minutes: number;
     fuel_estimate: number;
     status: "COMPLETED" | "ABORTED";
-    safety_score: number;
-    eco_score: number;
-    overall_score: number;
+    end_location?:{
+        lat:number;
+        lng:number;
+    };
+    // safety_score: number;
+    // eco_score: number;
+    // overall_score: number;
 };
 export interface record_data{
     user_id: string;
@@ -197,17 +203,18 @@ export const trips_services ={
                     year:true,
                 }
             });
-            if (!vehicle_info?.make || !vehicle_info?.model || !vehicle_info?.year) {
-                console.log("Null info but my return ")
-                return ;
+
+            if (vehicle_info?.make==null || vehicle_info?.model==null || vehicle_info?.year==null) {
+                console.log(vehicle_info?.make,vehicle_info?.model,vehicle_info?.year, "null if no valid");
+               throw new Error("No car info found in database");
             }
 
             const make = vehicle_info?.make;
             const model = vehicle_info?.model;
             const year = vehicle_info?.year;
-            // const make = "BMW";
-            // const model = "M3"
-            // const year = 2018;
+            
+            console.log(make, model , year , "checking the vehicles info ");
+
             let fuel_est: number | null = null;
             let planned_distance_km: number | null = null;
             if (data.end_location?.lat && data.end_location?.lng) {
@@ -239,7 +246,7 @@ export const trips_services ={
                         fuel_est = (lper100km / 100) * planned_distance_km;
                     }
                 }
-                fuel_est = null;
+                // fuel_est = null;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
@@ -322,7 +329,7 @@ export const trips_services ={
         }
     },
     async end_trip(data:end_trip){
-        
+        console.log("Ending trip");
         if(!data.trip_id || !data.user_id){
             throw new Error("Missing required fields");
         }
@@ -341,6 +348,7 @@ export const trips_services ={
             if(trip.status !== "IN_PROGRESS"){
                 throw new Error(`Cannot end a trip with status: ${trip.status}`);
             }
+            console.log("checked if the trip is in progress");
 
             // Update the trip
             const updatedTrip = await prisma.trips.update({
@@ -351,9 +359,12 @@ export const trips_services ={
                     distance_km: data.distance_km,
                     duration_minutes: data.duration_minutes,
                     fuel_estimate: data.fuel_estimate,
+                    end_latitude:data.end_location?.lat,
+                    end_longitude:data.end_location?.lng,
                     status: data.status
                 }
             });
+            console.log("updated the trip status");
             // revoke any active shares for this trip
             // await prisma.trip_location_shares.updateMany({
             //     where: { trip_id: data.trip_id, revoked_at: null },
@@ -364,28 +375,41 @@ export const trips_services ={
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
+            //will need to calculate the scores separately to ensure the ai wont get in accurate readings from kotlin
+            //calculations for scores
 
-            let tripScore;
+            if(!trip.vehicle_id ){
+                throw new Error("missing vehicle id");
+            }
+            console.log("computing the scores");
+            let computed_scores=null; 
+            if(data.status === "COMPLETED"){
+                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km,to_number(trip.fuel_estimate)??0);
+            }
+            if(!computed_scores){
+                throw new Error("Computed scores came back as null ");
+            }
+            
             if (existing_score) {
-                tripScore = await prisma.trip_scores.update({
+                await prisma.trip_scores.update({
                     where: { score_id: existing_score.score_id },
                     data: {
-                        safety_score: data.safety_score,
-                        eco_score: data.eco_score,
-                        overall_score: data.overall_score
+                        safety_score: computed_scores.safety_score,
+                        eco_score: computed_scores.eco_score,
+                        overall_score: computed_scores.overall_score
                     }
                 });
             } else {
-                tripScore = await prisma.trip_scores.create({
+                await prisma.trip_scores.create({
                     data: {
                         trip_id: data.trip_id,
-                        safety_score: data.safety_score,
-                        eco_score: data.eco_score,
-                        overall_score: data.overall_score
+                        safety_score: computed_scores.safety_score,
+                        eco_score: computed_scores.eco_score,
+                        overall_score: computed_scores.overall_score
                     }
                 });
             }
-
+            console.log("scores computed and ready to return");
             //getting the user info
              const user = await prisma.users.findUnique({
                 where: { user_id: data.user_id },
@@ -395,7 +419,17 @@ export const trips_services ={
             const completedTripCount = await prisma.trips.count({
                 where: { user_id: data.user_id, status: "COMPLETED" }
             });
-
+            //before return the ai must eval ??
+            console.log("starting ai eval");
+            let driverProfile = null;
+            if (data.status === "COMPLETED") {
+                try {
+                    driverProfile = await driver_profile(data.user_id, data.trip_id);
+                } catch (aiError) {
+                    console.error("driver_profile evaluation failed for trip", data.trip_id, aiError);
+                }
+            }
+            console.log("ai eval completed ");
             return {
                 trip_id: updatedTrip.trip_id,
                 username: user?.username,
@@ -403,12 +437,9 @@ export const trips_services ={
                 distance_km: updatedTrip.distance_km,
                 duration_minutes: updatedTrip.duration_minutes,
                 fuel_estimate: updatedTrip.fuel_estimate,
-                scores: {
-                    safety_score: tripScore.safety_score,
-                    eco_score: tripScore.eco_score,
-                    overall_score: tripScore.overall_score
-                },
-                is_first_trip: completedTripCount === 1
+                scores:computed_scores,
+                is_first_trip: completedTripCount === 1,
+                driverProfile
             };
 
         }catch(error){

@@ -88,23 +88,23 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
             onClick = {navController?.navigate(Screen.Notifications.route)}
         )
 
-        //More Item
+        //OBD Item
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_nav_menu),
-                    contentDescription = "More",
-                    tint = if (color == "more") Blue else Color.Gray
+                    painter = painterResource(id = R.drawable.ic_nav_obd),
+                    contentDescription = "OBD",
+                    tint = if (color == "obd") Blue else Color.Gray
                 )
             },
             label = {
                 Text(
-                    text = "More",
-                    color = if (color == "more") Blue else Color.Gray
+                    text = "OBD",
+                    color = if (color == "obd") Blue else Color.Gray
                 )
             },
             selected = false,
-            onClick = { navController?.navigate(Screen.More.route) }
+            onClick = { navController?.navigate(Screen.OBDMain.route) }
         )
 
     }

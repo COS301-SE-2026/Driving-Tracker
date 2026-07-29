@@ -64,7 +64,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const { trip_id } = req.params;
         const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
-        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score } = req.body;
+        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status } = req.body;
 
         if(!user_id){
             res.status(403).json({
@@ -81,9 +81,6 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             duration_minutes,
             fuel_estimate,
             status,
-            safety_score,
-            eco_score,
-            overall_score
         });
 
         res.status(200).json({

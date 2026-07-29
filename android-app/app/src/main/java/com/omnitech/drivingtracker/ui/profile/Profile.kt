@@ -273,7 +273,7 @@ fun AccountInformation(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.clickable{})
+        //Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.clickable{})
 
     }
     AccountInfoRow(icon = Icons.Default.Badge, label = "Full Name", value = fullName, onClick = {})
@@ -370,11 +370,11 @@ fun DeleteAccount(onClick: () -> Unit){
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ){
-        Text(
-            text = "Delete Account",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.error
-        )
+//        Text(
+//            text = "Delete Account",
+//            style = MaterialTheme.typography.titleMedium,
+//            color = MaterialTheme.colorScheme.error
+//        )
     }
 }
 

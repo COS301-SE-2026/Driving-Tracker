@@ -53,6 +53,11 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import com.omnitech.drivingtracker.ui.components.ShareTripDialog
 import com.omnitech.drivingtracker.ui.contacts.*
+import com.omnitech.drivingtracker.ui.obd.ObdViewModel
+import com.omnitech.drivingtracker.data.obd.VehicleMetrics
+import java.time.Duration
+import java.time.Instant
+import kotlinx.coroutines.delay
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -60,8 +65,10 @@ fun LiveTrip(
     tripId: String,
     viewModel: TripSummaryViewModel = hiltViewModel(),
     contactsViewModel: ContactsViewModel = hiltViewModel(), //needed for share trip
+    vehicleViewModel: ObdViewModel = hiltViewModel(),
     navController: NavController? = null
 ) {
+    val metrics by vehicleViewModel.vehicleMetrics.collectAsState() //for speed
     val uiState by viewModel.uiState.collectAsState()
     val endTripState by viewModel.endTripState.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
@@ -211,13 +218,35 @@ fun LiveTrip(
         mapToken = mapToken,
         liveLocation = liveMetrics,
         contactsState = contactsState,
-        onEndTrip = { viewModel.endTrip(tripId) },
+        onEndTrip = {
+            // Get the live trip data from the current state
+            val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+            val durationMin = currentTrip?.startedAt?.let { startIso ->
+                try {
+                    val startTime = java.time.Instant.parse(startIso)
+                    val now = java.time.Instant.now()
+                    java.time.Duration.between(startTime, now).toMinutes().toInt()
+                } catch (e: Exception) { 0 }
+            } ?: 0
+            // Pass the actual totals to the ViewModel
+            viewModel.endTrip(
+                tripId = tripId,
+                latitude = liveLocation?.latitude,
+                longitude = liveLocation?.longitude,
+                distance = currentTrip?.distanceKm?:0.0,
+                durationMinutes = durationMin,
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+            )
+        },
         navController = navController,
         destination = destinationLoc,
         plannedRoute = plannedRoute,
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
         isMinimized = isMinimized,
-        onMinimizeClick = {isMinimized = !isMinimized}
+        onMinimizeClick = {navController?.navigate(Screen.Dashboard.route){
+            popUpTo(Screen.Dashboard.route){inclusive = true}
+        } },
+        vehicleMetrics = metrics
     )
 }
 
@@ -234,7 +263,8 @@ fun LiveTripContent(
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
     isMinimized: Boolean = false,
-    onMinimizeClick: () -> Unit = {}
+    onMinimizeClick: () -> Unit = {},
+    vehicleMetrics: VehicleMetrics = VehicleMetrics(),
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -315,7 +345,10 @@ fun LiveTripContent(
                             onEndTrip = onEndTrip,
                             navController = navController,
                             contactsState = contactsState,
-                            onShareTrip = onShareTrip
+                            onShareTrip = onShareTrip,
+                            destination = destination,
+                            plannedRoute = plannedRoute,
+                            vehicleMetrics = vehicleMetrics
                         )
                     }
 
@@ -337,7 +370,8 @@ private fun TripDetails(
     navController: NavController?,
     destination: LocationDto? = null,
     plannedRoute: List<LocationDto>? = null,
-    onShareTrip: (List<String>) -> Unit
+    onShareTrip: (List<String>) -> Unit,
+    vehicleMetrics: VehicleMetrics
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -416,10 +450,7 @@ private fun TripDetails(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
-                Text(
-                    "00:35:24", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Black
-                )
+                TripTimer(startedAt = trip.startedAt)
             }
 
             //Speed and fuel for trips
@@ -447,7 +478,7 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "20 km/h",
+                                "${vehicleMetrics.speed} km/h",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold, color = Color.Black
                             )
@@ -513,44 +544,11 @@ private fun TripDetails(
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        //Trip summary card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row {
-                    Text(
-                        "Trip Summary ",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        "(Live)",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    SummaryItem(String.format(Locale.getDefault(), "%.2f", trip.distanceKm ?: 0.0), "km")
-                    SummaryItem("${trip.durationMinutes ?: 0}", "min")
-                    SummaryItem("93", "avg speed") // Placeholder
-                    SummaryItem(String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0), "est. fuel (L)")
-                }
-            }
-        }
         TripSummaryCard(
             distanceKm = trip.distanceKm,
             durationMinutes = trip.durationMinutes,
             fuelEstimate = trip.fuelEstimate,
-            avgSpeed = "9", //placeholder
+            avgSpeed = vehicleMetrics.speed.toString(),
             isLive = true
         )
 
@@ -564,7 +562,6 @@ private fun TripDetails(
         )
 
         Spacer(modifier = Modifier.weight(1f))
-        BottomNavBar(navController = navController, color = "trip")
 
     }
     if (showShareDialog){
@@ -635,6 +632,29 @@ fun AlertItem(label: String, count: Int) {
         Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(count.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
     }
+}
+
+@Composable
+fun TripTimer(startedAt:String){
+    var elapsedText by remember { mutableStateOf("00.00.00") }
+    val startTime = remember(startedAt) {
+        try{
+            Instant.parse(startedAt)
+        }
+        catch (e: Exception){
+            Instant.now()
+        }
+    }
+    LaunchedEffect(startTime){
+        while(true){
+            val seconds = java.time.Duration.between(startTime, Instant.now()).seconds
+            elapsedText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            delay(1000)
+        }
+    }
+    Text(text = elapsedText, style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold, color = Color.Black)
 }
 
 @Preview(showBackground = true)

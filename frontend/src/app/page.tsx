@@ -1,7 +1,18 @@
+//landing page
+import Navbar from "@/components/Navbar";
+import DrivingTracker from "@/components/DrivingTracker";
+import KeyFeatures from "@/components/KeyFeatures";
+import Solutions from "@/components/Solutions";
+import Footer from "@/components/Footer";
+
 export default function Home() {
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Driving Tracker</h1>
-    </main>
-  );
+  return(
+  <>
+  <Navbar/>
+  <DrivingTracker/>
+  <KeyFeatures/>
+  <Solutions/>
+  <Footer/>
+  </>
+  )
 }
