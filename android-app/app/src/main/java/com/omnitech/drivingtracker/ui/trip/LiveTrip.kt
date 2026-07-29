@@ -231,8 +231,8 @@ fun LiveTrip(
             // Pass the actual totals to the ViewModel
             viewModel.endTrip(
                 tripId = tripId,
-                latitude = liveLocation?.latitude,
-                longitude = liveLocation?.longitude,
+                latitude = liveMetrics.latitude,
+                longitude = liveMetrics.longitude,
                 distance = currentTrip?.distanceKm?:0.0,
                 durationMinutes = durationMin,
                 fuelEstimate = currentTrip?.fuelEstimate?:0.0
