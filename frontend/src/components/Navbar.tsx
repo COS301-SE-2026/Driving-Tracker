@@ -33,6 +33,7 @@ export default function Navbar() {
         <button type = "button" className = "flex items-center gap-1 font-medium font-semibold text-base text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
           Features
           <span className = {`text-xs transition-transform ${featuresOpen ? "rotate-180" : ""}`}>˅</span>
+          <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
         </button>
         {featuresOpen && (
           <div className = "absolute top-full left-0 flex flex-col py-2 w-64 bg-white border border-[var(--color-border)] rounded-lg shadow-lg">
@@ -44,8 +45,14 @@ export default function Navbar() {
             </div>
         )}
       </div>
-      <Link href = "/help" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">Help</Link>
-      <a href = "#download" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">Download</a>
+      <Link href = "/help" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+      Help
+      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </Link>
+      <a href = "#download" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+        Download
+        <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </a>
     </div>
 
     {/* Mobile menu to account for devices since we are android */}
@@ -57,7 +64,7 @@ export default function Navbar() {
       >
         {mobileMenuOpen ? "Close" : "Menu"}
       </button>
-      <img src = "/images/Logo.png" alt = "Driving Tracker Logo" className="h-20 w-20 rounded-full border border-[var(--color-border)]"/>
+      <img src = "/images/screen1.png" alt = "Driving Tracker Logo" className="h-15 w-15 rounded-full"/>
     </div>
 
     </nav>
