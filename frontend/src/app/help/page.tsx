@@ -4,12 +4,36 @@ import Footer from "@/components/Footer";
 import {useState} from "react";
 
 const FAQ = [
-    { question: "How do I connect my OBD-II adapter?", answer: "Go to the OBD tab, tap Add Device, and select your ELM327 adapter via Bluetooth." },
-  { question: "Is my driving data private?", answer: "Yes — your trip data is encrypted and only shared with contacts you explicitly choose." },
-  { question: "Does the app work without an OBD adapter?", answer: "Yes, core trip tracking and scoring work with just your phone's sensors and GPS." },
-  { question: "How is my driving score calculated?", answer: "It factors in braking, acceleration, speed consistency, and route conditions." },
-  { question: "Can I track a family member's driving?", answer: "Yes, add them as a trusted contact and enable trip sharing from their settings." },
-  { question: "Can I track a non-family member's driving?", answer: "No, add them as a trusted contact and enable trip sharing from their settings." },
+    {
+    question: "How do I share my trips with friends and family?",
+    answer:
+      "Go to the Contacts page and add a trusted contact. Before starting a trip, select a contact to share your journey with. If you forget, simply tap 'Share Trip' during the trip and choose one of your trusted contacts.",
+  },
+  {
+    question: "Is my data safe and private?",
+    answer:
+      "Yes. All trip data is encrypted and never sold or shared with third parties without your permission.",
+  },
+  {
+    question: "How do I connect my OBD device?",
+    answer:
+      "Open the OBD tab from the navigation bar, and then tap OBD Adapters. Press 'Add Device' and follow the on-screen instructions to connect your adapter.",
+  },
+  {
+    question: "What are Driver Profiles?",
+    answer:
+      "Driver Profiles classify your driving style based on events recorded across your previous trips. Categories include Safe Driver, Aggressive Accelerator, and Good Driver.",
+  },
+  {
+    question: "Do I need an OBD device to use the app?",
+    answer:
+      "No. You can track trips using your smartphone's GPS and motion sensors alone. An OBD device simply provides additional vehicle information such as RPM, engine temperature, and speed.",
+  },
+  {
+    question: "How is my Safety Score calculated?",
+    answer:
+      "Your Safety Score is based on driving events detected during each trip, such as harsh braking and harsh acceleration. Smoother, safer driving with fewer events results in a higher score.",
+  },
 ];
 
 const CARDS_PER_VIEW = 2;
@@ -17,6 +41,7 @@ const CARDS_PER_VIEW = 2;
 export default function Help(){
 
     const [activeSlide, setActiveSlide] = useState(0);
+    const [expandedCard, setExpandedCard] = useState<string | null>(null);
     const totalSlides = FAQ.length - CARDS_PER_VIEW + 1;
 
     return(
@@ -80,26 +105,49 @@ export default function Help(){
                         </button>
 
                         <div className="flex-1 min-w-0 overflow-hidden">
+
                             <div className="flex gap-4 transition-transform duration-500 ease-in-out"
+
                             style = {{
                                 transform: `translateX(calc(-${activeSlide} * (50% + 0.5rem)))`
                                 }}
                             >
                             
-                                {FAQ.map((item) => (
-                                    <div 
-                                    key = {item.question}
-                                    className="w-[calc(50%_-_0.5rem)] shrink-0 rounded-2xl bg-white 
-                                    border border-[var(--color-border)] shadow-sm p-4 flex flex-col gap-2"
-                                    >
-                                        <p className="font-semibold text-sm text-[var(--color-text)]">
-                                            {item.question}
-                                        </p>
-                                        <p className="text-s text-[var(--color-muted)] line-clamp-3">
-                                            {item.answer}
-                                        </p>
-                                    </div>
-                                ))}
+                                {FAQ.map((item) => {
+                                    const expanded = expandedCard === item.question;
+                                    return(
+
+                                        <button key = {item.question}
+
+                                        type = "button"
+
+                                        onClick={() =>
+                                            setExpandedCard(expanded ? null : item.question)
+                                        }
+
+                                        className={`w-[calc(50%_-_0.5rem)] shrink-0 rounded-2xl bg-white border 
+                                        border-[var(--color-border)] shadow-sm p-4 flex flex-col gap-2
+                                        text-left transition-all duration-300 hover:shadow-md
+                                        ${expanded ? "min-h-64 scale-105 border-[var(--color-primary)] shadow-lg" : "min-h-40 hover:shadow-md"}`}
+                                        >
+                                            <p className="font-semibold text-sm">
+                                                {item.question}
+                                            </p>
+
+                                            <p className={`text-sm text-[var(--color-muted)] transition-all duration-300 ${
+                                                expanded ? "" : "line-clamp-3"
+                                            }`}
+                                            >
+                                                {item.answer}
+                                            </p>
+
+                                            <span className="mt-auto text-xs font-medium text-[var(--color-primary)]">
+                                                {expanded ? "Show less" : "Read more"}
+                                            </span>
+
+                                        </button>
+                                    );
+                                })}
 
                             </div>
 

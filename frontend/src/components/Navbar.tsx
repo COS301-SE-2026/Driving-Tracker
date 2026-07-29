@@ -18,22 +18,20 @@ export default function Navbar() {
 
   return(
 
-    <nav className = "flex items-center justify-between px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
+    <nav className = "flex items-center px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
       <Link href = "/" className = "text-2xl md:text-3xl tracking-tight font-semibold">
         <span className = "text-[var(--color-primary)]">Driving </span>
         <span className = "text-[var(--color-text)]">Tracker</span>
       </Link>
 
     {/*Links*/}
-    <div className = "hidden md:flex items-center gap-10 md:gap-12">
+    <div className = "hidden md:flex flex-1 justify-end items-center gap-16 mr-8">
       {/*dropdown menu of the features*/}
       <div className = "relative"
       onMouseEnter = {() => setFeaturesOpen(true)}
       onMouseLeave= {() => setFeaturesOpen(false)}>
-        <button type = "button" className = "flex items-center gap-1 font-medium font-semibold text-base text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+        <button type = "button" className = "rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
           Features
-          <span className = {`text-xs transition-transform ${featuresOpen ? "rotate-180" : ""}`}>˅</span>
-          <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
         </button>
         {featuresOpen && (
           <div className = "absolute top-full left-0 flex flex-col py-2 w-64 bg-white border border-[var(--color-border)] rounded-lg shadow-lg">
@@ -45,11 +43,11 @@ export default function Navbar() {
             </div>
         )}
       </div>
-      <Link href = "/help" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+      <Link href = "/help" className = "rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
       Help
       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </Link>
-      <a href = "#download" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+      <a href = "#download" className = "rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
         Download
         <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </a>
