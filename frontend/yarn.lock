@@ -1120,6 +1120,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"animejs@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "animejs@npm:4.5.0"
+  peerDependencies:
+    "@types/three": ">=0.150.0"
+    three: ">=0.150.0"
+  peerDependenciesMeta:
+    "@types/three":
+      optional: true
+    three:
+      optional: true
+  checksum: 10c0/2e8c282bb5a7f6c7303ff113822e742d38c426e93046527598b3372630600a295dca47537db513eb32daba4d81a6b77996935826cea10d1e6b441da78598431e
+  languageName: node
+  linkType: hard
+
 "ansi-styles@npm:^4.1.0":
   version: 4.3.0
   resolution: "ansi-styles@npm:4.3.0"
@@ -2133,6 +2148,7 @@ __metadata:
     "@types/node": "npm:^20"
     "@types/react": "npm:^19"
     "@types/react-dom": "npm:^19"
+    animejs: "npm:^4.5.0"
     eslint: "npm:^9"
     eslint-config-next: "npm:15.3.1"
     next: "npm:15.3.1"
