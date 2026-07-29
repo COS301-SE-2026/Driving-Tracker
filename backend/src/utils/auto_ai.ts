@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
 
-import prisma from "../../src/db/prisma";// so i can get access to db 
+import prisma from "../db/prisma";// so i can get access to db 
 
 const ai = new GoogleGenAI({apiKey: process.env.GOOGLE_API_KEY});
 
