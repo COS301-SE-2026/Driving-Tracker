@@ -140,7 +140,7 @@ fun Vehicles(
                     }
                     LazyColumn(
                         modifier =  Modifier
-                            .fillMaxSize()
+                            .fillMaxSize().testTag("vehicleList")
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)

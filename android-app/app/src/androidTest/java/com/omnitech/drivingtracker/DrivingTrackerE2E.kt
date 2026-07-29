@@ -16,7 +16,7 @@ class DrivingTrackerE2E{
     fun useCase1ManageVehiclesFlow(){
 
         val uniqueName = "Test Car ${System.currentTimeMillis()}"
-        val editedName = "Edited"
+        val editedName = "Edited ${System.currentTimeMillis()}"
 
         //login - prereq
         composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
@@ -57,16 +57,18 @@ class DrivingTrackerE2E{
         composeTestRule.onNodeWithText("Vehicles").performClick()
 
         composeTestRule.waitUntil(7000) {
-            composeTestRule.onAllNodesWithTag("buttonOpenAddVehicleDialog").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithTag("vehicleList", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
         }
 
+        composeTestRule.onNodeWithTag("vehicleList", useUnmergedTree = true).performScrollToNode(hasTestTag("buttonOpenAddVehicleDialog"))
+
         //add new vehicle
-        composeTestRule.onNodeWithTag("buttonOpenAddVehicleDialog").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("buttonOpenAddVehicleDialog").performClick()
 
         composeTestRule.waitUntil(3000) {
             composeTestRule.onAllNodesWithText("Add New Vehicle").fetchSemanticsNodes().isNotEmpty()
         }
-        
+
         //fill dialog fields
         composeTestRule.onNodeWithTag("addVehicleName").performTextInput(uniqueName)
         composeTestRule.onNodeWithTag("addVehicleRegistration").performTextInput("ABC 123 GP")
@@ -82,15 +84,18 @@ class DrivingTrackerE2E{
 
         composeTestRule.waitForIdle()
         //verify
-        composeTestRule.waitUntil(5000){
-            composeTestRule.onAllNodesWithText(uniqueName).fetchSemanticsNodes().isNotEmpty()
-        }
+//        composeTestRule.waitUntil(5000){
+//            composeTestRule.onAllNodesWithText(uniqueName).fetchSemanticsNodes().isNotEmpty()
+//        }
+
+        composeTestRule.onNodeWithTag("vehicleList", useUnmergedTree = true).performScrollToNode(hasText(uniqueName))
 
         composeTestRule.onNodeWithText(uniqueName).assertIsDisplayed()
 
+        composeTestRule.onNodeWithTag("buttonVehicleOptions$uniqueName").performClick()
         //Edit
-        composeTestRule.onNode(hasContentDescription("Options") and
-                hasAnyAncestor(hasAnyChild(hasText(uniqueName)))).performClick()
+//        composeTestRule.onNode(hasContentDescription("Options") and
+//                hasAnyAncestor(hasAnyChild(hasText(uniqueName)))).performClick()
 
         composeTestRule.waitUntil(3000){
             composeTestRule.onAllNodesWithText("Edit Name").fetchSemanticsNodes().isNotEmpty()
@@ -103,16 +108,19 @@ class DrivingTrackerE2E{
         composeTestRule.onNodeWithText("Save").performClick()
 
         composeTestRule.waitForIdle()
-        composeTestRule.waitUntil(5000){
-            composeTestRule.onAllNodesWithText(editedName).fetchSemanticsNodes().isNotEmpty()
-        }
+//        composeTestRule.waitUntil(10000){
+//            composeTestRule.onAllNodesWithText(editedName).fetchSemanticsNodes().isNotEmpty()
+//        }
+
+        composeTestRule.onNodeWithTag("vehicleList", useUnmergedTree = true).performScrollToNode(hasText(editedName))
         composeTestRule.onNodeWithText(editedName).assertIsDisplayed()
 
         //Delete
-        composeTestRule.onNode(
-            hasContentDescription("Options") and
-            hasAnyAncestor(hasAnyChild(hasText(editedName)))
-        ).performClick()
+//        composeTestRule.onNode(
+//            hasContentDescription("Options") and
+//            hasAnyAncestor(hasAnyChild(hasText(editedName)))
+//        ).performClick()
+        composeTestRule.onNodeWithTag("buttonVehicleOptions$editedName").performClick()
 
         composeTestRule.onNodeWithText("Remove Vehicle").performClick()
         composeTestRule.onNodeWithText("Remove").performClick()
