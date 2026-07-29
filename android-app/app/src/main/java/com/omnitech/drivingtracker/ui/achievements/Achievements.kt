@@ -82,8 +82,8 @@ fun AchievementsContent(
             TopBar(
                 leftIcon = Icons.Default.ArrowBackIosNew,
                 rightIcon = Icons.Default.Settings,
-                onLeftClick = {navController?.navigate(Screen.More.route)},
-                onRightClick = {navController?.navigate(Screen.Settings.route)}
+                onLeftClick = {navController?.popBackStack() },
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
 

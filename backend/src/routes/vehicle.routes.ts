@@ -12,7 +12,7 @@ const vehicle_router = Router();
 //read basically get 
 vehicle_router.get("/get_all_vehicles", user_based_limiter, verify_token,vehicle.get_all_vehicles);
 //delete 
-
+vehicle_router.delete("/:vehicle_id", verify_token, vehicle.remove_vehicle);
 //Update 
-
+vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
 export default vehicle_router;

@@ -214,7 +214,26 @@ fun LiveTrip(
         mapToken = mapToken,
         liveLocation = liveLocation,
         contactsState = contactsState,
-        onEndTrip = { viewModel.endTrip(tripId) },
+        onEndTrip = {
+            // Get the live trip data from the current state
+            val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+            val durationMin = currentTrip?.startedAt?.let { startIso ->
+                try {
+                    val startTime = java.time.Instant.parse(startIso)
+                    val now = java.time.Instant.now()
+                    java.time.Duration.between(startTime, now).toMinutes().toInt()
+                } catch (e: Exception) { 0 }
+            } ?: 0
+            // Pass the actual totals to the ViewModel
+            viewModel.endTrip(
+                tripId = tripId,
+                latitude = liveLocation?.latitude,
+                longitude = liveLocation?.longitude,
+                distance = currentTrip?.distanceKm?:0.0,
+                durationMinutes = durationMin,
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+            )
+        },
         navController = navController,
         destination = destinationLoc,
         plannedRoute = plannedRoute,
@@ -323,6 +342,8 @@ fun LiveTripContent(
                             navController = navController,
                             contactsState = contactsState,
                             onShareTrip = onShareTrip,
+                            destination = destination,
+                            plannedRoute = plannedRoute,
                             vehicleMetrics = vehicleMetrics
                         )
                     }
@@ -537,7 +558,6 @@ private fun TripDetails(
         )
 
         Spacer(modifier = Modifier.weight(1f))
-        BottomNavBar(navController = navController, color = "trip")
 
     }
     if (showShareDialog){
@@ -621,6 +641,16 @@ fun TripTimer(startedAt:String){
             Instant.now()
         }
     }
+    LaunchedEffect(startTime){
+        while(true){
+            val seconds = java.time.Duration.between(startTime, Instant.now()).seconds
+            elapsedText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            delay(1000)
+        }
+    }
+    Text(text = elapsedText, style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold, color = Color.Black)
 }
 
 @Preview(showBackground = true)

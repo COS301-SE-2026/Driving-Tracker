@@ -179,7 +179,9 @@ data class EndTripRequest(
     @SerializedName("eco_score")
     val ecoScore: Double? = null,
     @SerializedName("overall_score")
-    val overallScore: Double? = null
+    val overallScore: Double? = null,
+    @SerializedName("end_location")
+    val endLocation: LocationDto? = null
 )
 
 data class EndTripResponse(
