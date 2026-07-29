@@ -46,7 +46,13 @@ data class SharedWithMeDto(
     val owner: String,
     val status: String,
     @SerializedName("started_at")
-    val startedAt: String
+    val startedAt: String,
+    @SerializedName("start_latitude")
+    val startLatitude: Double,
+    @SerializedName("start_longitude")
+    val startLongitude: Double,
+    @SerializedName("fuel_estimate")
+    val fuelEstimate: Double,
 )
 
 @Suppress("unused")

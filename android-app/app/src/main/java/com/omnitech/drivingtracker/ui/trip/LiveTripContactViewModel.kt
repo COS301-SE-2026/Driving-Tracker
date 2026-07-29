@@ -14,6 +14,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.SharedWithMeData
 import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
+import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.services.ApiService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +26,11 @@ import java.time.Instant
 import java.time.Duration
 
 @HiltViewModel
-class LiveTripContactViewModel @Inject constructor(private val api: ApiService, private val notificationRepository: NotificationsRepository) : ViewModel() {
+class LiveTripContactViewModel @Inject constructor(
+    private val api: ApiService,
+    private val notificationRepository: NotificationsRepository,
+    private val repository: TripRepository
+) : ViewModel() {
 
     data class UiState(
         val tripData: SharedWithMeDto? = null,
@@ -41,13 +46,38 @@ class LiveTripContactViewModel @Inject constructor(private val api: ApiService, 
     private val _durationMinutes = MutableStateFlow(0L)
     val durationMinutes: StateFlow<Long> = _durationMinutes
 
+    private val _mapToken = MutableStateFlow<String?>(null)
+    val mapTokenState: StateFlow<String?> = _mapToken
+
+    private val _distanceKm = MutableStateFlow(0.0)
+    val distanceKm: StateFlow<Double> = _distanceKm
+
+
     fun startPolling(tripId: String){
         viewModelScope.launch {
             while(isActive){
                 try{
                     val result = api.getLatestLocation(tripId)
-                    _uiState.update  { it.copy(location = result.data, isLoading = false) }
-                    if(result.data.status == "COMPLETED") break
+                    val locData = result.data
+                    _uiState.update  { it.copy(location = locData, isLoading = false) }
+
+                    val startLat = _uiState.value.tripData?.startLatitude
+                    val startLng = _uiState.value.tripData?.startLongitude
+
+                    if(startLat != null && startLng != null){
+                        val results = FloatArray(1)
+                        android.location.Location.distanceBetween(
+                            startLat,
+                            startLng,
+                            locData.lastLatitude,
+                            locData.lastLongitude,
+                            results
+                        )
+
+                        _distanceKm.value = results[0] / 1000.0
+                    }
+
+                    if(locData.status == "COMPLETED") break
 
                 } catch(e: HttpException){
                     val error = ApiErrorParser.parse(e)
@@ -72,6 +102,9 @@ class LiveTripContactViewModel @Inject constructor(private val api: ApiService, 
                     val specificTrip = allTrips.find { it.tripId == tripId }
                     _uiState.update { it.copy(tripData = specificTrip, isLoading = false) }
 
+                    repository.getMapToken().onSuccess { data ->
+                        _mapToken.value = data.token
+                    }
                 },
                 onFailure = {
                     _uiState.update { it.copy(isLoading = false, error = "Failed to load trip info") }
@@ -92,6 +125,16 @@ class LiveTripContactViewModel @Inject constructor(private val api: ApiService, 
             while(isActive){
                 _durationMinutes.value = calculateDuration(startedAt)
                 delay(60_000)
+            }
+        }
+    }
+
+    fun fetchMapToken() {
+        viewModelScope.launch {
+            repository.getMapToken().onSuccess { data ->
+                _mapToken.value = data.token
+            }.onFailure {
+                _mapToken.value = null
             }
         }
     }

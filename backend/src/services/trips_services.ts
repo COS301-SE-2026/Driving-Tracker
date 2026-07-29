@@ -856,6 +856,9 @@ export const trips_services ={
                         trip_id: true,
                         status: true,
                         start_time: true,
+                        start_latitude: true,
+                        start_longitude: true,
+                        fuel_estimate: true
                     }
                 },
                 owner: {
@@ -872,7 +875,10 @@ export const trips_services ={
             owner: s.owner.username,
             shared_at: s.shared_at,
             status: s.trip.status,
-            started_at: s.trip.start_time
+            started_at: s.trip.start_time,
+            start_latitude: s.trip.start_latitude,
+            start_longitude: s.trip.start_longitude,
+            fuel_estimate: s.trip.fuel_estimate
         }))??[];
 
         return result;

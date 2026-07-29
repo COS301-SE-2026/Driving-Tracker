@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -94,8 +95,11 @@ fun LiveTripContacts(
 
     val state by viewModel.uiState.collectAsState()
     val liveDuration by viewModel.durationMinutes.collectAsState()
+    val liveDistance by viewModel.distanceKm.collectAsState()
     var showTripEndDialog by remember { mutableStateOf(false) }
     var showAccessRevokedDialog by remember { mutableStateOf(false) }
+    val mapToken by viewModel.mapTokenState.collectAsState()
+    var recenterCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(tripId) {
         viewModel.loadTripInfo(tripId)
@@ -206,25 +210,44 @@ fun LiveTripContacts(
             .height(370.dp)
             .background(Color(0xFFD0D8E0))) {
 
-            // Map placeholder
-            Image(
-                painter = painterResource(id = R.drawable.map),
-                contentDescription = "Trip map",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.White)
+            if(mapToken != null){
+
+                AzureMapContainer(
+                    subscriptionKey = mapToken!!,
+                    latitude = state.tripData?.startLatitude?: state.location?.lastLatitude?:  -25.7479,
+                    longitude = state.tripData?.startLongitude?: state.location?.lastLongitude?: 28.2293,
+                    modifier = Modifier.fillMaxSize(),
+                    recenterTrigger = recenterCount
+                )
+                IconButton(
+                    onClick = { recenterCount++ },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = "Recenter",
+                        tint = Color.Black
+                    )
+                }
+            }else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White)
+                }
             }
+
         }
 
         Spacer(modifier = Modifier.height(25.dp))
 
         TripSummaryCard(
-            distanceKm = null,
+            distanceKm = liveDistance,
             durationMinutes = liveDuration.toInt(),
-            fuelEstimate = null,
-            avgSpeed = state.location?.lastSpeedKmh.toString(), //placeholder
+            fuelEstimate = state.tripData?.fuelEstimate,
+            avgSpeed = state.location?.lastSpeedKmh.toString(),
             isLive = true
         )
 
