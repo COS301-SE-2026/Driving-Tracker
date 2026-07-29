@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
@@ -43,11 +44,11 @@ export default function Navbar() {
             </div>
         )}
       </div>
-      <Link href = "/help" className = "rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
+      <Link href = "/help" className = "relative rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
       Help
       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </Link>
-      <a href = "#download" className = "rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
+      <a href = "#download" className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
         Download
         <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </a>
@@ -62,7 +63,12 @@ export default function Navbar() {
       >
         {mobileMenuOpen ? "Close" : "Menu"}
       </button>
-      <img src = "/images/screen1.png" alt = "Driving Tracker Logo" className="h-15 w-15 rounded-full"/>
+      <Image
+       src = "/images/screen1.png" 
+       alt = "Driving Tracker Logo" 
+       width={56}
+       height={56}
+       className="h-14 w-14 rounded-full"/>
     </div>
 
     </nav>

@@ -2,6 +2,8 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {useState} from "react";
+import Image from "next/image";
+
 
 const FAQ = [
     {
@@ -61,7 +63,7 @@ export default function Help(){
                     <div className="p-6 rounded-2xl bg-[var(--color-primary)]/10">
                         <p className="text-base text-[var(--color-muted)] leading-relaxed">
                             New to Driving Tracker? Buckle up and let us take the wheel!
-                            This quick tutorial will guide you through the app's key features, 
+                            This quick tutorial will guide you through the app&apos;s key features, 
                             helping you navigate with confidence, stay on track, 
                             and make the most of every journey.
                         </p>
@@ -177,7 +179,12 @@ export default function Help(){
                 </div>
 
                 <div className="md:w-32 flex justify-center">
-                    <img src = "/images/screen1.png" alt = "Driving Tracker Logo" className="h-24 w-24 rounded-full"/>
+                    <Image
+                     src = "/images/screen1.png" 
+                     alt = "Driving Tracker Logo" 
+                     width = {96}
+                     height={96}
+                     className="h-24 w-24 rounded-full"/>
                 </div>
             </section>
 

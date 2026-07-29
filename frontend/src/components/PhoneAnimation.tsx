@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useState} from "react";
+import {useRef} from "react";
+import Image from "next/image"
 import {animate} from "animejs";
 
 const PHONE_PICS = [
@@ -79,9 +80,11 @@ export default function PhoneAnimation(){
                 }}
                 >
 
-                <img
+                <Image
                 src = {phone.src}
                 alt = "Driving Tracker app screenshot"
+                width = {192}
+                height = {384}
                 className="w-full h-auto rounded-2xl shadow-2xl"
                 />
 
