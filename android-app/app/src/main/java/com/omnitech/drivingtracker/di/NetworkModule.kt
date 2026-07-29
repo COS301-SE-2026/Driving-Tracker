@@ -22,9 +22,6 @@ import com.omnitech.drivingtracker.BuildConfig
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    //const val BASE_URL = "http://10.0.2.2:3000/"
-    //const val BASE_URL = "http://:3000/"
-
     @Provides
     @Named("baseUrl")
     fun provideBaseUrl(): String = BuildConfig.BASE_URL
