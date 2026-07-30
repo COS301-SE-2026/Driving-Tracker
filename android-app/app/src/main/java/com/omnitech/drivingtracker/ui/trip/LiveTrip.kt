@@ -93,6 +93,33 @@ fun LiveTrip(
 
     val context = LocalContext.current
     val tripPath by viewModel.tripPath.collectAsState()
+
+    val liveDistance = remember(tripPath){
+        var total = 0.0
+        for(i in 0 until tripPath.size-1){
+            val start = tripPath[i]
+            val end = tripPath[i + 1]
+            if (start.lat != null && start.lng != null && end.lat != null && end.lng != null) {
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(start.lat, start.lng, end.lat, end.lng, results)
+                total += results[0]
+            }
+        }
+        total/ 1000.0
+    }
+    var liveDurationMinutes by remember { mutableStateOf(0) }
+    val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+
+    LaunchedEffect(currentTrip?.startedAt) {
+        val startIso = currentTrip?.startedAt ?: return@LaunchedEffect
+        while(true) {
+            try {
+                val startTime = java.time.Instant.parse(startIso)
+                liveDurationMinutes = java.time.Duration.between(startTime, java.time.Instant.now()).toMinutes().toInt()
+            } catch (e: Exception) { }
+            kotlinx.coroutines.delay(30000) // Update every 30 seconds
+        }
+    }
     //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
     //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
@@ -218,6 +245,8 @@ fun LiveTrip(
         uiState = uiState,
         endTripState = currentEndTripState,
         mapToken = mapToken,
+        liveDistance = liveDistance,
+        liveDuration = liveDurationMinutes ,
         liveLocation = liveMetrics,
         actualRoute = tripPath,
         contactsState = contactsState,
@@ -236,8 +265,8 @@ fun LiveTrip(
                 tripId = tripId,
                 latitude = liveMetrics.latitude,
                 longitude = liveMetrics.longitude,
-                distance = currentTrip?.distanceKm?:0.0,
-                durationMinutes = durationMin,
+                distance = liveDistance,
+                durationMinutes = liveDurationMinutes,
                 fuelEstimate = currentTrip?.fuelEstimate?:0.0
             )
         },
@@ -269,6 +298,8 @@ fun LiveTripContent(
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
+    liveDistance: Double =0.0,
+    liveDuration: Int= 0
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
@@ -353,7 +384,9 @@ fun LiveTripContent(
                             destination = destination,
                             plannedRoute = plannedRoute,
                             actualRoute = actualRoute,
-                            vehicleMetrics = vehicleMetrics
+                            vehicleMetrics = vehicleMetrics,
+                            liveDistance = liveDistance,
+                            liveDuration = liveDuration
                         )
                     }
 
@@ -377,7 +410,9 @@ private fun TripDetails(
     actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
-    vehicleMetrics: VehicleMetrics
+    vehicleMetrics: VehicleMetrics,
+    liveDistance: Double = 0.0,
+    liveDuration: Int = 0
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -566,8 +601,8 @@ private fun TripDetails(
         Spacer(modifier = Modifier.height(25.dp))
 
         TripSummaryCard(
-            distanceKm = trip.distanceKm,
-            durationMinutes = trip.durationMinutes,
+            distanceKm = liveDistance,
+            durationMinutes = liveDuration,
             fuelEstimate = trip.fuelEstimate,
             avgSpeed = vehicleMetrics.speed.toString(),
             isLive = true
