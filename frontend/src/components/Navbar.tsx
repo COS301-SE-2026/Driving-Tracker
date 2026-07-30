@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
@@ -18,21 +19,20 @@ export default function Navbar() {
 
   return(
 
-    <nav className = "flex items-center justify-between px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
+    <nav className = "flex items-center px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
       <Link href = "/" className = "text-2xl md:text-3xl tracking-tight font-semibold">
-        <span className = "text-[var(--color-text)]">Driving </span>
-        <span className = "text-[var(--color-primary)]">Tracker</span>
+        <span className = "text-[var(--color-primary)]">Driving </span>
+        <span className = "text-[var(--color-text)]">Tracker</span>
       </Link>
 
     {/*Links*/}
-    <div className = "hidden md:flex items-center gap-10 md:gap-12">
+    <div className = "hidden md:flex flex-1 justify-end items-center gap-16 mr-8">
       {/*dropdown menu of the features*/}
       <div className = "relative"
       onMouseEnter = {() => setFeaturesOpen(true)}
       onMouseLeave= {() => setFeaturesOpen(false)}>
-        <button type = "button" className = "flex items-center gap-1 font-medium font-semibold text-base text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">
+        <button type = "button" className = "rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
           Features
-          <span className = {`text-xs transition-transform ${featuresOpen ? "rotate-180" : ""}`}>˅</span>
         </button>
         {featuresOpen && (
           <div className = "absolute top-full left-0 flex flex-col py-2 w-64 bg-white border border-[var(--color-border)] rounded-lg shadow-lg">
@@ -44,8 +44,14 @@ export default function Navbar() {
             </div>
         )}
       </div>
-      <Link href = "/help" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">Help</Link>
-      <a href = "#download" className = "font-medium text-[var(--color-text)] hover:text-[var(--color-primary)] transition-colors">Download</a>
+      <Link href = "/help" className = "relative rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
+      Help
+      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </Link>
+      <a href = "#download" className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
+        Download
+        <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </a>
     </div>
 
     {/* Mobile menu to account for devices since we are android */}
@@ -57,7 +63,12 @@ export default function Navbar() {
       >
         {mobileMenuOpen ? "Close" : "Menu"}
       </button>
-      <img src = "/images/Logo.png" alt = "Driving Tracker Logo" className="h-20 w-20 rounded-full border border-[var(--color-border)]"/>
+      <Image
+       src = "/images/screen1.png" 
+       alt = "Driving Tracker Logo" 
+       width={56}
+       height={56}
+       className="h-14 w-14 rounded-full"/>
     </div>
 
     </nav>

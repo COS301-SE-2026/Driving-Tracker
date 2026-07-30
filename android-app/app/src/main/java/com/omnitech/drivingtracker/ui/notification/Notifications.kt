@@ -37,6 +37,7 @@ fun NotificationsScreen(
     var expandedThisWeek by remember { mutableStateOf(true) }
     var expandedEarlier by remember { mutableStateOf(true) }
     var expandedRequests by remember { mutableStateOf(true) }
+    var expandedTrips by remember { mutableStateOf(true) }
 
     //Ui state
     val state by viewModel.uiState.collectAsState()
@@ -45,6 +46,7 @@ fun NotificationsScreen(
     LaunchedEffect(Unit) {
         viewModel.getContactRequests()
         viewModel.getNotifications()
+        viewModel.getTripsSharedWithMe()
     }
 
     Scaffold(
@@ -53,7 +55,7 @@ fun NotificationsScreen(
                 leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 rightIcon = Icons.Default.Settings,
                 onLeftClick = { navController?.popBackStack() },
-                onRightClick = {navController?.navigate(Screen.Settings.route)}
+                onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
         },
         bottomBar = {
@@ -88,6 +90,33 @@ fun NotificationsScreen(
                             Text(text = noNotificationError,
                                 style = MaterialTheme.typography.bodyMedium,
                             )
+                        }
+                    }
+                }
+            }
+
+            item{ Spacer(modifier = Modifier.height(24.dp)) }
+
+            item{
+                NotificationSectionHeader("Trips Shared With You", expandedTrips) { expandedTrips = !expandedTrips }
+            }
+            item {
+                AnimatedVisibility(visible = expandedTrips) {
+                    Column {
+
+                        val tripsSharedWithYou = state.trips
+
+                        if(tripsSharedWithYou.isEmpty()){
+                            Text(text = noNotificationError,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        } else {
+                            tripsSharedWithYou.forEach{ trip ->
+                                val body = "View ${trip.owner}'s shared trip"
+                                NotificationCard(NotificationItem(trip.tripId, NotificationType.valueOf("VIEW_SHARED_TRIP"), body = body),
+                                    onAccept = { navController?.navigate(Screen.LiveTripContacts.createRoute(trip.tripId, trip.owner)) }
+                                )
+                            }
                         }
                     }
                 }

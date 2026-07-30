@@ -41,6 +41,32 @@ class VehiclesViewModel @Inject constructor(
         }
     }
 
+    fun updateVehicleName(vehicleId: String, newName: String){
+        viewModelScope.launch{
+            repository.updateVehicleName(vehicleId, newName).fold(
+                onSuccess = {
+                    loadVehicles()
+                },
+                onFailure = {exception ->
+                    _uiState.value = UiState.Error(exception.message ?: "Failed to update name")
+                }
+            )
+        }
+    }
+
+    fun removeVehicle(vehicleId: String){
+        viewModelScope.launch{
+            repository.removeVehicle(vehicleId).fold(
+                onSuccess = {
+                    loadVehicles()
+                },
+                onFailure = {exception ->
+                    _uiState.value = UiState.Error(exception.message ?: "Failed to delete vehicle")
+                }
+            )
+        }
+    }
+
     sealed class UiState{
         object Loading: UiState()
         data class Success(val vehicles: List<VehicleDto>) : UiState()

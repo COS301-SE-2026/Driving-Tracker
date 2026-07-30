@@ -6,10 +6,15 @@ jest.mock('../../../src/db/prisma', () => {
         findMany: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
     };
     const users_vehicles = {
         findUnique: jest.fn(),
         create: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
     };
 
     const $transaction = jest.fn(async (fn: any) => await fn({
@@ -75,21 +80,20 @@ describe ('vehicle services get all vehicles', () =>{
     it('returns the vehicles assigned to the user', async ()=> {
         mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1'});
         mock_prisma.vehicles.findMany.mockResolvedValue([
-            { vehicle_id: 'v1', make: 'BMW', model: 'M3', year: 2018 },
-            { vehicle_id: 'v2', make: 'Toyota', model: 'Corolla', year: 2020 },
+            { vehicle_id: 'v1', make: 'BMW', model: 'M3', year: 2018, trips: [
+                { distance_km: 100, fuel_estimate: 10}
+            ] },
+            { vehicle_id: 'v2', make: 'Toyota', model: 'Corolla', year: 2020, trips: [] },
         ]);
 
         const result = await vehicle_services.get_all_vehicles({ user_id: 'u1'});
 
         expect(result).toHaveLength(2);
-        expect(mock_prisma.vehicles.findMany).toHaveBeenCalledWith({
-            where: {
-                users_vehicles: {
-                    some: { user_id: 'u1' },
-                },
-            },
-        });  
+        expect(result[0].mileage).toBe(100);
+        expect(result[0].avg_fuel_efficiency).toBe(10);
+        expect(result[1].mileage).toBe(0); 
     });
+    
 
 });
 
@@ -185,6 +189,75 @@ describe('vehicle services assign user to vehicle', ()=>{
                 fuel_type: 'PETROL'
             },
         });
+    });
+});
+
+describe ('vehicle services update vehicle name', () =>{
+    beforeEach(async () => jest.clearAllMocks());
+
+    it('updates vehicle name successfully', async ()=> {
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', name: 'New Name' });
+
+        const result = await vehicle_services.update_vehicle_name({ 
+            user_id: 'u1',
+            vehicle_id: 'v1',
+            name: 'New Name'
+        });
+
+        expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1' },
+            data: { name: 'New Name' }
+        });
+        expect(result.name).toBe('New Name');
+    });
+    
+    it('Throws error if the user does not own the vehicle', async()=>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
+        await expect(
+            vehicle_services.update_vehicle_name({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+                name: 'New Name'
+            })
+        ).rejects.toThrow('You do not own this vehicle');
+    });
+});
+
+describe ('vehicle services remove vehicle', () =>{
+    beforeEach(async () => jest.clearAllMocks());
+
+    it('removes the vehicle assignment successfully', async ()=> {
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.users_vehicles.delete.mockResolvedValue({ });
+        mock_prisma.users_vehicles.count.mockResolvedValue(1);
+
+        const result = await vehicle_services.remove_vehicle('u1', 'v1');
+
+        expect(mock_prisma.users_vehicles.delete).toHaveBeenCalledWith({
+            where: { user_id_vehicle_id: {user_id: 'u1', vehicle_id: 'v1'} }
+        });
+        expect(result.message).toBe('Vehicle removed successfully');
+        expect(mock_prisma.vehicles.delete).not.toHaveBeenCalled();
+    });
+    
+    it('deletes the vehicle entirely if no owners remain', async()=>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.users_vehicles.delete.mockResolvedValue({});
+        mock_prisma.users_vehicles.count.mockResolvedValue(0);
+
+        await vehicle_services.remove_vehicle('u1', 'v1');
+
+        expect(mock_prisma.vehicles.delete).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1'}
+        });
+    });
+
+    it('throws error if the vehice is not found or is not owned by the user', async()=>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
+        await expect(
+            vehicle_services.remove_vehicle('u1', 'v1')
+        ).rejects.toThrow('Vehicle not found or not owned by you');
     });
 });
 

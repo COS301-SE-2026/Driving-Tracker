@@ -33,11 +33,11 @@ fun BadgeSection() {
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Text(
-                "View more",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Blue
-            )
+//            Text(
+//                "View more",
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = Blue
+//            )
 
         }
 

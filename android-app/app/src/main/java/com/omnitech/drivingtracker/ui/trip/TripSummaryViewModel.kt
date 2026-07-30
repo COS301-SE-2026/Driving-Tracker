@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ import java.time.Instant
 import javax.inject.Inject
 
 @HiltViewModel
-class TripSummaryViewModel @Inject constructor(private val repository: TripRepository) : ViewModel() {
+class TripSummaryViewModel @Inject constructor(private val repository: TripRepository, private val sensorFusionManager: SensorFusionManager) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -25,6 +26,8 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
         ) : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
+
+    val liveMetrics = sensorFusionManager.liveMetrics
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
@@ -87,29 +90,25 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
         }
     }
 
-    fun endTrip(tripId: String) {
+    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
             
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
-            val mockDistance = 5.4 
-            val mockDuration = 1
-            val mockFuel = 7.5
-            val mockSafety = 85.0
-            val mockEco = 90.0
-            val mockOverall = 87.5
+
 
             repository.endTrip(
                 tripId = tripId,
                 endTime = endTime,
                 status = status,
-                distanceKm = mockDistance,
-                durationMinutes = mockDuration,
-                fuelEstimate = mockFuel,
-                safetyScore = mockSafety,
-                ecoScore = mockEco,
-                overallScore = mockOverall
+                distanceKm = distance,
+                durationMinutes = durationMinutes,
+                fuelEstimate = fuelEstimate,
+                endLocation = if (latitude != null && longitude != null) {
+                    LocationDto(lat = latitude, lng = longitude)
+                } else null,
+
             ).fold(
                 onSuccess = { data ->
                     _endTripState.value = UiState.Success(
@@ -121,9 +120,9 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
                             status = status,
                             dataSource = null,
                             routePolyline = null,
-                            distanceKm = mockDistance,
-                            durationMinutes = mockDuration,
-                            fuelEstimate = mockFuel,
+                            distanceKm = distance,
+                            durationMinutes = durationMinutes,
+                            fuelEstimate = fuelEstimate,
                             scores = null,
                             events = emptyList()
                         ),

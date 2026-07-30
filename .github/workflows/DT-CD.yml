@@ -1,0 +1,131 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+  REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+  SITE_CONTAINER_NAME: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 #v4.4.0
+
+      - name: Login to Azure
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474 #v2.3.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          echo "$ACR_PASSWORD" | docker login $REGISTRY \
+            --username "$ACR_USERNAME" \
+            --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" ./backend
+
+      - name: Push Docker image
+        run: |
+          docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+
+      # Save currently deployed image 
+      - name: Save current image
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        id: previous
+        run: |
+          CURRENT_IMAGE=$(az webapp sitecontainers list \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
+            --query "[0].image" \
+            -o tsv)
+
+          echo "Current image: $CURRENT_IMAGE"
+          echo "previous_image=$CURRENT_IMAGE" >> "$GITHUB_OUTPUT"
+
+      
+      # Deploy new image
+      - name: Deploy image
+        env: 
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          az webapp sitecontainers update \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
+            --container-name "$SITE_CONTAINER_NAME" \
+            --image "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+            --registry-username "$ACR_USERNAME" \
+            --registry-password "$ACR_PASSWORD"
+
+      - name: Restart App Service
+        env:
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+        run: |
+          az webapp restart \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME"
+
+      - name: Health Check with Retry
+        env:
+          AZURE_WEBAPP_URL: ${{ secrets.AZURE_WEBAPP_URL }}
+        run: |
+          MAX_RETRIES=30
+          RETRY_COUNT=0 
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://$AZURE_WEBAPP_URL.azurewebsites.net/health")
+            echo "Attempt $((RETRY_COUNT+1)): Status $STATUS"
+
+            if [ "$STATUS" == "200" ]; then
+              echo "application is Healthy"
+              exit 0
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            sleep 10
+          done
+
+          echo "Health check timed out after 5 minutes"
+          exit 1
+
+      # Automatic rollback to previous good image using the SHA
+      - name: Roll back
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        if: failure()
+        run: |
+          echo "Rolling back to:"
+          echo "${{ steps.previous.outputs.previous_image }}"
+
+          az webapp sitecontainers update \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" \
+            --container-name "$SITE_CONTAINER_NAME" \
+            --image "${{ steps.previous.outputs.previous_image }}" \
+            --registry-username "$ACR_USERNAME" \
+            --registry-password "$ACR_PASSWORD"
+
+          az webapp restart \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME"

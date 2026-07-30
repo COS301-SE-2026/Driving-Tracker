@@ -43,6 +43,7 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.ConsentStatus
+import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
@@ -72,6 +73,7 @@ fun LiveTrip(
     val endTripState by viewModel.endTripState.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
+    val liveMetrics by viewModel.liveMetrics.collectAsState()
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
@@ -90,36 +92,36 @@ fun LiveTrip(
     }
 
     val context = LocalContext.current
-    val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
-    var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
+    //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
+    //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
-    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
-        if (locationPermissionState.allPermissionsGranted) {
-            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
-            ).build()
+//    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
+//        if (locationPermissionState.allPermissionsGranted) {
+//            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+//                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
+//            ).build()
+//
+//            val callback = object : com.google.android.gms.location.LocationCallback() {
+//                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+//                    liveLocation = result.lastLocation
+//                }
+//            }
+//
+//            try {
+//                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
+//            } catch (e: SecurityException) {
+//                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
+//            }
+//        }
+//    }
 
-            val callback = object : com.google.android.gms.location.LocationCallback() {
-                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-                    liveLocation = result.lastLocation
-                }
-            }
-
-            try {
-                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
-            } catch (e: SecurityException) {
-                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
-            }
-        }
-    }
-
-    LaunchedEffect(liveLocation, uiState) {
-        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
-        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
-        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
-        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
-    }
-    LaunchedEffect(uiState, mapToken, liveLocation) {
+//    LaunchedEffect(liveLocation, uiState) {
+//        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+//        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
+//        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
+//        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
+//    }
+    LaunchedEffect(uiState, mapToken, liveMetrics) {
         val state = uiState
         if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
             val trip = state.trip
@@ -129,8 +131,10 @@ fun LiveTrip(
 
 
                 //  remove the hardcoded Pretoria fallback here to avoid the route jumping
-                val startLat = liveLocation?.latitude ?: trip.events.firstOrNull()?.latitude
-                val startLng = liveLocation?.longitude ?: trip.events.firstOrNull()?.longitude
+//                val startLat = liveLocation?.latitude ?: trip.events.firstOrNull()?.latitude
+//                val startLng = liveLocation?.longitude ?: trip.events.firstOrNull()?.longitude
+                val startLat = liveMetrics.latitude
+                val startLng = liveMetrics.longitude
 
                 //  have valid coordinates
                 if (startLat != null && startLng != null) {
@@ -212,9 +216,28 @@ fun LiveTrip(
         uiState = uiState,
         endTripState = currentEndTripState,
         mapToken = mapToken,
-        liveLocation = liveLocation,
+        liveLocation = liveMetrics,
         contactsState = contactsState,
-        onEndTrip = { viewModel.endTrip(tripId) },
+        onEndTrip = {
+            // Get the live trip data from the current state
+            val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+            val durationMin = currentTrip?.startedAt?.let { startIso ->
+                try {
+                    val startTime = java.time.Instant.parse(startIso)
+                    val now = java.time.Instant.now()
+                    java.time.Duration.between(startTime, now).toMinutes().toInt()
+                } catch (e: Exception) { 0 }
+            } ?: 0
+            // Pass the actual totals to the ViewModel
+            viewModel.endTrip(
+                tripId = tripId,
+                latitude = liveMetrics.latitude,
+                longitude = liveMetrics.longitude,
+                distance = currentTrip?.distanceKm?:0.0,
+                durationMinutes = durationMin,
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+            )
+        },
         navController = navController,
         destination = destinationLoc,
         plannedRoute = plannedRoute,
@@ -232,12 +255,12 @@ fun LiveTripContent(
     uiState: TripSummaryViewModel.UiState,
     endTripState: TripSummaryViewModel.UiState = TripSummaryViewModel.UiState.Idle,
     mapToken: String? = null,
-    liveLocation: android.location.Location? = null,
+    liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
-    destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
-    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null,
+    destination: LocationDto? = null,
+    plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
@@ -323,6 +346,8 @@ fun LiveTripContent(
                             navController = navController,
                             contactsState = contactsState,
                             onShareTrip = onShareTrip,
+                            destination = destination,
+                            plannedRoute = plannedRoute,
                             vehicleMetrics = vehicleMetrics
                         )
                     }
@@ -339,12 +364,12 @@ private fun TripDetails(
     trip: TripSummaryDto,
     endTripState: TripSummaryViewModel.UiState,
     mapToken: String?,
-    liveLocation: android.location.Location?,
+    liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState,
     onEndTrip: () -> Unit,
     navController: NavController?,
-    destination: com.omnitech.drivingtracker.data.models.LocationDto? = null,
-    plannedRoute: List<com.omnitech.drivingtracker.data.models.LocationDto>? = null,
+    destination: LocationDto? = null,
+    plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
     vehicleMetrics: VehicleMetrics
 ) {
@@ -352,18 +377,32 @@ private fun TripDetails(
     var showShareDialog by remember {mutableStateOf(false)}
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
 
+    val currentLat = if( liveLocation != null && liveLocation.latitude != 0.0){
+        liveLocation.latitude
+    }else {
+        trip.events.firstOrNull()?.latitude
+    }
+
+    val currentLng = if( liveLocation != null && liveLocation.longitude != 0.0){
+        liveLocation.longitude
+    }else {
+        trip.events.firstOrNull()?.longitude
+    }
+
+    val hasValidLocation = currentLat!= null && currentLng != null  && currentLat != 0.0
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Map
         Box(modifier = Modifier
             .fillMaxWidth()
             .height(370.dp)
             .background(Color(0xFFD0D8E0))) {
-            if (mapToken != null) {
+            if (mapToken != null && hasValidLocation) {
                 val latestEvent = trip.events.lastOrNull()
                 AzureMapContainer(
                     subscriptionKey = mapToken,
-                    latitude = liveLocation?.latitude ?: latestEvent?.latitude ?: -25.7479,
-                    longitude = liveLocation?.longitude ?: latestEvent?.longitude ?: 28.2293,
+                    latitude = currentLat,
+                    longitude = currentLng,
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
@@ -537,7 +576,6 @@ private fun TripDetails(
         )
 
         Spacer(modifier = Modifier.weight(1f))
-        BottomNavBar(navController = navController, color = "trip")
 
     }
     if (showShareDialog){
@@ -621,6 +659,16 @@ fun TripTimer(startedAt:String){
             Instant.now()
         }
     }
+    LaunchedEffect(startTime){
+        while(true){
+            val seconds = java.time.Duration.between(startTime, Instant.now()).seconds
+            elapsedText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            delay(1000)
+        }
+    }
+    Text(text = elapsedText, style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold, color = Color.Black)
 }
 
 @Preview(showBackground = true)
