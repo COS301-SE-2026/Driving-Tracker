@@ -77,7 +77,7 @@ export default function Help(){
                         
                         <video 
                         controls
-                        poster = "/images/tutorial.png"
+                        poster = {`${BASE_PATH}/images/tutorial.png`}
                         className="w-full h-full rounded-2xl object-cover"
                         >
                             <source src = {`${BASE_PATH}/videos/tutorial.mp4`} type = "video/mp4" />
