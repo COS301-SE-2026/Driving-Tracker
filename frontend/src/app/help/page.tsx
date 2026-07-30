@@ -79,7 +79,7 @@ export default function Help(){
                         poster = "/images/tutorial.png"
                         className="w-full h-full rounded-2xl object-cover"
                         >
-                            <source src = "/videos/how-to-use-driving-tracker.mp4" type = "video/mp4" />
+                            <source src = "/videos/tutorial.mp4" type = "video/mp4" />
                             Your browser does not support this video.
                         </video>
                         
