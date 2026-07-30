@@ -19,7 +19,7 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
 
-[![Uptime Status](https://githubusercontent.com)](https:://SenteMngomez.github.io/upptime)
+[![Uptime Status](https://githubusercontent.com)](https://SenteMngomez.github.io/upptime)
 
 ![Static Badge](https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs)
 ![Static Badge](https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin)
