@@ -33,6 +33,8 @@ Gendac (Software, Innovations & IoT)
 
 - [Project Description](#project-description)
 - [Documentation](#documentation)
+- [Demos & Project Management](#demos-&-project-management)
+- [Deployed Pages](#deployed-pages)
 - [Meet OmniTech](#meet-omnitech)
 - [Tech Stack](#tech-stack)
 - [Branching Strategy](#branching-strategy)
@@ -57,15 +59,23 @@ The system operates across three layers:
 ## Documentation
 [Software Requirement Specification](docs/Documentation-Demo2/OmniTech%20SRS.pdf)\
 [Software Architecture Specification](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
-[Coding Standards](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
-[Testing Policy](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
-[User Manual](docs/Documentation-Demo2/User%Manual.pdf)\
+[Coding Standards](docs/Documentation-Demo2/Coding-Standards.pdf)\
+[Testing Policy](docs/Documentation-Demo2/testing-policy.pdf)\
+[User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
 [Brand style guide](docs/Documentation-Demo2/Brand%20Style%20Guide.pdf)\
-[Wireframes](docs/Documentation-Demo2/Wireframes.pdf)\
+[Wireframes](docs/Documentation-Demo2/wireframes.pdf)\
+[Wireframes Figma Link](https://www.figma.com/design/JEv1W9Jh1mvtZmtRENtL85/Wireframes?node-id=0-1&t=x2XNBSR5ZJ1KePqF-1)
 
+---
 
+## Demos & Project Management
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)
+[Demo2 video](docs/Documentation-Demo2/Demo2.mp4)
+
+---
+## Deployed Pages
+[Landing Page (Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
 
 ---
 
