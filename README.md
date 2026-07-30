@@ -55,9 +55,15 @@ The system operates across three layers:
 ---
 
 ## Documentation
-[Software Requirement Specification](docs/Documentation-Demo1/OmniTech%20SRS.pdf)\
-[Wireframes](docs/Documentation-Demo1/Wireframes.pdf)\
-[Brand style guide](docs/Documentation-Demo1/Brand%20Style%20Guide.pdf)\
+[Software Requirement Specification](docs/Documentation-Demo2/OmniTech%20SRS.pdf)\
+[Software Architecture Specification](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
+[Coding Standards](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
+[Testing Policy](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
+[User Manual](docs/Documentation-Demo2/User%Manual.pdf)\
+[Brand style guide](docs/Documentation-Demo2/Brand%20Style%20Guide.pdf)\
+[Wireframes](docs/Documentation-Demo2/Wireframes.pdf)\
+
+
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)
 
