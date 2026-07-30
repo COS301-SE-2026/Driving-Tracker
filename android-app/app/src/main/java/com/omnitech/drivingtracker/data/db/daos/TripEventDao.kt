@@ -33,4 +33,7 @@ interface TripEventDao {
 
     @Query("UPDATE trip_events SET synced=1 WHERE event_id = :eventId")
     suspend fun markAsSynced(eventId: Int)
+
+    @Query("SELECT * FROM trip_events WHERE trip_id = :tripId ORDER BY recorded_at ASC")
+    fun getTripEventsFlow(tripId: String): kotlinx.coroutines.flow.Flow<List<TripEventEntity>>
 }
