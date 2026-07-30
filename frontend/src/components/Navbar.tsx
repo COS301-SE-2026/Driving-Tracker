@@ -2,6 +2,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import Image from "next/image";
+import {BASE_PATH} from "@/lib/basePath";
 
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
@@ -64,7 +65,7 @@ export default function Navbar() {
         {mobileMenuOpen ? "Close" : "Menu"}
       </button>
       <Image
-       src = "/images/screen1.png" 
+       src = {`${BASE_PATH}/images/screen1.png`} 
        alt = "Driving Tracker Logo" 
        width={56}
        height={56}

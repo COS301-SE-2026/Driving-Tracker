@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {useState} from "react";
 import Image from "next/image";
+import {BASE_PATH} from "@/lib/basePath";
 
 
 const FAQ = [
@@ -79,7 +80,7 @@ export default function Help(){
                         poster = "/images/tutorial.png"
                         className="w-full h-full rounded-2xl object-cover"
                         >
-                            <source src = "/videos/tutorial.mp4" type = "video/mp4" />
+                            <source src = {`${BASE_PATH}/videos/tutorial.mp4`} type = "video/mp4" />
                             Your browser does not support this video.
                         </video>
                         
@@ -180,7 +181,7 @@ export default function Help(){
 
                 <div className="md:w-32 flex justify-center">
                     <Image
-                     src = "/images/screen1.png" 
+                     src = {`${BASE_PATH}/images/screen1.png`} 
                      alt = "Driving Tracker Logo" 
                      width = {96}
                      height={96}

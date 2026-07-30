@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react"
 import { animate, stagger } from "animejs"
+import {BASE_PATH} from "@/lib/basePath";
 
 //Screenshots for carousel
 const APP_SCREENSHOTS = [
-  "/images/Screenshot_Connect.jpg",
-  "/images/Screenshot_Home.jpg",
-  "/images/Screenshot_OBDdata.jpg",
+  `${BASE_PATH}/images/Screenshot_Connect.jpg`,
+  `${BASE_PATH}/images/Screenshot_Home.jpg`,
+  `${BASE_PATH}/images/Screenshot_OBDdata.jpg`,
 ];
 
 const FEATURES = [
