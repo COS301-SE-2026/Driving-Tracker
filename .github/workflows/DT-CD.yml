@@ -83,21 +83,28 @@ jobs:
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --name "$AZURE_WEBAPP_NAME"
 
-      - name: Wait for application
-        run: sleep 45
-
-      - name: Health Check
+      - name: Health Check with Retry
         env:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          MAX_RETRIES=30
+          RETRY_COUNT=0 
+          while[ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             https://$AZURE_WEBAPP_NAME.azurewebsites.net/health)
+            echo "Attempt $((RETRY_COUNT+1)): Status $STATUS"
 
-          echo "Status: $STATUS"
+            if [ "$STATUS" == "200" ]; then
+              echo "application is Healthy"
+              exit 0
+            fi
 
-          if [ "$STATUS" != "200" ]; then
-            exit 1
-          fi
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            sleep 10
+          done
+
+          echo "Health check timed out after 5 minutes"
+          exit 1
 
       # Automatic rollback to previous good image using the SHA
       - name: Roll back
