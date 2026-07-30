@@ -9,6 +9,7 @@ env:
   IMAGE_TAG: ${{ github.sha }}
   REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+  SITE_CONTAINER_NAME: main
 
 jobs:
   deploy:
@@ -47,10 +48,10 @@ jobs:
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         id: previous
         run: |
-          CURRENT_IMAGE=$(az webapp config container show \
+          CURRENT_IMAGE=$(az webapp sitecontainers list \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --name "$AZURE_WEBAPP_NAME" \
-            --query dockerCustomImageName \
+            --query "[0].image" \
             -o tsv)
 
           echo "Current image: $CURRENT_IMAGE"
@@ -65,13 +66,13 @@ jobs:
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
         run: |
-          az webapp config container set \
+          az webapp sitecontainers update \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --name "$AZURE_WEBAPP_NAME" \
-            --container-image-name "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
-            --container-registry-url https://$REGISTRY \
-            --container-registry-user "$ACR_USERNAME" \
-            --container-registry-password "$ACR_PASSWORD"
+            --container-name "$SITE_CONTAINER_NAME" \
+            --image "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" \
+            --registry-username "$ACR_USERNAME" \
+            --registry-password "$ACR_PASSWORD"
 
       - name: Restart App Service
         env:
@@ -110,13 +111,13 @@ jobs:
           echo "Rolling back to:"
           echo "${{ steps.previous.outputs.previous_image }}"
 
-          az webapp config container set \
+          az webapp sitecontainers update \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --name "$AZURE_WEBAPP_NAME" \
-            --container-image-name "${{ steps.previous.outputs.previous_image }}" \
-            --container-registry-url https://$REGISTRY \
-            --container-registry-user "$ACR_USERNAME" \
-            --container-registry-password "$ACR_PASSWORD"
+            --container-name "$SITE_CONTAINER_NAME" \
+            --image "${{ steps.previous.outputs.previous_image }}" \
+            --registry-username "$ACR_USERNAME" \
+            --registry-password "$ACR_PASSWORD"
 
           az webapp restart \
             --resource-group "$AZURE_RESOURCE_GROUP" \
