@@ -23,6 +23,9 @@ class TripRepository @Inject constructor(
     private val tripDao: TripDao,
     private val sessionManager: SessionManager
     ){
+    suspend fun getTripReadings(tripId: String): List<TripReadingEntity>{
+        return tripReadingDao.getTripReadings(tripId)
+    }
 
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
 
@@ -207,6 +210,8 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }
+
+    fun getLocalEventsFlow(tripId: String) = tripEventDao.getTripEventsFlow(tripId)
 
     suspend fun endTrip(
         tripId: String,

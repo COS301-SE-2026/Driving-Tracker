@@ -11,6 +11,7 @@ import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.SharedWithMeData
 import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
@@ -52,6 +53,11 @@ class LiveTripContactViewModel @Inject constructor(
     private val _distanceKm = MutableStateFlow(0.0)
     val distanceKm: StateFlow<Double> = _distanceKm
 
+    private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
+    val tripPath =_tripPath.asStateFlow()
+
+    private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
+    val plannedRoute = _plannedRoute.asStateFlow()
 
     fun startPolling(tripId: String){
         viewModelScope.launch {
@@ -63,6 +69,12 @@ class LiveTripContactViewModel @Inject constructor(
 
                     val startLat = _uiState.value.tripData?.startLatitude
                     val startLng = _uiState.value.tripData?.startLongitude
+
+                    // Append the new live location to the driven path
+                    val newPoint = LocationDto(locData.lastLatitude, locData.lastLongitude)
+                    _tripPath.update { currentPath -> currentPath + newPoint }
+
+
 
                     if(startLat != null && startLng != null){
                         val results = FloatArray(1)
@@ -101,7 +113,19 @@ class LiveTripContactViewModel @Inject constructor(
                 onSuccess = { allTrips ->
                     val specificTrip = allTrips.find { it.tripId == tripId }
                     _uiState.update { it.copy(tripData = specificTrip, isLoading = false) }
-
+                    repository.getTripSummary(tripId).onSuccess { summary ->
+                        _tripPath.value = summary.events.map {
+                            LocationDto( it.latitude,it.longitude)
+                        }
+                        if (summary.destinationLatitude != null && summary.destinationLongitude != null) {
+                            fetchSuggestedRoute(
+                                specificTrip?.startLatitude ?: summary.events.firstOrNull()?.latitude ?: 0.0,
+                                specificTrip?.startLongitude ?: summary.events.firstOrNull()?.longitude ?: 0.0,
+                                summary.destinationLatitude,
+                                summary.destinationLongitude
+                            )
+                        }
+                    }
                     repository.getMapToken().onSuccess { data ->
                         _mapToken.value = data.token
                     }
@@ -136,6 +160,14 @@ class LiveTripContactViewModel @Inject constructor(
             }.onFailure {
                 _mapToken.value = null
             }
+        }
+    }
+    private fun fetchSuggestedRoute(startLat: Double, startLng: Double, destLat: Double, destLng: Double) {
+        viewModelScope.launch {
+            repository.getSuggestedRoute(
+                LocationDto(startLat, startLng),
+                LocationDto(destLat, destLng)
+            ).onSuccess { data -> _plannedRoute.value = data.points }
         }
     }
 }
