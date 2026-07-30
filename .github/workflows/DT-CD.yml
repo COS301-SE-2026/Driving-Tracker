@@ -89,7 +89,7 @@ jobs:
         run: |
           MAX_RETRIES=30
           RETRY_COUNT=0 
-          while[ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             https://$AZURE_WEBAPP_NAME.azurewebsites.net/health)
             echo "Attempt $((RETRY_COUNT+1)): Status $STATUS"
