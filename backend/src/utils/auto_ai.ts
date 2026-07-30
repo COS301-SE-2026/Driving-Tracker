@@ -64,7 +64,6 @@ Insufficient data case:
 const gemini_response_schema ={
     type: "OBJECT",
     properties: {
-        user_id: { type: "STRING" },
         driver_score: { type: "NUMBER", nullable: true },
         driver_type: { type: "STRING" },
         confidence: { type: "STRING" },
@@ -110,20 +109,20 @@ const output_schema = z.union([
     z.object({
         // user_id: z.string(),
         driver_score: z.number().min(0).max(100),
-         driver_type: z.enum(["SAFE_DRIVER", "CAUTIOUS_DRIVER", "MODERATE_RISK_DRIVER", "AGGRESSIVE_DRIVER"]),
-        confidence: z.enum(["low", "medium", "high"]),
+        driver_type: z.enum(["SAFE_DRIVER", "CAUTIOUS_DRIVER", "MODERATE_RISK_DRIVER", "AGGRESSIVE_DRIVER"]).default("CAUTIOUS_DRIVER"),
+        confidence: z.enum(["low", "medium", "high"]).default('low'),
         events_per_100km: z.object({
-            harsh_brake: z.number(),
-            harsh_acceleration: z.number(),
-            sharp_corner: z.number(),
-            crash_like: z.number(),
+            harsh_brake: z.number().default(0),
+            harsh_acceleration: z.number().default(0),
+            sharp_corner: z.number().default(0),
+            crash_like: z.number().default(0),
         }),
-        crash_override_applied: z.boolean(),
-        rationale: z.string(),
-        recent_trip_impact: z.string().nullable(),
+        crash_override_applied: z.boolean().default(false),
+        rationale: z.string().default("Analysis completed based on available data."),
+        recent_trip_impact: z.string().nullable().default(null),
     }),
     z.object({
-        user_id: z.string(),
+        // user_id: z.string(),
         driver_type: z.literal("insufficient_data"),
         driver_score: z.null(),
         confidence: z.literal("low"),
@@ -192,7 +191,7 @@ async function build_input(user_id: string, recent_trip_id?: string): Promise<in
 
     // now find the recent trip 
     let recent_trip :input_s["recent_trip"]= null;
-    if(recent_trip){
+    if(recent_trip_id){
         const trip = await prisma.trips.findUnique({
             where: { trip_id: recent_trip_id},
             select: {trip_id:true, distance_km:true}
@@ -221,7 +220,7 @@ async function build_input(user_id: string, recent_trip_id?: string): Promise<in
 async function average_scores(user_id: string){
     // only way to get the scores is the trip_scores table 
     const current_scores = await prisma.trip_scores.aggregate({
-        where:{trips:{user_id,status:"COMPLeTED"}},
+        where:{trips:{user_id,status:"COMPLETED"}},
         _avg: { eco_score:true,safety_score: true, overall_score: true}
     });    
     return{
@@ -230,27 +229,133 @@ async function average_scores(user_id: string){
         overall_score: current_scores._avg.overall_score != null ? Math.round(Number(current_scores._avg.overall_score)): null,
     };  
 }
+function calculate_manual_evaluation(input: input_s):output_s{
+    const { total_trips, total_distance_km,event_counts , recent_trip}= input;
+    if (total_distance_km <= 0 || total_trips <= 0) {
+        return {
+            driver_score: null,
+            driver_type: "insufficient_data",
+            confidence: "low",
+            rationale: "Insufficient trips or distance recorded to generate a profile.",
+        };
+    }
+    //events per 100 km
+    const factor = total_distance_km/ 100 ;
+    const events_per_100 ={
+        harsh_brake: Number((event_counts.harsh_brake / factor).toFixed(2)),
+        harsh_acceleration: Number((event_counts.harsh_acceleration / factor).toFixed(2)),
+        sharp_corner: Number((event_counts.sharp_corner / factor).toFixed(2)),
+        crash_like: Number((event_counts.crash_like / factor).toFixed(2)),
+    };
+    //weighted_events_per_100 
+    const weighted = (events_per_100.harsh_brake * 1.0)+(events_per_100.harsh_acceleration * 1.0)
+                    +( events_per_100.sharp_corner* 0.75)+(events_per_100.crash_like* 8.0);
+
+    //driver score
+    let score = Math.round(100 - (weighted * 5));
+    score = Math.max(0, Math.min(100, score));
+    //classification
+    let type: "SAFE_DRIVER" | "CAUTIOUS_DRIVER" | "MODERATE_RISK_DRIVER" | "AGGRESSIVE_DRIVER";
+    if (score >= 85) type = "SAFE_DRIVER";
+    else if (score >= 65) type = "CAUTIOUS_DRIVER";
+    else if (score >= 40) type = "MODERATE_RISK_DRIVER";
+    else type = "AGGRESSIVE_DRIVER";
+
+    let crash_override = false;
+    let rationale = `Calculated score of ${score} based on event frequency per 100km.`;
+    if (event_counts.crash_like > 0) {
+        if (type === "SAFE_DRIVER" || type === "CAUTIOUS_DRIVER") {
+            type = "MODERATE_RISK_DRIVER";
+            crash_override = true;
+            rationale += " Classification capped at MODERATE_RISK due to detected high-impact patterns.";
+        }
+    }
+    //driver confidence
+    let confidence: "low" | "medium" | "high" = "low";
+    if (total_trips > 10 && total_distance_km > 200){
+        confidence = "high";
+    } 
+    else if (total_trips >= 3 || total_distance_km >= 50){
+        confidence = "medium";
+    }
+    
+    let impact: string | null = null;
+    if (recent_trip && recent_trip.distance_km > 0) {
+        const rFactor = recent_trip.distance_km / 100;
+        const rWeighted = (recent_trip.event_counts.harsh_brake * 1.0) +
+                          (recent_trip.event_counts.harsh_acceleration * 1.0) +
+                          (recent_trip.event_counts.sharp_corner * 0.75) +
+                          (recent_trip.event_counts.crash_like * 8.0);
+        const rRate = rWeighted / rFactor;
+        const oRate = weighted;
+
+        if (rRate > oRate * 1.2){
+             impact = "This recent trip was more aggressive than your usual driving history.";
+        }
+        else if (rRate < oRate * 0.8){
+            impact = "Excellent! This trip was significantly smoother than your average.";
+        } 
+        else {
+            impact = "This trip was consistent with your typical driving pattern.";
+        }
+        
+    }
+    return {
+        driver_score: score,
+        driver_type: type,
+        confidence,
+        events_per_100km: events_per_100,
+        crash_override_applied: crash_override,
+        rationale,
+        recent_trip_impact: impact,
+    };
+}
 
 export async function driver_profile(user_id: string, recent_trip_id: string): Promise<driver_profile>{
+    const current_trip = await prisma.trips.findUnique({
+        where: { trip_id: recent_trip_id },
+        select: { distance_km: true, duration_minutes: true }
+    });
+
+    const dist = Number(current_trip?.distance_km || 0);
+    const dur = current_trip?.duration_minutes || 0;
+    
+    if (dist < 0.5 && dur < 2) {
+        console.log(`AI: Skipping eval for trip ${recent_trip_id} (Too short: ${dist}km, ${dur}min)`);
+        
+        // Return a manual "insufficient_data" result to avoid calling Gemini
+        const scores = await average_scores(user_id);
+        return {
+            driver_type: "insufficient_data",
+            driver_score: null,
+            confidence: "low",
+            rationale: "This trip was too short for a meaningful driving profile analysis.",
+            ...scores
+        };
+    }
+
     const [input_s,scores] = await Promise.all([
         build_input(user_id, recent_trip_id),
         average_scores(user_id),
     ]);
 
     //call ai to get the scores calculated... 
+    // Perform manual calculation (No tokens used)
+    const classification = calculate_manual_evaluation(input_s);
 
-    const response = await ai.models.generateContent({
-        model:"gemini-3.6-flash",
-        contents: JSON.stringify(input_s),
-        config:{
-            systemInstruction: system_prompt_at_end,
-            responseMimeType:"application/json",
-            responseSchema: gemini_response_schema,
-        },
-    });
 
-    const raw = JSON.parse(response.text ?? "{}");
-    const classification = output_schema.parse(raw);
+    // const response = await ai.models.generateContent({
+    //     model:"gemini-3.6-flash",
+    //     contents: JSON.stringify(input_s),
+    //     config:{
+    //         systemInstruction: system_prompt_at_end,
+    //         responseMimeType:"application/json",
+    //         responseSchema: gemini_response_schema,
+    //     },
+    // });
+
+    // const raw = JSON.parse(response.text ?? "{}");
+    // const classification = output_schema.parse(raw);
     if (classification.driver_type !== "insufficient_data" && classification.driver_score != null) {
         
         const existing_score = await prisma.trip_scores.findFirst({
@@ -266,5 +371,10 @@ export async function driver_profile(user_id: string, recent_trip_id: string): P
         
     }
 
-    return {...classification,...scores};
+    return { 
+        ...classification, 
+        ...scores,
+        safety_score: classification.driver_score ?? scores.safety_score,
+        overall_score: classification.driver_score ?? scores.overall_score
+    } as driver_profile;;
 }
