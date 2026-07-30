@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/.yarn
+**/.pnp.*
+**/.env
+**/*.log
+**/coverage
+.git
