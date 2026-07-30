@@ -377,18 +377,32 @@ private fun TripDetails(
     var showShareDialog by remember {mutableStateOf(false)}
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
 
+    val currentLat = if( liveLocation != null && liveLocation.latitude != 0.0){
+        liveLocation.latitude
+    }else {
+        trip.events.firstOrNull()?.latitude
+    }
+
+    val currentLng = if( liveLocation != null && liveLocation.longitude != 0.0){
+        liveLocation.longitude
+    }else {
+        trip.events.firstOrNull()?.longitude
+    }
+
+    val hasValidLocation = currentLat!= null && currentLng != null  && currentLat != 0.0
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Map
         Box(modifier = Modifier
             .fillMaxWidth()
             .height(370.dp)
             .background(Color(0xFFD0D8E0))) {
-            if (mapToken != null) {
+            if (mapToken != null && hasValidLocation) {
                 val latestEvent = trip.events.lastOrNull()
                 AzureMapContainer(
                     subscriptionKey = mapToken,
-                    latitude = liveLocation?.latitude ?: latestEvent?.latitude ?: -25.7479,
-                    longitude = liveLocation?.longitude ?: latestEvent?.longitude ?: 28.2293,
+                    latitude = currentLat,
+                    longitude = currentLng,
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
