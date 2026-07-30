@@ -101,6 +101,8 @@ fun LiveTripContacts(
     val mapToken by viewModel.mapTokenState.collectAsState()
     var recenterCount by remember { mutableStateOf(0) }
 
+
+
     LaunchedEffect(tripId) {
         viewModel.loadTripInfo(tripId)
         viewModel.startPolling(tripId)
@@ -204,18 +206,23 @@ fun LiveTripContacts(
                 )
             }
         }
+
+        val currentLat = state.location?.lastLatitude ?: state.tripData?.startLatitude
+        val currentLng = state.location?.lastLongitude ?: state.tripData?.startLongitude
+
+        val hasValidLocation = currentLat != null && currentLng != null && currentLat != 0.0
         // Map
         Box(modifier = Modifier
             .fillMaxWidth()
             .height(370.dp)
             .background(Color(0xFFD0D8E0))) {
 
-            if(mapToken != null){
+            if(mapToken != null && hasValidLocation){
 
                 AzureMapContainer(
                     subscriptionKey = mapToken!!,
-                    latitude = state.tripData?.startLatitude?: state.location?.lastLatitude?:  -25.7479,
-                    longitude = state.tripData?.startLongitude?: state.location?.lastLongitude?: 28.2293,
+                    latitude = currentLat,
+                    longitude = currentLng,
                     modifier = Modifier.fillMaxSize(),
                     recenterTrigger = recenterCount
                 )
