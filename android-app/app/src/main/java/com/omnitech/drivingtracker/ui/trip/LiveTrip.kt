@@ -41,6 +41,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
@@ -58,6 +59,7 @@ import com.omnitech.drivingtracker.data.obd.VehicleMetrics
 import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -186,6 +188,7 @@ fun LiveTrip(
             viewModel.loadTripSummary(tripId)
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
+            viewModel.observeTripEvents(tripId)
         }
     }
 
@@ -241,6 +244,8 @@ fun LiveTrip(
         )
     }
 
+    val localEvents by viewModel.localEvents.collectAsState()
+
     LiveTripContent(
         uiState = uiState,
         endTripState = currentEndTripState,
@@ -250,6 +255,7 @@ fun LiveTrip(
         liveLocation = liveMetrics,
         actualRoute = tripPath,
         contactsState = contactsState,
+        localEvents = localEvents,
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -297,6 +303,7 @@ fun LiveTripContent(
     onShareTrip: (List<String>) -> Unit = {},
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
+    localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
     liveDistance: Double =0.0,
     liveDuration: Int= 0
@@ -384,9 +391,10 @@ fun LiveTripContent(
                             destination = destination,
                             plannedRoute = plannedRoute,
                             actualRoute = actualRoute,
-                            vehicleMetrics = vehicleMetrics,
                             liveDistance = liveDistance,
-                            liveDuration = liveDuration
+                            liveDuration = liveDuration,
+                            localEvents = localEvents,
+                            vehicleMetrics = vehicleMetrics
                         )
                     }
 
@@ -410,9 +418,10 @@ private fun TripDetails(
     actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
-    vehicleMetrics: VehicleMetrics,
     liveDistance: Double = 0.0,
-    liveDuration: Int = 0
+    liveDuration: Int = 0,
+    localEvents: List<TripEventEntity>,
+    vehicleMetrics: VehicleMetrics
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -613,8 +622,8 @@ private fun TripDetails(
         //Alerts section (alerts not made but count used)
 
         TripAlertsCard(
-            hardBrakingCount = trip.events.count {it.eventType == "HARSH_BRAKE"},
-            hardAccelerationCount = trip.events.count {it.eventType == "ACCELERATION"},
+            hardBrakingCount = localEvents.count {it.type == "HARSH_BRAKE"},
+            hardAccelerationCount = localEvents.count {it.type == "HARSH_ACCELERATION"},
         )
 
         Spacer(modifier = Modifier.weight(1f))

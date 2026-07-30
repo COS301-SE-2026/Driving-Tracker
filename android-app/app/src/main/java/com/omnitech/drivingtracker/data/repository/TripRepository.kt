@@ -211,6 +211,8 @@ class TripRepository @Inject constructor(
         }
     }
 
+    fun getLocalEventsFlow(tripId: String) = tripEventDao.getTripEventsFlow(tripId)
+
     suspend fun endTrip(
         tripId: String,
         endTime: String,
