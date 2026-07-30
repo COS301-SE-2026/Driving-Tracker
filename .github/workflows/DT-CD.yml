@@ -91,7 +91,7 @@ jobs:
           RETRY_COUNT=0 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://$AZURE_WEBAPP_NAME.azurewebsites.net/health)
+            "https://$AZURE_WEBAPP_URL.azurewebsites.net/health")
             echo "Attempt $((RETRY_COUNT+1)): Status $STATUS"
 
             if [ "$STATUS" == "200" ]; then
