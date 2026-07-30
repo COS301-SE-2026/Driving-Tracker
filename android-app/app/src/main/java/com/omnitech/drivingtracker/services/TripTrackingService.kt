@@ -69,6 +69,9 @@ class TripTrackingService: Service() {
     private var cachedActiveShareCount: Int = 0
 
     private var isTrackingStarted = false
+    private var lastSavedLat: Double? = null
+    private var lastSavedLng: Double? = null
+    private val MIN_DISTANCE_METERS = 10f
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -211,7 +214,23 @@ class TripTrackingService: Service() {
     private fun postReading(reading: FusedReading){
         val tripId = currentTripId?: return
 
+        //distance filter for live trip page
+        val lastLat = lastSavedLat
+        val lastLng = lastSavedLng
+
+        if(lastLat != null && lastLng != null){
+            val results = FloatArray(1)
+            android.location.Location.distanceBetween(lastLat, lastLng, reading.latitude, reading.longitude, results)
+            if (results[0] < MIN_DISTANCE_METERS) {
+                return // Skip database recording if moved less than 10m
+            }
+        }
+        lastSavedLat = reading.latitude
+        lastSavedLng = reading.longitude
+
         val obdConnected = isObdConnected()
+
+
 
         lastKnownSpeed = if(obdConnected){
             obdManager.metrics.value.speed.toFloat()

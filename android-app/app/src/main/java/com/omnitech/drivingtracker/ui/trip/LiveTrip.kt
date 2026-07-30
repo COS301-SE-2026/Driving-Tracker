@@ -92,6 +92,7 @@ fun LiveTrip(
     }
 
     val context = LocalContext.current
+    val tripPath by viewModel.tripPath.collectAsState()
     //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
     //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
@@ -156,6 +157,7 @@ fun LiveTrip(
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
             viewModel.loadTripSummary(tripId)
+            viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
         }
     }
@@ -217,6 +219,7 @@ fun LiveTrip(
         endTripState = currentEndTripState,
         mapToken = mapToken,
         liveLocation = liveMetrics,
+        actualRoute = tripPath,
         contactsState = contactsState,
         onEndTrip = {
             // Get the live trip data from the current state
@@ -260,6 +263,7 @@ fun LiveTripContent(
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
     destination: LocationDto? = null,
+    actualRoute: List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
     isMinimized: Boolean = false,
@@ -348,6 +352,7 @@ fun LiveTripContent(
                             onShareTrip = onShareTrip,
                             destination = destination,
                             plannedRoute = plannedRoute,
+                            actualRoute = actualRoute,
                             vehicleMetrics = vehicleMetrics
                         )
                     }
@@ -369,6 +374,7 @@ private fun TripDetails(
     onEndTrip: () -> Unit,
     navController: NavController?,
     destination: LocationDto? = null,
+    actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
     vehicleMetrics: VehicleMetrics
@@ -403,6 +409,7 @@ private fun TripDetails(
                     subscriptionKey = mapToken,
                     latitude = currentLat,
                     longitude = currentLng,
+                    actualRoute = actualRoute,
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,

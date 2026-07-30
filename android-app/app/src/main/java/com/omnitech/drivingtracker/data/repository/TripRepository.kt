@@ -23,6 +23,9 @@ class TripRepository @Inject constructor(
     private val tripDao: TripDao,
     private val sessionManager: SessionManager
     ){
+    suspend fun getTripReadings(tripId: String): List<TripReadingEntity>{
+        return tripReadingDao.getTripReadings(tripId)
+    }
 
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
 

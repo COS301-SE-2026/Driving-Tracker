@@ -38,6 +38,15 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
     private val _mapToken = MutableStateFlow<String?>(null)
     val mapTokenState: StateFlow<String?> = _mapToken
 
+    private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
+    val tripPath: StateFlow<List<LocationDto>> = _tripPath
+
+    fun loadTripPath(tripId: String) {
+        viewModelScope.launch {
+            val readings = repository.getTripReadings(tripId)
+            _tripPath.value = readings.map { LocationDto(it.latitude, it.longitude) }
+        }
+    }
     fun fetchMapToken() {
         viewModelScope.launch {
             repository.getMapToken().onSuccess { data ->
