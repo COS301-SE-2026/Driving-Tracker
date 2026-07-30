@@ -85,7 +85,7 @@ jobs:
 
       - name: Health Check with Retry
         env:
-          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_WEBAPP_URL: ${{ secrets.AZURE_WEBAPP_URL }}
         run: |
           MAX_RETRIES=30
           RETRY_COUNT=0 
