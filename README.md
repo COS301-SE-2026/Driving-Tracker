@@ -70,7 +70,7 @@ The system operates across three layers:
 
 ## Demos & Project Management
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
-[Demo1 video](docs/Documentation-Demo1/Demo1.mp4)
+[Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
 [Demo2 video](docs/Documentation-Demo2/Demo2.mp4)
 
 ---
