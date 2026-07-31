@@ -337,7 +337,7 @@ export async function driver_profile(user_id: string, recent_trip_id: string): P
     const dur = current_trip?.duration_minutes || 0;
     
     if (dist < 0.5 && dur < 2) {
-        console.log(`AI: Skipping eval for trip ${recent_trip_id} (Too short: ${dist}km, ${dur}min)`);
+        // console.log(`AI: Skipping eval for trip ${recent_trip_id} (Too short: ${dist}km, ${dur}min)`);
         
         // Return a manual "insufficient_data" result to avoid calling Gemini
         const scores = await average_scores(user_id);
