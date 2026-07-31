@@ -228,6 +228,41 @@ async function average_scores(user_id: string){
         safety_score : current_scores._avg.safety_score != null ? Math.round(Number(current_scores._avg.safety_score)): null,
         overall_score: current_scores._avg.overall_score != null ? Math.round(Number(current_scores._avg.overall_score)): null,
     };  
+};
+function get_event_per_100km(counts: input_s["event_counts"],distance_km:number){
+    const factor = distance_km / 100;
+    return {
+        harsh_brake: Number((counts.harsh_brake / factor).toFixed(2)),
+        harsh_acceleration: Number((counts.harsh_acceleration / factor).toFixed(2)),
+        sharp_corner: Number((counts.sharp_corner / factor).toFixed(2)),
+        crash_like: Number((counts.crash_like / factor).toFixed(2)),
+    };
+};
+function get_driver_classification(score: number, has_crash: boolean){
+    let type: "SAFE_DRIVER" | "CAUTIOUS_DRIVER" | "MODERATE_RISK_DRIVER" | "AGGRESSIVE_DRIVER";
+    let crash_override = false;
+    let rationale = `Calculated score of ${score} based on event frequency per 100km.`;
+
+    if (score >= 85){
+        type = "SAFE_DRIVER";
+    }
+    else if (score >= 65){
+        type = "CAUTIOUS_DRIVER";
+    } 
+    else if (score >= 40){
+        type = "MODERATE_RISK_DRIVER";
+    }
+    else type = "AGGRESSIVE_DRIVER";
+
+    //  Cap classification if a crash pattern was detected
+    if (has_crash && (type === "SAFE_DRIVER" || type === "CAUTIOUS_DRIVER")) {
+        type = "MODERATE_RISK_DRIVER";
+        crash_override = true;
+        rationale += " Classification capped at MODERATE_RISK due to detected high-impact patterns.";
+    }
+
+    return { type, crash_override, rationale };
+
 }
 function calculate_manual_evaluation(input: input_s):output_s{
     const { total_trips, total_distance_km,event_counts , recent_trip}= input;
@@ -240,13 +275,7 @@ function calculate_manual_evaluation(input: input_s):output_s{
         };
     }
     //events per 100 km
-    const factor = total_distance_km/ 100 ;
-    const events_per_100 ={
-        harsh_brake: Number((event_counts.harsh_brake / factor).toFixed(2)),
-        harsh_acceleration: Number((event_counts.harsh_acceleration / factor).toFixed(2)),
-        sharp_corner: Number((event_counts.sharp_corner / factor).toFixed(2)),
-        crash_like: Number((event_counts.crash_like / factor).toFixed(2)),
-    };
+    const events_per_100 = get_event_per_100km(event_counts,total_distance_km);
     //weighted_events_per_100 
     const weighted = (events_per_100.harsh_brake * 1.0)+(events_per_100.harsh_acceleration * 1.0)
                     +( events_per_100.sharp_corner* 0.75)+(events_per_100.crash_like* 8.0);
@@ -254,22 +283,9 @@ function calculate_manual_evaluation(input: input_s):output_s{
     //driver score
     let score = Math.round(100 - (weighted * 5));
     score = Math.max(0, Math.min(100, score));
+    const classification = get_driver_classification(score,event_counts.crash_like >0);
     //classification
-    let type: "SAFE_DRIVER" | "CAUTIOUS_DRIVER" | "MODERATE_RISK_DRIVER" | "AGGRESSIVE_DRIVER";
-    if (score >= 85) type = "SAFE_DRIVER";
-    else if (score >= 65) type = "CAUTIOUS_DRIVER";
-    else if (score >= 40) type = "MODERATE_RISK_DRIVER";
-    else type = "AGGRESSIVE_DRIVER";
-
-    let crash_override = false;
-    let rationale = `Calculated score of ${score} based on event frequency per 100km.`;
-    if (event_counts.crash_like > 0) {
-        if (type === "SAFE_DRIVER" || type === "CAUTIOUS_DRIVER") {
-            type = "MODERATE_RISK_DRIVER";
-            crash_override = true;
-            rationale += " Classification capped at MODERATE_RISK due to detected high-impact patterns.";
-        }
-    }
+    
     //driver confidence
     let confidence: "low" | "medium" | "high" = "low";
     if (total_trips > 10 && total_distance_km > 200){
@@ -290,7 +306,7 @@ function calculate_manual_evaluation(input: input_s):output_s{
         const oRate = weighted;
 
         if (rRate > oRate * 1.2){
-             impact = "This recent trip was more aggressive than your usual driving history.";
+            impact = "This recent trip was more aggressive than your usual driving history.";
         }
         else if (rRate < oRate * 0.8){
             impact = "Excellent! This trip was significantly smoother than your average.";
@@ -302,11 +318,11 @@ function calculate_manual_evaluation(input: input_s):output_s{
     }
     return {
         driver_score: score,
-        driver_type: type,
+        driver_type: classification.type,
         confidence,
         events_per_100km: events_per_100,
-        crash_override_applied: crash_override,
-        rationale,
+        crash_override_applied: classification.crash_override,
+        rationale: classification.rationale,
         recent_trip_impact: impact,
     };
 }
