@@ -76,7 +76,7 @@ data class LeaderboardData(
     val scope: String,
     val entries: List<LeaderboardEntry>,
     @SerializedName("my_rank") val myRank: Int?, //can be null
-    @SerializedName("my_score") val myScore: Int
+    @SerializedName("my_score") val myScore: Double
 )
 
 data class LeaderboardEntry(
