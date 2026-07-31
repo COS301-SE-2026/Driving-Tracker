@@ -2,6 +2,9 @@
 import {useState} from "react";
 import Link from "next/link";
 import Image from "next/image";
+import {BASE_PATH} from "@/lib/basePath";
+
+const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/download/v1.0.0/Driving-Tracker.apk";
 
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
@@ -48,7 +51,11 @@ export default function Navbar() {
       Help
       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </Link>
-      <a href = "#download" className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
+      <Link href = "/style-guide" className = "relative rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
+      Style Guide
+      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </Link>
+      <a href = {APK_URL} download className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
         Download
         <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </a>
@@ -64,7 +71,7 @@ export default function Navbar() {
         {mobileMenuOpen ? "Close" : "Menu"}
       </button>
       <Image
-       src = "/images/screen1.png" 
+       src = {`${BASE_PATH}/images/screen1.png`} 
        alt = "Driving Tracker Logo" 
        width={56}
        height={56}

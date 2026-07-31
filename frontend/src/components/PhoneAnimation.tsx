@@ -2,11 +2,12 @@
 import {useRef} from "react";
 import Image from "next/image"
 import {animate} from "animejs";
+import {BASE_PATH} from "@/lib/basePath";
 
 const PHONE_PICS = [
-    {src: "/images/phone-4.png", base: {x: -90, y: 20, rotate: -10}, z:10},
-    {src: "/images/phone-1.png", base: {x: 70, y: 10, rotate: 8}, z:20},
-    {src: "/images/phone-5.png", base: {x: 0, y: -100, rotate: 0}, z:30},
+    {src: `${BASE_PATH}/images/phone-4.png`, base: {x: -90, y: 20, rotate: -10}, z:10},
+    {src: `${BASE_PATH}/images/phone-1.png`, base: {x: 70, y: 10, rotate: 8}, z:20},
+    {src: `${BASE_PATH}/images/phone-5.png`, base: {x: 0, y: -100, rotate: 0}, z:30},
 ];
 
 

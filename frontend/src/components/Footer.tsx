@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/download/v1.0.0/Driving-Tracker.apk";
+
 export default function Footer() {
   return (
     <footer className = "reverseHero-gradient border-t border-[var(--color-border)] px-6 py-12">
@@ -26,9 +28,12 @@ export default function Footer() {
       {/*Download*/}
       <div className = "flex flex-col gap-2">
         <h3 className = "text-lg font-semibold">Download the App</h3>
-        <button type = "button" className = "rounded-full border border-[var(--color-primary)] px-6 py-2 font-medium text-[var(--color-primary)] transition-all duration-200 hover:bg-[var(--color-secondary)] hover:text-white">
-          Download
-        </button>
+        <a href = {APK_URL}
+        download
+        className = "rounded-full border border-[var(--color-primary)] px-6 py-2 font-medium text-[var(--color-primary)] transition-all duration-200 hover:bg-[var(--color-secondary)] hover:text-white"
+        >
+        Download
+        </a>
       </div>
 
       {/*Help*/}
