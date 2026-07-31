@@ -419,8 +419,8 @@ export const trips_services ={
             const completedTripCount = await prisma.trips.count({
                 where: { user_id: data.user_id, status: "COMPLETED" }
             });
-            //before return the ai must eval ??
-            console.log("starting ai eval");
+            //before return the eval must happen 
+            console.log("starting eval");
             let driverProfile = null;
             if (data.status === "COMPLETED") {
                 try {
@@ -429,7 +429,8 @@ export const trips_services ={
                     console.error("driver_profile evaluation failed for trip", data.trip_id, aiError);
                 }
             }
-            console.log("ai eval completed ");
+            console.log("eval completed ");
+            console.log(driverProfile);
             return {
                 trip_id: updatedTrip.trip_id,
                 username: user?.username,
