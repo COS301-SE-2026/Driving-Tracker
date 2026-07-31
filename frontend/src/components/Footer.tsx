@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const APK_URL = "";
+const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/download/v1.0.0/Driving-Tracker.apk";
 
 export default function Footer() {
   return (

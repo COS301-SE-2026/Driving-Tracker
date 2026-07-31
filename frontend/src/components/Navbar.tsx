@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 
-const APK_URL = "";
+const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/download/v1.0.0/Driving-Tracker.apk";
 
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
