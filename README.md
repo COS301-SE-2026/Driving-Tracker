@@ -19,8 +19,11 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
 
+[![Uptime Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/SenteMngomez/upptime/master/api/driving-tracker-api/uptime.json)](https://sentemngomez.github.io/upptime)
+
 ![Static Badge](https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs)
 ![Static Badge](https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin)
+
 
 <h2>Client</h2>
 </br>
