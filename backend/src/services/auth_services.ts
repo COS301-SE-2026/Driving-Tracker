@@ -5,7 +5,7 @@ import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
 import { AppJwtPayload } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client';
 
 const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
 

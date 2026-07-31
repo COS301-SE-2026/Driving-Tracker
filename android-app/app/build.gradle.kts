@@ -13,6 +13,7 @@ kotlin {
 }
 
 android {
+
     namespace = "com.omnitech.drivingtracker"
     compileSdk {
         version = release(36) {
@@ -31,12 +32,16 @@ android {
     }
 
     buildTypes {
+        debug{
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "BASE_URL", "\"https://omnitech-api-f8cyd2ghe8hmgheu.southafricanorth-01.azurewebsites.net/\"")
         }
     }
     compileOptions {
@@ -45,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -110,4 +116,5 @@ dependencies {
     //hilt testing
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
+    implementation(libs.play.services.base)
 }

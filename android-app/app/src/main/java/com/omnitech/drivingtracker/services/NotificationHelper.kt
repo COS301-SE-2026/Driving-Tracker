@@ -108,6 +108,24 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
             Log.d("SHOW_NOTIFICATION", e.message?:"Show contact alert error")
         }
     }
+    //Trip shared with you notification
+    fun showTripSharedAlert(title: String, message: String) {
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.CONTACT_ALERTS)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_road) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(buildMainActivityIntent("notifications"))
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException) {
+            //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show trip shared alert error")
+        }
+    }
 
     fun showGeneralNotification(title: String, message: String){
 

@@ -261,6 +261,210 @@ describe('Trips endpoints unit tests', ()=>{
 		});
     });
 
+    describe('Record batch trip endpoint',()=>{
+        it('Returns 201 on successful call', async()=>{
+            jest.spyOn(trips_services,'record_batch_trip_readings').mockResolvedValueOnce(0);
+            const req: any = {
+                user: { sub: 'user-1' },
+				params: { trip_id: 't1' },
+                body: {
+                    readings: [
+                        {
+                            recorded_at: new Date().toISOString(),
+                            data_source: 'gps',
+                            location: { lat: 0, lon: 0 },
+                            speed_kmh: 60,
+                            accelerometer: 1.2,
+                            gyroscope_x: 0,
+                            gyroscope_y: 0,
+                            gyroscope_z: 0,
+                            rpm: 3000,
+                            coolant_temp: 90,
+                            fuel_trim_percent: 5,
+                            throttle_position: 50,
+                            dtc_codes: [],
+                        },
+                        {
+                            recorded_at: new Date().toISOString(),
+                            data_source: 'OBD',
+                            location: { lat: 0, lon: 0 },
+                            speed_kmh: 60,
+                            accelerometer: 1.2,
+                            gyroscope_x: 0,
+                            gyroscope_y: 0,
+                            gyroscope_z: 0,
+                            rpm: 3000,
+                            coolant_temp: 90,
+                            fuel_trim_percent: 5,
+                            throttle_position: 50,
+                            dtc_codes: [],
+                        },
+                    ]
+                    
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.record_batch_readings(req, res);
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                 message: 'Readings added successfully',
+                 data: { active_share_count: 0 }
+                }));
+            
+        });
+
+        it('Returns 404 when trip is not found', async()=>{
+            jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('Trip not found'));
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
+                readings: [
+                    {
+                        recorded_at: new Date().toISOString(),
+                        data_source: 'gps',
+                        location: { lat: 0, lon: 0 },
+                        speed_kmh: 60,
+                        accelerometer: 1.2,
+                        gyroscope_x: 0,
+                        gyroscope_y: 0,
+                        gyroscope_z: 0,
+                        rpm: 3000,
+                        coolant_temp: 90,
+                        fuel_trim_percent: 5,
+                        throttle_position: 50,
+                        dtc_codes: [],
+                    },
+                    {
+                        recorded_at: new Date().toISOString(),
+                        data_source: 'OBD',
+                        location: { lat: 0, lon: 0 },
+                        speed_kmh: 60,
+                        accelerometer: 1.2,
+                        gyroscope_x: 0,
+                        gyroscope_y: 0,
+                        gyroscope_z: 0,
+                        rpm: 3000,
+                        coolant_temp: 90,
+                        fuel_trim_percent: 5,
+                        throttle_position: 50,
+                        dtc_codes: [],
+                    },
+                ]} };
+
+            const res: any = make_res();
+
+            await trips_controller.record_batch_readings(req,res);
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_NOT_FOUND', message: 'Trip not found' }));
+        });
+
+		it('returns 400 when missing required fields', async () => {
+			//mocking service to throw error message
+			jest.spyOn(trips_services, 'record_batch_trip_readings').mockRejectedValueOnce(new Error('Missing required fields'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: { }};
+			const res: any = make_res();
+
+			await trips_controller.record_batch_readings(req, res);
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'MISSING_REQUIRED_FIELDS'}));
+		});
+
+        it('returns 403 when unauthorized', async () => {
+			//mocking service to throw error message
+			
+			const req: any = { user: { sub: null }, params: { trip_id: 't1' }, body: { readings: [] }};
+			const res: any = make_res();
+
+			await trips_controller.record_batch_readings(req, res);
+			expect(res.status).toHaveBeenCalledWith(403);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'UNAUTHORIZED'}));
+		});
+
+        it('Returns 404 when trip is not found', async()=>{
+            jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('You do not own this trip'));
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
+                readings: [
+                    {
+                        recorded_at: new Date().toISOString(),
+                        data_source: 'gps',
+                        location: { lat: 0, lon: 0 },
+                        speed_kmh: 60,
+                        accelerometer: 1.2,
+                        gyroscope_x: 0,
+                        gyroscope_y: 0,
+                        gyroscope_z: 0,
+                        rpm: 3000,
+                        coolant_temp: 90,
+                        fuel_trim_percent: 5,
+                        throttle_position: 50,
+                        dtc_codes: [],
+                    },
+                    {
+                        recorded_at: new Date().toISOString(),
+                        data_source: 'OBD',
+                        location: { lat: 0, lon: 0 },
+                        speed_kmh: 60,
+                        accelerometer: 1.2,
+                        gyroscope_x: 0,
+                        gyroscope_y: 0,
+                        gyroscope_z: 0,
+                        rpm: 3000,
+                        coolant_temp: 90,
+                        fuel_trim_percent: 5,
+                        throttle_position: 50,
+                        dtc_codes: [],
+                    },
+                ]} };
+
+            const res: any = make_res();
+
+            await trips_controller.record_batch_readings(req,res);
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message: "You do not own this trip" }));
+        });
+
+		it('returns 500 for unexpected interal error', async () => {
+			//mocking error that doesnt match any if/else block
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: { readings: [
+                {
+                    recorded_at: new Date().toISOString(),
+                    data_source: 'gps',
+                    location: { lat: 0, lon: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+                {
+                    recorded_at: new Date().toISOString(),
+                    data_source: 'OBD',
+                    location: { lat: 0, lon: 0 },
+                    speed_kmh: 60,
+                    accelerometer: 1.2,
+                    gyroscope_x: 0,
+                    gyroscope_y: 0,
+                    gyroscope_z: 0,
+                    rpm: 3000,
+                    coolant_temp: 90,
+                    fuel_trim_percent: 5,
+                    throttle_position: 50,
+                    dtc_codes: [],
+                },
+            ]}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(500);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'INTERNAL_SERVER_ERROR'}));
+		});
+    });
+
     describe('Get history endpoint', ()=>{
         it('Returns 200 and history of trips the user had', async()=>{
             const mock_history = [
@@ -293,6 +497,18 @@ describe('Trips endpoints unit tests', ()=>{
 
             expect(res.status).toHaveBeenCalledWith(400);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Invalid date format' }));
+        });
+
+        it('Returns 400 on missing sub', async () => {
+            
+            const req: any = { user: { sub: null }, query: { start_date: 'invalid' } };
+            const res: any = make_res();
+
+            await trips_controller.get_history(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED',
+                message:"user not identified" }));
         });
     });
     describe('Get trip summary endpoint',()=>{
@@ -328,6 +544,17 @@ describe('Trips endpoints unit tests', ()=>{
 
             expect(res.status).toHaveBeenCalledWith(403);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'FORBIDDEN' }));
+        });
+
+        it('Returns 401 when sub is missing', async () => {
+
+            const req: any = { user: { sub: null }, params: { trip_id: 't1' } };
+            const res: any = make_res();
+
+            await trips_controller.get_trip_summary(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
         });
     });
 
@@ -369,6 +596,22 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_EVENT_TYPE' }));
         });
 
+        it('Returns 401 on missing sub', async () => {
+            
+            const req: any = {
+                user: { sub: null },
+                params: { trip_id: 't1' },
+                body: { event_type: 'invalid_type', timestamp: new Date().toISOString() },
+            };
+            const res: any = make_res();
+
+            await trips_controller.log_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+        });
+
+
         it('Returns 400 on invalid event type', async () => {
             jest.spyOn(trips_services, 'events_log').mockRejectedValueOnce(new Error('You do not own this trip'));
 
@@ -400,6 +643,155 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.status).toHaveBeenCalledWith(500);
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR' }));
         });
-    })
+    });
+
+    describe('Get trip latest location endpoint', ()=>{
+        it('Returns 200 and trip latest location data', async()=>{
+            const mock_latest_data = { 
+                    last_latitude: 25.23,
+                    last_longitude: 26.08,
+                    last_recorded_at: new Date().toISOString(),
+                    last_speed_kmh: 87.8,
+                    status: 'IN_PROGRESS'
+                };
+
+            jest.spyOn(trips_services,'get_trip_latest_location').mockResolvedValueOnce(mock_latest_data as any);
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1' },
+                
+            };
+            const res: any = make_res();
+
+            await trips_controller.get_trip_latest_location(req, res);            
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: "Latest location successfully retrieved", data: mock_latest_data as any }));
+        });
+
+        it('Returns 404 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'get_trip_latest_location').mockRejectedValueOnce(new Error('Trip not found'));
+
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, };
+            const res: any = make_res();
+
+            await trips_controller.get_trip_latest_location(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ 
+                    error: "TRIP_NOT_FOUND", 
+                    message: "Trip not found" 
+                }));
+        });
+
+        it('Returns 401 on missing sub', async () => {
+            
+
+            const req: any = { user: { sub: null }, params: { trip_id: 't1' }, };
+            const res: any = make_res();
+
+            await trips_controller.get_trip_latest_location(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ 
+                    error: "UNAUTHORIZED", 
+                    message: "Can not view this trip" 
+                }));
+        });
+
+        it('Returns 500 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'get_trip_latest_location').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, };
+            const res: any = make_res();
+
+            await trips_controller.get_trip_latest_location(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR'  }));
+        });
+    });
+
+    describe('Get trips shared with me endpoint', ()=>{
+        it('Returns 200 and trip latest location data', async()=>{
+            const mock_shared_data = [
+                {
+                trip_id: 'trip-1',
+                owner: 'john',
+                shared_at: new Date().toISOString(),
+                status: 'IN_PROGRESS',
+                started_at: new Date().toISOString(),
+                start_latitude: 25.23,
+                start_longitude: 26.08,
+                fuel_estimate: 3.2
+                },
+                {
+                trip_id: 'trip-2',
+                owner: 'bob',
+                shared_at: new Date().toISOString(),
+                status: 'IN_PROGRESS',
+                started_at: new Date().toISOString(),
+                start_latitude: 25.23,
+                start_longitude: 26.08,
+                fuel_estimate: 3.2
+                },
+            ];
+
+            jest.spyOn(trips_services,'get_trips_shared_with_me').mockResolvedValueOnce(mock_shared_data as any);
+            const req: any = {
+                user: { sub: 'user-1' },  
+            };
+            const res: any = make_res();
+
+            await trips_controller.get_trips_shared_with_me(req, res);            
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: "Successfully fetched trips shared with you", data: { trips: mock_shared_data } }));
+        });
+
+         it('Returns 401 on unauthorized', async()=>{
+            const mock_shared_data = [
+                {
+                trip_id: 'trip-1',
+                owner: 'john',
+                shared_at: new Date().toISOString(),
+                status: 'IN_PROGRESS',
+                started_at: new Date().toISOString(),
+                start_latitude: 25.23,
+                start_longitude: 26.08,
+                fuel_estimate: 3.2
+                },
+                {
+                trip_id: 'trip-2',
+                owner: 'bob',
+                shared_at: new Date().toISOString(),
+                status: 'IN_PROGRESS',
+                started_at: new Date().toISOString(),
+                start_latitude: 25.23,
+                start_longitude: 26.08,
+                fuel_estimate: 3.2
+                },
+            ];
+
+            const req: any = {
+                user: { sub: null },  
+            };
+            const res: any = make_res();
+
+            await trips_controller.get_trips_shared_with_me(req, res);            
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Can not view this trip"}));
+        });
+
+        it('Returns 500 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'get_trips_shared_with_me').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = { user: { sub: 'user-1' }, };
+            const res: any = make_res();
+
+            await trips_controller.get_trips_shared_with_me(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR'  }));
+        });
+    });
 
 })

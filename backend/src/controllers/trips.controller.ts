@@ -64,7 +64,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const { trip_id } = req.params;
         const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
-        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status, safety_score, eco_score, overall_score } = req.body;
+        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location } = req.body;
 
         if(!user_id){
             res.status(403).json({
@@ -79,11 +79,9 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             route_polyline,
             distance_km,
             duration_minutes,
+            end_location,
             fuel_estimate,
             status,
-            safety_score,
-            eco_score,
-            overall_score
         });
 
         res.status(200).json({
@@ -173,6 +171,47 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
 		}
     }
 };
+//Records readings in a batch
+export const record_batch_readings = async (req: AuthRequest, res: Response) => {
+    const user_id = req.user?.sub;
+	const { trip_id } = req.params;
+
+    if(!user_id){
+        res.status(403).json({
+            error:"UNAUTHORIZED"
+        });
+        return;
+    }
+
+    const { readings } = req.body
+
+    try{
+        //returns how many users are currently viewing the trip
+        const active_share_count = await trips_services.record_batch_trip_readings(user_id, trip_id, readings);
+
+        return res.status(201).json({ message: "Readings added successfully", data: { active_share_count }});
+
+    }catch(error: any){
+
+        if(error.message === "Missing required fields"){
+
+			res.status(400).json({
+                error: "MISSING_REQUIRED_FIELDS"
+            });
+
+        }else if(error.message === "Trip not found"){
+            res.status(404).json({
+                error:"TRIP_NOT_FOUND",
+				message:"Trip not found"
+            });
+        }else if(error.message === "You do not own this trip"){
+            res.status(403).json({error:"UNAUTHORIZED", message: "You do not own this trip"});
+        }else{
+			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message?? "Could not record readings" });
+		}
+    }
+
+}
 
 export const get_history = async (req:AuthRequest, res:Response)=>{
     try{
@@ -296,3 +335,77 @@ export const log_event = async (req: AuthRequest, res: Response) => {
         }
     }
 };
+
+export const get_trip_latest_location = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+    const { trip_id } = req.params;
+
+        if (!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+        try{
+
+            const latest_data = await trips_services.get_trip_latest_location(trip_id);
+
+            return res.status(200).json({
+                message: "Latest location successfully retrieved",
+                data: {
+                    last_latitude: latest_data?.last_latitude,
+                    last_longitude: latest_data?.last_longitude,
+                    last_recorded_at: latest_data?.last_recorded_at,
+                    last_speed_kmh: latest_data?.last_speed_kmh,
+                    status: latest_data?.status
+                }
+            });
+
+        }catch(error: any){
+
+            if (error.message.includes("Trip not found")){
+                res.status(404).json({ 
+                    error: "TRIP_NOT_FOUND", 
+                    message: "Trip not found" 
+                });
+            }
+
+            res.status(500).json({ 
+                error: "INTERNAL_SERVER_ERROR" 
+            });
+        }    
+};
+
+export const get_trips_shared_with_me = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+    try{
+
+        const result = await trips_services.get_trips_shared_with_me(user_id);
+
+        return res.status(200).json({ 
+            message: "Successfully fetched trips shared with you",
+            data: {
+                trips: result
+            }
+        });
+
+    } catch(error: any){
+
+        res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR" 
+        });
+    }
+}

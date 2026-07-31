@@ -12,6 +12,8 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.app.ServiceCompat
 import androidx.core.content.PermissionChecker
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -20,6 +22,10 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
+import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
+import com.omnitech.drivingtracker.data.models.BatchReadingRequest
+import com.omnitech.drivingtracker.data.models.DataSource
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -33,6 +39,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.obd.ObdManager
+import com.omnitech.drivingtracker.data.repository.TripRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import java.time.Instant
+import kotlin.String
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -44,7 +56,22 @@ class TripTrackingService: Service() {
     @Inject
     lateinit var apiService: ApiService
 
+    @Inject
+    lateinit var obdManager: ObdManager
+
+    @Inject
+    lateinit var tripRepository: TripRepository
+
     private var currentTripId: String? = null
+
+    private var lastKnownSpeed: Float = 0f
+
+    private var cachedActiveShareCount: Int = 0
+
+    private var isTrackingStarted = false
+    private var lastSavedLat: Double? = null
+    private var lastSavedLng: Double? = null
+    private val MIN_DISTANCE_METERS = 10f
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -90,9 +117,15 @@ class TripTrackingService: Service() {
 
         when(intent?.action){
             ACTION_START_TRIP -> {
-                startForegroundWithPermissionCheck()
-                startLocationUpdates()
-                startSensorFusion()
+                if(!isTrackingStarted){
+                    startForegroundWithPermissionCheck()
+                    startLocationUpdates()
+                    startSensorFusion()
+                    startSyncLoop()
+                } else {
+                    Log.d("Tracking", "Service already tracking")
+                }
+
             }
             ACTION_STOP_TRIP -> {
                 stopEverything()
@@ -165,6 +198,7 @@ class TripTrackingService: Service() {
 
     private fun stopLocationUpdates(){
         fusedLocationClient.removeLocationUpdates(locationCallback)
+            .addOnCompleteListener { Log.d(TAG, "Location updates successfully removed from GPS") }
     }
 
     private fun startSensorFusion(){
@@ -174,69 +208,186 @@ class TripTrackingService: Service() {
         )
     }
 
-    //API posting
+    private fun isObdConnected(): Boolean = obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED
+
+    //Adding readings to Room
     private fun postReading(reading: FusedReading){
         val tripId = currentTripId?: return
+
+        //distance filter for live trip page
+        val lastLat = lastSavedLat
+        val lastLng = lastSavedLng
+
+        if(lastLat != null && lastLng != null){
+            val results = FloatArray(1)
+            android.location.Location.distanceBetween(lastLat, lastLng, reading.latitude, reading.longitude, results)
+            if (results[0] < MIN_DISTANCE_METERS) {
+                return // Skip database recording if moved less than 10m
+            }
+        }
+        lastSavedLat = reading.latitude
+        lastSavedLng = reading.longitude
+
+        val obdConnected = isObdConnected()
+
+
+
+        lastKnownSpeed = if(obdConnected){
+            obdManager.metrics.value.speed.toFloat()
+        } else {
+            reading.speedKmh
+        }
+
         serviceScope.launch {
-            try{
-                apiService.recordReading(
-                    tripId = tripId,
-                    body = RecordReadingRequest(
-                        recorded_at = reading.timestamp,
-                        data_source = "PHONE",
-                        location = LocationDto(
-                            lat = reading.latitude,
-                            lng = reading.longitude
-                        ),
-                        speed_kmh = reading.speedKmh,
-                        accelerometer = reading.linearAccelY,
-                        gyroscope_x = reading.gyroX,
-                        gyroscope_y = reading.gyroY,
-                        gyroscope_z = reading.gyroZ,
-                        rpm = null,
-                        coolant_temp_c = null,
-                        fuel_trim_percent = null,
-                        throttle_position = null,
-                        dtc_codes = emptyList()
-                    )
-                )
-            } catch(e: Exception){
-                //TODO: buffer to Room, retry on reconnect
-                Log.w(TAG, "Failed to post reading ${e.message}")
+
+            val recordedAt = runCatching {
+                Instant.parse(reading.timestamp).toEpochMilli()
+            }.getOrDefault(System.currentTimeMillis())
+
+            var rpm: Int? = null
+            var speed: Float? = reading.speedKmh
+            var coolantTemp: Int? = null
+            var fuelTrim: Double? = null
+            var dataSource: DataSource = DataSource.PHONE
+
+
+            if(obdConnected){
+                rpm = obdManager.metrics.value.rpm
+                speed = obdManager.metrics.value.speed.toFloat()
+                coolantTemp = obdManager.metrics.value.coolantTemp
+                fuelTrim = obdManager.metrics.value.fuelTrim
+                dataSource = DataSource.OBD
+            }
+
+
+            val readingEntity = TripReadingEntity(
+                tripId = tripId,
+                recordedAt = recordedAt,
+                dataSource = dataSource.toString(),
+                latitude = reading.latitude,
+                longitude = reading.longitude,
+                speedKmh = speed,
+                accelerometer = reading.linearAccelY,
+                gyroscopeX = reading.gyroX,
+                gyroscopeY = reading.gyroY,
+                gyroscopeZ = reading.gyroZ,
+                rpm = rpm,
+                coolantTemp = coolantTemp?.toFloat(),
+                fuelTrimPercent = fuelTrim?.toFloat(),
+                throttlePosition = null,
+                dtcCodes = emptyList()
+            )
+
+            tripRepository.saveReadingLocally(readingEntity)
+            Log.d(TAG, "Saved reading: ${readingEntity}")
+
+        }
+    }
+
+    private fun computeSyncDelay(): Long {
+        val hasActiveViewers = tripHasActiveShares()
+        return when {
+            hasActiveViewers  && lastKnownSpeed > 10f -> 8_000L
+            hasActiveViewers -> 20_000L
+            lastKnownSpeed > 10f -> 15_000L
+            else -> 60_000L
+        }
+    }
+
+    private fun startSyncLoop() {
+        serviceScope.launch {
+            while(isActive) {
+                try{
+                    syncPendingReadings()
+                } catch(e: Exception){
+                    Log.w("SyncReadings", "Sync failed, retry later")
+                }
+
+                delay(computeSyncDelay())
             }
         }
     }
 
+    //Syncs readings from room to backend
+    private suspend fun syncPendingReadings() {
+        val tripId = currentTripId?: return
+
+        val response = tripRepository.syncPendingReadings(tripId)
+
+        response.fold(
+            onSuccess = { response ->
+                cachedActiveShareCount = response?.data?.activeShareCount?:0
+            },
+            onFailure = { exception ->
+                Log.d("SyncReadings", exception.message?: "Sync failed")
+                }
+            )
+    }
+
+    private fun tripHasActiveShares(): Boolean = cachedActiveShareCount > 0
+
     private fun postEvent(event: FusedEvent){
         val tripId = currentTripId?: return
-        serviceScope.launch{
-            try{
-                val response = apiService.logEvent(
-                    tripId = tripId,
-                    body = LogEventRequest(
-                        event_type = event.type,
-                        location = LocationDto(
-                            lat = event.latitude,
-                            lng = event.longitude
-                        ),
-                        severity = event.severity,
-                        sensor_source = event.sensorSource,
-                        timestamp = event.timestamp
+
+        serviceScope.launch {
+
+            val recordedAt = runCatching {
+                Instant.parse(event.timestamp).toEpochMilli()
+            }.getOrDefault(System.currentTimeMillis())
+
+            //Save event to Room db
+            val entity = TripEventEntity(
+                tripId = tripId,
+                type = event.type,
+                severity = event.severity,
+                recordedAt = recordedAt,
+                latitude = event.latitude,
+                longitude = event.longitude,
+                sensorSource = event.sensorSource,
+                synced = false
+            )
+
+            tripRepository.saveEventLocally(entity)
+
+            val alertTitle = event.type.replace("_", " ").lowercase().replaceFirstChar{ it.uppercase() }
+            notificationHelper.showTripAlert(
+                title = "$alertTitle Detected!",
+                message = "Take care: a driving safety event was just registered.",
+                tripId = tripId
+            )
+
+                try {
+                    val response = apiService.logEvent(
+                        tripId = tripId,
+                        body = LogEventRequest(
+                            event_type = event.type,
+                            location = LocationDto(
+                                lat = event.latitude,
+                                lng = event.longitude
+                            ),
+                            severity = event.severity,
+                            sensor_source = event.sensorSource,
+                            timestamp = event.timestamp
+                        )
                     )
-                )
-                Log.d(TAG, "Event posted: ${event.type} id=${response.data.event_id} speed=${event.speedKmh} severity=${event.severity}")
-            } catch(e: Exception){
-                //TODO: buffer to Room
-                Log.w(TAG, "Failed to post event ${e.message}")
-            }
+                    tripRepository.markEventAsSynced(entity.eventId)
+                    Log.d(
+                        TAG,
+                        "Event posted: ${event.type} id=${response.data.event_id} speed=${event.speedKmh} severity=${event.severity}"
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to post event ${e.message}, remains in Room for retry")
+                }
         }
     }
 
     private fun stopEverything(){
-        sensorFusion.stop()
+        Log.d(TAG, "Stopping all tracking tasks")
         stopLocationUpdates()
+        sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
     }
 }

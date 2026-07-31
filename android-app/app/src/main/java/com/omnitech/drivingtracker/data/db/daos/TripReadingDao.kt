@@ -24,6 +24,9 @@ interface TripReadingDao {
     @Query("UPDATE trip_readings SET synced=1 WHERE reading_id IN (:readingIds)")
     suspend fun markAsSynced(readingIds: List<Int>)
 
+    @Query("UPDATE trip_readings SET synced=1 WHERE reading_id = :readingId")
+    suspend fun markReadingAsSynced(readingId: Int)
+
     @Query("DELETE FROM trip_readings WHERE trip_id = :tripId AND synced=1")
     suspend fun deleteSyncedReadings(tripId: String)
 

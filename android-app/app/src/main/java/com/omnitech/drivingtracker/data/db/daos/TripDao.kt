@@ -11,7 +11,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripEntity
 @Dao
 interface TripDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTrip(trip: TripEntity)
 
     @Update

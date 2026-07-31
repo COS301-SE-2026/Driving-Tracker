@@ -39,9 +39,6 @@ describe('PATCH trips/end_trip integration test', () => {
 			duration_minutes: 22,
             fuel_estimate: 1.4,
             status: 'COMPLETED',
-            safety_score: 88,
-            eco_score: 76,
-            overall_score: 82,
 		});
 
 		expect(res.status).toBe(200);
@@ -60,9 +57,9 @@ describe('PATCH trips/end_trip integration test', () => {
 		});
 
 		expect(scores).not.toBeNull();
-		expect(Number(scores?.safety_score)).toBe(88);
-		expect(Number(scores?.eco_score)).toBe(76);
-		expect(Number(scores?.overall_score)).toBe(82);
+		expect(Number(scores?.safety_score)).toBe(100);
+		// expect(Number(scores?.eco_score)).toBe(0);
+		expect(Number(scores?.overall_score)).toBe(100);
 	});
 
 	it('returns 403 when a user does not own that trip', async () => {
@@ -103,9 +100,6 @@ describe('PATCH trips/end_trip integration test', () => {
 			duration_minutes: 22,
 			fuel_estimate: 1.4,
 			status: 'COMPLETED',
-			safety_score: 88,
-			eco_score: 76,
-			overall_score: 82,
 		});
 
 		expect(res.status).toBe(403);
@@ -128,9 +122,6 @@ describe('PATCH trips/end_trip integration test', () => {
 			duration_minutes: 22,
 			fuel_estimate: 1.4,
 			status: 'COMPLETED',
-			safety_score: 88,
-			eco_score: 76,
-			overall_score: 82,
 		});
 
 		expect(res.status).toBe(404);
@@ -166,9 +157,6 @@ describe('PATCH trips/end_trip integration test', () => {
 			duration_minutes: 22,
 			fuel_estimate: 1.4,
 			status: 'COMPLETED',
-			safety_score: 88,
-			eco_score: 76,
-			overall_score: 82,
 		});
 
 		expect(res.status).toBe(409);

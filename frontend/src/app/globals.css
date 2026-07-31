@@ -29,3 +29,11 @@ body{
         #0095FF 91%
     );
 }
+
+.reverseHero-gradient{
+    background: linear-gradient(
+        to left,
+        #FFFFFF 27%,
+        #0095FF 91%
+    );
+}

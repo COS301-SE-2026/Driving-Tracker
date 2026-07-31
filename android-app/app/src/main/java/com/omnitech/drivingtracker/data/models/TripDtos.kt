@@ -14,6 +14,47 @@ data class LocationDto(
     val lng: Double?
 )
 
+data class LatestLocationResponse(
+    val message: String,
+    val data: LatestLocationData
+)
+
+data class LatestLocationData(
+    @SerializedName("last_latitude")
+    val lastLatitude: Double,
+    @SerializedName("last_longitude")
+    val lastLongitude: Double,
+    @SerializedName("last_recorded_at")
+    val lastRecordedAt: String,
+    @SerializedName("last_speed_kmh")
+    val lastSpeedKmh: Double,
+    val status: String
+)
+
+data class SharedWithMeResponse(
+    val message: String,
+    val data: SharedWithMeData
+)
+
+data class SharedWithMeData(
+    val trips: List<SharedWithMeDto>
+)
+
+data class SharedWithMeDto(
+    @SerializedName("trip_id")
+    val tripId: String,
+    val owner: String,
+    val status: String,
+    @SerializedName("started_at")
+    val startedAt: String,
+    @SerializedName("start_latitude")
+    val startLatitude: Double,
+    @SerializedName("start_longitude")
+    val startLongitude: Double,
+    @SerializedName("fuel_estimate")
+    val fuelEstimate: Double,
+)
+
 @Suppress("unused")
 data class StartTripRequest(
     @SerializedName("vehicle_id")
@@ -179,7 +220,9 @@ data class EndTripRequest(
     @SerializedName("eco_score")
     val ecoScore: Double? = null,
     @SerializedName("overall_score")
-    val overallScore: Double? = null
+    val overallScore: Double? = null,
+    @SerializedName("end_location")
+    val endLocation: LocationDto? = null
 )
 
 data class EndTripResponse(

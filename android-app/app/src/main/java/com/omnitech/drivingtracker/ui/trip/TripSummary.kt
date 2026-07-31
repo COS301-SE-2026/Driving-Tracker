@@ -1,5 +1,11 @@
 package com.omnitech.drivingtracker.ui.trip
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -146,37 +152,62 @@ fun TripSummaryContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         //Trip Details
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                Text("Trip details", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+        Card(modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ){
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically){
+                        Icon(Icons.Default.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Trip details",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                TripDetailRow("Distance", trip.distance)
-                TripDetailRow("Duration", trip.duration)
-                TripDetailRow("Average Speed", trip.avgSpeed)
-                TripDetailRow("Max Speed", trip.maxSpeed)
-                TripDetailRow("Fuel Efficiency", trip.fuelEfficiency)
-            }
+                    TripDetailRow("Distance", trip.distance)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+                    TripDetailRow("Duration", trip.duration)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+                    TripDetailRow("Fuel Efficiency", trip.fuelEfficiency)
+                }
         }
         Spacer(modifier = Modifier.height(12.dp))
 
         //Trip Events
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))) {
+        Card(modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
-                Text("Trip Events", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically){
+                    Icon(Icons.Default.Event, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "Trip Events",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TripDetailRow("Hard Braking", trip.hardBreaking.toString())
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
                 TripDetailRow("Hard Acceleration", trip.hardAcceleration.toString())
-                TripDetailRow("Overspeeding", trip.overspeeding.toString())
-                TripDetailRow("Cornering", trip.cornering.toString())
-                TripDetailRow("Phone Usage", trip.phoneUsage.toString())
             }
         }
 

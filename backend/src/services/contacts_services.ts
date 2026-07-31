@@ -163,7 +163,7 @@ export const contact_services ={
         if(found.length !== contact_ids.length) throw coded_error("CONTACT_NOT_FOUND");
 
         //create alert and notifications rows in a transaction
-        await prisma.$transaction(async (tx) => {
+        const alertResult = await prisma.$transaction(async (tx) => {
             const alert = await tx.alerts.create({
                 data: {
                     trip_id: trip_event.trip_id,
@@ -181,7 +181,11 @@ export const contact_services ={
                     contact_id,
                 })),
             });
+
+            return alert;
         });
+
+        return alertResult;
     },
 
     //shares trip location with contacts until end of trip
