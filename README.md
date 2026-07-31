@@ -60,8 +60,8 @@ The system operates across three layers:
 ## Documentation
 [Software Requirement Specification](docs/Documentation-Demo2/DEMO_2_SRS.pdf)\
 [Software Architecture Specification](docs/Documentation-Demo2/DEMO_2_SAS.pdf)\
-[Coding Standards](docs/Documentation-Demo2/Coding-Standards.pdf)\
-[Testing Policy](docs/Documentation-Demo2/testing-policy.pdf)\
+[Coding Standards](docs/Documentation-Demo2/Coding-Standards.md)\
+[Testing Policy](docs/Documentation-Demo2/testing-policy.md)\
 [User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
 [Brand style guide](docs/Documentation-Demo2/Brand%20Style%20Guide.pdf)\
 [Wireframes](docs/Documentation-Demo2/wireframes.pdf)\
