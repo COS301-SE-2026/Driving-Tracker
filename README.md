@@ -19,8 +19,11 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
 [![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
 
+[![Uptime Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/SenteMngomez/upptime/master/api/driving-tracker-api/uptime.json)](https://sentemngomez.github.io/upptime)
+
 ![Static Badge](https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs)
 ![Static Badge](https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin)
+
 
 <h2>Client</h2>
 </br>
@@ -33,10 +36,13 @@ Gendac (Software, Innovations & IoT)
 
 - [Project Description](#project-description)
 - [Documentation](#documentation)
+- [Demos & Project Management](#demos--project-management)
+- [Deployed Pages](#deployed-pages)
 - [Meet OmniTech](#meet-omnitech)
 - [Tech Stack](#tech-stack)
 - [Branching Strategy](#branching-strategy)
-- [Getting Started](#prerequisites)
+- [Getting our app](#getting-our-app)
+- [Getting Started(Development)](#prerequisites)
   - [Prerequisites](#prerequisites)
   - [Running](#running)
 
@@ -55,11 +61,25 @@ The system operates across three layers:
 ---
 
 ## Documentation
-[Software Requirement Specification](docs/Documentation-Demo1/OmniTech%20SRS.pdf)\
-[Wireframes](docs/Documentation-Demo1/Wireframes.pdf)\
-[Brand style guide](docs/Documentation-Demo1/Brand%20Style%20Guide.pdf)\
+[Software Requirement Specification](docs/Documentation-Demo2/DEMO_2_SRS.pdf)\
+[Software Architecture Specification](docs/Documentation-Demo2/DEMO_2_SAS.pdf)\
+[Coding Standards](docs/Documentation-Demo2/Coding-Standards.md)\
+[Testing Policy](docs/Documentation-Demo2/testing-policy.md)\
+[User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
+[Brand style guide](docs/Documentation-Demo2/brand_style_guide.pdf)\
+[Wireframes](docs/Documentation-Demo2/wireframes.pdf)\
+[Wireframes Figma Link](https://www.figma.com/design/JEv1W9Jh1mvtZmtRENtL85/Wireframes?node-id=0-1&t=x2XNBSR5ZJ1KePqF-1)
+
+---
+
+## Demos & Project Management
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
-[Demo1 video](docs/Documentation-Demo1/Demo1.mp4)
+[Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
+[Demo2 video](docs/Documentation-Demo2/Demo2.mp4)
+
+---
+## Deployed Pages
+[Landing Page (Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
 
 ---
 
@@ -119,6 +139,16 @@ The system operates across three layers:
 | `fix/name/description` | Bug fixes |
 | `docs/name/description` | Documentation updates |
 | `chore/name/description` | Config, tooling, setup |
+
+---
+## Getting our app
+
+To download the Driving Tracker application, visit our deployed landing page:
+[Driving Tracker Landing Page](https://cos301-se-2026.github.io/Driving-Tracker/)
+
+Explore the features and learn more about the app, then click the **Download** button located in the navigation bar at the top of the page or in the footer section.
+
+You can also access additional information about the app, including its features, documentation, and user guides, directly from the landing page.
 
 ---
 

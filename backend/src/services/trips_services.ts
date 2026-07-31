@@ -9,6 +9,7 @@ import { add_notification } from '../utils/notification';
 import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
+import { format, addHours } from 'date-fns';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -54,7 +55,7 @@ async function get_trip_shared_contacts(trip_id: string){
         } 
     });
 
-    if(!contacts||contacts.length){
+    if(!contacts||contacts.length == 0){
         return { contact_user_ids: [], contact_ids: [] };
     }
 
@@ -419,8 +420,8 @@ export const trips_services ={
             const completedTripCount = await prisma.trips.count({
                 where: { user_id: data.user_id, status: "COMPLETED" }
             });
-            //before return the ai must eval ??
-            console.log("starting ai eval");
+            //before return the eval must happen 
+            console.log("starting eval");
             let driverProfile = null;
             if (data.status === "COMPLETED") {
                 try {
@@ -429,7 +430,8 @@ export const trips_services ={
                     console.error("driver_profile evaluation failed for trip", data.trip_id, aiError);
                 }
             }
-            console.log("ai eval completed ");
+            console.log("eval completed ");
+            console.log(driverProfile);
             return {
                 trip_id: updatedTrip.trip_id,
                 username: user?.username,
@@ -724,12 +726,17 @@ export const trips_services ={
         //Get contacts who had the ship shared with them
         const { contact_user_ids, contact_ids } = await get_trip_shared_contacts(data.trip_id);
 
-
         if (contact_user_ids.length > 0){
             
             const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
 
-            const message = `${full_name} had a ${data.event_type} event at ${data.recorded_at}`;
+            const alert_type = data.event_type.replace("_"," ");
+
+            const local_date = addHours(new Date(data.recorded_at), 2);
+
+            const formatted_date = format(local_date, 'MMM d, yyy h:mm a');
+
+            const message = `${full_name} had a ${alert_type} event at ${formatted_date}`;
 
             const alert = await contact_services.alert_contacts_for_event({
                 user_id: data.user_id, 
@@ -752,8 +759,6 @@ export const trips_services ={
 
             //Get tokens for sending push notifications to contacts
             const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
-
-            const alert_type = data.event_type.replace("_"," ");
 
             await notification_services.send_trip_alert_notification(fcm_tokens, data.trip_id, alert_type, message);
 

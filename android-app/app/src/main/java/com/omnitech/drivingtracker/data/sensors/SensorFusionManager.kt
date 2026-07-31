@@ -23,7 +23,7 @@ import java.time.Instant
 @Singleton
 class SensorFusionManager @Inject constructor(
     @param:ApplicationContext private val context: Context
-): SensorEventListener {
+): ISensorFusionManager, SensorEventListener {
 
     companion object{
         private const val TAG = "SensorFusion"
@@ -93,7 +93,7 @@ class SensorFusionManager @Inject constructor(
 
     //stateflow for UI
     private val _liveMetrics = MutableStateFlow(LiveSensorMetrics())
-    val liveMetrics: StateFlow<LiveSensorMetrics> = _liveMetrics.asStateFlow()
+    override val liveMetrics: StateFlow<LiveSensorMetrics> = _liveMetrics.asStateFlow()
 
     //Debounce tracking
     private var lastBrakeTime = 0L
@@ -109,7 +109,7 @@ class SensorFusionManager @Inject constructor(
 
 
     //Lifecycle
-    fun start(
+    override fun start(
         onReadingAvailable: (FusedReading) -> Unit,
         onEventDetected: (FusedEvent) -> Unit
     ){
@@ -136,7 +136,7 @@ class SensorFusionManager @Inject constructor(
         Log.d(TAG, "Sensor fusion started")
     }
 
-    fun stop(){
+    override fun stop(){
         sensorManager.unregisterListener(this)
         onReading = null
         onEvent = null
@@ -146,7 +146,7 @@ class SensorFusionManager @Inject constructor(
         Log.d(TAG, "Sensor fusion stopped")
     }
 
-    fun updateLocation(location: Location){
+    override fun updateLocation(location: Location){
         currentLocation = location
     }
 
@@ -178,6 +178,10 @@ class SensorFusionManager @Inject constructor(
         //usually left empty unless using specific calibrations
     }
 
+    override fun triggerFakeEvent(type: String) {
+        Log.d("SensorFusion", "Fake event ignored in production mode")
+    }
+
         //Event Detection - linear (braking/acceleration/crash)
         private fun checkForLinearEvents(){
             val now = System.currentTimeMillis()
@@ -198,13 +202,16 @@ class SensorFusionManager @Inject constructor(
             // x = left/right
             // y = forward/back
             // z = up/down
-            val longitudinal = linearAccel[1]
+            //val longitudinal = linearAccel[1]
             //total magnitude of acceleration vector
             val magnitude = sqrt(
                 linearAccel[0] * linearAccel[0] +
                 linearAccel[1] * linearAccel[1] +
                 linearAccel[2] * linearAccel[2]
             )
+
+            //use Y-axis as hint but total magnitude as the trigger
+            val isBrakingHint = linearAccel[1]<0
 
             crashBuffer.addLast(magnitude)
             if(crashBuffer.size > CRASH_BUFFER_SIZE) crashBuffer.removeFirst()
@@ -215,10 +222,10 @@ class SensorFusionManager @Inject constructor(
 
             //Harsh braking
             //Strong negative Y = decelerating hard
-            if(longitudinal < -brakeThreshold && now - lastBrakeTime > DEBOUNCE_MS){
+            if(magnitude > brakeThreshold && isBrakingHint && now - lastBrakeTime > DEBOUNCE_MS){
                 lastBrakeTime = now
                 val severity = calculateSpeedScaledSeverity(
-                    rawValue = abs(longitudinal),
+                    rawValue = abs(magnitude),
                     threshold = brakeThreshold,
                     max = 15.0f,
                     speedKmh = speedKmh
@@ -230,16 +237,16 @@ class SensorFusionManager @Inject constructor(
                     location = location,
                     sensorSource = "ACCELEROMETER"
                 )
-                Log.d(TAG, "HARSH_BRAKE: ${longitudinal}m/s^2 at ${speedKmh}km/h zone=$speedZone " +
+                Log.d(TAG, "HARSH_BRAKE: ${magnitude}m/s^2 at ${speedKmh}km/h zone=$speedZone " +
                         "threshold=$brakeThreshold severity=$severity")
             }
 
             //harsh acceleration
             //String positive Y = accelerating aggressively
-            if(longitudinal > accelThreshold && now - lastAccelTime > DEBOUNCE_MS){
+            if(magnitude > accelThreshold && !isBrakingHint && now - lastAccelTime > DEBOUNCE_MS){
                 lastAccelTime = now
                 val severity = calculateSpeedScaledSeverity(
-                    rawValue = longitudinal,
+                    rawValue = magnitude,
                     threshold = accelThreshold,
                     max = 12.0f,
                     speedKmh = speedKmh
@@ -251,7 +258,7 @@ class SensorFusionManager @Inject constructor(
                     location = location,
                     sensorSource = "ACCELEROMETER"
                 )
-                Log.d(TAG, "HARSH_ACCELERATION: ${longitudinal}m/s^2 at \${speedKmh}km/h severity=$severity")
+                Log.d(TAG, "HARSH_ACCELERATION: ${magnitude}m/s^2 at ${speedKmh}km/h severity=$severity")
             }
 
             //crash detection

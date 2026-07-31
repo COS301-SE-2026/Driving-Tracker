@@ -180,7 +180,7 @@ fun Dashboard(navController: NavController? = null,
                 Spacer(modifier = Modifier.height(8.dp))
                 uiState.recentTrip?.let { trip->
                     RecentTripCard(
-                        startLoc = "Last Destination",
+                        startLoc = "Last Trip",
                         destination = trip.status,
                         distance = trip.distanceKm?.toInt()?:0,
                         drivingTime = trip.durationMinutes?:0,

@@ -23,7 +23,9 @@ enum class NotificationType {
     TRIP_SHARED,
     GENERAL,
 
-    VIEW_SHARED_TRIP
+    VIEW_SHARED_TRIP,
+
+    TRIP_ALERT
 }
 
 data class NotificationItem(
@@ -90,6 +92,13 @@ fun NotificationCard(
                 }
                 NotificationType.VIEW_SHARED_TRIP -> {
                     ViewSharedTripContent(notification.body, onAccept, onIgnore)
+                }
+                NotificationType.TRIP_ALERT -> {
+                    Text(
+                        text = notification.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
                 }
             }
         }

@@ -58,7 +58,7 @@ fun AchievementsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsContent(
-    state: AchievementsViewModel.UiState,
+    state: AchievementsUiState,
     navController: NavController? = null,
     onFilterChanged: (category: String, scope: String) -> Unit = {_, _ -> }
 ) {
@@ -66,16 +66,16 @@ fun AchievementsContent(
     var expandedScope by remember { mutableStateOf(false) }
     var selectedCategory by remember {mutableStateOf("OVERALL")}
     var selectedScope by remember {mutableStateOf("WEEKLY")}
-    var categories by remember {mutableStateOf(emptyList<String>())}
-    var scopes by remember {mutableStateOf(emptyList<String>())}
+//    var categories by remember {mutableStateOf(emptyList<String>())}
+//    var scopes by remember {mutableStateOf(emptyList<String>())}
 
-    LaunchedEffect(state){
-
-        if (state is AchievementsViewModel.UiState.Success) {
-            categories = state.categories
-            scopes = state.scopes
-        }
-    }
+//    LaunchedEffect(state){
+//
+//        if (state is AchievementsViewModel.UiState.Success) {
+//            categories = state.categories
+//            scopes = state.scopes
+//        }
+//    }
 
     Scaffold(
         topBar = {
@@ -100,7 +100,7 @@ fun AchievementsContent(
         ) {
             item {
                 //Overal Driving score
-                ScoreCard(score = 85)
+                ScoreCard(score = state.overallScore)
             }
 
             item {
@@ -141,7 +141,7 @@ fun AchievementsContent(
                             expanded = expandedCategory,
                             onDismissRequest = { expandedCategory = false }
                         ) {
-                            categories.forEach { category ->
+                            state.categories.forEach { category ->
                                 val itemText = category.replace('_',' ')
                                     .lowercase()
                                     .replaceFirstChar { it.uppercase() }
@@ -178,7 +178,7 @@ fun AchievementsContent(
                             expanded = expandedScope,
                             onDismissRequest = { expandedScope = false }
                         ) {
-                            scopes.forEach { scope ->
+                            state.scopes.forEach { scope ->
                                 val itemText = scope.replace('_',' ')
                                     .lowercase()
                                     .replaceFirstChar { it.uppercase() }
@@ -197,30 +197,19 @@ fun AchievementsContent(
                 }
             }
 
-            when (state) {
-                is AchievementsViewModel.UiState.Loading -> {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+            if (state.isLoadingLeaderboard) {
+                item {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-
-                is AchievementsViewModel.UiState.Error -> {
-                    item {
-                        Text(
-                            text = state.message ?: "Error loading leaderboard",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
+            } else if (state.error != null) {
+                item {
+                    Text(text = state.error, color = MaterialTheme.colorScheme.error)
                 }
-
-                is AchievementsViewModel.UiState.Success -> {
-                    val leaderboard = state.leaderboard
+            } else {
+                val leaderboard = state.leaderboard
+                if (leaderboard != null) {
                     items(leaderboard.entries) { entry ->
                         RankCard(
                             name = entry.displayName,
@@ -230,33 +219,34 @@ fun AchievementsContent(
                         HorizontalDivider()
                     }
                 }
-
-                else -> {}
             }
         }
     }
 }
 
-@Preview(showBackground=true)
-@Composable
-fun AchievementsPreview() {
-    val mockLeaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
-        category = "OVERALL",
-        scope = "GLOBAL",
-        entries = listOf(
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87.0),
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80.0),
-            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75.0)
-        ),
-        myRank = 2,
-        myScore = 80
-    )
-
-    val mockCategories : List<String> = listOf("OVERALL", "SAFETY", "ECO")
-
-    DrivingTrackerTheme {
-        AchievementsContent(
-            state = AchievementsViewModel.UiState.Success(mockLeaderboard, categories = mockCategories)
-        )
-    }
-}
+//@Preview(showBackground=true)
+//@Composable
+//fun AchievementsPreview() {
+//    val mockLeaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
+//        category = "OVERALL",
+//        scope = "GLOBAL",
+//        entries = listOf(
+//            com.omnitech.drivingtracker.data.models.LeaderboardEntry(1, "1", "Brayden B", 87.0),
+//            com.omnitech.drivingtracker.data.models.LeaderboardEntry(2, "2", "You", 80.0),
+//            com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "Mosa L", 75.0)
+//        ),
+//        myRank = 2,
+//        myScore = 80.0
+//    )
+//
+//    DrivingTrackerTheme {
+//        AchievementsContent(
+//            state = AchievementsUiState(
+//                leaderboard = mockLeaderboard,
+//                categories = listOf("OVERALL", "SAFETY", "ECO"),
+//                scopes = listOf("WEEKLY", "GLOBAL"),
+//                overallScore = 85
+//            )
+//        )
+//    }
+//}

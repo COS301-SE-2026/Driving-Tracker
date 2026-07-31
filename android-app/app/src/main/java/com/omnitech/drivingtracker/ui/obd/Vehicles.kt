@@ -42,6 +42,7 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.components.VehicleInfoCard
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
@@ -139,7 +140,7 @@ fun Vehicles(
                     }
                     LazyColumn(
                         modifier =  Modifier
-                            .fillMaxSize()
+                            .fillMaxSize().testTag("vehicleList")
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
@@ -169,7 +170,9 @@ fun Vehicles(
                             )
                         }
                         item {
-                            AddVehicleButton(onClick = { showAddVehicleDialog = true })
+                            AddVehicleButton(
+                                modifier = Modifier.testTag("buttonOpenAddVehicleDialog"),
+                                onClick = { showAddVehicleDialog = true })
                         }
                     }
                 }

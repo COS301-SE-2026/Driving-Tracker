@@ -95,6 +95,8 @@ fun LiveTripContacts(
 
     val state by viewModel.uiState.collectAsState()
     val liveDuration by viewModel.durationMinutes.collectAsState()
+    val tripPath by viewModel.tripPath.collectAsState()
+    val plannedRoute by viewModel.plannedRoute.collectAsState()
     val liveDistance by viewModel.distanceKm.collectAsState()
     var showTripEndDialog by remember { mutableStateOf(false) }
     var showAccessRevokedDialog by remember { mutableStateOf(false) }
@@ -223,6 +225,8 @@ fun LiveTripContacts(
                     subscriptionKey = mapToken!!,
                     latitude = currentLat,
                     longitude = currentLng,
+                    actualRoute = tripPath,
+                    plannedRoute = plannedRoute,
                     modifier = Modifier.fillMaxSize(),
                     recenterTrigger = recenterCount
                 )

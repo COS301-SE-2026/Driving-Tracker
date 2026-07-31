@@ -154,6 +154,25 @@
                 }
             });
         };
+        window.setActualRoute = function(pointsJson) {
+            if (!datasource) return;
+            try {
+                var points = JSON.parse(pointsJson);
+
+                routePath = points.map(function(p) { return [p.lng, p.lat]; });
+
+                if (routePath.length > 0) {
+                    // Immediately draw the line on the map
+                    datasource.setShapes([new atlas.data.LineString(routePath)]);
+                    // Update lastLat/lastLng so the red dot and camera are in sync
+                    var lastPoint = routePath[routePath.length - 1];
+                    lastLng = lastPoint[0];
+                    lastLat = lastPoint[1];
+                }
+            } catch (e) {
+                console.error("JS: Error parsing actual route: " + e.message);
+            }
+        };
 
         window.updateUserLocation = function(lat, lng) {
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);

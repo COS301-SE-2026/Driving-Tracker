@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
@@ -58,6 +60,7 @@ import com.omnitech.drivingtracker.data.obd.VehicleMetrics
 import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -92,6 +95,34 @@ fun LiveTrip(
     }
 
     val context = LocalContext.current
+    val tripPath by viewModel.tripPath.collectAsState()
+
+    val liveDistance = remember(tripPath){
+        var total = 0.0
+        for(i in 0 until tripPath.size-1){
+            val start = tripPath[i]
+            val end = tripPath[i + 1]
+            if (start.lat != null && start.lng != null && end.lat != null && end.lng != null) {
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(start.lat, start.lng, end.lat, end.lng, results)
+                total += results[0]
+            }
+        }
+        total/ 1000.0
+    }
+    var liveDurationMinutes by remember { mutableStateOf(0) }
+    val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+
+    LaunchedEffect(currentTrip?.startedAt) {
+        val startIso = currentTrip?.startedAt ?: return@LaunchedEffect
+        while(true) {
+            try {
+                val startTime = java.time.Instant.parse(startIso)
+                liveDurationMinutes = java.time.Duration.between(startTime, java.time.Instant.now()).toMinutes().toInt()
+            } catch (e: Exception) { }
+            kotlinx.coroutines.delay(30000) // Update every 30 seconds
+        }
+    }
     //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
     //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
@@ -156,7 +187,9 @@ fun LiveTrip(
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
             viewModel.loadTripSummary(tripId)
+            viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
+            viewModel.observeTripEvents(tripId)
         }
     }
 
@@ -212,12 +245,18 @@ fun LiveTrip(
         )
     }
 
+    val localEvents by viewModel.localEvents.collectAsState()
+
     LiveTripContent(
         uiState = uiState,
         endTripState = currentEndTripState,
         mapToken = mapToken,
+        liveDistance = liveDistance,
+        liveDuration = liveDurationMinutes ,
         liveLocation = liveMetrics,
+        actualRoute = tripPath,
         contactsState = contactsState,
+        localEvents = localEvents,
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -233,8 +272,8 @@ fun LiveTrip(
                 tripId = tripId,
                 latitude = liveMetrics.latitude,
                 longitude = liveMetrics.longitude,
-                distance = currentTrip?.distanceKm?:0.0,
-                durationMinutes = durationMin,
+                distance = liveDistance,
+                durationMinutes = liveDurationMinutes,
                 fuelEstimate = currentTrip?.fuelEstimate?:0.0
             )
         },
@@ -260,12 +299,44 @@ fun LiveTripContent(
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
     destination: LocationDto? = null,
+    actualRoute: List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
+    localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
+    liveDistance: Double =0.0,
+    liveDuration: Int= 0
 ) {
+    Column(modifier = Modifier.fillMaxSize()){
+        //alert banner for E2E test
+        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+        var showAlert by remember { mutableStateOf(false) }
+
+        LaunchedEffect(latestEvent) {
+            if(latestEvent != null){
+                showAlert = true
+                kotlinx.coroutines.delay(5000)
+                showAlert = false
+            }
+        }
+
+        if(showAlert && latestEvent != null){
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(16.dp).testTag("LiveTripAlertBanner"),
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(8.dp)
+            ){
+                Text(
+                    text = "${latestEvent.eventType} DETECTED",
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)) {
@@ -348,6 +419,10 @@ fun LiveTripContent(
                             onShareTrip = onShareTrip,
                             destination = destination,
                             plannedRoute = plannedRoute,
+                            actualRoute = actualRoute,
+                            liveDistance = liveDistance,
+                            liveDuration = liveDuration,
+                            localEvents = localEvents,
                             vehicleMetrics = vehicleMetrics
                         )
                     }
@@ -369,8 +444,12 @@ private fun TripDetails(
     onEndTrip: () -> Unit,
     navController: NavController?,
     destination: LocationDto? = null,
+    actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit,
+    liveDistance: Double = 0.0,
+    liveDuration: Int = 0,
+    localEvents: List<TripEventEntity>,
     vehicleMetrics: VehicleMetrics
 ) {
     var recenterCount by remember { mutableStateOf(0) }
@@ -403,6 +482,7 @@ private fun TripDetails(
                     subscriptionKey = mapToken,
                     latitude = currentLat,
                     longitude = currentLng,
+                    actualRoute = actualRoute,
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
@@ -559,8 +639,8 @@ private fun TripDetails(
         Spacer(modifier = Modifier.height(25.dp))
 
         TripSummaryCard(
-            distanceKm = trip.distanceKm,
-            durationMinutes = trip.durationMinutes,
+            distanceKm = liveDistance,
+            durationMinutes = liveDuration,
             fuelEstimate = trip.fuelEstimate,
             avgSpeed = vehicleMetrics.speed.toString(),
             isLive = true
@@ -571,8 +651,8 @@ private fun TripDetails(
         //Alerts section (alerts not made but count used)
 
         TripAlertsCard(
-            hardBrakingCount = trip.events.count {it.eventType == "HARSH_BRAKE"},
-            hardAccelerationCount = trip.events.count {it.eventType == "ACCELERATION"},
+            hardBrakingCount = localEvents.count {it.type == "HARSH_BRAKE"},
+            hardAccelerationCount = localEvents.count {it.type == "HARSH_ACCELERATION"},
         )
 
         Spacer(modifier = Modifier.weight(1f))

@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.notification
 
+import android.app.Notification
 import android.icu.text.CaseMap
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.AnimatedVisibility
@@ -138,8 +139,10 @@ fun NotificationsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }else {
+
                             notificationsToday.forEach{ notification ->
-                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
+                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
                             }
                         }
                     }
@@ -163,7 +166,8 @@ fun NotificationsScreen(
                             )
                         }else {
                             notificationsYesterday.forEach{ notification ->
-                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body= notification.body?:""))
+                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
+                                NotificationCard(NotificationItem(notification.notificationId, notiType, body= notification.body?:""))
                             }
                         }
                     }
@@ -188,7 +192,8 @@ fun NotificationsScreen(
                             )
                         } else {
                             notificationsWeek.forEach{ notification ->
-                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
+                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
                             }
                         }
                     }
@@ -212,7 +217,8 @@ fun NotificationsScreen(
                             )
                         } else {
                             notificationsEarlier.forEach{ notification ->
-                                NotificationCard(NotificationItem(notification.notificationId, NotificationType.valueOf(notification.type), body = notification.body?:""))
+                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
+                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
                             }
                         }
                     }

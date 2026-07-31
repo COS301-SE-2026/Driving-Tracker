@@ -58,6 +58,7 @@ fun AzureMapContainer(
     zoom: Int = 15,
     recenterTrigger: Int = 0,
     destination: LocationDto? = null,
+    actualRoute : List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
     onMapReady: () -> Unit = {}
 ) {
@@ -95,6 +96,12 @@ fun AzureMapContainer(
         if (isMapStable && plannedRoute != null) {
             val pointsJson = Gson().toJson(plannedRoute)
             webViewRef?.evaluateJavascript("javascript:window.setPlannedRoute('$pointsJson')", null)
+        }
+    }
+    LaunchedEffect(actualRoute, isMapStable) {
+        if (isMapStable && !actualRoute.isNullOrEmpty()) {
+            val pointsJson = Gson().toJson(actualRoute)
+            webViewRef?.evaluateJavascript("javascript:window.setActualRoute('$pointsJson')", null)
         }
     }
 
