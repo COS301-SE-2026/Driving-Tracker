@@ -33,12 +33,13 @@ Gendac (Software, Innovations & IoT)
 
 - [Project Description](#project-description)
 - [Documentation](#documentation)
-- [Demos & Project Management](#demos-&-project-management)
+- [Demos & Project Management](#demos--project-management)
 - [Deployed Pages](#deployed-pages)
 - [Meet OmniTech](#meet-omnitech)
 - [Tech Stack](#tech-stack)
 - [Branching Strategy](#branching-strategy)
-- [Getting Started](#prerequisites)
+- [Getting our app](#getting-our-app)
+- [Getting Started(Development)](#prerequisites)
   - [Prerequisites](#prerequisites)
   - [Running](#running)
 
@@ -135,6 +136,16 @@ The system operates across three layers:
 | `fix/name/description` | Bug fixes |
 | `docs/name/description` | Documentation updates |
 | `chore/name/description` | Config, tooling, setup |
+
+---
+## Getting our app
+
+To download the Driving Tracker application, visit our deployed landing page:
+[Driving Tracker Landing Page](https://cos301-se-2026.github.io/Driving-Tracker/)
+
+Explore the features and learn more about the app, then click the **Download** button located in the navigation bar at the top of the page or in the footer section.
+
+You can also access additional information about the app, including its features, documentation, and user guides, directly from the landing page.
 
 ---
 
