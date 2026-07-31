@@ -49,6 +49,10 @@ export default function Navbar() {
       Help
       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </Link>
+      <Link href = "/style-guide" className = "relative rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
+      Style Guide
+      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
+      </Link>
       <a href = "#download" className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
         Download
         <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
