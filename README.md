@@ -79,7 +79,7 @@ The system operates across three layers:
 
 ---
 ## Deployed Pages
-[Landing Page (Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
+[Landing Page](Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
 
 ---
 
