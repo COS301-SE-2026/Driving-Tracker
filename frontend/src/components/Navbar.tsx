@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 
+const APK_URL = "";
+
 const FEATURES = [
   {label: "Smart Driving Tracker", href: "#key-features"},
   {label: "OBD-II Vehicle Diagnostics", href: "#key-features"},
@@ -53,7 +55,7 @@ export default function Navbar() {
       Style Guide
       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </Link>
-      <a href = "#download" className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
+      <a href = {APK_URL} download className = "relative rounded-full bg-[var(--color-secondary)] px-5 py-2 text-[var(--color-bg)] font-semibold hover:bg-[var(--color-primary)] transition-colors duration-200">
         Download
         <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--color-secondary)] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
       </a>
