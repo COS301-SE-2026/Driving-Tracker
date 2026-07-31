@@ -58,8 +58,8 @@ The system operates across three layers:
 ---
 
 ## Documentation
-[Software Requirement Specification](docs/Documentation-Demo2/OmniTech%20SRS.pdf)\
-[Software Architecture Specification](docs/Documentation-Demo2/OmniTech%20SAS.pdf)\
+[Software Requirement Specification](docs/Documentation-Demo2/DEMO_2_SRS.pdf)\
+[Software Architecture Specification](docs/Documentation-Demo2/DEMO_2_SAS.pdf)\
 [Coding Standards](docs/Documentation-Demo2/Coding-Standards.pdf)\
 [Testing Policy](docs/Documentation-Demo2/testing-policy.pdf)\
 [User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
