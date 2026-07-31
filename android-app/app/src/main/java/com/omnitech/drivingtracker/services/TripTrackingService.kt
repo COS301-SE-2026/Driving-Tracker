@@ -349,6 +349,13 @@ class TripTrackingService: Service() {
 
             tripRepository.saveEventLocally(entity)
 
+            val alertTitle = event.type.replace("_", " ").lowercase().replaceFirstChar{ it.uppercase() }
+            notificationHelper.showTripAlert(
+                title = "$alertTitle Detected!",
+                message = "Take care: a driving safety event was just registered.",
+                tripId = tripId
+            )
+
                 try {
                     val response = apiService.logEvent(
                         tripId = tripId,
