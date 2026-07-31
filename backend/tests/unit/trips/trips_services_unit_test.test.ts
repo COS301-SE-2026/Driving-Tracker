@@ -84,6 +84,7 @@ jest.mock('../../../src/utils/notification', () => ({
 jest.mock('../../../src/services/notification_service', () => ({
     notification_services: {
         send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        send_trip_alert_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
 }));
 jest.mock('../../../src/services/vehicle.services', () => ({
@@ -677,7 +678,7 @@ describe('Trips services.events_log', () => {
 
         jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens').mockResolvedValue(['token-1','token-2']);
 
-        //jest.spyOn(notification_services, 'send_trip_alert_notification').mockResolvedValue(undefined);
+        jest.spyOn(notification_services, 'send_trip_alert_notification').mockResolvedValue(undefined);
 
         jest.spyOn(contact_services, 'alert_contacts_for_event').mockResolvedValue({alert_id: 'a1'});
 

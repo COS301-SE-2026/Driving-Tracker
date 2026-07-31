@@ -2472,6 +2472,7 @@ __metadata:
     "@types/supertest": "npm:^7.2.0"
     bcrypt: "npm:^6.0.0"
     cors: "npm:^2.8.6"
+    date-fns: "npm:^4.4.0"
     dotenv: "npm:^17.4.2"
     express: "npm:^5.2.1"
     express-rate-limit: "npm:^8.6.0"
@@ -2956,6 +2957,13 @@ __metadata:
   version: 4.0.1
   resolution: "data-uri-to-buffer@npm:4.0.1"
   checksum: 10c0/20a6b93107597530d71d4cb285acee17f66bcdfc03fd81040921a81252f19db27588d87fc8fc69e1950c55cfb0bf8ae40d0e5e21d907230813eb5d5a7f9eb45b
+  languageName: node
+  linkType: hard
+
+"date-fns@npm:^4.4.0":
+  version: 4.4.0
+  resolution: "date-fns@npm:4.4.0"
+  checksum: 10c0/988f0a13db183f5dfc85c36bbb6847a9c135a9225888bbea4005876ec15539a8613c21a07370a4e7ea543918d5a1cafb423c528b42cdbbde5fdfddb178126b21
   languageName: node
   linkType: hard
 
