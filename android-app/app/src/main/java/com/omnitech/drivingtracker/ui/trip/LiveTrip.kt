@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -308,6 +309,34 @@ fun LiveTripContent(
     liveDistance: Double =0.0,
     liveDuration: Int= 0
 ) {
+    Column(modifier = Modifier.fillMaxSize()){
+        //alert banner for E2E test
+        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+        var showAlert by remember { mutableStateOf(false) }
+
+        LaunchedEffect(latestEvent) {
+            if(latestEvent != null){
+                showAlert = true
+                kotlinx.coroutines.delay(5000)
+                showAlert = false
+            }
+        }
+
+        if(showAlert && latestEvent != null){
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(16.dp).testTag("LiveTripAlertBanner"),
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(8.dp)
+            ){
+                Text(
+                    text = "${latestEvent.eventType} DETECTED",
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)) {

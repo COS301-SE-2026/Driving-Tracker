@@ -29,7 +29,7 @@ import com.omnitech.drivingtracker.data.models.DataSource
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
-import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
+import com.omnitech.drivingtracker.data.sensors.ISensorFusionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +52,7 @@ class TripTrackingService: Service() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
     @Inject
-    lateinit var sensorFusion: SensorFusionManager
+    lateinit var sensorFusion: ISensorFusionManager
     @Inject
     lateinit var apiService: ApiService
 

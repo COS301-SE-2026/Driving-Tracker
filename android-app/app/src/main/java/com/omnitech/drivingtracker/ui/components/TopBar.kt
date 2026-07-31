@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,10 @@ fun TopBar(leftIcon: ImageVector,
         horizontalArrangement = Arrangement.SpaceBetween
     ){
         //left button
-        IconButton(onClick = onLeftClick) {
+        IconButton(
+            onClick = onLeftClick,
+            modifier = Modifier.testTag("topBarLeftButton")
+        ) {
             Icon(
                 imageVector = leftIcon,
                 contentDescription = "Navigation action",

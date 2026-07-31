@@ -16,12 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
+import androidx.compose.ui.platform.testTag
 
 @Composable
-fun AddVehicleButton(onClick: () -> Unit) {
+fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 32.dp),
@@ -72,11 +73,11 @@ fun AddVehicleDialog(
                     if (selectedImageUri == null) Icon(Icons.Default.AddAPhoto, null)
                 }
 
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
-                OutlinedTextField(value = registration, onValueChange = { registration = it }, label = { Text("Registration") })
-                OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
-                OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
-				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") })
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.testTag("addVehicleName"))
+                OutlinedTextField(value = registration, onValueChange = { registration = it }, label = { Text("Registration") }, modifier = Modifier.testTag("addVehicleRegistration"))
+                OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") }, modifier = Modifier.testTag("addVehicleMake"))
+                OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.testTag("addVehicleModel"))
+				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") }, modifier = Modifier.testTag("addVehicleYear"))
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Fuel Type", style = MaterialTheme.typography.labelLarge)
@@ -102,7 +103,8 @@ fun AddVehicleDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType) },
-                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank()
+                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank(),
+                modifier = Modifier.testTag("addVehicleConfirmButton")
             ) {
                 Text("Add")
             }

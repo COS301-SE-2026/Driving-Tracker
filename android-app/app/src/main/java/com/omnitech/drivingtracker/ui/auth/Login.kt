@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun Login(
@@ -98,7 +99,7 @@ fun Login(
                             onValueChange = { identifier=it },
                             placeholder = { Text("Email or Username", color = Color(0xFFBDBDBD)) },
                             isError = errorCode == "INVALID_CREDENTIALS",
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("loginIdentifier"),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true
                         )
@@ -118,7 +119,7 @@ fun Login(
                             onValueChange = { password=it },
                             isError = errorCode == "INVALID_PASSWORD",
                             placeholder = { Text("Password", color = Color(0xFFBDBDBD)) },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("loginPassword"),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
                             visualTransformation = if (passwordVisible) VisualTransformation.None
@@ -155,7 +156,7 @@ fun Login(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp)
-                            .height(48.dp),
+                            .height(48.dp).testTag("loginButton"),
                         colors = ButtonDefaults.buttonColors(containerColor = Green), //Dark grey
                         shape = RoundedCornerShape(8.dp)
                     ) {
