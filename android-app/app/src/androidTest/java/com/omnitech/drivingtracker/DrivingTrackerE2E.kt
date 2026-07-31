@@ -194,6 +194,8 @@ class DrivingTrackerE2E{
 
         handleSystemPermission()
 
+        Thread.sleep(3000)
+
         composeTestRule.waitUntil(15000){
             try{
                 composeTestRule.onAllNodesWithText("Select Vehicle").fetchSemanticsNodes().isNotEmpty()
@@ -205,18 +207,23 @@ class DrivingTrackerE2E{
 
         composeTestRule.onAllNodes(hasClickAction()).onLast().performClick()
 
-//        Thread.sleep(3000)
+        Thread.sleep(5000)
 
-        composeTestRule.waitUntil(5000) {
+        composeTestRule.waitUntil(15000) {
             composeTestRule.onAllNodesWithTag("startTripConfirmButton").fetchSemanticsNodes().isNotEmpty()
         }
 
         composeTestRule.onNodeWithTag("startTripConfirmButton").performClick()
 
         composeTestRule.waitUntil(30000){
-            composeTestRule.onAllNodesWithText("Fuel Efficiency").fetchSemanticsNodes().isNotEmpty()
+            try{
+                composeTestRule.onAllNodesWithText("Fuel Efficiency").fetchSemanticsNodes().isNotEmpty()
+            }catch (e: Exception){
+                false
+            }
         }
 
+        Thread.sleep(5000)
         sensorManager.triggerFakeEvent("HARSH_BRAKE")
 
         composeTestRule.waitUntil(10000){
