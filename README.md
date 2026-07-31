@@ -63,7 +63,7 @@ The system operates across three layers:
 [Coding Standards](docs/Documentation-Demo2/Coding-Standards.md)\
 [Testing Policy](docs/Documentation-Demo2/testing-policy.md)\
 [User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
-[Brand style guide](docs/Documentation-Demo2/Brand%20Style%20Guide.pdf)\
+[Brand style guide](docs/Documentation-Demo2/brand_style_guide.pdf)\
 [Wireframes](docs/Documentation-Demo2/wireframes.pdf)\
 [Wireframes Figma Link](https://www.figma.com/design/JEv1W9Jh1mvtZmtRENtL85/Wireframes?node-id=0-1&t=x2XNBSR5ZJ1KePqF-1)
 
