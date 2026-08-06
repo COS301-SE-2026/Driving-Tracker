@@ -22,6 +22,8 @@ class AuthRepository @Inject constructor(
 ) {
 
     suspend fun insertUser(userEntity: UserEntity) = userDao.insertUser(userEntity)
+
+    fun getRefreshToken(): String?  = session_manager.getRefreshToken()
     suspend fun register(
         username: String,
         name: String,

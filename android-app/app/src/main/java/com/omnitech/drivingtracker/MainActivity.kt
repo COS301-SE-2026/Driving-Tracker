@@ -51,6 +51,19 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 
 sealed class Screen(val route: String){
@@ -122,9 +135,28 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        //For checking if user can skip log in
+        val authViewModel: AuthViewModel by viewModels()
+
+        splashScreen.setKeepOnScreenCondition {
+            authViewModel.uiState.value is AuthViewModel.UiState.Loading ||
+                    authViewModel.uiState.value is AuthViewModel.UiState.Loading
+        }
+
         enableEdgeToEdge()
         setContent {
+
+            val authState by authViewModel.uiState.collectAsState()
+
+            //Check if user session is still valid
+            LaunchedEffect(Unit) {
+                authViewModel.checkSession()
+            }
 
             var darkMode by rememberSaveable {mutableStateOf(false)}
             val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
@@ -153,7 +185,7 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
 
-                        if(event == Lifecycle.Event.ON_RESUME){
+                        if((event == Lifecycle.Event.ON_RESUME) && authState is AuthViewModel.UiState.Authenticated){
                            handleNotificationNavigation()
                         }
                     }
@@ -163,120 +195,143 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
-                    composable(Screen.Welcome.route){
-                        WelcomePage(
-                            onLoginClick = { navController.navigate(Screen.Login.route) },
-                            onSignUpClick = { navController.navigate(Screen.SignUp.route) }
-                        )
-                    }
-                    composable(Screen.Login.route){
+                when(authState){
 
-                        LoginScreen(
-                            onLoginSuccess = { navigatePostAuth() },
-                            onBackClick = { navController.popBackStack() }
-                        )
+                    is AuthViewModel.UiState.Loading, AuthViewModel.UiState.Idle -> {
+
                     }
-                    composable(Screen.SignUp.route){
-                        SignUpScreen(
-                            onSignUpSuccess = { navigatePostAuth() },
-                            onBackClick = { navController.popBackStack() }
-                        )
-                    }
-                    composable(Screen.Dashboard.route){
-                        Dashboard(navController = navController)
-                    }
-                    composable(Screen.Trips.route){
-                        Trips(navController = navController)
+                    else -> {
+
+                        val startRoute = if(authState is AuthViewModel.UiState.Authenticated){
+                            getPostAuthDestination()
+                        } else {
+                            Screen.Welcome.route
+                        }
+
+                        LaunchedEffect(authState) {
+                            if(authState is AuthViewModel.UiState.Authenticated){
+                                handleNotificationNavigation()
+                            }
+                        }
+
+                        NavHost(navController = navController, startDestination = startRoute){
+                            composable(Screen.Welcome.route){
+                                WelcomePage(
+                                    onLoginClick = { navController.navigate(Screen.Login.route) },
+                                    onSignUpClick = { navController.navigate(Screen.SignUp.route) }
+                                )
+                            }
+                            composable(Screen.Login.route){
+
+                                LoginScreen(
+                                    onLoginSuccess = { navigatePostAuth() },
+                                    onBackClick = { navController.popBackStack() }
+                                )
+                            }
+                            composable(Screen.SignUp.route){
+                                SignUpScreen(
+                                    onSignUpSuccess = { navigatePostAuth() },
+                                    onBackClick = { navController.popBackStack() }
+                                )
+                            }
+                            composable(Screen.Dashboard.route){
+                                Dashboard(navController = navController)
+                            }
+                            composable(Screen.Trips.route){
+                                Trips(navController = navController)
+                            }
+
+                           //composable(Screen.WeeklyChallenges.route){
+                               //WeeklyChallenges(navController = navController)
+                            //}
+
+                            composable(Screen.Contacts.route){
+                                Contacts(navController = navController)
+                            }
+                            composable(Screen.Achievements.route){
+                                AchievementsScreen(navController = navController)
+                            }
+                            composable(Screen.Notifications.route){
+                                NotificationsScreen(navController = navController)
+                            }
+                            composable(Screen.Help.route){
+                                Help(navController = navController)
+                            }
+                            composable(
+                                route = Screen.TripSummary.route,
+                                arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                            ) { backStackEntry->
+                                val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+                                TripSummary(tripId = tripId, navController = navController)
+                            }
+                            composable(
+                                route = Screen.LiveTrip.route,
+                                arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                            ) { backStackEntry->
+                                val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+
+                                LiveTrip(tripId = tripId, navController = navController)
+                            }
+                            composable(Screen.NotificationRationale.route) {
+                                NotificationRationale(
+                                    onPermissionHandled = {
+                                        navController.navigate(Screen.Dashboard.route) {
+                                            popUpTo(Screen.NotificationRationale.route) { inclusive = true }
+                                        }
+                                })
+                            }
+
+                            composable(Screen.BluetoothRationale.route) { //ask about this
+                                BluetoothRationale(
+                                    onPermissionHandled = {
+                                        navController.navigate(Screen.OBDConnect.route) {
+                                            popUpTo(Screen.BluetoothRationale.route) { inclusive = true }
+                                        }
+                                    })
+                            }
+
+                            composable(Screen.OBDConnect.route) {
+                                val activity = LocalActivity.current as ComponentActivity
+                                val obdViewModel: ObdViewModel = hiltViewModel(activity)
+                                OBDConnect(navController = navController, viewModel = obdViewModel)
+                            }
+                            composable(Screen.Vehicles.route) {
+                                Vehicles(navController = navController)
+                            }
+                            composable(Screen.Settings.route){
+                                Settings(
+                                    navController = navController,
+                                    darkMode = darkMode,
+                                    onDarkModeChange = onDarkModeChange
+                                )
+                            }
+                            composable(Screen.OBDMain.route){
+                                OBDMain(navController = navController)
+                            }
+                            composable(Screen.More.route){
+                                More(navController = navController)
+                            }
+                            composable(Screen.OBDKeyData.route){
+                                val activity = LocalActivity.current as ComponentActivity
+                                val obdViewModel: ObdViewModel = hiltViewModel(activity)
+                                OBDKeyData(navController = navController, viewModel = obdViewModel)
+                            }
+                            composable(Screen.Profile.route){
+                                Profile(navController = navController)
+                            }
+                            composable(
+                                route = Screen.LiveTripContacts.route,
+                                arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
+                            ) { backStackEntry->
+                                val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
+                                val name = backStackEntry.arguments?.getString("name") ?: ""
+
+                                LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
+                            }
+                        }
+
                     }
 
-//                    composable(Screen.WeeklyChallenges.route){
-//                        WeeklyChallenges(navController = navController)
-//                    }
-
-                    composable(Screen.Contacts.route){
-                        Contacts(navController = navController)
-                    }
-                    composable(Screen.Achievements.route){
-                        AchievementsScreen(navController = navController)
-                    }
-                    composable(Screen.Notifications.route){
-                        NotificationsScreen(navController = navController)
-                    }
-                    composable(Screen.Help.route){
-                        Help(navController = navController)
-                    }
-                    composable(
-                        route = Screen.TripSummary.route,
-                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
-                    ) { backStackEntry->
-                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
-                        TripSummary(tripId = tripId, navController = navController)
-                    }
-                    composable(
-                        route = Screen.LiveTrip.route,
-                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
-                    ) { backStackEntry->
-                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
-
-                        LiveTrip(tripId = tripId, navController = navController)
-                    }
-                    composable(Screen.NotificationRationale.route) {
-                        NotificationRationale(
-                            onPermissionHandled = {
-                                navController.navigate(Screen.Dashboard.route) {
-                                    popUpTo(Screen.NotificationRationale.route) { inclusive = true }
-                                }
-                        })
-                    }
-
-                    composable(Screen.BluetoothRationale.route) { //ask about this
-                        BluetoothRationale(
-                            onPermissionHandled = {
-                                navController.navigate(Screen.OBDConnect.route) {
-                                    popUpTo(Screen.BluetoothRationale.route) { inclusive = true }
-                                }
-                            })
-                    }
-
-                    composable(Screen.OBDConnect.route) {
-                        val activity = LocalActivity.current as ComponentActivity
-                        val obdViewModel: ObdViewModel = hiltViewModel(activity)
-                        OBDConnect(navController = navController, viewModel = obdViewModel)
-                    }
-                    composable(Screen.Vehicles.route) {
-                        Vehicles(navController = navController)
-                    }
-                    composable(Screen.Settings.route){
-                        Settings(
-                            navController = navController,
-                            darkMode = darkMode,
-                            onDarkModeChange = onDarkModeChange
-                        )
-                    }
-                    composable(Screen.OBDMain.route){
-                        OBDMain(navController = navController)
-                    }
-                    composable(Screen.More.route){
-                        More(navController = navController)
-                    }
-                    composable(Screen.OBDKeyData.route){
-                        val activity = LocalActivity.current as ComponentActivity
-                        val obdViewModel: ObdViewModel = hiltViewModel(activity)
-                        OBDKeyData(navController = navController, viewModel = obdViewModel)
-                    }
-                    composable(Screen.Profile.route){
-                        Profile(navController = navController)
-                    }
-                    composable(
-                        route = Screen.LiveTripContacts.route,
-                        arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
-                    ) { backStackEntry->
-                        val tripId = backStackEntry.arguments?.getString("trip_id") ?: ""
-                        val name = backStackEntry.arguments?.getString("name") ?: ""
-
-                        LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
-                    }
                 }
             }
         }

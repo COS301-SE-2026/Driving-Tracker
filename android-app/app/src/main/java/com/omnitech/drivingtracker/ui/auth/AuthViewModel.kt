@@ -20,6 +20,8 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         object Loading : UiState()
         object Success : UiState()
         object SuccessLogout : UiState()
+        object Authenticated : UiState()
+        object Unauthenticated : UiState()
         data class Error(
             val code: String? = null,
             val message: String
@@ -141,6 +143,26 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         }
     }
 
+    fun checkSession(){
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            val refreshToken = repository.getRefreshToken()
+
+            if(refreshToken == null){
+                _uiState.value = UiState.Unauthenticated
+                return@launch
+            }
+
+            repository.getProfile().fold(
+                onSuccess = {
+                    _uiState.value = UiState.Authenticated
+                },
+                onFailure = {
+                    _uiState.value = UiState.Unauthenticated
+                }
+            )
+        }
+    }
 
     fun validateLogin(identifier: String, password: String): UiState.Error?{
         if (identifier.isBlank()) return UiState.Error("INVALID_CREDENTIALS","Email or Username is required")
