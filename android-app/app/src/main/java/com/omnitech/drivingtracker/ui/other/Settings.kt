@@ -28,14 +28,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import com.omnitech.drivingtracker.Screen
 import androidx.compose.material3.Switch
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 
 
 @Composable
-fun Settings(navController: NavController? =null,
-             darkMode: Boolean = false,
-             onDarkModeChange: (Boolean) -> Unit
-             )
-{
+fun Settings(
+    navController: NavController? = null,
+    darkMode: Boolean = false,
+    onDarkModeChange: (Boolean) -> Unit,
+    authViewModel: AuthViewModel = hiltViewModel()
+){
+
+    val authState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if(authState is UiState.SuccessLogout){
+
+            navController?.navigate(Screen.Welcome.route){ popUpTo(0) {inclusive = true} }
+        }
+    }
+
     StandardScreen(
         navController = navController,
         title = "Settings",
@@ -58,11 +75,8 @@ fun Settings(navController: NavController? =null,
         SettingOption(
             icon = Icons.AutoMirrored.Filled.Logout,
             label = "Logout",
-            onClick = {navController?.navigate(Screen.Login.route){
-                popUpTo(0) {inclusive = true}
-            } }
+            onClick = { authViewModel.logout() }
         )
-
     }
 }
 
