@@ -186,6 +186,9 @@ fun Dashboard(navController: NavController? = null,
                         drivingTime = trip.durationMinutes?:0,
                         startTime = trip.startTime,
                         tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt()?:0,
+                        onClick = {
+                            navController?.navigate(Screen.TripSummary.createRoute(trip.tripId))
+                        }
                     )
                 }?: Text(text = "No recent trips found",
                         style = MaterialTheme.typography.bodyMedium,
