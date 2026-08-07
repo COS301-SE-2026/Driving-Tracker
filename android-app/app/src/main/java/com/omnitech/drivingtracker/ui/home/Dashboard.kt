@@ -180,12 +180,10 @@ fun Dashboard(navController: NavController? = null,
                 Spacer(modifier = Modifier.height(8.dp))
                 uiState.recentTrip?.let { trip->
                     RecentTripCard(
-                        startLoc = "Last Trip",
-                        destination = trip.status,
-                        distance = trip.distanceKm?.toInt()?:0,
-                        drivingTime = trip.durationMinutes?:0,
-                        startTime = trip.startTime,
-                        tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt()?:0,
+                        trip,
+                        onClick = {
+                            navController?.navigate(Screen.TripSummary.createRoute(trip.tripId))
+                        }
                     )
                 }?: Text(text = "No recent trips found",
                         style = MaterialTheme.typography.bodyMedium,

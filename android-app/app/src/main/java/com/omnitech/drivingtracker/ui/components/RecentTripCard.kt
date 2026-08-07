@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.data.models.TripItemDto
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.*
 import java.time.ZonedDateTime
@@ -33,7 +35,19 @@ import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 
 @Composable
-fun RecentTripCard(startLoc: String, destination: String, distance: Int, drivingTime: Int, startTime: String, tripScore: Int, modifier: Modifier = Modifier) {
+fun RecentTripCard(
+    trip: TripItemDto,
+    modifier: Modifier = Modifier,
+    startLoc: String = "Last Trip",
+    onClick: () -> Unit = {}
+) {
+
+    //extract data from DTO
+    val distance = trip.distanceKm?.toInt() ?: 0
+    val drivingTime = trip.durationMinutes ?: 0
+    val startTime = trip.startTime
+    val tripScore = trip.trip_scores?.firstOrNull()?.overallScore?.toInt() ?: 0
+    val destination = trip.status
 
     //Formatting raw ISO date string
     val formattedDate = try  {
@@ -45,7 +59,7 @@ fun RecentTripCard(startLoc: String, destination: String, distance: Int, driving
     }
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable{ onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
