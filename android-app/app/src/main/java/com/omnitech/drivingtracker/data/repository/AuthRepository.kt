@@ -127,9 +127,7 @@ class AuthRepository @Inject constructor(
     suspend fun logout(): Result<Unit>{
         return try{
 
-            val response = api.logout()
-
-            session_manager.clearTokens()
+            api.logout()
 
             Result.success(Unit)
 
@@ -138,6 +136,8 @@ class AuthRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message?: "Failed to logout"))
         } catch(e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", "Network error"))
+        } finally{
+            session_manager.clearTokens()
         }
 
     }
