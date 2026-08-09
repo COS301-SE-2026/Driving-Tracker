@@ -51,6 +51,19 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 
 sealed class Screen(val route: String){
@@ -121,10 +134,49 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
+    private fun determineStartRoute(authState: AuthViewModel.UiState): String {
+        return if (authState is AuthViewModel.UiState.Authenticated) getPostAuthDestination()
+        else Screen.Welcome.route
+    }
+
+    //navigate from a notification
+    fun handleNotificationNavigation(navController: NavController) {
+        val destination = intent.getStringExtra("navigate_to")?: return
+
+        navController.navigate(destination)
+        intent.removeExtra("navigate_to")
+    }
+
+    //Navigate to destination post auth
+    fun navigatePostAuth(navController: NavController) {
+        navController.navigate(getPostAuthDestination()) {
+            popUpTo(Screen.Welcome.route) { inclusive = true }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        //For checking if user can skip log in
+        val authViewModel: AuthViewModel by viewModels()
+
+        splashScreen.setKeepOnScreenCondition {
+            authViewModel.uiState.value is AuthViewModel.UiState.Loading ||
+                    authViewModel.uiState.value is AuthViewModel.UiState.Idle
+        }
+
         enableEdgeToEdge()
         setContent {
+
+            val authState by authViewModel.uiState.collectAsState()
+
+            //Check if user session is still valid
+            LaunchedEffect(Unit) {
+                authViewModel.checkSession()
+            }
 
             var darkMode by rememberSaveable {mutableStateOf(false)}
             val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
@@ -134,27 +186,12 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val lifecycleOwner = LocalLifecycleOwner.current
 
-                //Navigate to destination post auth
-                fun navigatePostAuth() {
-                    navController.navigate(getPostAuthDestination()) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
-                    }
-                }
-
-                //navigate from a notification
-                fun handleNotificationNavigation() {
-                    val destination = intent.getStringExtra("navigate_to")?: return
-
-                    navController.navigate(destination)
-                    intent.removeExtra("navigate_to")
-                }
-
                 //Navigation through notifications
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
 
-                        if(event == Lifecycle.Event.ON_RESUME){
-                           handleNotificationNavigation()
+                        if((event == Lifecycle.Event.ON_RESUME) && authState is AuthViewModel.UiState.Authenticated){
+                           handleNotificationNavigation(navController)
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -163,7 +200,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                if(authState is AuthViewModel.UiState.Loading ||
+                    authState is AuthViewModel.UiState.Idle){
+                    return@DrivingTrackerTheme
+                }
+
+                val startRoute = determineStartRoute(authState)
+                val isAuthenticated = authState is AuthViewModel.UiState.Authenticated
+
+                LaunchedEffect(isAuthenticated) {
+                    if (isAuthenticated) handleNotificationNavigation(navController)
+                }
+
+                NavHost(navController = navController, startDestination = startRoute){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -173,13 +222,13 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
-                            onLoginSuccess = { navigatePostAuth() },
+                            onLoginSuccess = { navigatePostAuth(navController) },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = { navigatePostAuth() },
+                            onSignUpSuccess = { navigatePostAuth(navController) },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
@@ -190,9 +239,9 @@ class MainActivity : ComponentActivity() {
                         Trips(navController = navController)
                     }
 
-//                    composable(Screen.WeeklyChallenges.route){
-//                        WeeklyChallenges(navController = navController)
-//                    }
+                   //composable(Screen.WeeklyChallenges.route){
+                       //WeeklyChallenges(navController = navController)
+                    //}
 
                     composable(Screen.Contacts.route){
                         Contacts(navController = navController)
@@ -278,6 +327,10 @@ class MainActivity : ComponentActivity() {
                         LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
                 }
+
+
+
+
             }
         }
     }

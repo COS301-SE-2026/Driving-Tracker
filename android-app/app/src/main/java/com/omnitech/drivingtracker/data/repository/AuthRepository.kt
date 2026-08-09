@@ -8,6 +8,7 @@ import com.omnitech.drivingtracker.data.db.daos.UserDao
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.LoginRequest
+import com.omnitech.drivingtracker.data.models.LogoutResponse
 import com.omnitech.drivingtracker.data.models.RegisterFcmRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
@@ -21,6 +22,8 @@ class AuthRepository @Inject constructor(
 ) {
 
     suspend fun insertUser(userEntity: UserEntity) = userDao.insertUser(userEntity)
+
+    fun getRefreshToken(): String?  = session_manager.getRefreshToken()
     suspend fun register(
         username: String,
         name: String,
@@ -119,6 +122,24 @@ class AuthRepository @Inject constructor(
         }catch (e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", "Network error"))
         }
+    }
+
+    suspend fun logout(): Result<Unit>{
+        return try{
+
+            api.logout()
+
+            Result.success(Unit)
+
+        } catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message?: "Failed to logout"))
+        } catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error"))
+        } finally{
+            session_manager.clearTokens()
+        }
+
     }
 
 }

@@ -19,6 +19,9 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         object Idle : UiState()
         object Loading : UiState()
         object Success : UiState()
+        object SuccessLogout : UiState()
+        object Authenticated : UiState()
+        object Unauthenticated : UiState()
         data class Error(
             val code: String? = null,
             val message: String
@@ -110,6 +113,52 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
                             )
                         }
                     }
+                }
+            )
+        }
+    }
+
+    fun logout(){
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+
+            repository.logout().fold(
+                onSuccess = {
+                    _uiState.value = UiState.SuccessLogout
+                },
+                onFailure = { exception ->
+                    when {
+                        exception is ApiException -> {
+                            _uiState.value = UiState.Error(message = exception.errorMessage ?: "Something went wrong",
+                                code = exception.errorCode)
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Something went wrong"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun checkSession(){
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            val refreshToken = repository.getRefreshToken()
+
+            if(refreshToken == null){
+                _uiState.value = UiState.Unauthenticated
+                return@launch
+            }
+
+            repository.getProfile().fold(
+                onSuccess = {
+                    _uiState.value = UiState.Authenticated
+                },
+                onFailure = {
+                    _uiState.value = UiState.Unauthenticated
                 }
             )
         }

@@ -48,7 +48,7 @@ interface ApiService{
     suspend fun register(@Body body: RegisterRequest): AuthResponse
 
     @POST("api/auth/logout")
-    suspend fun logout()
+    suspend fun logout(): LogoutResponse
 
     @GET("api/auth/profile")
     suspend fun getProfile(): ProfileResponse
