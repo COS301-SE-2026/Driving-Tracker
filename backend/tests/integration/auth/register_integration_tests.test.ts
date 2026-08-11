@@ -17,7 +17,7 @@ describe('Auth register integration test', () => {
 			password: 'Password123!',
 			name: 'Register',
 			surname: 'User',
-			phone_number: '+27123455656',
+			phone_number: '0123455656',
 			dob: '2000-01-01',
 			consent_status: true,
 		});

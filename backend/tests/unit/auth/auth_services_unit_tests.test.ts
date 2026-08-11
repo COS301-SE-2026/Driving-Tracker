@@ -48,7 +48,7 @@ describe('Auth services.register', () => {
             username: 'testuser12345',
             name: 'Test',
             surname: 'User',
-            phone_number: '+27123456789',
+            phone_number: '0123456789',
             dob: new Date('2000-01-01'),
             consent_status: true,
         });
@@ -59,7 +59,7 @@ describe('Auth services.register', () => {
             'Test',
             'User',
             'Password123!',
-            '+27123456789',
+            '0123456789',
             '2000-01-01',
             true
         );
@@ -76,7 +76,7 @@ describe('Auth services.register', () => {
             'Test',
             'User',
             'Password123!',
-            '+27123456789',
+            '07123456789',
             '2000-01-01',
             false
         )).rejects.toThrow('You must accept the terms to register');
@@ -95,7 +95,7 @@ describe('Auth services.register', () => {
             'Test',
             'User',
             'Password123!',
-            '+27123456789',
+            '0123456789',
             '2000-01-01',
             true
         )).rejects.toThrow();
@@ -112,7 +112,7 @@ describe('Auth services.register', () => {
             'Test',
             'User',
             'Password123!',
-            '+27123456789',
+            '0123456789',
             under18.toISOString().split('T')[0],
             true
         )).rejects.toThrow();
@@ -188,7 +188,7 @@ describe('Auth services.get_profile', () => {
             name: 'Test',
             surname: 'User',
             email: 'test@example.com',
-            phone_number: '+27123456789',
+            phone_number: '0123456789',
             dob: new Date('2000-01-01'),
             _count: {
                 trips: 5,
