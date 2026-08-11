@@ -89,7 +89,9 @@ export const auth_services = {
             throw new ValidationError(phone_result.error.issues.at(0)?.message!,"phone")
         }
 
-        const email_result=validate_email(email);
+        const normalized_email = email.trim().toLowerCase();
+
+        const email_result=validate_email(normalized_email);
         
         if(!email_result.success){
             throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
@@ -103,14 +105,14 @@ export const auth_services = {
 
         const dob_date=dob_result.data;
 
-        //Checking if user with email or username already exists
+        //Checking if user with email already exists
         const existing_user=await prisma.users.findFirst({
-            where: { email }
+            where: { email: normalized_email }
         });
 
         if(existing_user){
 
-            if(existing_user.email===email){
+            if(existing_user.email === normalized_email){
 
                 throw new ConflictError("You already have an account with this email address","email");
             }
@@ -131,7 +133,7 @@ export const auth_services = {
             try {
                 const user = await prisma.users.create({
                 data: {
-                    email,
+                    email: normalized_email,
                     username: usernameLocal,
                     name,
                     surname,
@@ -174,9 +176,11 @@ export const auth_services = {
 
     async login(identifier: string, password: string){
 
+        const normalized = identifier.trim().toLowerCase();
+
         const user= await prisma.users.findFirst({where: {
             OR:[
-                {email: identifier},
+                {email: normalized},
                 {username: identifier}
             ]
         }});
