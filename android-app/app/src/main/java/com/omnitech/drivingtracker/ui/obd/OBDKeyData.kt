@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.runtime.LaunchedEffect
+import com.omnitech.drivingtracker.data.obd.ObdManager
 
 
 //key data class
@@ -74,6 +75,9 @@ fun OBDKeyData(
 
     val metrics by viewModel.vehicleMetrics.collectAsState()
 
+    val connectionState by viewModel.connectionState.collectAsState()
+    val isConnected = connectionState == ObdManager.ConnectionState.CONNECTED
+
     val isScanning by viewModel.isScanningFaults.collectAsState()
     val scanAttempted by viewModel.faultScanAttempted.collectAsState()
 
@@ -81,7 +85,7 @@ fun OBDKeyData(
             //because our values can be changed
             KData("Engine RPM", "010C","${metrics.rpm}", "RPM", Icons.Default.Speed),
             KData("Coolant Temp", "0105","${metrics.coolantTemp}", "°C", Icons.Default.Thermostat),
-            KData("Fuel Trim", "0103",String.format("%.1f", metrics.fuelTrim), "%", Icons.Default.LocalGasStation),
+            KData("Fuel Trim", "0103",String.format(java.util.Locale.getDefault(),"%.1f", metrics.fuelTrim), "%", Icons.Default.LocalGasStation),
             KData("Vehicle Speed", "010D","${metrics.speed}", "km/h", Icons.Default.DirectionsCar),
     )
 
@@ -99,7 +103,7 @@ fun OBDKeyData(
             Button(
                 onClick = {
                     viewModel.readFaultCodes() },
-                enabled = !isScanning,
+                enabled = !isScanning && isConnected,
                 modifier = Modifier.padding(16.dp)
             ){
                 if(isScanning){
@@ -129,7 +133,7 @@ fun OBDKeyData(
             }
             Spacer(modifier = Modifier.height(14.dp))
 
-            DiagnosticsCard(codes = errorCodes, isScanning = isScanning, scanAttempted = scanAttempted)
+            DiagnosticsCard(codes = errorCodes, isScanning = isScanning, scanAttempted = scanAttempted, isConnected = isConnected)
         }
     }
 
@@ -169,7 +173,7 @@ fun DataCard(dat: KData, iconTint: Color, modifier: Modifier = Modifier){
 }
 
 @Composable
-fun DiagnosticsCard(codes: List<ErrorCode>, isScanning: Boolean, scanAttempted: Boolean){
+fun DiagnosticsCard(codes: List<ErrorCode>, isScanning: Boolean, scanAttempted: Boolean, isConnected: Boolean){
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
@@ -197,6 +201,13 @@ fun DiagnosticsCard(codes: List<ErrorCode>, isScanning: Boolean, scanAttempted: 
             Spacer(modifier = Modifier.height(12.dp))
 
             when{
+                !isConnected -> {
+                    Text(
+                        text = "Vehicle not connected. Please connect to OBD to scan for faults.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 isScanning -> {
                     Text(
                         text = "Querying vehicle ECU, please wait...",
