@@ -20,7 +20,7 @@ const username_schema=z.string().min(3, "Username must have atleast 3 characters
 
 const name_schema=z.string().min(1, "Name/Surname must have atleast 1 character").max(50, "Name/Surname can have atmost 50 characters");
 
-const phone_schema=z.string().regex(/^\+[1-9]\d{1,14}$/, "Invalid phone number. Should be +27123456789 format");
+const phone_schema=z.string().regex(/^0\d{9}$/, "Invalid phone number. Should be 0603456789 format");
 
 const dob_schema = z.preprocess(val => {
   if (typeof val !== 'string') return val;
