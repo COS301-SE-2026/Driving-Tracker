@@ -73,6 +73,8 @@ class TripTrackingService: Service() {
     private var lastSavedLng: Double? = null
     private val MIN_DISTANCE_METERS = 10f
 
+    private val fatigueMonitor = FatigueMonitor(onAlert = {level -> handleFatigueAlert(level)})
+
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -218,6 +220,22 @@ class TripTrackingService: Service() {
         val lastLat = lastSavedLat
         val lastLng = lastSavedLng
 
+        val obdConnected = isObdConnected()
+
+        val currentSpeed = if(obdConnected){
+            obdManager.metrics.value.speed.toFloat()
+        } else {
+            reading.speedKmh
+        }
+
+        val recordedAt = runCatching {
+            Instant.parse(reading.timestamp).toEpochMilli()
+        }.getOrDefault(System.currentTimeMillis())
+
+        fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
+
+        lastKnownSpeed = currentSpeed
+
         if(lastLat != null && lastLng != null){
             val results = FloatArray(1)
             android.location.Location.distanceBetween(lastLat, lastLng, reading.latitude, reading.longitude, results)
@@ -228,21 +246,7 @@ class TripTrackingService: Service() {
         lastSavedLat = reading.latitude
         lastSavedLng = reading.longitude
 
-        val obdConnected = isObdConnected()
-
-
-
-        lastKnownSpeed = if(obdConnected){
-            obdManager.metrics.value.speed.toFloat()
-        } else {
-            reading.speedKmh
-        }
-
         serviceScope.launch {
-
-            val recordedAt = runCatching {
-                Instant.parse(reading.timestamp).toEpochMilli()
-            }.getOrDefault(System.currentTimeMillis())
 
             var rpm: Int? = null
             var speed: Float? = reading.speedKmh
@@ -282,6 +286,29 @@ class TripTrackingService: Service() {
             Log.d(TAG, "Saved reading: ${readingEntity}")
 
         }
+    }
+
+    private fun handleFatigueAlert(level: FatigueMonitor.FatigueAlertLevel){
+        //Notification trigger
+
+        val tripId = currentTripId?: return
+        var title = "Rest alert"
+
+        val message: String = when (level) {
+            FatigueMonitor.FatigueAlertLevel.URGENT -> {
+                title = "Urgent Rest alert"
+                "Please pull over and rest soon"
+            }
+            FatigueMonitor.FatigueAlertLevel.RE_ALERT -> {
+                title = "Rest reminder"
+                "Taking a break would help your concentration"
+            }
+            else -> {
+                "You've been driving for a while. Consider taking a break"
+            }
+        }
+
+        notificationHelper.showRestAlert(title, message, tripId)
     }
 
     private fun computeSyncDelay(): Long {
