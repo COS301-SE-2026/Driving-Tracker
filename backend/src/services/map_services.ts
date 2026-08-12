@@ -17,6 +17,15 @@ if(!config_result.success){
 
 const azure_maps_config = config_result.data;
 
+const AZURE_MAPS_CATEGORIES = {
+    petrol: 'PETROL_STATION',
+    rest_area: 'REST_AREA',
+    parking: 'OPEN_PARKING_AREA',
+}
+
+type PoiCategoryKey = keyof typeof AZURE_MAPS_CATEGORIES;
+type PoiRequestType = PoiCategoryKey | 'stops';
+
 export interface AzureMapsTokenResponse{
     token: string ;
     // client_id: string;
@@ -128,6 +137,56 @@ export const map_services ={
             lat: r.position.lat,
             lng: r.position.lon
         }));
+    },
+    //Fetches points of interest within a specified radius from the provided location
+    async get_nearby_pois(lat: number, lng: number, type: String = 'stops', radiusMeters: number = 5000){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+
+        const poiType: PoiRequestType = type as PoiRequestType;
+
+        if(!poiType){
+            throw new Error(`Invalid type`)
+        }
+
+        const category_names: string[] = poiType === 'stops' 
+        ? [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
+        : [AZURE_MAPS_CATEGORIES[poiType]]
+
+
+        const category_set = category_names.join(',');
+        const query = category_names.join(' ').toLowerCase().replace(/_/g, ' ');
+
+        const params = new URLSearchParams({
+            'api-version':'1.0',
+            query,
+            lat: String(lat),
+            lon: String(lng),
+            radius: String(radiusMeters),
+            categorySet: category_set,
+            limit: '10',
+            language: 'en-US',
+            'subscription-key':key,
+        });
+
+        const url = `https://atlas.microsoft.com/search/poi/category/json?${params.toString()}`;
+
+        const response = await fetch(url);
+
+        if(!response.ok){
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json();
+
+        return (json.results?? []).map((result: any)=>({
+            name: result.poi?.name ?? "Unknown",
+            category: result.poi?.classifications?.[0]?.code ?? result.poi?.categories?.[0] ?? null,
+            latitude: result.position?.lat,
+            longitude: result.position?.lon,
+            distanceMeters: result.dist,
+            address: result.address?.freeformAddress ?? null
+        }));
+
     }
-    //further endpoints to be implemented relating to map integration
+    
 }
