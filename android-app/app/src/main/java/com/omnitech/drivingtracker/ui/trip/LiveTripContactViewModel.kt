@@ -11,6 +11,7 @@ import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.SharedWithMeData
 import com.omnitech.drivingtracker.data.models.SharedWithMeDto
@@ -58,47 +59,66 @@ class LiveTripContactViewModel @Inject constructor(
 
     private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
     val plannedRoute = _plannedRoute.asStateFlow()
+    private val _actualRoute = MutableStateFlow<List<LocationDto>?>(null)
+    val actualRoute = _actualRoute.asStateFlow()
+
 
     fun startPolling(tripId: String){
         viewModelScope.launch {
             while(isActive){
-                try{
+                try {
                     val result = api.getLatestLocation(tripId)
                     val locData = result.data
-                    _uiState.update  { it.copy(location = locData, isLoading = false) }
+                    _uiState.update { it.copy(location = locData, isLoading = false) }
 
-                    val startLat = _uiState.value.tripData?.startLatitude
-                    val startLng = _uiState.value.tripData?.startLongitude
+                    val recordedAt = try {
+                        java.time.Instant.parse(locData.lastRecordedAt).toEpochMilli()
+                    } catch (e: Exception) {
+                        System.currentTimeMillis()
+                    }
+                    val readingEntity = TripReadingEntity(
+                        tripId = tripId,
+                        recordedAt = recordedAt,
+                        latitude = locData.lastLatitude,
+                        longitude = locData.lastLongitude,
+                        speedKmh = locData.lastSpeedKmh.toFloat(),
+                        dataSource = "SHARED",
+                        accelerometer = null,
+                        gyroscopeX = null,
+                        gyroscopeY = null,
+                        gyroscopeZ = null,
+                        rpm = null,
+                        coolantTemp = null,
+                        fuelTrimPercent = null,
+                        throttlePosition = null,
+                        dtcCodes = null,
+                        synced = true
+                    )
+                    repository.saveReadingLocally(readingEntity)
+//                    val startLat = _uiState.value.tripData?.startLatitude
+//                    val startLng = _uiState.value.tripData?.startLongitude
 
                     // Append the new live location to the driven path
                     val newPoint = LocationDto(locData.lastLatitude, locData.lastLongitude)
-                    _tripPath.update { currentPath -> currentPath + newPoint }
-
-
-
-                    if(startLat != null && startLng != null){
-                        val results = FloatArray(1)
-                        android.location.Location.distanceBetween(
-                            startLat,
-                            startLng,
-                            locData.lastLatitude,
-                            locData.lastLongitude,
-                            results
-                        )
-
-                        _distanceKm.value = results[0] / 1000.0
+                    _tripPath.update { currentPath ->
+                        if (currentPath.lastOrNull() != newPoint) {
+                            currentPath + newPoint
+                        } else {
+                            currentPath
+                        }
                     }
 
-                    if(locData.status == "COMPLETED") break
-
-                } catch(e: HttpException){
-                    val error = ApiErrorParser.parse(e)
-                    if(error.error === "UNAUTHORIZED"){
-                        _uiState.update { it.copy(isAccessRevoked = true, isLoading = false) }
-                    }
-                    break
-                } catch(e: Exception){
-                    Log.d("LiveTripContact", "Failed to start polling")
+                    if (locData.status == "COMPLETED") break
+                }
+//                } catch(e: HttpException){
+//                    val error = ApiErrorParser.parse(e)
+//                    if(error.error === "UNAUTHORIZED"){
+//                        _uiState.update { it.copy(isAccessRevoked = true, isLoading = false) }
+//                    }
+//                    break
+//                }
+                catch(e: Exception){
+                    Log.d("LiveTripContact", "Failed to start polling: ${e.message}")
                 }
                 delay(5_000)
             }
