@@ -54,13 +54,29 @@ model badge_criteria {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model badges {
-  badge_id       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String           @unique @db.VarChar(100)
-  description    String?
-  category       String?          @db.VarChar(20)
-  icon_url       String?          @db.VarChar(255)
-  badge_criteria badge_criteria[]
-  user_badges    user_badges[]
+  badge_id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String           @unique @db.VarChar(100)
+  description           String?
+  category              String?          @db.VarChar(20)
+  icon_url              String?          @db.VarChar(255)
+  weekly_challenge_id   String?          @db.Uuid
+
+  weekly_challenge      weekly_challenges?  @relation(fields: [weekly_challenge_id], references: [challenge_id], onDelete: SetNull)
+  badge_criteria        badge_criteria[]
+  user_badges           user_badges[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model weekly_challenges {
+  challenge_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String   @unique @db.VarChar(100)
+  description    String   @db.VarChar(255)
+  target_trips   Int
+  active         Boolean  @default(true)
+  start_date     DateTime @db.Timestamptz(6)
+  end_date       DateTime @db.Timestamptz(6)
+
+  badges         badges[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
