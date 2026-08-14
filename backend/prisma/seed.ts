@@ -255,6 +255,85 @@ async function main() {
     }
     console.log(`Seeded/updated 3 weekly challenges`);
 
+    //Badge assets
+    const badgeSeeds = [
+        {
+            name: 'First Drive',
+            description: 'Complete your very first trip',
+            category: 'MILESTONE',
+            icon_url: 'badge_first_drive',
+            weeklyChallengeName: null,
+            criterion: { metric: 'trips_completed', operator: '>=', threshold: 1, target: 1 },
+        },
+        {
+            name: 'On Board',
+            description: 'Connect to the OBD device for the first time',
+            category: 'MILESTONE',
+            icon_url: 'badge_on_board',
+            weeklyChallengeName: null,
+            criterion: { metric: 'trips_completed', operator: '>=', threshold: 1, target: 1 },
+        },
+        {
+            name: 'Safety Officer',
+            description: 'No harsh driving events for 4 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_safety_officer',
+            weeklyChallengeName: 'Safety Officer',
+            criterion: { metric: 'harsh_events_count', operator: '<=', threshold: 0, target: 4 },
+        },
+        {
+            name: 'Speed Angel',
+            description: 'Keep an average speed below 80km/h for 3 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_speed_angel',
+            weeklyChallengeName: 'Speed Angel',
+            criterion: { metric: 'overspeed_events_count', operator: '<=', threshold: 0, target: 3 },
+        },
+         {
+            name: 'Throttle Goat',
+            description: 'No hard acceleration events for 5 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_throttle_goat',
+            weeklyChallengeName: 'Speed Angel',
+            criterion: { metric: 'harsh_acceleration_count', operator: '<=', threshold: 0, target: 5 },
+        },
+    ];
+
+    for (const badgeSeed of badgeSeeds) {
+        const weekly_challenge_id = badgeSeed.weeklyChallengeNmae
+            ? weeklyChallengeIdByName.get(badgeSeed.weeklyChallengeName) ?? null
+            : null;
+        
+        const badge = await prisma.badges.upsert({
+            where: { name: badgeSeed.name },
+            update: {
+                description: badgeSeed.description,
+                category: badgeSeed.category,
+                icon_url: badgeSeed.icon_url,
+                weekly_challenge_id,
+            },
+            create: {
+                name: badgeSeed.name,
+                description: badgeSeed.description,
+                category: badgeSeed.category,
+                icon_url: badgeSeed.icon_url,
+                weekly_challenge_id,
+            },
+        });
+
+        //Keeping criteria idempotent by deleting existing criteria and recreating them
+        await prisma.badge_criteria.deleteMany({ where: { badge_id: badge.badge_id } });
+        await prisma.badge_criteria.create({
+            data: {
+                badge_id: badge.badge_id,
+                metric: badgeSeed.criterion.metric,
+                operator: badgeSeed.criterion.operator,
+                threshold: badgeSeed.criterion.threshold,
+                target: badgeSeed.criterion.target,
+            },
+        });
+    }
+    console.log(`Seeded/updated ${badgeSeeds.length} badges from drawable assets`)
     
     const badges = await prisma.badges.findMany();
     const users = await prisma.users.findMany();
