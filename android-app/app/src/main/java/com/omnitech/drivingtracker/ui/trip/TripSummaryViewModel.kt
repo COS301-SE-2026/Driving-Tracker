@@ -35,9 +35,7 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
     val uiState: StateFlow<UiState> = _uiState
 
     private val _endTripState = MutableStateFlow<UiState>(UiState.Idle)
-    val
-
-            endTripState: StateFlow<UiState> = _endTripState
+    val endTripState: StateFlow<UiState> = _endTripState
 
     private val _mapToken = MutableStateFlow<String?>(null)
     val mapTokenState: StateFlow<String?> = _mapToken

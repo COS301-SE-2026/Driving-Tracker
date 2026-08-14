@@ -99,6 +99,25 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }
+
+    suspend fun getNearbyPois(
+        lat: Double,
+        lng: Double,
+        type: PoiType?,
+        radius: Int?,
+        limit: Int?
+    ): Result<MapPoiData> {
+        return try{
+            val response = api.getNearbyPois(MapPoiRequest(lat, lng, type.toString(), radius,limit))
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
+        }
+        catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,
