@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.google.gson.Gson
+import com.omnitech.drivingtracker.data.models.MapPoiItem
 import org.json.JSONObject
 import java.util.Locale
 
@@ -60,7 +61,8 @@ fun AzureMapContainer(
     destination: LocationDto? = null,
     actualRoute : List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
-    onMapReady: () -> Unit = {}
+    onMapReady: () -> Unit = {},
+    nearbyPois: List<MapPoiItem>? = null
 ) {
     var isMapStable by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
@@ -102,6 +104,12 @@ fun AzureMapContainer(
         if (isMapStable && !actualRoute.isNullOrEmpty()) {
             val pointsJson = Gson().toJson(actualRoute)
             webViewRef?.evaluateJavascript("javascript:window.setActualRoute('$pointsJson')", null)
+        }
+    }
+    LaunchedEffect(nearbyPois, isMapStable) {
+        if(isMapStable && nearbyPois != null) {
+            val poisJson = Gson().toJson(nearbyPois)
+            webViewRef?.evaluateJavascript("javascript:window.setNearbyPois('$poisJson')", null)
         }
     }
 

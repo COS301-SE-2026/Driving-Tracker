@@ -16,6 +16,7 @@
         var mapReady = false;
         var userMarker = null;
         var destinationMarker = null;
+        var poiDatasource = null;
         var datasource = null; // For actual route
         var plannedDatasource = null; // For suggested route
         var routePath = [];
@@ -61,6 +62,24 @@
                 userMarker.setOptions({ position: pos });
             }
         }
+
+        window.setNearbyPois = function(poisJson) {
+            if(!map || !poiDatasource) return;
+
+            try{
+                var pois = JSON.parse(poisJson);
+                var features = pois.map(function(poi) {
+                    return new atlas.data.Feature(new atlas.data.Point([poi.longitude, poi.latitude]),  {
+                        name: poi.name,
+                        category: poi.category ?? ""
+                    });
+                });
+                poiDatasource.setShapes(features);
+            } catch(e){
+                console.error("JS: Error parsing POIs: " + e.message);
+            }
+        };
+
 
         window.setDestination = function(lat, lng) {
             if (!map) return;
@@ -133,6 +152,20 @@
                             strokeWidth: 5,
                             lineJoin: 'round',
                             lineCap: 'round'
+                        }));
+
+                        poiDatasource = new atlas.source.DataSource();
+                        map.sources.add(poiDatasource);
+                        map.layers.add(new atlas.layer.SymbolLayer(poiDatasource, null, {
+                            iconOptions: {
+                                image: 'pin-blue',
+                                allowOverlap: true
+                            },
+                            textOptions: {
+                                textField: ['get', 'name'],
+                                offset: [0, 1.2],
+                                size: 12
+                            }
                         }));
 
                         updateMarker(lat, lng);
