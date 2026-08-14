@@ -142,4 +142,9 @@ interface ApiService{
 
     @GET("trips/shared_with_me")
     suspend fun getTripsSharedWithMe(): SharedWithMeResponse
+
+    @DELETE("users/me")
+    suspend fun deleteAccount(
+        @Body request: DeleteAccountRequest
+    )
 }

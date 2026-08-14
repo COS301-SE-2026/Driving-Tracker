@@ -14,6 +14,7 @@ import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.ProfileData
+import com.omnitech.drivingtracker.data.models.DeleteAccountRequest
 
 class AuthRepository @Inject constructor(
     private val api: ApiService,
@@ -140,6 +141,21 @@ class AuthRepository @Inject constructor(
             session_manager.clearTokens()
         }
 
+    }
+
+    suspend fun deleteAccount(password: String): Result<Unit>{
+        return try{
+            api.deleteAccount(DeleteAccountRequest(password))
+            session_manager.clearTokens()
+            Result.success(Unit)
+        }
+        catch (e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to delete account"))
+        }
+        catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again."))
+        }
     }
 
 }
