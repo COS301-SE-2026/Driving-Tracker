@@ -37,6 +37,7 @@ class LiveTripContactViewModel @Inject constructor(
     data class UiState(
         val tripData: SharedWithMeDto? = null,
         val location: LatestLocationData? = null,
+        val destination: LocationDto? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
         val isAccessRevoked: Boolean = false
@@ -59,8 +60,6 @@ class LiveTripContactViewModel @Inject constructor(
 
     private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
     val plannedRoute = _plannedRoute.asStateFlow()
-    private val _actualRoute = MutableStateFlow<List<LocationDto>?>(null)
-    val actualRoute = _actualRoute.asStateFlow()
 
 
     fun startPolling(tripId: String){
@@ -95,8 +94,7 @@ class LiveTripContactViewModel @Inject constructor(
                         synced = true
                     )
                     repository.saveReadingLocally(readingEntity)
-//                    val startLat = _uiState.value.tripData?.startLatitude
-//                    val startLng = _uiState.value.tripData?.startLongitude
+//
 
                     // Append the new live location to the driven path
                     val newPoint = LocationDto(locData.lastLatitude, locData.lastLongitude)
@@ -125,38 +123,40 @@ class LiveTripContactViewModel @Inject constructor(
         }
     }
 
-    fun loadTripInfo(tripId: String){
+    fun loadTripInfo(tripId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+
+            // Load existing points from Room immediately
+            val localReadings = repository.getTripReadings(tripId)
+            _tripPath.value = localReadings.map { LocationDto(it.latitude, it.longitude) }
 
             notificationRepository.getTripsSharedWithMe().fold(
                 onSuccess = { allTrips ->
                     val specificTrip = allTrips.find { it.tripId == tripId }
-                    _uiState.update { it.copy(tripData = specificTrip, isLoading = false) }
+
                     repository.getTripSummary(tripId).onSuccess { summary ->
-                        _tripPath.value = summary.events.map {
-                            LocationDto( it.latitude,it.longitude)
+                        // Fill driven path from summary events (fallback for first-time load)
+                        if (_tripPath.value.isEmpty()) {
+                            _tripPath.value = summary.events.map { LocationDto(it.latitude, it.longitude) }
                         }
-                        if (summary.destinationLatitude != null && summary.destinationLongitude != null) {
-                            fetchSuggestedRoute(
-                                specificTrip?.startLatitude ?: summary.events.firstOrNull()?.latitude ?: 0.0,
-                                specificTrip?.startLongitude ?: summary.events.firstOrNull()?.longitude ?: 0.0,
-                                summary.destinationLatitude,
-                                summary.destinationLongitude
-                            )
+
+                        val dest = if (summary.destinationLatitude != null) {
+                            LocationDto(summary.destinationLatitude, summary.destinationLongitude)
+                        } else null
+
+                        _uiState.update { it.copy(tripData = specificTrip, destination = dest, isLoading = false) }
+
+                        if (dest?.lat != null && dest.lng != null) {
+                            fetchSuggestedRoute(specificTrip?.startLatitude ?: 0.0, specificTrip?.startLongitude ?: 0.0, dest.lat, dest.lng)
                         }
                     }
-                    repository.getMapToken().onSuccess { data ->
-                        _mapToken.value = data.token
-                    }
+                    repository.getMapToken().onSuccess { data -> _mapToken.value = data.token }
                 },
-                onFailure = {
-                    _uiState.update { it.copy(isLoading = false, error = "Failed to load trip info") }
-                }
+                onFailure = { _uiState.update { it.copy(isLoading = false, error = "Error loading info") } }
             )
         }
     }
-
     fun calculateDuration(startedAt: String): Long{
         val start = Instant.parse(startedAt)
         val now = Instant.now()
