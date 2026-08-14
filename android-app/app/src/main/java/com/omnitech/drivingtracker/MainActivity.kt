@@ -300,7 +300,9 @@ class MainActivity : ComponentActivity() {
                         Settings(
                             navController = navController,
                             darkMode = darkMode,
-                            onDarkModeChange = onDarkModeChange
+                            onDarkModeChange = onDarkModeChange,
+                            onAccountDeleted = {navController.navigate(Screen.Welcome.route)
+                            {popUpTo(0){inclusive = true} } }
                         )
                     }
                     composable(Screen.OBDMain.route){
