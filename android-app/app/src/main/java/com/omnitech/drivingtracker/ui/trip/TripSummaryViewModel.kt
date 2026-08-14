@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.repository.TripStateManager
 import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-class TripSummaryViewModel @Inject constructor(private val repository: TripRepository, private val sensorFusionManager: SensorFusionManager) : ViewModel() {
+class TripSummaryViewModel @Inject constructor(
+    private val repository: TripRepository,
+    private val sensorFusionManager: SensorFusionManager,
+    private val tripStateManager: TripStateManager
+) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -42,6 +47,8 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
 
     private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
     val tripPath: StateFlow<List<LocationDto>> = _tripPath
+
+    val nearbyPois = tripStateManager.nearbyPois
 
     fun loadTripPath(tripId: String) {
         viewModelScope.launch {

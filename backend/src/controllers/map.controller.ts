@@ -100,9 +100,9 @@ const map_controller = {
                 return;
             };
 
-            const {lat, lng, type, radius, limit} = req.body;
+            const {lat, lng, type, radius, limit} = req.query;
 
-            const response = await map_services.get_nearby_pois(lat, lng, limit ?? 10, type ?? 'stops', radius ?? 5000);
+            const response = await map_services.get_nearby_pois(Number(lat), Number(lng), Number(limit) ?? 10, type as string ?? 'stops', Number(radius) ?? 5000);
 
             res.status(200).json({
                 message: "Pois succesfully retrieved", 
@@ -126,6 +126,8 @@ const map_controller = {
                     message: "Invalid poi type" 
                 });
             }
+
+            console.log(error?.message ?? String(error));
 
             res.status(500).json({
                 error: "INTERNAL_SERVER_ERROR",

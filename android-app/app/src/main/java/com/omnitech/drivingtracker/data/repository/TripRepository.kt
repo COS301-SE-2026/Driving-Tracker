@@ -108,7 +108,7 @@ class TripRepository @Inject constructor(
         limit: Int?
     ): Result<MapPoiData> {
         return try{
-            val response = api.getNearbyPois(MapPoiRequest(lat, lng, type.toString(), radius,limit))
+            val response = api.getNearbyPois(lat, lng, type.toString(), radius, limit)
             Result.success(response.data)
         }catch(e: HttpException){
             val error = ApiErrorParser.parse(e)

@@ -18,9 +18,9 @@ if(!config_result.success){
 const azure_maps_config = config_result.data;
 
 const AZURE_MAPS_CATEGORIES = {
-    petrol: 'PETROL_STATION',
-    rest_area: 'REST_AREA',
-    parking: 'OPEN_PARKING_AREA',
+    petrol: 7311,
+    rest_area: 7395,
+    parking: 7369,
 }
 
 type PoiCategoryKey = keyof typeof AZURE_MAPS_CATEGORIES;
@@ -152,35 +152,35 @@ export const map_services ={
             throw new Error("Invalid type");
         }
 
-        const category_names: string[] = poiType === 'stops' 
+        const category_Ids: number[] = poiType === 'stops' 
         ? [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
         : [AZURE_MAPS_CATEGORIES[poiType]]
 
 
-        const category_set = category_names.join(',');
-        const query = category_names.join(' ').toLowerCase().replace(/_/g, ' ');
+        const category_set = category_Ids.join(',');
+        //const query = category_names.join(' ').toLowerCase().replace(/_/g, ' ');
 
         const params = new URLSearchParams({
             'api-version':'1.0',
-            query,
             lat: String(lat),
             lon: String(lng),
             radius: String(radiusMeters),
             categorySet: category_set,
             limit: String(limit),
             language: 'en-US',
-            'subscription-key':key,
+            'subscription-key': key,
         });
 
-        const url = `https://atlas.microsoft.com/search/poi/category/json?${params.toString()}`;
+        const url = `https://atlas.microsoft.com/search/nearby/json?${params.toString()}`;
 
         const response = await fetch(url);
 
         if(!response.ok){
-            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+            const error_body = await response.text();
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText} - ${error_body}`);
         }
 
-        const json = await response.json();
+        const json = await response.json() as { results: any[] };
 
         return (json.results?? []).map((result: any)=>({
             name: result.poi?.name ?? "Unknown",

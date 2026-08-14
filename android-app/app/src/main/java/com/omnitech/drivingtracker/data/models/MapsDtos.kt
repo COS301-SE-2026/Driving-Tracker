@@ -27,7 +27,7 @@ data class MapPoiItem(
     val category: String?,
     val latitude: Double,
     val longitude: Double,
-    val distanceMeters: Int,
+    val distanceMeters: Double,
     val address: String?
 )
 
@@ -42,7 +42,8 @@ data class MapPoiRequest(
 enum class PoiType(val value: String){
     PETROL("petrol"),
     REST_AREA("rest_area"),
-    PARKING("parking");
+    PARKING("parking"),
+    STOPS("stops");
 
     override fun toString() = value
 }

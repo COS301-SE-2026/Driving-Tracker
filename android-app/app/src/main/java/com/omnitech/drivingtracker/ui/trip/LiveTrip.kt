@@ -61,6 +61,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.omnitech.drivingtracker.data.models.MapPoiItem
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -77,6 +78,7 @@ fun LiveTrip(
     val mapToken by viewModel.mapTokenState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
+    val nearbyPois by viewModel.nearbyPois.collectAsState()
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
@@ -285,7 +287,8 @@ fun LiveTrip(
         onMinimizeClick = {navController?.navigate(Screen.Dashboard.route){
             popUpTo(Screen.Dashboard.route){inclusive = true}
         } },
-        vehicleMetrics = metrics
+        vehicleMetrics = metrics,
+        nearbyPois = nearbyPois
     )
 }
 
@@ -306,6 +309,7 @@ fun LiveTripContent(
     onMinimizeClick: () -> Unit = {},
     localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
+    nearbyPois: List<MapPoiItem>? = null,
     liveDistance: Double =0.0,
     liveDuration: Int= 0
 ) {
@@ -423,7 +427,8 @@ fun LiveTripContent(
                             liveDistance = liveDistance,
                             liveDuration = liveDuration,
                             localEvents = localEvents,
-                            vehicleMetrics = vehicleMetrics
+                            vehicleMetrics = vehicleMetrics,
+                            nearbyPois = nearbyPois
                         )
                     }
 
@@ -450,7 +455,8 @@ private fun TripDetails(
     liveDistance: Double = 0.0,
     liveDuration: Int = 0,
     localEvents: List<TripEventEntity>,
-    vehicleMetrics: VehicleMetrics
+    vehicleMetrics: VehicleMetrics,
+    nearbyPois: List<MapPoiItem>? = null
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -486,7 +492,8 @@ private fun TripDetails(
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    nearbyPois = nearbyPois
                 )
                 IconButton(
                     onClick = { recenterCount++ },

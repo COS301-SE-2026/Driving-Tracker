@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.services
 
+import android.util.Log
 import kotlin.math.min
 
 class FatigueMonitor(
@@ -42,6 +43,8 @@ class FatigueMonitor(
         val cappedElapsed = min(elapsedSeconds, maxElapsedSecondsPerTick)
 
         val isMoving = speedKmh >=stoppedSpeedThresholdKmh
+
+        Log.d("Fatigue", continuousDrivingSeconds.toString())
 
         when(state){
             DrivingState.IDLE -> handleStationaryState(isMoving)
