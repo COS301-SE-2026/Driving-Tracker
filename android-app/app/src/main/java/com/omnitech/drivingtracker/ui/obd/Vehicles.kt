@@ -124,19 +124,26 @@ fun Vehicles(
                 }
                 is VehiclesViewModel.UiState.Success -> {
                     val vehicles = state.vehicles.map {
-                        dto -> Vehicle(
-                            id = dto.vehicleId,
-                            name = dto.name?: "Unnamed",
-                            brand = dto.make ?: "",
-                            model = dto.model ?: "",
-                            mileage = dto.mileage?: 0,
-                            trips = dto.tripCount?: 0,
-                            fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
-                            needsService = false,
-                            registration = dto.registration,
-                            year = dto.year,
-                            fuelType = dto.fuelType
-                        )
+                        dto ->
+                            val currentMileage = dto.mileage ?: 0
+                            val serviceInterval = 15000
+                            val buffer = 500
+
+                            val remainder = currentMileage % serviceInterval
+                            val isWithinServiceWindow = currentMileage >= serviceInterval && remainder <= buffer
+                            Vehicle(
+                                id = dto.vehicleId,
+                                name = dto.name?: "Unnamed",
+                                brand = dto.make ?: "",
+                                model = dto.model ?: "",
+                                mileage = dto.mileage?: 0,
+                                trips = dto.tripCount?: 0,
+                                fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
+                                needsService = isWithinServiceWindow,
+                                registration = dto.registration,
+                                year = dto.year,
+                                fuelType = dto.fuelType
+                            )
                     }
                     LazyColumn(
                         modifier =  Modifier
