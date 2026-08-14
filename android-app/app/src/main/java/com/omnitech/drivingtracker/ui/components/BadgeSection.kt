@@ -55,11 +55,11 @@ fun BadgeSection() {
                 modifier = Modifier.padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Icon(painterResource(id = R.drawable.badge_01), null, tint = Purple)
-                Icon(painterResource(id = R.drawable.badge_02), null, tint = Green)
-                Icon(painterResource(id = R.drawable.badge_03), null, tint = Green)
-                Icon(painterResource(id = R.drawable.badge_04), null, tint = Purple)
-                Icon(painterResource(id = R.drawable.badge_05), null, tint = Purple)
+                Icon(painterResource(id = R.drawable.badge_first_drive), null, tint = Purple)
+                Icon(painterResource(id = R.drawable.badge_on_board), null, tint = Green)
+                Icon(painterResource(id = R.drawable.badge_safety_officer), null, tint = Green)
+                Icon(painterResource(id = R.drawable.badge_speed_angel), null, tint = Purple)
+                Icon(painterResource(id = R.drawable.badge_throttle_goat), null, tint = Purple)
             }
 
         }
