@@ -85,6 +85,53 @@ const map_controller = {
                 message: "Failed to translate address"
             });
         }   
+    },
+    async get_nearby_pois(req: AuthRequest, res: Response){
+
+        try{
+
+            const user_id = req.user?.sub;
+
+            if(!user_id){
+                res.status(401).json({
+                    error: "UNAUTHORIZED",
+                    message: "Can not access map services"
+                });
+                return;
+            };
+
+            const {lat, lng, type, radius, limit} = req.body;
+
+            const response = await map_services.get_nearby_pois(lat, lng, limit ?? 10, type ?? 'stops', radius ?? 5000);
+
+            res.status(200).json({
+                message: "Pois succesfully retrieved", 
+                data: { 
+                    pois: response 
+                }
+            });
+
+        } catch(error: any){
+
+            if (error?.message?.includes("Location coordinates missing")){
+                res.status(422).json({ 
+                    error: "MISSING_LOCATION", 
+                    message: "Location coordinates missing" 
+                });
+            }
+
+            if (error?.message?.includes("Invalid type")){
+                res.status(422).json({ 
+                    error: "INVALID_TYPE", 
+                    message: "Invalid poi type" 
+                });
+            }
+
+            res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to fetch pois"
+            });
+        }
     }
 };
 

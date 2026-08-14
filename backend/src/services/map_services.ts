@@ -139,13 +139,17 @@ export const map_services ={
         }));
     },
     //Fetches points of interest within a specified radius from the provided location
-    async get_nearby_pois(lat: number, lng: number, type: String = 'stops', radiusMeters: number = 5000){
+    async get_nearby_pois(lat: number, lng: number, limit: number = 10, type: String = 'stops', radiusMeters: number = 5000){
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
 
         const poiType: PoiRequestType = type as PoiRequestType;
 
+        if(!lat || !lng){
+            throw new Error("Location coordinates missing");
+        }
+
         if(!poiType){
-            throw new Error(`Invalid type`)
+            throw new Error("Invalid type");
         }
 
         const category_names: string[] = poiType === 'stops' 
@@ -163,7 +167,7 @@ export const map_services ={
             lon: String(lng),
             radius: String(radiusMeters),
             categorySet: category_set,
-            limit: '10',
+            limit: String(limit),
             language: 'en-US',
             'subscription-key':key,
         });
