@@ -206,31 +206,55 @@ async function main() {
         console.log(`Seeded ${usersNeeded} users`);
     }
 
-    //Creating 5 badges with criteria
-    let badgeCount =  await prisma.badges.count();
-    if (badgeCount < 5) {
-        const badgesNeeded = 5 - badgeCount;
-        const badgeCategories = ['MILESTONE', 'STREAK', 'SOCIAL', 'VARIETY'];
-        for (let i = 0; i < badgesNeeded; i++){
-            await prisma.badges.create({
-                data: {
-                    name: `${faker.word.adjective()} Driver ${faker.number.int({ min: 1, max: 1_000_000 })}`,
-                    description: faker.lorem.sentence(),
-                    category: faker.helpers.arrayElement(badgeCategories),
-                    icon_url: faker.image.url(),
-                    badge_criteria: {
-                        create: {
-                            metric: 'safety_score',
-                            operator: '>',
-                            threshold: faker.number.float({ min: 80, max: 95, fractionDigits: 2 }),
-                            target: faker.number.int({ min: 5, max: 50 })
-                        }
-                    }
-                }
-            });
-        } 
-        console.log(`Seeded ${badgesNeeded} badges`);   
+    //Weekly challenges
+    const challengeStart = new Date();
+    const challengeEnd = new Date(challengeStart);
+    challengeEnd.setDate(challengeEnd.getDate() + 7);
+
+    const weeklyChallengesSeed = [
+        {
+            name: 'Safety Officer',
+            description: 'Complete 4 trips without bad driving habits',
+            target_trips: 4,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+        {
+            name: 'Speed Angel',
+            description: 'Complete 3 trips with an average speed below 80km/h',
+            target_trips: 3,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+        {
+            name: 'Throttle Goat',
+            description: 'Complete 5 trips without a hard acceleration event',
+            target_trips: 5,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+    ];
+
+    const weeklyChallengeIdByName = new Map<string, string>();
+    for (const challenge of weeklyChallengesSeed) {
+        const saved = await prisma.weekly_challenges.upsert({
+            where: { name: challenge.name },
+            update: {
+                description: challenge.description,
+                target_trips: challenge.target_trips,
+                active: challenge.active,
+                start_date: challenge.start_date,
+                end_date: challenge.end_date,
+            },
+            create: challenge,
+        });
+        weeklyChallengeIdByName.set(challenge.name, saved.challenge_id);
     }
+    console.log(`Seeded/updated 3 weekly challenges`);
+
     
     const badges = await prisma.badges.findMany();
     const users = await prisma.users.findMany();
