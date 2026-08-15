@@ -15,4 +15,8 @@ class TripStateManager @Inject constructor(){
     fun updateNearbyPois(pois: List<MapPoiItem>) {
         _nearbyPois.value = pois
     }
+
+    fun clearTripState() {
+        _nearbyPois.value = emptyList()
+    }
 }

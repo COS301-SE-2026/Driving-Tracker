@@ -68,9 +68,13 @@ class TripSummaryViewModel @Inject constructor(
     private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
     val plannedRoute: StateFlow<List<LocationDto>?> = _plannedRoute
 
+    private val _detourRoute = MutableStateFlow<List<LocationDto>?>(null)
+    val detourRoute: StateFlow<List<LocationDto>?> = _detourRoute
+
     fun suggestedRoute(startLat: Double?, startLng: Double?, destLat: Double, destLng: Double) {
         viewModelScope.launch {
             try {
+
                 val response = repository.getSuggestedRoute(
                     LocationDto(startLat, startLng),
                     LocationDto(destLat, destLng)
@@ -78,6 +82,26 @@ class TripSummaryViewModel @Inject constructor(
                 _plannedRoute.value = response.getOrNull()?.points
             } catch (e: Exception) {
                 Log.e("TripSummaryVM", "Route fetch failed: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchDetourRoute(startLat: Double?, startLng: Double?, destLat: Double, destLng: Double) {
+
+        Log.d("TripSummaryVM", "Attempting detour fetch: From $startLat, $startLng to $destLat, $destLng")
+        viewModelScope.launch {
+            try {
+
+                _detourRoute.value = null
+
+                val response = repository.getSuggestedRoute(
+                    LocationDto(startLat, startLng),
+                    LocationDto(destLat, destLng)
+                )
+                _detourRoute.value = response.getOrNull()?.points
+            } catch (e: Exception) {
+                Log.e("TripSummaryVM", "Detour Route fetch failed: ${e.message}")
+                _detourRoute.value = null
             }
         }
     }

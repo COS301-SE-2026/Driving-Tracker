@@ -452,5 +452,6 @@ class TripTrackingService: Service() {
         stopSelf()
         isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
+        tripStateManager.clearTripState()
     }
 }

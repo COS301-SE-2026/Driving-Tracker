@@ -17,6 +17,8 @@
         var userMarker = null;
         var destinationMarker = null;
         var poiDatasource = null;
+        var poiLayer = null;
+        var secondaryRouteDatasource = null;
         var datasource = null; // For actual route
         var plannedDatasource = null; // For suggested route
         var routePath = [];
@@ -51,7 +53,11 @@
 
         function updateMarker(lat, lng) {
             if (!map) return;
-            var pos = [Number.parseFloat(lng), Number.parseFloat(lat)];
+            var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
+            if(isNaN(latN) || isNaN(lngN)) return;
+
+            var pos = [lngN, latN];
+
             if (!userMarker) {
                 userMarker = new atlas.HtmlMarker({
                     htmlContent: '<div style="background-color:Red;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
@@ -83,7 +89,10 @@
 
         window.setDestination = function(lat, lng) {
             if (!map) return;
-            var pos = [Number.parseFloat(lng), Number.parseFloat(lat)];
+            var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
+            if(isNaN(latN) || isNaN(lngN)) return;
+
+            var pos = [lngN, latN];
             if (!destinationMarker) {
                 destinationMarker = new atlas.HtmlMarker({
                     htmlContent: '<div style="background-color:Green;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
@@ -156,7 +165,7 @@
 
                         poiDatasource = new atlas.source.DataSource();
                         map.sources.add(poiDatasource);
-                        map.layers.add(new atlas.layer.SymbolLayer(poiDatasource, null, {
+                        poiLayer = new atlas.layer.SymbolLayer(poiDatasource, null, {
                             iconOptions: {
                                 image: 'pin-blue',
                                 allowOverlap: true
@@ -166,7 +175,32 @@
                                 offset: [0, 1.2],
                                 size: 12
                             }
+                        });
+
+                        map.layers.add(poiLayer);
+
+                        secondaryRouteDatasource = new atlas.source.DataSource();
+                        map.sources.add(secondaryRouteDatasource);
+                        map.layers.add(new atlas.layer.LineLayer(secondaryRouteDatasource, null, {
+                            strokeColor: '#FFA500',
+                            strokeWidth: 5,
+                            lineJoin: 'round'
                         }));
+
+                        map.events.add('click', poiLayer, function (e) {
+                            console.log("JS: POI Clicked");
+                            if(e.shapes && e.shapes.length > 0){
+                                var properties  = e.shapes[0].getProperties();
+                                var position  = e.shapes[0].getCoordinates();
+
+                                console.log("JS: POI Name ="+properties.name);
+
+                                if(window.Android){
+                                    window.Android.onPoiClick(properties.name, position[1], position[0]);
+                                }
+                            }
+                        });
+
 
                         updateMarker(lat, lng);
                         if (window.Android) { window.Android.onMapReady(); }
@@ -207,6 +241,14 @@
             }
         };
 
+        window.setDetourRoute = function(pointsJson) {
+            if(!secondaryRouteDatasource) return;
+
+            var points = JSON.parse(pointsJson);
+            var path = points.map(function(p) { return [p.lng, p.lat]; });
+            secondaryRouteDatasource.setShapes([new atlas.data.LineString(path)]);
+        };
+
         window.updateUserLocation = function(lat, lng) {
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
             if (isNaN(latN) || isNaN(lngN)) return;
@@ -226,6 +268,21 @@
                 });
             } catch (e) {}
         };
+
+        window.updateCamera = function(lat, lng, zoom) {
+            if(!map || !mapReady) return;
+
+            try{
+                map.setCamera({
+                    center: [Number.parseFloat(lng), Number.parseFloat(lat)],
+                    zoom: zoom || map.getCamera().zoom,
+                    type: 'ease',
+                    duration: 1000
+                });
+            } catch (e){
+                console.error("JS: Error updating camera: " + e.message);
+            }
+        }
 
     </script>
 </head>
