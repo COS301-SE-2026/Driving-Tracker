@@ -10,5 +10,8 @@ auth_router.post("/login", login_limiter_sliding, auth_controller.login);
 auth_router.post("/logout", verify_token, user_based_limiter, auth_controller.logout);
 auth_router.post("/refresh", refresh_limiter ,auth_controller.refresh);
 auth_router.get("/profile", verify_token, user_based_limiter, auth_controller.get_profile);
+auth_router.get("/verify_email", auth_controller.verify_email);
+auth_router.post("/forgot_password", auth_controller.forgot_password);
+auth_router.post("/reset_password", auth_controller.reset_password);
 
 export default auth_router;

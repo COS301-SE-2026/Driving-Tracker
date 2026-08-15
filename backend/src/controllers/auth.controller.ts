@@ -3,6 +3,8 @@ import {auth_services} from  "../services/auth_services";
 import {generate_token, AuthRequest} from "../middleware/auth";//the file containing the tokens 
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 import { identifier_limiter } from '../middleware/rate_limit';
+import { TokenExpiredError } from 'jsonwebtoken';
+import { verify } from 'crypto';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
@@ -151,6 +153,36 @@ const auth_controller={
                 error: "INTERNAL_SERVER_ERROR",
                 message: "Failed to retrieve profile"
             });
+        }
+    },
+
+    async verify_email(req: Request, res: Response){
+        const { token } = req.query;
+        try{
+            await auth_services.verify_email(token as string);
+            res.status(200).json({ message: "Email verified successfully"});
+        }catch(err: any){
+            res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
+        }
+    },
+
+    async forgot_password(req: Request, res: Response){
+        const { email } = req.body;
+        try{
+            await auth_services.request_password_reset(email);
+            res.status(200).json({ message: "Reset email sent if account exists"});
+        }catch(err){
+            res.status(500).json({ error: "INTERNAL_SERVER_ERROR"});
+        }
+    },
+
+    async reset_password(req: Request, res: Response){
+        const { token, password } = req.body;
+        try{
+            await auth_services.reset_password(token, password);
+            res.status(200).json({ message: "Password reset successfully"});
+        }catch(err: any){
+            res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
         }
     }
 
