@@ -321,22 +321,21 @@ class TripTrackingService: Service() {
         val lastLat = lastSavedLat
         val lastLng = lastSavedLng
 
-        if(lastLat != null && lastLng != null){
-            serviceScope.launch {
-                val result = tripRepository.getNearbyPois(lastLat, lastLng, PoiType.STOPS, 5000, 5)
+        if(lastLat == null || lastLng == null) return
 
-                result.onSuccess { data ->
-                    tripStateManager.updateNearbyPois(data.pois)
-                    Log.d("Fatigue", "Num Pois: ${data.pois.size}")
-                }.onFailure { exception ->
-                    if (exception is com.omnitech.drivingtracker.data.api.ApiException) {
-                        Log.e("Fatigue", "API Error: ${exception.errorCode} - ${exception.errorMessage}", exception)
-                    } else {
-                        Log.e("Fatigue", "Unknown Error: ${exception.message}", exception)
-                    }
+        serviceScope.launch {
+            val result = tripRepository.getNearbyPois(lastLat, lastLng, PoiType.STOPS, 5000, 5)
+
+            result.onSuccess { data ->
+                tripStateManager.updateNearbyPois(data.pois)
+                Log.d("Fatigue", "Num Pois: ${data.pois.size}")
+            }.onFailure { exception ->
+                if (exception is com.omnitech.drivingtracker.data.api.ApiException) {
+                    Log.e("Fatigue", "API Error: ${exception.errorCode} - ${exception.errorMessage}", exception)
+                } else {
+                    Log.e("Fatigue", "Unknown Error: ${exception.message}", exception)
                 }
             }
-
         }
 
     }
