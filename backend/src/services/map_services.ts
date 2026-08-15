@@ -139,18 +139,22 @@ export const map_services ={
         }));
     },
     //Fetches points of interest within a specified radius from the provided location
-    async get_nearby_pois(lat: number, lng: number, limit: number = 10, type: String = 'stops', radiusMeters: number = 5000){
+    async get_nearby_pois(lat: number, lng: number, limit: number = 10, type: string = 'stops', radiusMeters: number = 5000){
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
 
-        const poiType: PoiRequestType = type as PoiRequestType;
-
-        if(!lat || !lng){
-            throw new Error("Location coordinates missing");
+        if(!lat || !lng || lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
         }
 
-        if(!poiType){
+        const normalizedType = type?.trim().toLowerCase();
+
+        const isValidType = normalizedType === 'stops' || normalizedType in AZURE_MAPS_CATEGORIES;
+
+        if(!isValidType){
             throw new Error("Invalid type");
         }
+
+        const poiType: PoiRequestType = type as PoiRequestType;
 
         const category_Ids: number[] = poiType === 'stops' 
         ? [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
