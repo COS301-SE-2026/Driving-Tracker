@@ -1,5 +1,7 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { sendAuthEmail } from '../utils/email';
 import { generate_refresh_token, generate_token } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
@@ -128,6 +130,8 @@ export const auth_services = {
 
         let usernameLocal = username;
 
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const maxAttempts = 3;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
@@ -141,6 +145,8 @@ export const auth_services = {
                     phone_number,
                     password_hash: hashedPassword,
                     consent_status: consent_status,
+                    email_verified: false,
+                    verification_token: verificationToken
                     }
                 });
 
@@ -155,6 +161,16 @@ export const auth_services = {
                         refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
                     },
                 });
+
+                const verificationUrl = `${process.env.APP_URL}/api/auth/verify?token=${verificationToken}`;
+                await sendAuthEmail(
+                    email,
+                    "Verify your Driving Tracker Account",
+                    `<h1>Welcome to Driving Tracker!</h1>
+                    <p>Please click the link below to verify your email address and activate your account:</p>
+                    <a href="${verificationUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+                    <p>If you did not create this account, you may safely ignore this email.</p>`
+                );
 
                 return {user, refresh_token};
             
@@ -172,6 +188,78 @@ export const auth_services = {
 
         throw new ExtendedError("Failed to register user", "INTERNAL_SERVER_ERROR");
         
+    },
+
+    async verify_email(token: string){
+        const user = await prisma.users.findFirst({
+            where: {
+                verification_token: token
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        await prisma.users.update({
+            where: {user_id: user.user_id },
+            data: {
+                email_verified: true,
+                verification_token: null
+            }
+        });
+    },
+
+    async request_password_reset(email: string){
+        const user = await prisma.users.findUnique({
+            where:  {email }
+        });
+        if(!user) return;
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 3600000);
+
+        await prisma.users.update({
+            where: { email },
+            data: {
+                password_reset_token: resetToken,
+                reset_token_exp: expiry
+            }
+        });
+
+        const resetUrl = `drivingtracker://reset-password?token=${resetToken}`;
+
+        await sendAuthEmail(
+            email,
+            "Reset your Driving Tracker Password",
+            `<h1>Password Reset Request</h1>
+            <p>We received a request to reset your password. Use the token below in the app or click the link:</p>
+            <p><strong>Your Reset Token:</strong> ${resetToken}</p>
+            <a href="${resetUrl}" style="background: #4B2E83; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>This link will expire in 1 hour.</p>`
+
+        );
+    },
+
+    async reset_password(token: string, newPassword: string){
+        const user = await prisma.users.findFirst({
+            where: {
+                password_reset_token: token,
+                refresh_token_exp: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.users.update({
+            where: { user_id: user.user_id },
+            data: {
+                password_hash: hashedPassword,
+                password_reset_token: null,
+                refresh_token_exp: null
+            }
+        })
     },
 
     async login(identifier: string, password: string){
