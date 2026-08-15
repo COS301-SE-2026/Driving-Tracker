@@ -299,7 +299,7 @@ describe('map services get nearby pois', ()=>{
 
         await expect(
             map_services.get_nearby_pois(47.6455, -122.1399, 5, 'parking', 4000)
-        ).rejects.toThrow('Azure Maps request failed: 500 Internal Server Error - Azure rejected the request');
+        ).rejects.toThrow('Azure Maps request failed: 500 Internal Server Error');
  
     });
   

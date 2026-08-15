@@ -180,8 +180,8 @@ export const map_services ={
         const response = await fetch(url);
 
         if(!response.ok){
-            const error_body = await response.text();
-            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText} - ${error_body}`);
+            
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
         }
 
         const json = await response.json() as { results: any[] };

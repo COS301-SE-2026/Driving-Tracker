@@ -102,7 +102,20 @@ const map_controller = {
 
             const {lat, lng, type, radius, limit} = req.query;
 
-            const response = await map_services.get_nearby_pois(Number(lat), Number(lng), Number(limit) ?? 10, type as string ?? 'stops', Number(radius) ?? 5000);
+            const parsed_lat = Number(lat)
+            const parsed_lng = Number(lng)
+            const parsed_limit = Number(limit)
+            const parsed_radius = Number(radius)
+
+            if(!Number.isFinite(parsed_lat) || !Number.isFinite(parsed_lng)){
+                throw new Error("Location coordinates missing or invalid");
+            }
+
+            const final_limit = Number.isFinite(parsed_limit)? parsed_limit : 10;
+            const final_radius = Number.isFinite(parsed_radius) ? parsed_radius : 10;
+            const poi_type = typeof type === "string" && type.trim() ? type : 'stops';
+
+            const response = await map_services.get_nearby_pois(parsed_lat, parsed_lng, final_limit, poi_type, final_radius);
 
             res.status(200).json({
                 message: "Pois succesfully retrieved", 
@@ -116,7 +129,7 @@ const map_controller = {
             if (error?.message?.includes("Location coordinates missing")){
                 res.status(422).json({ 
                     error: "MISSING_LOCATION", 
-                    message: "Location coordinates missing" 
+                    message: "Location coordinates missing or invalid" 
                 });
             }
 
@@ -127,7 +140,6 @@ const map_controller = {
                 });
             }
 
-            console.log(error?.message ?? String(error));
 
             res.status(500).json({
                 error: "INTERNAL_SERVER_ERROR",

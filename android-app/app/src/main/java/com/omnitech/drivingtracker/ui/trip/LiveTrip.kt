@@ -285,7 +285,7 @@ fun LiveTrip(
         plannedRoute = plannedRoute,
         detourRoute = detourRoute,
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
-        onPoiClick = { name, lat, lng ->
+        onPoiClick = { _, lat, lng ->
             viewModel.fetchDetourRoute(
                 startLat = liveMetrics.latitude,
                 startLng = liveMetrics.longitude,
