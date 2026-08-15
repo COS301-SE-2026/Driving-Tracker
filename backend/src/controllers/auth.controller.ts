@@ -157,11 +157,20 @@ const auth_controller={
     },
 
     async verify_email(req: Request, res: Response){
-        const { token } = req.query;
+        const token  = typeof req.query.token === "string" ? req.query.token : "";
+        if(!token){
+            return res.status(400).json({
+                eror: "INVALID_TOKEN",
+                message: "Verification token is required"
+            });
+        }
         try{
-            await auth_services.verify_email(token as string);
+            await auth_services.verify_email(token);
             res.status(200).json({ message: "Email verified successfully"});
         }catch(err: any){
+            if(err instanceof ValidationError){
+                return res.status(422).json({ error: err.errorCode, message: err.message})
+            }
             res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
         }
     },
@@ -182,6 +191,9 @@ const auth_controller={
             await auth_services.reset_password(token, password);
             res.status(200).json({ message: "Password reset successfully"});
         }catch(err: any){
+            if(err instanceof ValidationError){
+                return res.status(422).json({ error: err.errorCode, message: err.message})
+            }
             res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
         }
     }

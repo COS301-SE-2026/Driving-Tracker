@@ -162,9 +162,9 @@ export const auth_services = {
                     },
                 });
 
-                const verificationUrl = `${process.env.APP_URL}/api/auth/verify?token=${verificationToken}`;
+                const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
                 await sendAuthEmail(
-                    email,
+                    normalized_email,
                     "Verify your Driving Tracker Account",
                     `<h1>Welcome to Driving Tracker!</h1>
                     <p>Please click the link below to verify your email address and activate your account:</p>
@@ -191,6 +191,9 @@ export const auth_services = {
     },
 
     async verify_email(token: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Verification token is required", "token");
+        }
         const user = await prisma.users.findFirst({
             where: {
                 verification_token: token
@@ -209,16 +212,24 @@ export const auth_services = {
     },
 
     async request_password_reset(email: string){
+        const normalized_email = (email ?? "").trim().toLowerCase();
+
+        const email_result = validate_email(normalized_email);
+        if(!email_result.success){
+            return;
+        }
+
         const user = await prisma.users.findUnique({
-            where:  {email }
+            where:  { email: normalized_email }
         });
+
         if(!user) return;
 
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiry = new Date(Date.now() + 3600000);
 
         await prisma.users.update({
-            where: { email },
+            where: { email: normalized_email },
             data: {
                 password_reset_token: resetToken,
                 reset_token_exp: expiry
@@ -240,10 +251,19 @@ export const auth_services = {
     },
 
     async reset_password(token: string, newPassword: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Reset token is required", "token");
+        }
+
+        const password_result = validate_password(newPassword);
+        if(!password_result.success){
+            throw new ValidationError(password_result.error.issues.at(0)?.message!, "password");
+        }
+
         const user = await prisma.users.findFirst({
             where: {
                 password_reset_token: token,
-                refresh_token_exp: {
+                reset_token_exp: {
                     gt: new Date()
                 }
             }
@@ -257,6 +277,8 @@ export const auth_services = {
             data: {
                 password_hash: hashedPassword,
                 password_reset_token: null,
+                reset_token_exp: null,
+                refresh_token: null,
                 refresh_token_exp: null
             }
         })
