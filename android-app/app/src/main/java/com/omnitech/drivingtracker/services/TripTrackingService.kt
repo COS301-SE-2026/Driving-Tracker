@@ -26,6 +26,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.BatchReadingRequest
 import com.omnitech.drivingtracker.data.models.DataSource
+import com.omnitech.drivingtracker.data.models.FatigueConfig
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -78,14 +79,7 @@ class TripTrackingService: Service() {
     private var lastSavedLng: Double? = null
     private val MIN_DISTANCE_METERS = 10f
 
-    private val fatigueMonitor = FatigueMonitor(
-        standardAlertThresholdHours = 0.01,
-        urgentAlertThresholdHours = 0.02,
-        reAlertIntervalMinutes = 0.2,
-        possibleStopDebounceSeconds = 10.0,
-        movingDebounceReadings = 1,
-        onAlert = {level -> handleFatigueAlert(level)}
-    )
+    private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

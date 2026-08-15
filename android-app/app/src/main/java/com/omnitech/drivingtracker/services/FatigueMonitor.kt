@@ -1,16 +1,11 @@
 package com.omnitech.drivingtracker.services
 
 import android.util.Log
+import com.omnitech.drivingtracker.data.models.FatigueConfig
 import kotlin.math.min
 
 class FatigueMonitor(
-    private val standardAlertThresholdHours: Double = 2.0,
-    private val urgentAlertThresholdHours: Double = 2.0,
-    private val reAlertIntervalMinutes: Double =  25.0,
-    private val stoppedSpeedThresholdKmh: Float = 5f,
-    private val possibleStopDebounceSeconds:  Double = 300.0,
-    private val movingDebounceReadings: Int = 3,
-    private val maxElapsedSecondsPerTick: Double = 60.0,
+    private val config: FatigueConfig,
     private val onAlert:  (FatigueAlertLevel) ->  Unit
 ) {
 
@@ -40,9 +35,9 @@ class FatigueMonitor(
         lastTimestampMillis = timestampMillis
 
         //Guard against large gaps from service killed or phone being asleep
-        val cappedElapsed = min(elapsedSeconds, maxElapsedSecondsPerTick)
+        val cappedElapsed = min(elapsedSeconds, config.maxElapsedSecondsPerTick)
 
-        val isMoving = speedKmh >=stoppedSpeedThresholdKmh
+        val isMoving = speedKmh >=config.stoppedSpeedThresholdKmh
 
         Log.d("Fatigue", continuousDrivingSeconds.toString())
 
@@ -67,7 +62,7 @@ class FatigueMonitor(
             evaluateAlerts(elapsed)
         } else {
             possibleStopElapsedSeconds += elapsed
-            if(possibleStopElapsedSeconds >= possibleStopDebounceSeconds) {
+            if(possibleStopElapsedSeconds >= config.possibleStopDebounceSeconds) {
                 onRealStopConfirmed()
             }
         }
@@ -76,7 +71,7 @@ class FatigueMonitor(
     private fun handleStationaryState(isMoving: Boolean){
         if(isMoving){
             movingReadingStreak++
-            if(movingReadingStreak >= movingDebounceReadings){
+            if(movingReadingStreak >= config.movingDebounceReadings){
                 state = DrivingState.DRIVING
                 movingReadingStreak = 0
             }
@@ -100,13 +95,13 @@ class FatigueMonitor(
         val hoursDriving = continuousDrivingSeconds / 3600.0
 
         when {
-            hoursDriving >= urgentAlertThresholdHours && !urgentAlertFired ->{
+            hoursDriving >= config.urgentAlertThresholdHours && !urgentAlertFired ->{
                 urgentAlertFired = true
                 secondsSinceLastReAlert = 0.0
                 onAlert(FatigueAlertLevel.URGENT)
             }
 
-            hoursDriving >= standardAlertThresholdHours && !standardAlertFired ->{
+            hoursDriving >= config.standardAlertThresholdHours && !standardAlertFired ->{
                 standardAlertFired = true
                 secondsSinceLastReAlert = 0.0
                 onAlert(FatigueAlertLevel.STANDARD)
@@ -115,7 +110,7 @@ class FatigueMonitor(
             standardAlertFired ->{
                 //Re-send periodically once first alert has fired but user hasn't stopped
                 secondsSinceLastReAlert += elapsedSeconds
-                if(secondsSinceLastReAlert >= reAlertIntervalMinutes * 60.0){
+                if(secondsSinceLastReAlert >= config.reAlertIntervalMinutes * 60.0){
                     secondsSinceLastReAlert = 0.0
                     onAlert(FatigueAlertLevel.RE_ALERT)
                 }
