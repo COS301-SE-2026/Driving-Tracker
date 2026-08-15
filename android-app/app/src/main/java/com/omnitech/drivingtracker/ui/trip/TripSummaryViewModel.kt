@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.repository.TripStateManager
 import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-class TripSummaryViewModel @Inject constructor(private val repository: TripRepository, private val sensorFusionManager: SensorFusionManager) : ViewModel() {
+class TripSummaryViewModel @Inject constructor(
+    private val repository: TripRepository,
+    private val sensorFusionManager: SensorFusionManager,
+    private val tripStateManager: TripStateManager
+) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
         object Loading : UiState()
@@ -35,15 +40,15 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
     val uiState: StateFlow<UiState> = _uiState
 
     private val _endTripState = MutableStateFlow<UiState>(UiState.Idle)
-    val
-
-            endTripState: StateFlow<UiState> = _endTripState
+    val endTripState: StateFlow<UiState> = _endTripState
 
     private val _mapToken = MutableStateFlow<String?>(null)
     val mapTokenState: StateFlow<String?> = _mapToken
 
     private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
     val tripPath: StateFlow<List<LocationDto>> = _tripPath
+
+    val nearbyPois = tripStateManager.nearbyPois
 
     fun loadTripPath(tripId: String) {
         viewModelScope.launch {
@@ -63,9 +68,13 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
     private val _plannedRoute = MutableStateFlow<List<LocationDto>?>(null)
     val plannedRoute: StateFlow<List<LocationDto>?> = _plannedRoute
 
+    private val _detourRoute = MutableStateFlow<List<LocationDto>?>(null)
+    val detourRoute: StateFlow<List<LocationDto>?> = _detourRoute
+
     fun suggestedRoute(startLat: Double?, startLng: Double?, destLat: Double, destLng: Double) {
         viewModelScope.launch {
             try {
+
                 val response = repository.getSuggestedRoute(
                     LocationDto(startLat, startLng),
                     LocationDto(destLat, destLng)
@@ -73,6 +82,26 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
                 _plannedRoute.value = response.getOrNull()?.points
             } catch (e: Exception) {
                 Log.e("TripSummaryVM", "Route fetch failed: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchDetourRoute(startLat: Double?, startLng: Double?, destLat: Double, destLng: Double) {
+
+        Log.d("TripSummaryVM", "Attempting detour fetch: From $startLat, $startLng to $destLat, $destLng")
+        viewModelScope.launch {
+            try {
+
+                _detourRoute.value = null
+
+                val response = repository.getSuggestedRoute(
+                    LocationDto(startLat, startLng),
+                    LocationDto(destLat, destLng)
+                )
+                _detourRoute.value = response.getOrNull()?.points
+            } catch (e: Exception) {
+                Log.e("TripSummaryVM", "Detour Route fetch failed: ${e.message}")
+                _detourRoute.value = null
             }
         }
     }

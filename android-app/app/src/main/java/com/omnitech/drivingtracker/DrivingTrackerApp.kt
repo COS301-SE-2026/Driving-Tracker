@@ -33,6 +33,16 @@ class DrivingTrackerApp : Application() {
 
             manager.createNotificationChannel(
                 NotificationChannel(
+                    NotificationChannels.REST_ALERTS,
+                    "Rest & Fatigue Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Rest and fatigue alerts during a trip"
+                }
+            )
+
+            manager.createNotificationChannel(
+                NotificationChannel(
                     NotificationChannels.GAMIFICATION,
                     "Achievements and Rewards",
                     NotificationManager.IMPORTANCE_DEFAULT

@@ -105,6 +105,15 @@ interface ApiService{
     @GET("map/search")
     suspend fun searchAddress(@Query("address")address: String): AddressSearchResponse
 
+    @GET("map/nearby/pois")
+    suspend fun getNearbyPois(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("type") type: String?,
+        @Query("radius") radius: Int?,
+        @Query("limit") limit: Int?
+    ): MapPoiResponse
+
     @GET("map/route")
     suspend fun getSuggestedRoute(
         @Query("start_lat") startLat: Double?,

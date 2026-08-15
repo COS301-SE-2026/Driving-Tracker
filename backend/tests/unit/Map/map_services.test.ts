@@ -9,12 +9,14 @@ globalThis.fetch = mock_fetch; //mocking the global fetch API
 function make_response(options: {
     ok: boolean;
     status?: number;
+    statusText?: string;
     json?: () => Promise<unknown>;
     text?: () => Promise<string>;
 }): Response {
     return {
         ok: options.ok,
         status: options.status ?? (options.ok ? 200 : 500),
+        statusText: options.statusText ?? (options.ok ? 'OK' : 'Internal Server Error'),
         json: options.json ?? (async () => ({})),
         text: options.text ?? (async () => ''),
     } as unknown as Response;
@@ -189,3 +191,117 @@ describe('map services search address', ()=>{
     });
   
 });
+
+describe('map services get nearby pois', ()=>{
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns Array of pois on success', async()=>{
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async ()=>({
+                    results:[
+                        {
+                            poi: { 
+                                name: "Shell",
+                                classifications: [{code: "GAS_STATION"}, {code: "PETROL_STATION"}]
+                            },
+                            address:{ freeformAddress: '1 Microsoft Way, Redmond, WA'},
+                            position:{ lat: 47.6423, lon: -122.1367},
+                            dist: 2000
+                        },
+                        {
+                            poi: { 
+                                name: "UP Parking",
+                                classifications: [{code: "PARKING"}]
+                            },
+                            address: { freeformAddress: '2 Microsoft Way, Redmond, WA' },
+                            position: { lat: 47.6405, lon: -122.117 },
+                            dist: 1000
+                        },
+                    ],
+                }),
+            })
+        );
+        const result = await map_services.get_nearby_pois(47.6455, -122.1399, 5, 'stops', 4000);
+        expect(result).toEqual([
+            {
+                name: "Shell",
+                category: "GAS_STATION",
+                latitude: 47.6423,
+                longitude: -122.1367,
+                distanceMeters: 2000,
+                address: "1 Microsoft Way, Redmond, WA"
+            },
+            {
+                name: "UP Parking",
+                category: "PARKING",
+                latitude: 47.6405,
+                longitude: -122.117,
+                distanceMeters: 1000,
+                address: "2 Microsoft Way, Redmond, WA"
+            },
+        ]);
+    });
+    it('returns an empty array when Azure finds no matches', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => ({ results: [] }),
+            })
+        );
+ 
+        const result = await map_services.get_nearby_pois(47.6455, -122.1399, 5, 'rest_area', 4000);
+ 
+        expect(result).toEqual([]);
+    });
+
+    it('throws when location coordinates are missing/invalid', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => ({ results: [] }),
+            })
+        );
+
+        const lat=0.0;
+        const lng=0.0;
+
+        await expect(
+            map_services.get_nearby_pois(lat, lng, 5, 'rest_area', 4000)
+        ).rejects.toThrow('Location coordinates missing or invalid');
+ 
+    });
+
+    it('throws when poi type is invalid', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => ({ results: [] }),
+            })
+        );
+
+        await expect(
+            map_services.get_nearby_pois(47.6455, -122.1399, 5, 'not_real', 4000)
+        ).rejects.toThrow('Invalid type');
+ 
+    });
+
+    it('throws when azure returns error', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'Azure rejected the request',
+            })
+        );
+
+        await expect(
+            map_services.get_nearby_pois(47.6455, -122.1399, 5, 'parking', 4000)
+        ).rejects.toThrow('Azure Maps request failed: 500 Internal Server Error');
+ 
+    });
+  
+});
+

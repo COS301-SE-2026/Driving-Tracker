@@ -56,6 +56,25 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         }
     }
 
+    //Rest alerts after long drives with no breaks
+    fun showRestAlert(title: String, message: String, tripId: String){
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.REST_ALERTS)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_road) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(buildMainActivityIntent(Screen.LiveTrip.createRoute(tripId)))
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException){
+            //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show rest alert error")
+        }
+    }
+
     //badge unlocks, score updates etc
     fun showGamificationNotification(title: String, message: String){
 
