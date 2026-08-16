@@ -238,9 +238,7 @@ class TripTrackingService: Service() {
             Instant.parse(reading.timestamp).toEpochMilli()
         }.getOrDefault(System.currentTimeMillis())
 
-        val testSpeed = 30.0f
-
-        fatigueMonitor.onLocationUpdate(testSpeed, recordedAt)
+        fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
 
         lastKnownSpeed = currentSpeed
 

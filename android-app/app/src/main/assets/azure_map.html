@@ -53,8 +53,8 @@
 
         function updateMarker(lat, lng) {
             if (!map) return;
-            var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
-            if(Number.isNan(latN) || Number.isNan(lngN)) return;
+            var latN = Number(lat), lngN = Number(lng);
+            if(!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
 
             var pos = [lngN, latN];
 
