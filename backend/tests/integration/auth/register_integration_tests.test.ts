@@ -1,7 +1,12 @@
+jest.mock('../../../src/utils/email', () => ({
+	sendAuthEmail: jest.fn(),
+}));
+
 import request from 'supertest';
-import { describe, expect, it, afterAll } from '@jest/globals';
+import { describe, expect, it, afterAll, jest } from '@jest/globals';
 import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
+import { sendAuthEmail } from '../../../src/utils/email';
 
 describe('Auth register integration test', () => {
 	afterAll(async () => {

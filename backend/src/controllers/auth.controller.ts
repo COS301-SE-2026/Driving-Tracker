@@ -160,7 +160,7 @@ const auth_controller={
         const token  = typeof req.query.token === "string" ? req.query.token : "";
         if(!token){
             return res.status(400).json({
-                eror: "INVALID_TOKEN",
+                error: "INVALID_TOKEN",
                 message: "Verification token is required"
             });
         }
