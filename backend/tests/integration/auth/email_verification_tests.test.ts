@@ -21,7 +21,7 @@ describe('Auth verify email integration test', () => {
             password: 'Password123!',
 			name: 'Verify',
 			surname: 'User',
-			dob: new Date('2000-01-01'),
+			dob: '2000-01-01',
 			phone_number: '0123456789',
 			consent_status: true,
 		});
