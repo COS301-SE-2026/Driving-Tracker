@@ -112,7 +112,7 @@ const map_controller = {
             }
 
             const final_limit = Number.isFinite(parsed_limit)? parsed_limit : 10;
-            const final_radius = Number.isFinite(parsed_radius) ? parsed_radius : 10;
+            const final_radius = Number.isFinite(parsed_radius) ? parsed_radius : 5000;
             const poi_type = typeof type === "string" && type.trim() ? type : 'stops';
 
             const response = await map_services.get_nearby_pois(parsed_lat, parsed_lng, final_limit, poi_type, final_radius);

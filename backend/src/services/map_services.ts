@@ -236,7 +236,7 @@ export const map_services ={
 
         return {
             address: result.address?.freeformAddress ?? null,
-            road_type: result?.roadUse ?? null,
+            road_use: result?.roadUse ?? null,
             speed_limit: result?.address?.speedLimit ?? null,
             municipality: result?.address?.municipality ?? null,
             countryCode: result?.address?.countryCode ?? null,

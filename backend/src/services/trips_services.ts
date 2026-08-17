@@ -162,6 +162,93 @@ export interface trip_events_log{
     recorded_at: Date;
 }
 
+type road_use = 'LimitedAccess' | 'Arterial' | 'Terminal' | 'Ramp' | 'Entrance Ramp'| 'Rotary' | 'LocalStreet';
+
+export interface classify_input{
+    road_use: road_use[] | null;
+    nearby_pois: { category: string | null; distance_meters: number }[];
+    stopped_duration_minutes: number;
+}
+
+const HIGH_RISK_ROADS: road_use[] = ['LimitedAccess', 'Ramp','Entrance Ramp', 'Rotary'];
+const LOW_RISK_ROADS: road_use[] = ['LocalStreet', 'Terminal'];
+
+const EXPECTED_STOP_CATEGORIES = [
+    'PETROL_STATION', 'OPEN_PARKING_AREA',
+    'SHOP','RESTAURANT', 'REST_AREA', 'HOTEL_MOTEL',
+    'HOSPITAL','SHOPPING_CENTER', 'CAFE_PUB','MARKET',
+    'RESIDENTIAL_ACCOMMODATION', 'COMPANY'
+]
+
+const POI_PROXIMITY_THRESHOLD_M = 300;
+
+export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}: classify_input){
+
+    const road_use_arr = road_use ?? []
+
+    const is_high_risk = road_use_arr.some(r => HIGH_RISK_ROADS.includes(r));
+    const is_low_risk = road_use_arr.some(r => LOW_RISK_ROADS.includes(r));
+
+    const primary_road_use = road_use_arr.find(r => HIGH_RISK_ROADS.includes(r)) ?? 
+        road_use_arr[0] ?? null;
+
+    const closest_relevant_poi = nearby_pois.filter(p => p.category && EXPECTED_STOP_CATEGORIES.includes(p.category))
+        .sort((a, b) => a.distance_meters - b.distance_meters)[0];
+
+    const near_expected_poi = closest_relevant_poi && closest_relevant_poi.distance_meters <= POI_PROXIMITY_THRESHOLD_M;
+
+    //high risk road use 
+    if(is_high_risk) {
+        //but near an expected poi
+        if(near_expected_poi){
+            return {
+                classification: 'ambiguous',
+                poi_category: closest_relevant_poi.category
+            };
+        }
+
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+        
+    }
+
+    if(near_expected_poi){
+        return {
+            classification: 'expected',
+            poi_category: closest_relevant_poi.category
+        };
+    }
+
+    if(is_low_risk){
+        if(stopped_duration_minutes >= 60){
+            return {
+                classification: 'ambiguous',
+                poi_category: null
+            }
+        }
+
+        return {
+            classification: 'expected',
+            poi_category: null
+        }
+    }
+
+    //llean on duration when other metrics unavailable
+    if(stopped_duration_minutes >= 30){
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+    }
+
+    return {
+        classification: 'ambiguous',
+        poi_category: null
+    };
+}
+
 export const trips_services ={
     async create(data: create_trip){
         console.log("Starting trip");

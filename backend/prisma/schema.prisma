@@ -317,6 +317,7 @@ model unexpected_stop_events{
   latitude        Decimal     @db.Decimal(9, 6)
   longitude       Decimal     @db.Decimal(9, 6)
   address         String?
+  road_use        String[]    @default([])
   poi_category    String?     @db.VarChar(50)
   stopped_at      DateTime    @db.Timestamptz(6)
   detected_at     DateTime    @default(now()) @db.Timestamptz(6)
