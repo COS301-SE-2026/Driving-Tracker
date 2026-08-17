@@ -3,6 +3,7 @@ package com.omnitech.drivingtracker.ui.achievements
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.repository.AchievementsRepository
@@ -17,18 +18,42 @@ import javax.inject.Inject
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+data class BadgeUiModel(
+    val badgeId: Int,
+    val name: String,
+    val description: String,
+    val category: String,
+    val iconRes: Int,
+    val isEarned: Boolean,
+    val currentProgress: Int,
+    val targetProgress: Int
+)
+
+data class Challenge(
+    val id: String,
+    val title: String,
+    val description: String,
+    val currentProgress: Int,
+    val targetProgress: Int
+)
 data class AchievementsUiState(
     val leaderboard: LeaderboardData? = null,
     val categories: List<String> = emptyList(),
     val scopes: List<String> = emptyList(),
     val overallScore: Int = 0,
+    val badges: List<BadgeUiModel> = emptyList(),
+    val challenges: List<Challenge> = emptyList(),
     val isLoadingLeaderboard: Boolean = false,
     val isLoadingFilters: Boolean = false,
+    val isLoadingBadges: Boolean = false,
     val error: String? = null
 )
 
 @HiltViewModel
-class AchievementsViewModel @Inject constructor(private val repository: AchievementsRepository, private val tripRepository: TripRepository) : ViewModel() {
+class AchievementsViewModel @Inject constructor(
+    private val repository: AchievementsRepository,
+    private val tripRepository: TripRepository
+) : ViewModel() {
 
     val leaderboardFail = "Failed to load leaderboard"
     val unknownErrorOccurred = "An unknown error occurred"
@@ -51,10 +76,51 @@ class AchievementsViewModel @Inject constructor(private val repository: Achievem
     }
 
     private fun loadInitialData() {
-        getCategories()
-        getScopes()
-        getLeaderboard()
-        fetchOverallScore()
+        getCategories(); getScopes(); getLeaderboard(); fetchOverallScore(); fetchBadges()
+    }
+
+    private fun fetchBadges() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingBadges = true)
+            val definitionsResult = repository.getBadgeDefinitions()
+            val earnedResult = repository.getBadges()
+
+            if (definitionsResult.isSuccess && earnedResult.isSuccess) {
+                val definitions = definitionsResult.getOrThrow().badges
+                val earned = earnedResult.getOrThrow().earned
+
+                val badges = definitions.map { def ->
+                    val earnedBadge = earned.find { it.badgeId == def.badgeId }
+                    BadgeUiModel(
+                        badgeId = def.badgeId,
+                        name = def.name,
+                        description = def.description,
+                        category = def.category,
+                        iconRes = mapIconToRes(def.name),
+                        isEarned = earnedBadge != null,
+                        currentProgress = earnedBadge?.current ?: 0,
+                        targetProgress = def.criteria.firstOrNull()?.target?.toInt() ?: 1
+                    )
+                }
+
+                //Active challenges are badges that aren't earned yet
+                val challenges = badges.filter { !it.isEarned }.map { badge ->
+                    Challenge(badge.badgeId.toString(), badge.name, badge.description, badge.currentProgress, badge.targetProgress)
+                }
+
+                _uiState.value = _uiState.value.copy(badges = badges, challenges = challenges, isLoadingBadges = false)
+            } else {
+                _uiState.value = _uiState.value.copy(isLoadingBadges = false)
+            }
+        }
+    }
+
+    private fun mapIconToRes(name: String): Int = when (name.lowercase()) {
+        "on-board" -> R.drawable.badge_on_board
+        "safety officer" -> R.drawable.badge_safety_officer
+        "speed angel" -> R.drawable.badge_speed_angel
+        "throttle goat" -> R.drawable.badge_throttle_goat
+        else -> R.drawable.badge_first_drive
     }
 
     private fun fetchOverallScore(){

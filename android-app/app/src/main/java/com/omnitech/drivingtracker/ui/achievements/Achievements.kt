@@ -39,6 +39,8 @@ import com.omnitech.drivingtracker.ui.home.Dashboard
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.ui.components.BadgeDescriptionDialog
+import com.omnitech.drivingtracker.ui.components.BadgeGalleryDialog
 
 @Composable
 fun AchievementsScreen(
@@ -46,13 +48,21 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var showGallery by remember { mutableStateOf(false) }
+    var selectedBadge by remember { mutableStateOf<BadgeUiModel?>(null) }
     AchievementsContent(
         state = state,
         navController = navController,
+        onViewMore = {showGallery = true},
+        onBadgeClick = { selectedBadge = it },
+        onChallengesClick = { navController?.navigate(Screen.WeeklyChallenges.route) }
         onFilterChanged = {category, scope ->
             viewModel.getLeaderboard(category, scope)
         }
     )
+
+    if (showGallery) BadgeGalleryDialog(state.badges, state.badges.count { it.isEarned }, { showGallery = false }, { selectedBadge = it })
+    selectedBadge?.let { BadgeDescriptionDialog(it, { selectedBadge = null }) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
