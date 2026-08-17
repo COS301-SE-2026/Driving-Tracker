@@ -200,6 +200,47 @@ export const map_services ={
             address: result.address?.freeformAddress ?? null
         }));
 
+    },
+    //gets address from coordinates including roadUse and speedLimit
+    async reverse_geocode(lat: number, lng: number){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const params = new URLSearchParams({
+            'api-version':'1.0',
+            query: `${lat},${lng}`,
+            language: 'en-US',
+            returnSpeedLimit: 'true',
+            returnRoadUse: 'true',
+            'subscription-key': key,
+        });
+
+        const url = `https://atlas.microsoft.com/search/address/reverse/json?${params.toString()}`;
+
+        console.log("Reverse geocode URL:",  url);
+
+        const response = await fetch(url);
+
+        if(!response.ok){
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json() as { addresses: any[] };
+
+        console.log('Full address object:', JSON.stringify(json.addresses?.[0], null, 2));
+
+        const result = json.addresses?.[0];
+
+        return {
+            address: result.address?.freeformAddress ?? null,
+            road_type: result?.roadUse ?? null,
+            speed_limit: result?.address?.speedLimit ?? null,
+            municipality: result?.address?.municipality ?? null,
+            countryCode: result?.address?.countryCode ?? null,
+        };
     }
     
 }
