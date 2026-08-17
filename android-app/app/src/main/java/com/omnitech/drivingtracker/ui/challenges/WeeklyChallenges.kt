@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.achievements.AchievementsViewModel
+import com.omnitech.drivingtracker.ui.achievements.AchievementsUiState
+import com.omnitech.drivingtracker.ui.achievements.Challenge
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.RankCard
@@ -32,38 +34,24 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.graphics.Color
 import com.omnitech.drivingtracker.ui.components.ChallengeCard
 
-data class Challenge(
-    val id: String,
-    val title: String,
-    val description: String,
-    val currentProgress: Int,
-    val targetProgress: Int
-)
 @Composable
 fun WeeklyChallenges(
     navController: NavController? = null,
     viewModel: AchievementsViewModel = hiltViewModel(),
-    previewChallenges: List<Challenge>? = null //optional param to allow previewing mock data easily
 ) {
 
     val state by viewModel.uiState.collectAsState()
 
-    val mockChallenges = listOf(
-        Challenge("1", "Safety Officer", "Go 4 days without bad driving habits", 2, 4),
-        Challenge("2", "Speed Angel", "Complete 3 trips without going above the speed limit", 3, 3),
-        Challenge("3", "Throttle Goat", "Complete 5 trips without a hard acceleration alert", 2, 5)
-    )
-
     WeeklyChallengesContent(
         state = state,
-        challenges = mockChallenges,
+        challenges = state.challenges,
         navController = navController
     )
 }
 
 @Composable
 fun WeeklyChallengesContent(
-    state: AchievementsViewModel.UiState,
+    state: AchievementsUiState,
     challenges: List<Challenge>,
     navController: NavController? = null
 ) {
@@ -113,28 +101,21 @@ fun WeeklyChallengesContent(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
 
-                            when (val currentState = state) {
-
-                                is AchievementsViewModel.UiState.Loading -> {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().height(100.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator()
-                                    }
+                            if (state.isLoadingLeaderboard) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
                                 }
-
-                                is AchievementsViewModel.UiState.Error -> {
-                                    Text(
-                                        text = currentState.message ?: "Error loading",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-
-                                is AchievementsViewModel.UiState.Success -> {
-                                    val leaderboard = currentState.leaderboard
-                                    //We take top 3 entries
+                            } else if (state.error != null) {
+                                Text(
+                                    text = state.error,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            } else {
+                                state.leaderboard?.let { leaderboard ->
                                     leaderboard.entries.take(3).forEach { entry ->
                                         RankCard(
                                             name = entry.displayName,
@@ -143,10 +124,7 @@ fun WeeklyChallengesContent(
                                             compact = true
                                         )
                                     }
-
                                 }
-
-                                else -> {}
                             }
 
                         }
@@ -177,7 +155,7 @@ fun WeeklyChallengesContent(
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
 
-                                ScoreRing(score = 85, modifier = Modifier.size(100.dp))
+                                ScoreRing(score = state.overallScore, modifier = Modifier.size(100.dp))
                             }
                         }
                     }
@@ -207,13 +185,17 @@ fun WeeklyChallengesContent(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
-                        challenges.forEach { challenge ->
-                            ChallengeCard(
-                                title = challenge.title,
-                                description = challenge.description,
-                                current = challenge.currentProgress,
-                                target = challenge.targetProgress
-                            )
+                        if (challenges.isEmpty()) {
+                            Text("No active challenges.", modifier = Modifier.padding(8.dp))
+                        } else {
+                            challenges.forEach { challenge ->
+                                ChallengeCard(
+                                    title = challenge.title,
+                                    description = challenge.description,
+                                    current = challenge.currentProgress,
+                                    target = challenge.targetProgress
+                                )
+                            }
                         }
 
                     }
@@ -242,19 +224,12 @@ fun ChallengesPreview() {
             description = "Complete 2 trips without going above speed limit",
             currentProgress = 2,
             targetProgress = 2
-        ),
-        Challenge(
-            id = "1",
-            title = "Throttle Goat",
-            description = "Complete 5 trips without a hard acceleration alert",
-            currentProgress = 4,
-            targetProgress = 5
         )
     )
 
     DrivingTrackerTheme {
         WeeklyChallengesContent(
-            state = AchievementsViewModel.UiState.Success(
+            state = AchievementsUiState(
                 leaderboard = com.omnitech.drivingtracker.data.models.LeaderboardData(
                    category = "OVERALL",
                     scope = "WEEKLY",
@@ -264,8 +239,9 @@ fun ChallengesPreview() {
                         com.omnitech.drivingtracker.data.models.LeaderboardEntry(3, "3", "YOU", 85.0)
                     ),
                     myRank = 3,
-                    myScore = 85
-                )
+                    myScore = 85.0
+                ),
+                overallScore = 85
             ),
             challenges = mockChallenges
         )

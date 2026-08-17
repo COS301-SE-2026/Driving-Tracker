@@ -61,15 +61,17 @@ fun AchievementsScreen(
         }
     )
 
-    if (showGallery) BadgeGalleryDialog(
-        badges = state.badges,
-        completedChallenges = state.badges.count { it.isEarned },
-        onDismiss = { showGallery = false },
-        onBadgeClick = {
-            selectedBadge = it
-            showGallery = false
-        }
-    )
+    if (showGallery) {
+        BadgeGalleryDialog(
+            badges = state.badges,
+            completedChallenges = state.badges.count { it.isEarned },
+            onDismiss = { showGallery = false },
+            onBadgeClick = {
+                selectedBadge = it
+                showGallery = false
+            }
+        )
+    }
     selectedBadge?.let { badge ->
         BadgeDescriptionDialog(badge = badge, onDismiss = { selectedBadge = null })
     }
@@ -118,7 +120,7 @@ fun AchievementsContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp, vertical = 24.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
@@ -139,7 +141,8 @@ fun AchievementsContent(
                 Button(
                     onClick = onChallengesClick,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                    shape = RoundedCornerShape(12.dp)
                 ){
                     Text("View Weekly Challenges")
                 }
