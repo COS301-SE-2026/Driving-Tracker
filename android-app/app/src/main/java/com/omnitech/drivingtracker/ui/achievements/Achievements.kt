@@ -53,16 +53,26 @@ fun AchievementsScreen(
     AchievementsContent(
         state = state,
         navController = navController,
-        onViewMore = {showGallery = true},
+        onViewMore = { showGallery = true },
         onBadgeClick = { selectedBadge = it },
-        onChallengesClick = { navController?.navigate(Screen.WeeklyChallenges.route) }
+        onChallengesClick = { navController?.navigate(Screen.WeeklyChallenges.route) },
         onFilterChanged = {category, scope ->
             viewModel.getLeaderboard(category, scope)
         }
     )
 
-    if (showGallery) BadgeGalleryDialog(state.badges, state.badges.count { it.isEarned }, { showGallery = false }, { selectedBadge = it })
-    selectedBadge?.let { BadgeDescriptionDialog(it, { selectedBadge = null }) }
+    if (showGallery) BadgeGalleryDialog(
+        badges = state.badges,
+        completedChallenges = state.badges.count { it.isEarned },
+        onDismiss = { showGallery = false },
+        onBadgeClick = {
+            selectedBadge = it
+            showGallery = false
+        }
+    )
+    selectedBadge?.let { badge ->
+        BadgeDescriptionDialog(badge = badge, onDismiss = { selectedBadge = null })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +80,9 @@ fun AchievementsScreen(
 fun AchievementsContent(
     state: AchievementsUiState,
     navController: NavController? = null,
+    onViewMore: () -> Unit = {},
+    onBadgeClick: (BadgeUiModel) -> Unit = {},
+    onChallengesClick: () -> Unit = {},
     onFilterChanged: (category: String, scope: String) -> Unit = {_, _ -> }
 ) {
     var expandedCategory by remember { mutableStateOf(false) }
@@ -115,7 +128,21 @@ fun AchievementsContent(
 
             item {
                 // Badges Gallery (LazyRow)
-                BadgeSection()
+                BadgeSection(
+                    badges = state.badges,
+                    onViewMore = onViewMore,
+                    onBadgeClick = onBadgeClick
+                )
+            }
+
+            item {//Navigation to Weekly Challenges
+                Button(
+                    onClick = onChallengesClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                ){
+                    Text("View Weekly Challenges")
+                }
             }
 
             item {

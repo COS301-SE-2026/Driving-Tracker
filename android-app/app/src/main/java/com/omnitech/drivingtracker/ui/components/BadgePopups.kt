@@ -37,15 +37,50 @@ fun BadgeGalleryDialog(
                     StatBox("Completed challenges", "$completedChallenges", Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(24.dp))
-                FlowRow(modifier = Modifier.padding(16.dp), mainAxisSpacing = 16.dp, crossAxisSpacing = 16.dp) {
-                    badges.forEach { badges ->
-                        BadgeIcon(badge, { onBadgeClick(badge) }, size = 48.dp)
+
+                //Grid layout
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    badges.chunked(3).forEach { rowBadges ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            rowBadges.forEach { badge ->
+                                BadgeIcon(badge, { onBadgeClick(badge) }, size = 48.dp)
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
+
+}
+
+@Composable
+fun StatBox(label: String, value: String, modifier: Modifier = Modifier) {
+
+    Surface(
+        modifier = modifier,
+        color = Color(0xFF0F0F0),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(value, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+
+}
+
+@Composable
+fun BadgeIcon(badge: BadgeUiModel, onClick: () -> Unit, size: Dp) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(badge.iconRes),
+            contentDescription = badge.name,
+            tint = if (badge.isEarned) getBadgeColor(badge.category) else Color.Gray,
+            modifier = Modifier.size(size)
+        )
+    }
 }
 
 @Composable
