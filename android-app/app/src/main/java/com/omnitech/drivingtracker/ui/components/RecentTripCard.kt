@@ -78,7 +78,7 @@ fun RecentTripCard(
                 //1. Trip Icon
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        painter = painterResource(id = R.drawable.badge_01),
+                        painter = painterResource(id = R.drawable.ic_nav_road),
                         contentDescription = "Trip route icon",
                         modifier = Modifier.size(28.dp),
                         tint = Purple
