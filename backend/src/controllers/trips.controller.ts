@@ -480,9 +480,7 @@ export const confirm_stop_event = async (req: AuthRequest, res: Response) => {
 
         return res.status(200).json({ 
             message: "Unexpected stop confirmed",
-            data: {
-                confirm_stop_data: result
-            }
+            data: result
         });
 
     } catch(error: any){
@@ -529,10 +527,8 @@ export const resolve_stop_event = async (req: AuthRequest, res: Response) => {
         const result = await trips_services.resolve_stop(user_id, event_id, reason);
 
         return res.status(200).json({ 
-            message: "Unexpected stop confirmed",
-            data: {
-                confirm_stop_data: result
-            }
+            message: "Unexpected stop resolved",
+            data: result
         });
 
     } catch(error: any){
@@ -567,7 +563,7 @@ export const resolve_stop_event = async (req: AuthRequest, res: Response) => {
 
         return res.status(500).json({ 
             error: "INTERNAL_SERVER_ERROR",
-            message: "Could not successfully confirm stop"
+            message: "Could not successfully resolve stop"
         });
     }
 }
