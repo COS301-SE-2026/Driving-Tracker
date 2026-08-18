@@ -53,6 +53,10 @@ data class SharedWithMeDto(
     val startLongitude: Double,
     @SerializedName("fuel_estimate")
     val fuelEstimate: Double,
+    @SerializedName("destination_latitude")
+    val destinationLatitude: Double? = null,
+    @SerializedName("destination_longitude")
+    val destinationLongitude: Double? = null
 )
 
 @Suppress("unused")
