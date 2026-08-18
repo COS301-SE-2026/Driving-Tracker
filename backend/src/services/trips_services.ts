@@ -1133,6 +1133,14 @@ export const trips_services ={
             throw new Error("user not found");
         }
 
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
         const result = await prisma.unexpected_stop_events.updateMany({
             where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
             data: { status: STOP_EVENT_STATUS.CONFIRMED, escalated_at: new Date() },
@@ -1148,10 +1156,6 @@ export const trips_services ={
                 already_handled: true
             };
         }
-
-        const retrieved_event = await prisma.unexpected_stop_events.findUniqueOrThrow({
-            where : { event_id }
-        });
 
         const { contact_user_ids } = await get_trip_shared_contacts(retrieved_event.trip_id);
 

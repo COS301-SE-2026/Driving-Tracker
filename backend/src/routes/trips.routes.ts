@@ -13,7 +13,8 @@ trips_router.post("/start_trip",verify_token, user_based_limiter, trips_controll
 trips_router.post("/:trip_id/readings/record",verify_token, trip_reading_limiter, trips_controller.record_trip);
 trips_router.post("/:trip_id/events/log", verify_token, trip_event_limiter, trips_controller.log_event);
 trips_router.post("/:trip_id/batch_readings/record", verify_token, trip_reading_limiter, trips_controller.record_batch_readings);
-trips_router.post(":trip_id/stop_event/check", verify_token, map_token_limiter, requireTripAccess, trips_controller.check_stop_event);
+trips_router.post("/:trip_id/stop_event/check", verify_token, map_token_limiter, requireTripAccess, trips_controller.check_stop_event);
+trips_router.post("/:event_id/stop_event/confirm", verify_token, map_token_limiter, requireTripAccess, trips_controller.confirm_stop_event);
 //read basically get 
 trips_router.get("/history",verify_token, user_based_limiter, trips_controller.get_history);
 trips_router.get("/:trip_id/summary", verify_token, user_based_limiter, trips_controller.get_trip_summary);

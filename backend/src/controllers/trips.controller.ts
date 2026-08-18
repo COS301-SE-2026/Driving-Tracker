@@ -417,7 +417,7 @@ export const check_stop_event = async (req: AuthRequest, res: Response) => {
     if(!user_id) {
             res.status(401).json({ 
                 error: "UNAUTHORIZED", 
-                message: "Can not view this trip" 
+                message: "Unauthorized to log unexpected stop event" 
             });
             return;
         }
@@ -456,6 +456,54 @@ export const check_stop_event = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ 
             error: "INTERNAL_SERVER_ERROR",
             message: "Could not successfully check stop"
+        });
+    }
+}
+
+export const confirm_stop_event = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Unauthorized to confirm unexpected stop event" 
+            });
+            return;
+        }
+
+    const { event_id } = req.body;
+
+    try{
+
+        const result = await trips_services.confirm_stop(user_id, event_id);
+
+        return res.status(200).json({ 
+            message: "Unexpected stop confirmed",
+            data: {
+                confirm_stop_data: result
+            }
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("user not found")){
+            return res.status(403).json({ 
+                error: "USER_NOT_FOUND", 
+                message: "User not found" 
+            });
+        }
+
+        if (error.message.includes("event not found")){
+            return res.status(400).json({ 
+                error: "EVENT_NOT_FOUND", 
+                message: "Unexpected stop event not found" 
+            });
+        }
+
+        return res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully confirm stop"
         });
     }
 }
