@@ -409,3 +409,53 @@ export const get_trips_shared_with_me = async (req: AuthRequest, res: Response) 
         });
     }
 }
+
+export const check_stop_event = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Can not view this trip" 
+            });
+            return;
+        }
+
+    const { trip_id } = req.params;
+
+    const { location, stopped_at} = req.body;
+
+    try{
+
+        const result = await trips_services.check_stop(user_id, trip_id, location.lat, location.lng, stopped_at);
+
+        return res.status(200).json({ 
+            message: "Stop event check completed successfully",
+            data: {
+                check_stop_data: result
+            }
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("Location coordinates missing")){
+                res.status(400).json({ 
+                    error: "INVALID_LOCATION", 
+                    message: "Location coordinates missing or invalid" 
+                });
+        }
+
+        if (error.message.includes("stopped_at cannot be in the future")){
+                res.status(422).json({ 
+                    error: "INVALID_STOP", 
+                    message: "Stopped_at cannot be in the future" 
+                });
+        }
+
+        res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully check stop"
+        });
+    }
+}

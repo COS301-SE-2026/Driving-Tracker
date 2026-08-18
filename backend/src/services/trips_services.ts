@@ -173,6 +173,15 @@ export interface classify_input{
 const HIGH_RISK_ROADS: road_use[] = ['LimitedAccess', 'Ramp','Entrance Ramp', 'Rotary'];
 const LOW_RISK_ROADS: road_use[] = ['LocalStreet', 'Terminal'];
 
+const STOP_EVENT_STATUS = {
+    POSSIBLE: 'possible',
+    CONFIRMED: 'confirmed',
+    RESOLVED_OK: 'resolved_ok',
+    RESOLVED_MOVED: 'resolved_moved',
+} as const;
+
+type STOP_EVENT_STATUS = typeof STOP_EVENT_STATUS[keyof typeof STOP_EVENT_STATUS];
+
 const EXPECTED_STOP_CATEGORIES = [
     'PETROL_STATION', 'OPEN_PARKING_AREA',
     'SHOP','RESTAURANT', 'REST_AREA', 'HOTEL_MOTEL',
@@ -181,6 +190,8 @@ const EXPECTED_STOP_CATEGORIES = [
 ]
 
 const POI_PROXIMITY_THRESHOLD_M = 300;
+
+const CHECK_AFTER_GRACE_MS = 2*60*1000;
 
 export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}: classify_input){
 
@@ -1003,5 +1014,58 @@ export const trips_services ={
         }))??[];
 
         return result;
+    },
+    //checks a stop and classifies it
+    async check_stop(user_id: string, trip_id: string, lat: number, lng: number, stopped_at: number){
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const stopped_at_date = new Date(stopped_at);
+
+        if(stopped_at_date.getTime()>Date.now()+60_000){
+            throw new Error("stopped_at cannot be in the future");
+        }
+
+        const stopped_duration_minutes = Math.floor((Date.now() - stopped_at_date.getTime())/60_000);
+
+        const geocode = await map_services.reverse_geocode(lat, lng);
+
+        const nearby_pois_response = await map_services.get_nearby_pois(lat, lng, 10, 'all', POI_PROXIMITY_THRESHOLD_M + 100);
+
+        const nearby_pois = (nearby_pois_response?? []).map((poi: any)=>({
+            category: poi.category as string | null,
+            distance_meters: poi.distanceMeters as number,
+        }));
+
+        const { classification, poi_category } = classify_stop({road_use: geocode.road_use, nearby_pois, stopped_duration_minutes});
+
+        const check_after = new Date(Date.now() + CHECK_AFTER_GRACE_MS);
+
+        const event = await prisma.unexpected_stop_events.create({
+            data: {
+                trip_id,
+                status: STOP_EVENT_STATUS.POSSIBLE,
+                classification,
+                latitude: lat,
+                longitude: lng,
+                address: geocode.address,
+                poi_category,
+                stopped_at: stopped_at_date,
+                check_after,
+            },
+        });
+
+        return {
+            stop_event_id: event.event_id,
+            classification,
+            location_context: {
+                address: event.address,
+                poi_category: event.poi_category,
+            },
+            should_prompt: classification !== 'expected',
+        };
+        
     }
 };
