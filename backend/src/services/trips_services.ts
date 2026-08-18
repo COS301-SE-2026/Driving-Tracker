@@ -200,9 +200,6 @@ export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}
     const is_high_risk = road_use_arr.some(r => HIGH_RISK_ROADS.includes(r));
     const is_low_risk = road_use_arr.some(r => LOW_RISK_ROADS.includes(r));
 
-    const primary_road_use = road_use_arr.find(r => HIGH_RISK_ROADS.includes(r)) ?? 
-        road_use_arr[0] ?? null;
-
     const closest_relevant_poi = nearby_pois.filter(p => p.category && EXPECTED_STOP_CATEGORIES.includes(p.category))
         .sort((a, b) => a.distance_meters - b.distance_meters)[0];
 
@@ -258,6 +255,50 @@ export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}
         classification: 'ambiguous',
         poi_category: null
     };
+}
+
+async function notify_unexpected_stop(
+    event: {
+        event_id: string; 
+        trip_id: string; 
+        address: string | null;
+    },
+    user: {
+        user_id: string;
+        name: string;
+        surname: string;
+        username: string;
+    },
+    contact_user_ids: string[],
+    stopped_at: Date
+){
+
+    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+    const local_date = addHours(new Date(stopped_at), 2);
+
+    const formatted_date = format(local_date, 'MMM d, yyy h:mm a');
+
+    const messageNoti = event.address? `${full_name} stopped near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location`;
+
+    const message = event.address? `${full_name} made an unexpected stop near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location for an extended period`;
+
+    const event_ids = new Array(contact_user_ids.length).fill(event.event_id);
+    
+    await add_notification({
+        user_ids: contact_user_ids,
+        type: "TRIP_ALERT",
+        title: "Unexpected stop",
+        body: message,
+        reference_ids: event_ids,
+        reference_type: "unexpected_stop_events",
+    });
+
+    //Get tokens for sending push notifications to contacts
+    const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+    await notification_services.send_unexpected_stop_notification(fcm_tokens, event.trip_id, event.event_id, messageNoti);
+
 }
 
 export const trips_services ={
@@ -1022,6 +1063,19 @@ export const trips_services ={
             throw new Error("Location coordinates missing or invalid");
         }
 
+        const trip = await prisma.trips.findUnique({
+                where: { trip_id: trip_id },
+                select: { user_id: true }
+            });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+        
+        if(trip.user_id !== user_id){
+            throw new Error("You do not own this trip");
+        }
+
         const stopped_at_date = new Date(stopped_at);
 
         if(stopped_at_date.getTime()>Date.now()+60_000){
@@ -1067,5 +1121,62 @@ export const trips_services ={
             should_prompt: classification !== 'expected',
         };
         
+    },
+    //confirms a stop event
+    async confirm_stop(user_id: string, event_id: string){
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error("user not found");
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status: STOP_EVENT_STATUS.CONFIRMED, escalated_at: new Date() },
+        });
+
+        if(result.count == 0){
+             const existing = await prisma.unexpected_stop_events.findUnique({
+                where: { event_id }
+            });
+
+            return {
+                status: existing?.status ?? 'unknown', 
+                already_handled: true
+            };
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUniqueOrThrow({
+            where : { event_id }
+        });
+
+        const { contact_user_ids } = await get_trip_shared_contacts(retrieved_event.trip_id);
+
+        if(contact_user_ids.length > 0){
+            await notify_unexpected_stop(
+                {
+                    event_id: retrieved_event.event_id, 
+                    trip_id: retrieved_event.trip_id, 
+                    address: retrieved_event.address
+                },
+                {
+                    user_id: retrieved_user.user_id,
+                    name: retrieved_user.name,
+                    surname: retrieved_user.surname,
+                    username: retrieved_user.username
+                },
+                contact_user_ids,
+                retrieved_event.stopped_at
+            )
+        }
+
+        return {
+            status: STOP_EVENT_STATUS.CONFIRMED, 
+            already_handled: false
+        };
     }
+    
 };
