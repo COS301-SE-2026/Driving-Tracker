@@ -30,13 +30,14 @@ import com.github.pires.obd.commands.protocol.ResetTroubleCodesCommand
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.github.pires.obd.commands.control.VinCommand
-
+import com.github.pires.obd.commands.fuel.FuelLevelCommand
 //data class representing live state of vehicle
 data class VehicleMetrics(
     val rpm: Int = 0,
     val speed: Int = 0,
     val coolantTemp: Int = 0,
     val fuelTrim: Double = 0.0,
+    val fuelLevel: Float? = 0.0f,
     val faultCodes: List<String> = emptyList(),
     val vin: String = "",
     val isDataLive: Boolean = false
@@ -100,7 +101,23 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
             }
         }
     }
+    suspend fun fetchFuelLevel(): Float? = withContext(Dispatchers.IO){
+        val out = socket?.outputStream?: return@withContext null
+        val input = socket?.inputStream?: return@withContext null
+        //the fuel level will be returned as a percentage
 
+        try{
+            val fuelCmd = FuelLevelCommand()
+            fuelCmd.run(input,out)
+            val level = fuelCmd.fuelLevel
+            metrics.value = _metrics.value.copy(fuelLevel = level)
+            Log.d("OBD_LOG", "Fuel Level fetched: $level%")
+            level
+        }catch (e: Exception){
+            Log.e("OBD_LOG", "Failed to fetch fuel level", e)
+            null
+        }
+    }
     suspend fun clearTroubleCodes() = withContext(Dispatchers.IO){
         val out = socket?.outputStream?: return@withContext
         val inputStream = socket?.inputStream?: return@withContext
