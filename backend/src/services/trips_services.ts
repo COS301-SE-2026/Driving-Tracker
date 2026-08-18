@@ -81,6 +81,7 @@ export interface create_trip{
         lat:number;
         lng:number;
     };
+    fuel_level_start?: number;
     // distance_km?: number;
 };
 export interface trip_summary_filter {
@@ -100,6 +101,7 @@ export interface end_trip {
         lat:number;
         lng:number;
     };
+    fuel_level_end?: number;
     // safety_score: number;
     // eco_score: number;
     // overall_score: number;
@@ -262,6 +264,7 @@ export const trips_services ={
                         end_longitude:data.end_location?.lng,
                         data_source: data.data_source,
                         fuel_estimate:fuel_est,
+                        fuel_level_start: data.fuel_level_start,
                         status: "IN_PROGRESS"
                     }
                 });
@@ -362,6 +365,7 @@ export const trips_services ={
                     fuel_estimate: data.fuel_estimate,
                     end_latitude:data.end_location?.lat,
                     end_longitude:data.end_location?.lng,
+                    fuel_level_end: data.fuel_level_end,
                     status: data.status
                 }
             });
