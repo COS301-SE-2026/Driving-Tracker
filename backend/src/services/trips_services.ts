@@ -1181,6 +1181,51 @@ export const trips_services ={
             status: STOP_EVENT_STATUS.CONFIRMED, 
             already_handled: false
         };
+    },
+    //resolve stop event
+    async resolve_stop(user_id: string, event_id: string, reason: string){
+
+        if(!reason || reason.trim().length == 0){
+            throw new Error('reason missing');
+        }
+
+        const status = reason == 'moved'? STOP_EVENT_STATUS.RESOLVED_MOVED : STOP_EVENT_STATUS.RESOLVED_OK;
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error('user not found');
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id },
+            select: {
+                trips: {
+                    select: {
+                        user_id: true
+                    }
+                }
+            }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
+        if(retrieved_event.trips.user_id !== user_id){
+            throw new Error('cannot access event');
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status, resolved_at: new Date() },
+        });
+
+        return {
+            resolved: result.count > 0
+        };
     }
     
 };
