@@ -173,14 +173,14 @@ export interface classify_input{
 const HIGH_RISK_ROADS: road_use[] = ['LimitedAccess', 'Ramp','Entrance Ramp', 'Rotary'];
 const LOW_RISK_ROADS: road_use[] = ['LocalStreet', 'Terminal'];
 
-const STOP_EVENT_STATUS = {
+export const STOP_EVENT_STATUS = {
     POSSIBLE: 'possible',
     CONFIRMED: 'confirmed',
     RESOLVED_OK: 'resolved_ok',
     RESOLVED_MOVED: 'resolved_moved',
 } as const;
 
-type STOP_EVENT_STATUS = typeof STOP_EVENT_STATUS[keyof typeof STOP_EVENT_STATUS];
+export type STOP_EVENT_STATUS = typeof STOP_EVENT_STATUS[keyof typeof STOP_EVENT_STATUS];
 
 const EXPECTED_STOP_CATEGORIES = [
     'PETROL_STATION', 'OPEN_PARKING_AREA',
@@ -257,25 +257,30 @@ export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}
     };
 }
 
-async function notify_unexpected_stop(
+export async function notify_unexpected_stop(
     event: {
         event_id: string; 
         trip_id: string; 
         address: string | null;
-    },
-    user: {
-        user_id: string;
-        name: string;
-        surname: string;
-        username: string;
-    },
-    contact_user_ids: string[],
-    stopped_at: Date
-){
+        stopped_at: Date;
+    }){
+
+    const trip = await prisma.trips.findUniqueOrThrow({
+        where: { trip_id: event.trip_id },
+        include:{ users: true }
+    });
+
+    const user = trip.users;
+
+    const { contact_user_ids }= await get_trip_shared_contacts(event.trip_id);
+
+    if(contact_user_ids.length === 0){
+        return;
+    }
 
     const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
 
-    const local_date = addHours(new Date(stopped_at), 2);
+    const local_date = addHours(new Date(event.stopped_at), 2);
 
     const formatted_date = format(local_date, 'MMM d, yyy h:mm a');
 
@@ -1159,24 +1164,8 @@ export const trips_services ={
 
         const { contact_user_ids } = await get_trip_shared_contacts(retrieved_event.trip_id);
 
-        if(contact_user_ids.length > 0){
-            await notify_unexpected_stop(
-                {
-                    event_id: retrieved_event.event_id, 
-                    trip_id: retrieved_event.trip_id, 
-                    address: retrieved_event.address
-                },
-                {
-                    user_id: retrieved_user.user_id,
-                    name: retrieved_user.name,
-                    surname: retrieved_user.surname,
-                    username: retrieved_user.username
-                },
-                contact_user_ids,
-                retrieved_event.stopped_at
-            )
-        }
-
+        await notify_unexpected_stop(retrieved_event);
+        
         return {
             status: STOP_EVENT_STATUS.CONFIRMED, 
             already_handled: false
@@ -1226,6 +1215,17 @@ export const trips_services ={
         return {
             resolved: result.count > 0
         };
+    },
+    async has_trip_resumed_movement(trip_id: string, stopped_at: Date){
+
+        const new_ping = await prisma.trip_readings.findFirst({
+            where: {
+                trip_id,
+                recorded_at: { gt: stopped_at },
+            }
+        });
+
+        return new_ping !== null;
     }
     
 };
