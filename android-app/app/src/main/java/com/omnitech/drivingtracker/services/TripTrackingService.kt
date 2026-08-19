@@ -81,6 +81,31 @@ class TripTrackingService: Service() {
 
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
+    private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
+        val tripId = currentTripId ?:return@StopMonitor
+
+        serviceScope.launch {
+            tripRepository.checkStopEvent(tripId, lat, lng, stoppedAt).onSuccess { data ->
+                if(data.shouldPrompt){
+                    tripStateManager.updateSafetyCheck(
+                        TripStateManager.SafetyCheckState(
+                            stopEventId = data.stopEventId,
+                            address = data.locationContext.address,
+                            shouldPrompt = true
+                        )
+                    )
+
+                    notificationHelper.showSafetyAlert(
+                        "Unexpected Stop",
+                        "You've stopped at an unexpected location. Are you okay?",
+                        tripId
+                    )
+                }
+            }
+        }
+
+    }
+
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -239,6 +264,10 @@ class TripTrackingService: Service() {
         }.getOrDefault(System.currentTimeMillis())
 
         fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
+
+        val stoppedAt = Instant.parse(reading.timestamp)
+
+        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, stoppedAt)
 
         lastKnownSpeed = currentSpeed
 

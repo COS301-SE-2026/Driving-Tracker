@@ -258,6 +258,11 @@ data class StopEventCheckRequest(
 )
 
 data class StopEventCheckResponse(
+    val message: String,
+    val data: StopEventCheckData
+)
+
+data class StopEventCheckData(
     @SerializedName("stop_event_id")
     val stopEventId: String,
     val classification: String,
@@ -274,6 +279,11 @@ data class LocationContextData(
 )
 
 data class StopEventConfirmResponse(
+    val message: String,
+    val data: StopEventConfirmData
+)
+
+data class StopEventConfirmData(
     val status: String,
     @SerializedName("already_handled")
     val alreadyHandled: Boolean
@@ -284,6 +294,11 @@ data class StopEventResolveRequest(
 )
 
 data class StopEventResolveResponse(
+    val message: String,
+    val data: StopEventResolveData
+)
+
+data class StopEventResolveData(
     val resolved: Boolean
 )
 

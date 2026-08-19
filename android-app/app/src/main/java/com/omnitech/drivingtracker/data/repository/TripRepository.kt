@@ -280,4 +280,21 @@ class TripRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun checkStopEvent(tripId: String, lat: Double, lng: Double, stoppedAt: Long): Result<StopEventCheckData> {
+        return try {
+            val response = api.checkStopEvent(tripId,
+                StopEventCheckRequest(LocationDto(lat,lng), stoppedAt)
+                )
+            Log.d("StopMonitor", "Check stop address: ${response.data.locationContext.address}")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Check stop address failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to check stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Check stop address failed android")
+            Result.failure(e)
+        }
+    }
 }

@@ -4,14 +4,14 @@ import java.time.Duration
 import java.time.Instant
 
 class StopMonitor(
-    private val onThresholdReached: (lat: Double, lng: Double, stoppedAt: Instant) -> Unit
+    private val onThresholdReached: (lat: Double, lng: Double, stoppedAt: Long) -> Unit
 ) {
     private var stopStartedAt: Instant? = null
     private var stopLocation: Pair<Double, Double>? = null
     private var thresholdFired = false
 
     companion object {
-        private val STOP_THRESHOLD = Duration.ofMinutes(15)
+        private val STOP_THRESHOLD = Duration.ofMinutes(1)
         private const val STOP_SPEED_THRESHOLD_KMH = 5f
     }
 
@@ -26,7 +26,7 @@ class StopMonitor(
                 thresholdFired = true
 
                 stopLocation?.let{(stopLat, stopLng) ->
-                    onThresholdReached(stopLat,stopLng, stopStartedAt!!)
+                    onThresholdReached(stopLat,stopLng, stopStartedAt!!.toEpochMilli())
                 }
             }
         }else{

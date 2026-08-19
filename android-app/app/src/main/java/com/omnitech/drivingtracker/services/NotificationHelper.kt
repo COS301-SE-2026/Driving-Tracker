@@ -56,6 +56,24 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         }
     }
 
+    fun showSafetyAlert(title: String, message: String, tripId: String){
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.TRIP_ALERTS)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_bell) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setFullScreenIntent(buildMainActivityIntent(Screen.LiveTrip.createRoute(tripId)), true)
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException){
+            //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show trip alert error")
+        }
+    }
+
     //Rest alerts after long drives with no breaks
     fun showRestAlert(title: String, message: String, tripId: String){
 
@@ -125,6 +143,25 @@ class NotificationHelper @Inject constructor(@param:ApplicationContext private v
         } catch (e: SecurityException) {
             //permission not granted by user
             Log.d("SHOW_NOTIFICATION", e.message?:"Show contact alert error")
+        }
+    }
+
+    //high priority alerts from trip shared with user
+    fun showHighContactAlert(title: String, message: String) {
+
+        val notification = NotificationCompat.Builder(context, NotificationChannels.CONTACT_ALERTS)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(R.drawable.ic_nav_contacts) //To be changed
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(buildMainActivityIntent("notifications"))
+            .setAutoCancel(true)
+
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
+        } catch (e: SecurityException) {
+            //permission not granted by user
+            Log.d("SHOW_NOTIFICATION", e.message?:"Show high-priority contact alert error")
         }
     }
     //Trip shared with you notification
