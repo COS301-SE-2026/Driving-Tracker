@@ -19,7 +19,9 @@ function to_number(value: any): number | null {//helper to convert prisma type t
 export async function update_vehicle_efficiency(trip_id:string,vehicle_id: string,user_id: string):Promise<{updated: boolean; trip_count: number; fuel_efficiency: number | null}>{
 
     const trip_count = await prisma.trips.count({
-        where:{trip_id:trip_id,
+        where:{
+            user_id:user_id,
+            vehicle_id,
             status:"COMPLETED"
         }
     });

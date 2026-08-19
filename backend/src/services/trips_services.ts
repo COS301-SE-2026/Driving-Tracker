@@ -10,6 +10,7 @@ import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
+import { update_vehicle_efficiency } from '../utils/trip_counter';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -357,8 +358,14 @@ export const trips_services ={
             }
             console.log("computing the scores");
             let computed_scores=null; 
-            if(data.status === "COMPLETED"){
+            const vehicle_id = trip.vehicle_id;
+            if(data.status === "COMPLETED" && trip.vehicle_id){
                 computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km);
+                setImmediate(() => {
+                    void update_vehicle_efficiency(data.trip_id, vehicle_id, data.user_id).catch((err) => {
+                        console.error("Background vehicle efficiency update failed", err);
+                    });
+                });
             }
             if(!computed_scores){
                 throw new Error("Computed scores came back as null ");
