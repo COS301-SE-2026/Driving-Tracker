@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -18,7 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -34,18 +39,40 @@ fun DeleteAccountDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text ("Delete Account") },
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(36.dp)
+            )
+        },
+        title = {
+            Text ("Are you sure you want to delete your account?",
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+            ) },
         text = {
             Column{
                 Text(
                     "This action is permanent and cannot be undone. " +
-                            "All your trips, badges, and data will be immediately deleted."
+                            "All your trips, badges, and data will be immediately deleted.",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    "Enter your password to confirm",
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = password,
                     onValueChange = {password = it},
-                    label = {Text("Confirm your password")},
+                    placeholder = {Text("Password")},
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     isError = errorMessage != null,
@@ -56,22 +83,29 @@ fun DeleteAccountDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(password)},
-                enabled = password.isNotBlank() && !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ){
-                if (isLoading){
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                }
-                else{
-                    Text("Delete Account")
-                }
+                onClick = onDismiss,
+                enabled = isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            )
+            {
+                Text("Cancel")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading){
-                Text("Cancel")
+            TextButton(
+                onClick = { onConfirm(password)},
+                enabled = password.isNotBlank() && !isLoading
+            ) {
+            if (isLoading){
+                CircularProgressIndicator(modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
+            else{
+                Text("Delete Account", color = MaterialTheme.colorScheme.error)
+            }
+        }
         }
     )
 }
