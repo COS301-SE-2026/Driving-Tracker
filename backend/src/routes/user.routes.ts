@@ -4,6 +4,6 @@ import user_controller from "../controllers/user_controller";
 
 const user_router = Router();
 
-user_router.delete("/users/me", verify_token, user_controller.delete_account);
+user_router.post("/users/me/delete", verify_token, user_controller.delete_account);
 
 export default user_router;
