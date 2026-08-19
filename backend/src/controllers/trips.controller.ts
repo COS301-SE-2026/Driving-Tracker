@@ -432,9 +432,7 @@ export const check_stop_event = async (req: AuthRequest, res: Response) => {
 
         return res.status(200).json({ 
             message: "Stop event check completed successfully",
-            data: {
-                check_stop_data: result
-            }
+            data: result
         });
 
     } catch(error: any){
