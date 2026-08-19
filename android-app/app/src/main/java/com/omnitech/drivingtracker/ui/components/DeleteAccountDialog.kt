@@ -56,8 +56,7 @@ fun DeleteAccountDialog(
         text = {
             Column{
                 Text(
-                    "This action is permanent and cannot be undone. " +
-                            "All your trips, badges, and data will be immediately deleted.",
+                    "This action is permanent",
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -84,7 +83,6 @@ fun DeleteAccountDialog(
         confirmButton = {
             Button(
                 onClick = onDismiss,
-                enabled = isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             )
             {
