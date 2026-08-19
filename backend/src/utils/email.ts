@@ -9,10 +9,15 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendAuthEmail = async (to: string, subject: string, html: string) => {
-    await transporter.sendMail({
-        from: `"Driving Tracker" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html
-    })
-}
+	try{
+		const info = await transporter.sendMail({
+			from: `Driving Tracker <${process.env.EMAIL_USER}>`,
+			to,
+			subject,
+			html
+		});
+		console.log('Email sent successfully:', info.messageId);
+	}catch(error){
+		console.log('Failed to send email', error)
+	}
+};

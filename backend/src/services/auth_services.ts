@@ -297,6 +297,10 @@ export const auth_services = {
 
         if(!user) throw new ValidationError("Incorrect username/email", "credentials");
 
+		if(!user.email_verified){
+			throw new ExtendedError("Please verify your email address before logging in.", "EMAIL_NOT_VERIFIED");
+		}
+
         const valid=await bcrypt.compare(password, user.password_hash);
 
         if(!valid) throw new ValidationError("Password incorrect","password");

@@ -81,6 +81,10 @@ const auth_controller={
                 return; 
             }
 
+			if(err instanceof ExtendedError){
+				return res.status(403).json({ error: err.errorCode, message: err.message });
+			}
+
             res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
             return;
             
@@ -166,7 +170,9 @@ const auth_controller={
         }
         try{
             await auth_services.verify_email(token);
-            res.status(200).json({ message: "Email verified successfully"});
+			//302 status code
+			return res.redirect("driving-tracker://verify-success");
+            //res.status(200).json({ message: "Email verified successfully"});
         }catch(err: any){
             if(err instanceof ValidationError){
                 return res.status(422).json({ error: err.errorCode, message: err.message})
