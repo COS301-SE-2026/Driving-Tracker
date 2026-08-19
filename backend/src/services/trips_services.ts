@@ -204,19 +204,11 @@ export const trips_services ={
                     make:true,
                     model:true,
                     year:true,
+                    fuel_efficiency:true
                 }
             });
 
-            if (vehicle_info?.make==null || vehicle_info?.model==null || vehicle_info?.year==null) {
-                console.log(vehicle_info?.make,vehicle_info?.model,vehicle_info?.year, "null if no valid");
-               throw new Error("No car info found in database");
-            }
-
-            const make = vehicle_info?.make;
-            const model = vehicle_info?.model;
-            const year = vehicle_info?.year;
-            
-            console.log(make, model , year , "checking the vehicles info ");
+        
 
             let fuel_est: number | null = null;
             let planned_distance_km: number | null = null;
@@ -231,25 +223,8 @@ export const trips_services ={
                     dest_lng: data.end_location.lng,
                 });
                 planned_distance_km = route.distance_km;
- 
                 
-                if(year >= 2015 && year <= 2020){
-                    console.log("Using the fetch vehicle benchmark");
-                    
-                    const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
-                    if (benchmark_trims.length === 0) {
-                        console.log("No Benchmark data");
-                        throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
-                    }
-    
-                    const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
-                    const lper100km = convert_mpg_to_lper_km(avg_mpg);
-    
-                    if (lper100km !== null) {
-                        fuel_est = (lper100km / 100) * planned_distance_km;
-                    }
-                }
-                // fuel_est = null;
+                fuel_est = (to_number(vehicle_info?.fuel_efficiency)??0 / 100) * planned_distance_km;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
@@ -370,18 +345,12 @@ export const trips_services ={
                 }
             });
             console.log("updated the trip status");
-            // revoke any active shares for this trip
-            // await prisma.trip_location_shares.updateMany({
-            //     where: { trip_id: data.trip_id, revoked_at: null },
-            //     data: { revoked_at: new Date() }
-            // });
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
-            //will need to calculate the scores separately to ensure the ai wont get in accurate readings from kotlin
-            //calculations for scores
+            
 
             if(!trip.vehicle_id ){
                 throw new Error("missing vehicle id");
@@ -389,7 +358,7 @@ export const trips_services ={
             console.log("computing the scores");
             let computed_scores=null; 
             if(data.status === "COMPLETED"){
-                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km,to_number(trip.fuel_estimate)??0);
+                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km);
             }
             if(!computed_scores){
                 throw new Error("Computed scores came back as null ");

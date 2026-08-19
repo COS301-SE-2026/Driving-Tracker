@@ -284,7 +284,7 @@ model vehicles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   trips        trips[]
-  fuel_tank    Decimal?       @db.Decimal(9, 6)
+  fuel_tank    Decimal       @db.Decimal(9, 6)
   fuel_efficiency Decimal?    @db.Decimal(9, 6)
   users_vehicles        users_vehicles[]
 }

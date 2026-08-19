@@ -13,7 +13,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             res.status(403).json({error: 'UNAUTHORIZED'});
             return ;
         }
-        const { vehicle_id, start_date, data_source, start_location, share_with_contacts,end_location}= req.body;
+        const { vehicle_id, start_date, data_source, start_location, share_with_contacts,end_location, fuel_level_start}= req.body;
 
         //sending to services
         const new_trip = await trips_services.create({
@@ -23,7 +23,8 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             data_source,
             start_location,
             end_location,
-            share_with_contacts
+            share_with_contacts,
+            fuel_level_start
         });
 
         res.status(200).json({
@@ -64,7 +65,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const { trip_id } = req.params;
         const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
-        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location } = req.body;
+        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location,fuel_level_end } = req.body;
 
         if(!user_id){
             res.status(403).json({
@@ -82,6 +83,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             end_location,
             fuel_estimate,
             status,
+            fuel_level_end
         });
 
         res.status(200).json({
