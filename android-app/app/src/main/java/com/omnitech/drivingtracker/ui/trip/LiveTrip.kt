@@ -62,6 +62,8 @@ import java.time.Instant
 import kotlinx.coroutines.delay
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.data.models.MapPoiItem
+import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
+import com.omnitech.drivingtracker.ui.theme.Warning
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -79,6 +81,7 @@ fun LiveTrip(
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
     val nearbyPois by viewModel.nearbyPois.collectAsState()
+    val safetyState by viewModel.safetyCheck.collectAsState()
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     val detourRoute by viewModel.detourRoute.collectAsState()
@@ -194,6 +197,19 @@ fun LiveTrip(
             viewModel.fetchMapToken()
             viewModel.observeTripEvents(tripId)
         }
+    }
+
+    if(safetyState.shouldPrompt){
+        SafetyPromptDialog(
+            address = safetyState.address?:"Unknown Location",
+            onConfirm = {
+                viewModel.resolveStopEvent(safetyState.stopEventId!!,  "ok")
+
+            },
+            onHelp = {
+                viewModel.confirmStopEvent(safetyState.stopEventId!!)
+            }
+        )
     }
 
     var isMinimized by remember {mutableStateOf(false)}

@@ -220,8 +220,6 @@ export const map_services ={
 
         const url = `https://atlas.microsoft.com/search/address/reverse/json?${params.toString()}`;
 
-        console.log("Reverse geocode URL:",  url);
-
         const response = await fetch(url);
 
         if(!response.ok){
@@ -229,8 +227,6 @@ export const map_services ={
         }
 
         const json = await response.json() as { addresses: any[] };
-
-        console.log('Full address object:', JSON.stringify(json.addresses?.[0], null, 2));
 
         const result = json.addresses?.[0];
 

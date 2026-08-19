@@ -297,4 +297,35 @@ class TripRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun confirmStopEvent(eventId: String): Result<StopEventConfirmData> {
+        return try {
+            val response = api.confirmStopEvent(eventId)
+            Log.d("StopMonitor", "Confirm stop event")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Confirm stop event failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to confirm stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Confirm stop event failed android")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resolveStopEvent(eventId: String, reason: String): Result<StopEventResolveData> {
+        return try {
+            val response = api.resolveStopEvent(eventId, StopEventResolveRequest(reason))
+
+            Log.d("StopMonitor", "Resolve stop event")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Resolve stop event failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to resolve stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Resolve stop event failed android")
+            Result.failure(e)
+        }
+    }
 }

@@ -1089,9 +1089,10 @@ export const trips_services ={
 
         const stopped_duration_minutes = Math.floor((Date.now() - stopped_at_date.getTime())/60_000);
 
-        const geocode = await map_services.reverse_geocode(lat, lng);
-
-        const nearby_pois_response = await map_services.get_nearby_pois(lat, lng, 10, 'all', POI_PROXIMITY_THRESHOLD_M + 100);
+        const [geocode, nearby_pois_response] = await Promise.all([
+            map_services.reverse_geocode(lat, lng),
+            map_services.get_nearby_pois(lat, lng, 10, 'all', POI_PROXIMITY_THRESHOLD_M + 100)
+        ]);
 
         const nearby_pois = (nearby_pois_response?? []).map((poi: any)=>({
             category: poi.category as string | null,
@@ -1161,8 +1162,6 @@ export const trips_services ={
                 already_handled: true
             };
         }
-
-        const { contact_user_ids } = await get_trip_shared_contacts(retrieved_event.trip_id);
 
         await notify_unexpected_stop(retrieved_event);
         
