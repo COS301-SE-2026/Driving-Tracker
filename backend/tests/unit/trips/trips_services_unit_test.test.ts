@@ -1400,5 +1400,59 @@ describe('Trips services.resolve__stop', () => {
         expect(mock_prisma.unexpected_stop_events.updateMany).not.toHaveBeenCalled();
     });
 
+
+});
+
+describe('Trips services.has_trip_resumed_movement', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns true when a reading was recorded after the stop', async () => {
+
+        const stopped_at = new Date('2026-08-20T10:00:00.000Z');
+        const last_recorded_at = new Date('2026-08-20T10:05:00.000Z');
+
+        mock_prisma.trips.findFirst.mockResolvedValue({
+            last_recorded_at,
+        });
+
+        const result = await trips_services.has_trip_resumed_movement('t1', stopped_at);
+        
+
+        expect(mock_prisma.trips.findFirst).toHaveBeenCalledWith({
+            where: {
+                trip_id: 't1',
+            },
+            select: {
+                last_recorded_at: true
+            },
+        });
+
+        expect(result).toBe(true);
+    });
+
+     it('returns false when no reading was recorded after the stop', async () => {
+
+        const stopped_at = new Date('2026-08-20T10:00:00.000Z');
+        const last_recorded_at = new Date('2026-08-20T09:55:00.000Z');
+
+        mock_prisma.trips.findFirst.mockResolvedValue({
+            last_recorded_at,
+        });
+
+        const result = await trips_services.has_trip_resumed_movement('t1', stopped_at);
+        
+
+        expect(mock_prisma.trips.findFirst).toHaveBeenCalledWith({
+            where: {
+                trip_id: 't1',
+            },
+            select: {
+                last_recorded_at: true
+            },
+        });
+
+        expect(result).toBe(false);
+    });
+
     
 });

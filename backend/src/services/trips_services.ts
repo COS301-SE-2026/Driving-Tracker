@@ -1217,14 +1217,14 @@ export const trips_services ={
     },
     async has_trip_resumed_movement(trip_id: string, stopped_at: Date){
 
-        const new_ping = await prisma.trip_readings.findFirst({
-            where: {
-                trip_id,
-                recorded_at: { gt: stopped_at },
-            }
+        const trip = await prisma.trips.findFirst({
+            where: { trip_id },
+            select: {
+                last_recorded_at: true,
+            },
         });
 
-        return new_ping !== null;
+        return Boolean(trip?.last_recorded_at && trip.last_recorded_at > stopped_at);
     }
     
 };
