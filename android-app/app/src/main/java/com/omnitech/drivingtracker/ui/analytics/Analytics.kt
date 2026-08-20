@@ -9,15 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,6 +43,7 @@ import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.*
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import java.util.Locale
 
 @Composable
 fun DriverAnalytics(navController: NavController ?= null){
@@ -107,11 +116,22 @@ fun DriverAnalytics(navController: NavController ?= null){
                         }
                     }
                 }
+
                 item{
                     HLine()
                 }
+
                 //Performance cards
+                item{
+                    PerformanceSection(91,84,7.2,6)
+                }
+
+                item{
+                    HLine()
+                }
+
                 //Driving Insights or Things to improve
+
             }
         }
     }
@@ -151,6 +171,127 @@ fun HLine(){
         thickness = 1.dp,
         color = MaterialTheme.colorScheme.outlineVariant
     )
+}
+
+@Composable
+fun PerformanceCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    value: String,
+    unit: String?,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+){
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+    ){
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ){
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Icon(icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = accentColor
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(title,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                //Arrow that takes you to the respective analysis category
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(value,
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp,
+                color = accentColor
+            )
+            Text(unit ?: "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun PerformanceSection(
+    safety: Int,
+    eco: Int,
+    fuel: Double,
+    events: Int
+){
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ){
+        Text("Performance",
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ){
+            PerformanceCard(
+                icon = Icons.Default.Shield,
+                title = "Safety",
+                value = "$safety",
+                unit = "/100",
+                accentColor = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.weight(1f)
+            )
+            PerformanceCard(
+                icon = Icons.Default.Eco,
+                title = "Eco",
+                value = "$eco",
+                unit = "/100",
+                accentColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ){
+            PerformanceCard(
+                icon = Icons.Default.LocalGasStation,
+                title = "Fuel",
+                value = String.format(Locale.getDefault(),"%.1f", fuel),
+                unit = "L/100",
+                accentColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+            PerformanceCard(
+                icon = Icons.Default.Warning,
+                title = "Events",
+                value = "$events",
+                unit = "",
+                accentColor = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
 }
 
 @Preview(showBackground = true)
