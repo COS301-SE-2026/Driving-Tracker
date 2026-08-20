@@ -236,15 +236,14 @@ export const auth_services = {
             }
         });
 
-        const resetUrl = `drivingtracker://reset-password?token=${resetToken}`;
+        const resetUrl = `driving-tracker://reset-password?token=${resetToken}`;
 
         await sendAuthEmail(
             email,
             "Reset your Driving Tracker Password",
             `<h1>Password Reset Request</h1>
-            <p>We received a request to reset your password. Use the token below in the app or click the link:</p>
-            <p><strong>Your Reset Token:</strong> ${resetToken}</p>
-            <a href="${resetUrl}" style="background: #4B2E83; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>We received a request to reset your password. Click the button to reset your password:</p>
+            <a href="${resetUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
             <p>This link will expire in 1 hour.</p>`
 
         );

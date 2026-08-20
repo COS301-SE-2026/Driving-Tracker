@@ -359,7 +359,7 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = "reset-password?token={token}",
                         deepLinks = listOf(
-                            navDeepLink { uriPattern = "driving-tracker://resetpassword?token={token}" }
+                            navDeepLink { uriPattern = "driving-tracker://reset-password?token={token}" }
                         ),
                         arguments = listOf(
                             navArgument("token"){
