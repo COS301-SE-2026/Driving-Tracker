@@ -2,7 +2,7 @@ import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { sendAuthEmail } from '../utils/email';
-import { generate_refresh_token, generate_token } from '../middleware/auth';
+import { generate_refresh_token } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
 import { AppJwtPayload } from '../middleware/auth';
@@ -63,7 +63,7 @@ async function generate_unique_username(name: string, surname: string) {
 export const auth_services = {
 
     async register (email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean)
-    :Promise<{user: any, refresh_token: string}>{
+    :Promise<{user: any}>{
         //validating all parameters
         if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
 
@@ -152,15 +152,15 @@ export const auth_services = {
 
 
                 //generating refresh token
-                const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+                // const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
 
-                await prisma.users.update({
-                    where: {user_id: user.user_id}, 
-                    data: {
-                        refresh_token, 
-                        refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
-                    },
-                });
+                // await prisma.users.update({
+                //     where: {user_id: user.user_id}, 
+                //     data: {
+                //         refresh_token, 
+                //         refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
+                //     },
+                // });
 
                 const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
                 await sendAuthEmail(
@@ -172,7 +172,7 @@ export const auth_services = {
                     <p>If you did not create this account, you may safely ignore this email.</p>`
                 );
 
-                return {user, refresh_token};
+                return {user};
             
             } catch (err: any) {
                 if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {

@@ -15,16 +15,10 @@ const auth_controller={
         const {email, username, password, name, surname, phone_number, dob, consent_status}=req.body;
 
         try{
-            //User and refresh token returned from service
-            const {user, refresh_token}=await auth_services.register(email,username,name,surname,password,phone_number,dob,consent_status);
+            await auth_services.register(email,username,name,surname,password,phone_number,dob,consent_status);
 
-            //Generating access token
-            const access_token=generate_token({sub: user.user_id, role: user.role});
-
-            //response body includes access token and refresh token for auto-login after signup
             return res.status(201).json({
-                token:access_token, 
-                refresh_token
+                message: "Registration successful. Please verify your email before logging in."
             });
 
         }catch(err:any){
@@ -44,6 +38,7 @@ const auth_controller={
             
         }
     },
+
     async login(req:Request, res: Response){
 
         const {identifier, password}=req.body;
