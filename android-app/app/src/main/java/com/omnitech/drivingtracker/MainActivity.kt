@@ -63,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.navDeepLink
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 
@@ -326,10 +327,47 @@ class MainActivity : ComponentActivity() {
 
                         LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
+
+                    composable(
+                        route = "verify-success",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://verify-success" }
+                        )
+                    ){
+                        LoginScreen(
+                            onLoginSuccess = { navigatePostAuth(navController) },
+                            onBackClick = { navController.popBackStack() },
+                            //verificationSuccess = true
+                        )
+                    }
+
+                    composable(
+                        route = "reset-password?token={token}",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://resetpassword?token={token}" }
+                        ),
+                        arguments = listOf(
+                            navArgument("token"){
+                                type = NavType.StringType
+                                defaultValue = " "
+                            }
+                        )
+                    ){ backStackEntry ->
+                        val token = backStackEntry.arguments?.getString("token") ?: ""
+
+//                        ResetPasswordScreen(
+//                            token = token,
+//                            onResetSuccess = {
+//                                navController.navigate(Screen.Login.route){
+//                                    popUpTo("reset-password"){
+//                                        inclusive = true
+//                                    }
+//                                }
+//                            },
+//                            onBackClick = { navController.popBackStack() }
+//                        )
+                    }
                 }
-
-
-
 
             }
         }

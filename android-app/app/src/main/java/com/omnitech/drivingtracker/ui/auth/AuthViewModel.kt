@@ -26,6 +26,7 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
             val code: String? = null,
             val message: String
         ) : UiState()
+        object SuccessWaitVerification : UiState()
     }
 
     private val _uiState= MutableStateFlow<UiState>(UiState.Idle)
@@ -64,7 +65,7 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
 
             repository.register(username, name, surname, email, password, phoneNumber, dob, consent_status).fold(
                 onSuccess = {
-                    _uiState.value = UiState.Success
+                    _uiState.value = UiState.SuccessWaitVerification
                 },
                 onFailure = { exception ->
                     when {

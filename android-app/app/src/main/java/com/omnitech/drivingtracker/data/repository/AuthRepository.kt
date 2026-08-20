@@ -38,28 +38,6 @@ class AuthRepository @Inject constructor(
             val response = api.register(
                 RegisterRequest(username,name,surname,email,password,phoneNumber,dob,consent_status)
             )
-            session_manager.saveTokens(response.token,response.refresh_token)
-
-            session_manager.getFcmToken()?.let{
-                api.registerFcmToken(RegisterFcmRequest(it))
-            }
-
-            val userId = session_manager.getUserIdFromToken()
-
-            if(!userId.isNullOrEmpty()){
-
-                val entity = UserEntity(
-                    userId = userId,
-                    username = username,
-                    name = name,
-                    surname = surname,
-                    email = email
-                )
-
-                session_manager.saveUserId(userId)
-
-                insertUser(entity)
-            }
 
             Result.success(Unit)
 
