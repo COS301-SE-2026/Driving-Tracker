@@ -24,11 +24,16 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
+import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.omnitech.drivingtracker.R
 
 @Composable
 fun SignUp(
     uiState: UiState = UiState.Idle,
-    onRegister: (String, String, String, String, String, String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _, _ -> }
+    onRegister: (String, String, String, String, String, String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _, _ -> },
+    onSignUpSuccess: () -> Unit = {}
 ) {
 
     var name by remember { mutableStateOf("") }
@@ -47,6 +52,45 @@ fun SignUp(
     var confirmPasswordVisible by remember { mutableStateOf(false)}
 
     val errorCode = (uiState as? UiState.Error)?.code
+
+    if(uiState is AuthViewModel.UiState.SuccessWaitVerification){
+        Dialog(onDismissRequest = onSignUpSuccess){
+            Card(
+                modifier = Modifier.clickable{ onSignUpSuccess() },
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(10.dp)
+            ){
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    //Logo
+                    Image(
+                        painter = painterResource(id = R.drawable.lg_nw2),
+                        contentDescription = "Driving Tracker logo",
+                        modifier = Modifier.size(280.dp)
+                    )
+
+                    //Description
+                    Text(
+                        text = "A verification link has been sent to your email address. Please verify your account to start tracking your driving.",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 24.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.Black
+                    )
+
+                    Text(
+                        text = "(Tap to return to login)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -351,7 +395,8 @@ fun SignUpScreen(
         uiState = uiState,
         onRegister = { username, name, surname, email, password, confirmPassword, phoneNumber, day, month, year, consent ->
             viewModel.register(username, name, surname, email, password,confirmPassword,phoneNumber, day, month, year,consent)
-        }
+        },
+        onSignUpSuccess = onSignUpSuccess
     )
 }
 

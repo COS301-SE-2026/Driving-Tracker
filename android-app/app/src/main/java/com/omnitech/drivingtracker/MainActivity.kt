@@ -229,7 +229,13 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = { navigatePostAuth(navController) },
+                            onSignUpSuccess = {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.Welcome.route) {
+                                        inclusive = false
+                                    }
+                                }
+                            },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
