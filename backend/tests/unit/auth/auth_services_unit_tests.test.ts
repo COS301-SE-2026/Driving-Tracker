@@ -73,7 +73,6 @@ describe('Auth services.register', () => {
         );
 
         expect(result.user.user_id).toBe('u1');
-        expect(result.refresh_token).toBeDefined();
     });
 
     it('throws when consent not accepted', async () => {
@@ -136,6 +135,7 @@ describe('Auth services.login', () => {
             email: 'test@example.com',
             password_hash: 'hashed_password',
             username: 'testuser',
+            email_verified: true,
         });
         mock_bcrypt.compare.mockResolvedValue(true);
 

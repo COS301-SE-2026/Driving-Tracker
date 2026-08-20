@@ -6,6 +6,7 @@ import request from 'supertest';
 import { describe, expect, it, beforeEach, afterAll, jest } from '@jest/globals';
 import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
+import { verify } from 'crypto';
 
 describe('Auth verify email integration test', () => {
 	afterAll(async () => {
@@ -40,7 +41,8 @@ describe('Auth verify email integration test', () => {
 			token: created!.verification_token,
 		});
 
-		expect(verifyRes.status).toBe(200);
+		expect(verifyRes.status).toBe(302);
+		expect(verifyRes.headers.location).toBe('driving-tracker://verify-success')
 
         const updated = await prisma.users.findUnique({
             where: { user_id: created!.user_id },

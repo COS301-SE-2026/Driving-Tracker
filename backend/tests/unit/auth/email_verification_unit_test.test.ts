@@ -8,18 +8,16 @@ jest.mock('../../../src/services/auth_services');
 describe('Auth controller email verification and password reset endpoints', () => {
     beforeEach(async () => jest.clearAllMocks());
 
-    it('returns 200 on verify_email success', async () => {
+    it('redirects on verify_email success', async () => {
         const req: any = { query: { token: 'ok-token' } };
-        const json = jest.fn();
-        const status = jest.fn().mockReturnValueOnce({ json });
-        const res: any = { status };
+        const redirect = jest.fn();
+        const res: any = { redirect };
 
         jest.spyOn(auth_services, 'verify_email').mockResolvedValueOnce(undefined);
 
         await auth_controller.verify_email(req, res);
 
-        expect(status).toHaveBeenCalledWith(200);
-        expect(json).toHaveBeenCalledWith({ message: 'Email verified successfully' });
+        expect(redirect).toHaveBeenCalledWith('driving-tracker://verify-success');
     });
 
     it('returns 400 when token is missing', async () => {

@@ -27,6 +27,7 @@ describe('Auth login integration test', () => {
 				phone_number: '+27123456789',
 				password_hash,
 				consent_status: true,
+				email_verified: true,
 			},
 		});
 		const response = await request(app).post('/api/auth/login').send({
