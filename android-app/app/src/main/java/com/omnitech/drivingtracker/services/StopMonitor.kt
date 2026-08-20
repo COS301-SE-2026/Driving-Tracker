@@ -11,7 +11,7 @@ class StopMonitor(
     private var thresholdFired = false
 
     companion object {
-        private val STOP_THRESHOLD = Duration.ofMinutes(1)
+        private val STOP_THRESHOLD = Duration.ofMinutes(15)
         private const val STOP_SPEED_THRESHOLD_KMH = 5f
     }
 

@@ -11,6 +11,8 @@ jest.mock('../../../src/services/map_services', () => ({
             traffic_delay_seconds: 0,
         }),
         search_address: jest.fn(),
+        reverse_geocode: jest.fn(),
+        get_nearby_pois: jest.fn(),
     },
 }));
 
@@ -19,6 +21,7 @@ jest.mock('../../../src/db/prisma', () => {
         create: jest.fn(),
         update: jest.fn(),
         findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
@@ -53,6 +56,11 @@ jest.mock('../../../src/db/prisma', () => {
     const trusted_contacts = {
         findMany: jest.fn(),
     };
+    const unexpected_stop_events = {
+        create: jest.fn(),
+        updateMany: jest.fn(),
+        findUnique: jest.fn(),
+    }
 
     return {
         __esModule: true,
@@ -65,6 +73,7 @@ jest.mock('../../../src/db/prisma', () => {
             trip_events,
             users,
             trusted_contacts,
+            unexpected_stop_events,
         })),
         users,
         trips,
@@ -74,6 +83,7 @@ jest.mock('../../../src/db/prisma', () => {
         trip_events,
         trip_location_shares,
         trusted_contacts,
+        unexpected_stop_events,
         },
     };
 });
@@ -85,6 +95,7 @@ jest.mock('../../../src/services/notification_service', () => ({
     notification_services: {
         send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         send_trip_alert_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        send_unexpected_stop_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
 }));
 jest.mock('../../../src/services/vehicle.services', () => ({
@@ -1054,4 +1065,340 @@ describe('Trips services.record_batch_trip_readings', () => {
             )
         ).rejects.toThrow('You do not own this trip');
     });
+});
+
+describe('Trips services.check_stop', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('checks stop successfully', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u1',
+        });
+
+        mock_map_services.reverse_geocode.mockResolvedValue({
+            address: 'Main Street',
+            road_use: ['LocalStreet'],
+            speed_limit: null,
+            municipality: 'Pretoria',
+            countryCode: 'Za'
+        });
+
+        mock_map_services.get_nearby_pois.mockResolvedValue([]);
+
+        mock_prisma.unexpected_stop_events.create.mockResolvedValue({
+            event_id: 'stop-1',
+            address: 'Main Street',
+            poi_category: null,
+        });
+
+        const result = await trips_services.check_stop('u1','t1', 25.23, -26.93, Date.now()-5*60*1000);
+
+        expect(mock_map_services.reverse_geocode).toHaveBeenCalledWith(25.23, -26.93);
+        expect(mock_map_services.get_nearby_pois).toHaveBeenCalledWith(
+            25.23, 
+            -26.93,
+            10,
+            'all',
+            400
+        );
+
+        expect(mock_prisma.unexpected_stop_events.create).toHaveBeenCalled();
+
+        expect(result).toEqual({
+            stop_event_id: 'stop-1',
+            classification: 'expected',
+            location_context: {
+                address: 'Main Street',
+                poi_category: null,
+            },
+            should_prompt: false,
+        });
+    });
+
+    it('throws when the trip is not found', async ()=>{
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.check_stop('u1','t1', 25.23, -26.93, Date.now()-5*60*1000)
+        ).rejects.toThrow('Trip not found');
+
+        expect(mock_map_services.reverse_geocode).not.toHaveBeenCalled();
+    });
+
+    it('throws when the user does not own the trip', async ()=>{
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u2',
+        });
+
+        await expect(
+            trips_services.check_stop('u1','t1', 25.23, -26.93, Date.now()-5*60*1000)
+        ).rejects.toThrow('You do not own this trip');
+
+        expect(mock_map_services.reverse_geocode).not.toHaveBeenCalled();
+    });
+
+    it('throws when coordinates are invalid', async ()=>{
+
+        await expect(
+            trips_services.check_stop('u1','t1', 0, 0, Date.now()-5*60*1000)
+        ).rejects.toThrow('Location coordinates missing or invalid');
+
+        expect(mock_map_services.reverse_geocode).not.toHaveBeenCalled();
+    });
+
+    it('throws when stopped_at is in the future', async ()=>{
+        mock_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: 't1',
+            user_id: 'u1',
+        });
+
+        await expect(
+            trips_services.check_stop('u1','t1', 25.23, -26.93, Date.now()+2*60*1000)
+        ).rejects.toThrow('stopped_at cannot be in the future');
+
+        expect(mock_map_services.reverse_geocode).not.toHaveBeenCalled();
+    });
+    
+});
+
+describe('Trips services.confirm_stop', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('confirms a possible stop successfully', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            trip_id: 't1',
+            address: 'Main Street',
+            stopped_at: new Date(Date.now() - 5 * 60 * 1000),
+            status: 'possible',
+        });
+
+        mock_prisma.unexpected_stop_events.updateMany.mockResolvedValue({
+            count: 1,
+        });
+
+
+        mock_prisma.trips.findUniqueOrThrow.mockResolvedValue({
+            users: {
+                username: 'driver',
+                name: 'jeff',
+                surname: 'driver'
+            },
+        });
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([]);
+
+        const result = await trips_services.confirm_stop('u1', 'stop-1');
+        
+        expect(mock_prisma.users.findUnique).toHaveBeenCalledWith({
+            where: { user_id: 'u1' },
+        });
+
+        expect(mock_prisma.unexpected_stop_events.updateMany).toHaveBeenCalledWith({
+            where: {
+                event_id: 'stop-1',
+                status: 'possible',
+            },
+            data: {
+                status: 'confirmed',
+                escalated_at: expect.any(Date),
+            },
+        });
+
+        expect(result).toEqual({
+            status: 'confirmed',
+            already_handled: false,
+        });
+    });
+
+    it('returns already_handled when stop no longer possible', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            status: 'resolved_ok',
+        });
+
+        mock_prisma.unexpected_stop_events.updateMany.mockResolvedValue({
+            count: 0,
+        });
+
+        const result = await trips_services.confirm_stop('u1', 'stop-1');
+
+        expect(result).toEqual({
+            status: 'resolved_ok',
+            already_handled: true,
+        });
+    });
+
+    it('throws when the user is not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.confirm_stop('u1','stop-1')
+        ).rejects.toThrow('user not found');
+
+        expect(mock_prisma.unexpected_stop_events.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('throws when stop event not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.confirm_stop('u1','stop-1')
+        ).rejects.toThrow('event not found');
+
+    });
+
+});
+
+describe('Trips services.resolve__stop', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('resolves a stop as moved', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            trips: {
+                user_id: 'u1',
+            },
+        });
+
+        mock_prisma.unexpected_stop_events.updateMany.mockResolvedValue({
+            count: 1,
+        });
+
+        const result = await trips_services.resolve_stop('u1', 'stop-1', 'moved');
+        
+
+        expect(mock_prisma.unexpected_stop_events.updateMany).toHaveBeenCalledWith({
+            where: {
+                event_id: 'stop-1',
+                status: 'possible',
+            },
+            data: {
+                status: 'resolved_moved',
+                resolved_at: expect.any(Date),
+            },
+        });
+
+        expect(result).toEqual({
+            resolved: true,
+        });
+    });
+
+    it('resolves a stop as moved', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            trips: {
+                user_id: 'u1',
+            },
+        });
+
+        mock_prisma.unexpected_stop_events.updateMany.mockResolvedValue({
+            count: 1,
+        });
+
+        const result = await trips_services.resolve_stop('u1', 'stop-1', 'safe');
+        
+
+        expect(mock_prisma.unexpected_stop_events.updateMany).toHaveBeenCalledWith({
+            where: {
+                event_id: 'stop-1',
+                status: 'possible',
+            },
+            data: {
+                status: 'resolved_ok',
+                resolved_at: expect.any(Date),
+            },
+        });
+
+        expect(result).toEqual({
+            resolved: true,
+        });
+    });
+
+    it('returns false when the stop was already handled', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            trips: {
+                user_id: 'u1',
+            },
+        });
+
+        mock_prisma.unexpected_stop_events.updateMany.mockResolvedValue({
+            count: 0,
+        });
+
+        const result = await trips_services.resolve_stop('u1', 'stop-1', 'moved');
+
+        expect(result).toEqual({
+            resolved: false,
+        });
+    });
+
+    it('throws when the reason is missing', async () => {
+        
+        await expect(
+            trips_services.resolve_stop('u1', 'stop-1', '')
+        ).rejects.toThrow('reason missing');
+
+        expect(mock_prisma.users.findUnique).not.toHaveBeenCalled();
+
+    });
+
+    it('throws when the user is not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.resolve_stop('u1', 'stop-1', 'moved')
+        ).rejects.toThrow('user not found');
+    });
+
+    it('throws when the stop event is not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.resolve_stop('u1', 'stop-1', 'moved')
+        ).rejects.toThrow('event not found');
+    });
+   
+    it('throws when the stop event is not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
+        mock_prisma.unexpected_stop_events.findUnique.mockResolvedValue({
+            event_id: 'stop-1',
+            trips: {
+                user_id: 'u2',
+            },
+        });
+
+        await expect(
+            trips_services.resolve_stop('u1', 'stop-1', 'moved')
+        ).rejects.toThrow('cannot access event');
+
+        expect(mock_prisma.unexpected_stop_events.updateMany).not.toHaveBeenCalled();
+    });
+
+    
 });
