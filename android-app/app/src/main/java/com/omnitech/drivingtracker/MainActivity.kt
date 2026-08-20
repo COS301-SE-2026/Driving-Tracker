@@ -65,7 +65,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.navDeepLink
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
+import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
+import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -112,6 +114,8 @@ sealed class Screen(val route: String){
     data object Profile : Screen("profile")
 
     data object More : Screen("more")
+
+    data object ForgotPassword : Screen("forgot_password")
 }
 
 @AndroidEntryPoint
@@ -223,6 +227,7 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
+                            navController = navController,
                             onLoginSuccess = { navigatePostAuth(navController) },
                             onBackClick = { navController.popBackStack() }
                         )
@@ -239,6 +244,10 @@ class MainActivity : ComponentActivity() {
                             onBackClick = { navController.popBackStack() }
                         )
                     }
+                    composable(Screen.ForgotPassword.route){
+                        ForgotPasswordScreen(onBackClick =  { navController.popBackStack() })
+                    }
+
                     composable(Screen.Dashboard.route){
                         Dashboard(navController = navController)
                     }
@@ -355,23 +364,21 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(
                             navArgument("token"){
                                 type = NavType.StringType
-                                defaultValue = " "
                             }
                         )
                     ){ backStackEntry ->
                         val token = backStackEntry.arguments?.getString("token") ?: ""
 
-//                        ResetPasswordScreen(
-//                            token = token,
-//                            onResetSuccess = {
-//                                navController.navigate(Screen.Login.route){
-//                                    popUpTo("reset-password"){
-//                                        inclusive = true
-//                                    }
-//                                }
-//                            },
-//                            onBackClick = { navController.popBackStack() }
-//                        )
+                        ResetPasswordScreen(
+                            token = token,
+                            onResetSuccess = {
+                                navController.navigate(Screen.Login.route){
+                                    popUpTo(Screen.Welcome.route){
+                                        inclusive = false
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
 
