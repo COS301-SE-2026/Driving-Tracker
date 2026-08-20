@@ -20,5 +20,6 @@ auth_router.get("/profile", verify_token, user_based_limiter, auth_controller.ge
 auth_router.get("/verify_email", auth_controller.verify_email);
 auth_router.post("/forgot_password", forgot_password_limiter, auth_controller.forgot_password);
 auth_router.post("/reset_password", reset_password_limiter, auth_controller.reset_password);
+auth_router.get("/reset_password_link", auth_controller.reset_password_link);
 
 export default auth_router;

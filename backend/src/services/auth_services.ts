@@ -236,7 +236,7 @@ export const auth_services = {
             }
         });
 
-        const resetUrl = `driving-tracker://reset-password?token=${resetToken}`;
+        const resetUrl = `${process.env.APP_URL}/api/auth/reset_password_link?token=${encodeURIComponent(resetToken)}`;
 
         await sendAuthEmail(
             email,

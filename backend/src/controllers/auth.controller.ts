@@ -186,6 +186,21 @@ const auth_controller={
         }
     },
 
+    async reset_password_link(req: Request, res: Response){
+        const token = typeof req.query.token === "string" ? req.query.token : "";
+        if(!token){
+            return res.status(400).json({
+                error: "INVALID_TOKEN",
+                message: "Reset token is required"
+            });
+        }
+
+        return res.redirect(
+            `driving-tracker://reset-password?token=${encodeURIComponent(token)}`
+        );
+
+    },
+
     async reset_password(req: Request, res: Response){
         const { token, password } = req.body;
         try{
