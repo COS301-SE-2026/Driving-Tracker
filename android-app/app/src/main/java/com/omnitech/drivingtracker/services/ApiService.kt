@@ -47,6 +47,12 @@ interface ApiService{
     @POST("api/auth/register")
     suspend fun register(@Body body: RegisterRequest): RegisterResponse
 
+    @POST("api/auth/forgot_password")
+    suspend fun forgotPassword(@Body body : ForgotPasswordRequest) : GenericResponse
+
+    @POST("api/auth/reset_password")
+    suspend fun resetPassword(@Body body : ResetPasswordRequest) : GenericResponse
+
     @POST("api/auth/logout")
     suspend fun logout(): LogoutResponse
 

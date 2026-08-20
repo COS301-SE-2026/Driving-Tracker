@@ -84,6 +84,34 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         }
     }
 
+    fun forgotPassword(email: String){
+        viewModelScope.launch{
+            _uiState.value = UiState.Loading
+            repository.forgotPassword(email).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = { handleError(it) }
+            )
+        }
+    }
+
+    fun resetPassword(token: String, newPassword: String){
+        viewModelScope.launch{
+            _uiState.value = UiState.Loading
+            repository.resetPassword(token, newPassword).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = { handleError(it) }
+            )
+        }
+    }
+
+    private fun handleError(exception: Throwable){
+        if(exception is ApiException){
+            _uiState.value = UiState.Error(code = exception.errorCode, message = exception.errorMessage ?: "Error")
+        }else{
+            _uiState.value = UiState.Error(message = exception.message ?: "Something went wrong")
+        }
+    }
+
     fun login(
         identifier: String,
         password: String

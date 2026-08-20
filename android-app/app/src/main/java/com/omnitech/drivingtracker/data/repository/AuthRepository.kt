@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.db.daos.UserDao
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 import com.omnitech.drivingtracker.data.local.SessionManager
+import com.omnitech.drivingtracker.data.models.ForgotPasswordRequest
 import com.omnitech.drivingtracker.data.models.LoginRequest
 import com.omnitech.drivingtracker.data.models.LogoutResponse
 import com.omnitech.drivingtracker.data.models.RegisterFcmRequest
@@ -14,6 +15,7 @@ import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.ProfileData
+import com.omnitech.drivingtracker.data.models.ResetPasswordRequest
 
 class AuthRepository @Inject constructor(
     private val api: ApiService,
@@ -118,6 +120,26 @@ class AuthRepository @Inject constructor(
             session_manager.clearTokens()
         }
 
+    }
+
+    suspend fun forgotPassword(email : String) : Result<Unit> = try{
+        api.forgotPassword(ForgotPasswordRequest(email))
+        Result.success(Unit)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to send reset email"))
+    }catch(e: Exception){
+        Result.failure(e)
+    }
+
+    suspend fun resetPassword(token : String, newPassword: String) : Result<Unit> = try{
+        api.resetPassword(ResetPasswordRequest(token, newPassword))
+        Result.success(Unit)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to reset password"))
+    }catch(e: Exception){
+        Result.failure(e)
     }
 
 }
