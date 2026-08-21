@@ -259,6 +259,16 @@ class TripTrackingService: Service() {
             reading.speedKmh
         }
 
+        val safetyState =  tripStateManager.safetyCheck.value
+        if(safetyState.shouldPrompt && currentSpeed > 10f){
+            serviceScope.launch {
+                safetyState.stopEventId?.let { id ->
+                    tripRepository.resolveStopEvent(id, "movement")
+                    tripStateManager.clearSafetyCheck()
+                }
+            }
+        }
+
         val recordedAt = runCatching {
             Instant.parse(reading.timestamp).toEpochMilli()
         }.getOrDefault(System.currentTimeMillis())
