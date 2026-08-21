@@ -848,6 +848,44 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to log unexpected stop event"}));
         });
 
+        it('Returns 400 when location coordinates are invalid', async () => {
+            jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('Location coordinates missing'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {
+                    location: { lat: 0.0, lng: 0.0},
+                    stopped_at: Date.now() - 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_LOCATION', message: 'Location coordinates missing or invalid'}));
+        });
+
+        it('Returns 422 when stopped_at is in the future', async () => {
+            jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('stopped_at cannot be in the future'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {
+                    location: { lat: 0.0, lng: 0.0},
+                    stopped_at: Date.now() + 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_STOP', message: 'Stopped_at cannot be in the future'}));
+        });
+
         it('Returns 500 on unexpected error', async () => {
             jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('Db crash'));
 
@@ -1024,6 +1062,22 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'REASON_MISSING', message: 'Reason parameter needed'}));
         });
 
+        it('Returns 403 when user does not own the event or trip', async () => {
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('cannot access event'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {}
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message: 'Cannot access this event'}));
+        });
+
          it('Returns 403 when the user is not found', async () => {
             jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('user not found'));
 
@@ -1046,6 +1100,7 @@ describe('Trips endpoints unit tests', ()=>{
             const req: any = {
                 user: { sub: 'user-1' },  
                 params: { event_id: 'event-1'},
+                body: { reason: 'moved'},
             };
             const res: any = make_res();
 

@@ -166,7 +166,7 @@ export const notification_services= {
         await getMessaging().sendEachForMulticast({
             fids: fcm_tokens,
             notification: {
-                title: "Unexpected stop",
+                title: "Unexpected Stop",
                 body: message
             },
             data: {
@@ -176,8 +176,8 @@ export const notification_services= {
             }
         }).catch( (err: any) => {
             const errorMessage = err instanceof Error? err.message: String(err);
-            console.error("Failed to trip alert: ", errorMessage)
-            throw new ExtendedError("Could not send trip alert notification","COULD_NOT_SEND_NOTIFICATION"); 
+            console.error("Failed to send stop alert: ", errorMessage)
+            throw new ExtendedError("Could not send unexpected stop notification","COULD_NOT_SEND_NOTIFICATION"); 
         });
     },
     //Fetch users notifications
