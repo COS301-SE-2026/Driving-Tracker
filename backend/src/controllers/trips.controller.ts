@@ -409,3 +409,159 @@ export const get_trips_shared_with_me = async (req: AuthRequest, res: Response) 
         });
     }
 }
+
+export const check_stop_event = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Unauthorized to log unexpected stop event" 
+            });
+            return;
+        }
+
+    const { trip_id } = req.params;
+
+    const { location, stopped_at} = req.body;
+
+    try{
+
+        const result = await trips_services.check_stop(user_id, trip_id, location.lat, location.lng, stopped_at);
+
+        return res.status(200).json({ 
+            message: "Stop event check completed successfully",
+            data: result
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("Location coordinates missing")){
+                res.status(400).json({ 
+                    error: "INVALID_LOCATION", 
+                    message: "Location coordinates missing or invalid" 
+                });
+        }
+
+        if (error.message.includes("stopped_at cannot be in the future")){
+                res.status(422).json({ 
+                    error: "INVALID_STOP", 
+                    message: "Stopped_at cannot be in the future" 
+                });
+        }
+
+        res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully check stop"
+        });
+    }
+}
+
+export const confirm_stop_event = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Unauthorized to confirm unexpected stop event" 
+            });
+            return;
+        }
+
+    const { event_id } = req.params;
+
+    try{
+
+        const result = await trips_services.confirm_stop(user_id, event_id);
+
+        return res.status(200).json({ 
+            message: "Unexpected stop confirmed",
+            data: result
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("user not found")){
+            return res.status(403).json({ 
+                error: "USER_NOT_FOUND", 
+                message: "User not found" 
+            });
+        }
+
+        if (error.message.includes("event not found")){
+            return res.status(400).json({ 
+                error: "EVENT_NOT_FOUND", 
+                message: "Unexpected stop event not found" 
+            });
+        }
+
+        return res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully confirm stop"
+        });
+    }
+}
+
+export const resolve_stop_event = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Unauthorized to resolve unexpected stop event" 
+            });
+            return;
+        }
+
+    const { event_id } = req.params;
+
+    const { reason } = req.body;
+
+    try{
+
+        const result = await trips_services.resolve_stop(user_id, event_id, reason);
+
+        return res.status(200).json({ 
+            message: "Unexpected stop resolved",
+            data: result
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("user not found")){
+            return res.status(403).json({ 
+                error: "USER_NOT_FOUND", 
+                message: "User not found" 
+            });
+        }
+
+        if (error.message.includes("event not found")){
+            return res.status(400).json({ 
+                error: "EVENT_NOT_FOUND", 
+                message: "Unexpected stop event not found" 
+            });
+        }
+
+        if (error.message.includes('reason missing')){
+            return res.status(422).json({ 
+                error: "REASON_MISSING", 
+                message: "Reason parameter needed" 
+            });
+        }
+
+        if (error.message.includes('cannot access event')){
+            return res.status(403).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Cannot access this event" 
+            });
+        }
+
+        return res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully resolve stop"
+        });
+    }
+}

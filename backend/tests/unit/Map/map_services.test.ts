@@ -305,3 +305,73 @@ describe('map services get nearby pois', ()=>{
   
 });
 
+
+describe('map services get reverse geocode', ()=>{
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('returns mapped reverse-geocode data on success', async()=>{
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async ()=>({
+                    addresses:[
+                        {
+                            address:{ 
+                                freeformAddress: '1 Microsoft Way, Redmond, WA',
+                                municipality: 'Pretoria',
+                                countryCode: 'ZA',
+                                speedLimit: 60,
+                            },
+                            roadUse: 'Arterial'
+                        },
+                    ],
+                }),
+            })
+        );
+
+        const result = await map_services.reverse_geocode(47.6455, -122.1399);
+
+        expect(result).toEqual({
+            address: '1 Microsoft Way, Redmond, WA',
+            road_use: 'Arterial',
+            speed_limit: 60,
+            municipality: 'Pretoria',
+            countryCode: 'ZA',
+        });
+    });
+
+    it('throws when location coordinates are missing/invalid', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => ({ addresses: [] }),
+            })
+        );
+
+        const lat=0.0;
+        const lng=0.0;
+
+        await expect(
+            map_services.reverse_geocode(lat, lng)
+        ).rejects.toThrow('Location coordinates missing or invalid');
+ 
+    });
+
+    it('throws when azure returns error', async () => {
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'Azure rejected the request',
+            })
+        );
+
+        await expect(
+            map_services.reverse_geocode(47.6455, -122.1399)
+        ).rejects.toThrow('Azure Maps request failed: 500 Internal Server Error');
+ 
+    });
+  
+});
+

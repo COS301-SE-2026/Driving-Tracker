@@ -151,4 +151,22 @@ interface ApiService{
 
     @GET("trips/shared_with_me")
     suspend fun getTripsSharedWithMe(): SharedWithMeResponse
+
+    @POST("trips/{trip_id}/stop_event/check")
+    suspend fun checkStopEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: StopEventCheckRequest
+    ): StopEventCheckResponse
+
+    @POST("trips/{event_id}/stop_event/confirm")
+    suspend fun confirmStopEvent(
+        @Path("event_id") eventId: String
+    ): StopEventConfirmResponse
+
+    @POST("trips/{event_id}/stop_event/resolve")
+    suspend fun resolveStopEvent(
+        @Path("event_id") eventId: String,
+        @Body body: StopEventResolveRequest
+    ): StopEventResolveResponse
+
 }

@@ -162,6 +162,150 @@ export interface trip_events_log{
     recorded_at: Date;
 }
 
+type road_use = 'LimitedAccess' | 'Arterial' | 'Terminal' | 'Ramp' | 'Entrance Ramp'| 'Rotary' | 'LocalStreet';
+
+export interface classify_input{
+    road_use: road_use[] | null;
+    nearby_pois: { category: string | null; distance_meters: number }[];
+    stopped_duration_minutes: number;
+}
+
+const HIGH_RISK_ROADS: road_use[] = ['LimitedAccess', 'Ramp','Entrance Ramp', 'Rotary'];
+const LOW_RISK_ROADS: road_use[] = ['LocalStreet', 'Terminal'];
+
+export const STOP_EVENT_STATUS = {
+    POSSIBLE: 'possible',
+    CONFIRMED: 'confirmed',
+    RESOLVED_OK: 'resolved_ok',
+    RESOLVED_MOVED: 'resolved_moved',
+} as const;
+
+export type STOP_EVENT_STATUS = typeof STOP_EVENT_STATUS[keyof typeof STOP_EVENT_STATUS];
+
+const EXPECTED_STOP_CATEGORIES = [
+    'PETROL_STATION', 'OPEN_PARKING_AREA',
+    'SHOP','RESTAURANT', 'REST_AREA', 'HOTEL_MOTEL',
+    'HOSPITAL','SHOPPING_CENTER', 'CAFE_PUB','MARKET',
+    'RESIDENTIAL_ACCOMMODATION', 'COMPANY'
+]
+
+const POI_PROXIMITY_THRESHOLD_M = 300;
+
+const CHECK_AFTER_GRACE_MS = 2*60*1000;
+
+export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}: classify_input){
+
+    const road_use_arr = road_use ?? []
+
+    const is_high_risk = road_use_arr.some(r => HIGH_RISK_ROADS.includes(r));
+    const is_low_risk = road_use_arr.some(r => LOW_RISK_ROADS.includes(r));
+
+    const closest_relevant_poi = nearby_pois.filter(p => p.category && EXPECTED_STOP_CATEGORIES.includes(p.category))
+        .sort((a, b) => a.distance_meters - b.distance_meters)[0];
+
+    const near_expected_poi = closest_relevant_poi && closest_relevant_poi.distance_meters <= POI_PROXIMITY_THRESHOLD_M;
+
+    //high risk road use 
+    if(is_high_risk) {
+        //but near an expected poi
+        if(near_expected_poi){
+            return {
+                classification: 'ambiguous',
+                poi_category: closest_relevant_poi.category
+            };
+        }
+
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+        
+    }
+
+    if(near_expected_poi){
+        return {
+            classification: 'expected',
+            poi_category: closest_relevant_poi.category
+        };
+    }
+
+    if(is_low_risk){
+        if(stopped_duration_minutes >= 60){
+            return {
+                classification: 'ambiguous',
+                poi_category: null
+            }
+        }
+
+        return {
+            classification: 'expected',
+            poi_category: null
+        }
+    }
+
+    //llean on duration when other metrics unavailable
+    if(stopped_duration_minutes >= 30){
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+    }
+
+    return {
+        classification: 'ambiguous',
+        poi_category: null
+    };
+}
+
+export async function notify_unexpected_stop(
+    event: {
+        event_id: string; 
+        trip_id: string; 
+        address: string | null;
+        stopped_at: Date;
+    }){
+
+    const trip = await prisma.trips.findUniqueOrThrow({
+        where: { trip_id: event.trip_id },
+        include:{ users: true }
+    });
+
+    const user = trip.users;
+
+    const { contact_user_ids }= await get_trip_shared_contacts(event.trip_id);
+
+    if(contact_user_ids.length === 0){
+        return;
+    }
+
+    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+    const local_date = addHours(new Date(event.stopped_at), 2);
+
+    const formatted_date = format(local_date, 'MMM d, yyy h:mm a');
+
+    const messageNoti = event.address? `${full_name} stopped near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location`;
+
+    const message = event.address? `${full_name} made an unexpected stop near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location for an extended period`;
+
+    const event_ids = new Array(contact_user_ids.length).fill(event.event_id);
+    
+    await add_notification({
+        user_ids: contact_user_ids,
+        type: "TRIP_ALERT",
+        title: "Unexpected stop",
+        body: message,
+        reference_ids: event_ids,
+        reference_type: "unexpected_stop_events",
+    });
+
+    //Get tokens for sending push notifications to contacts
+    const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+    await notification_services.send_unexpected_stop_notification(fcm_tokens, event.trip_id, event.event_id, messageNoti);
+
+}
+
 export const trips_services ={
     async create(data: create_trip){
         console.log("Starting trip");
@@ -916,5 +1060,171 @@ export const trips_services ={
         }))??[];
 
         return result;
+    },
+    //checks a stop and classifies it
+    async check_stop(user_id: string, trip_id: string, lat: number, lng: number, stopped_at: number){
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const trip = await prisma.trips.findUnique({
+                where: { trip_id: trip_id },
+                select: { user_id: true }
+            });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+        
+        if(trip.user_id !== user_id){
+            throw new Error("You do not own this trip");
+        }
+
+        const stopped_at_date = new Date(stopped_at);
+
+        if(stopped_at_date.getTime()>Date.now()+60_000){
+            throw new Error("stopped_at cannot be in the future");
+        }
+
+        const stopped_duration_minutes = Math.floor((Date.now() - stopped_at_date.getTime())/60_000);
+
+        const [geocode, nearby_pois_response] = await Promise.all([
+            map_services.reverse_geocode(lat, lng),
+            map_services.get_nearby_pois(lat, lng, 10, 'all', POI_PROXIMITY_THRESHOLD_M + 100)
+        ]);
+
+        const nearby_pois = (nearby_pois_response?? []).map((poi: any)=>({
+            category: poi.category as string | null,
+            distance_meters: poi.distanceMeters as number,
+        }));
+
+        const { classification, poi_category } = classify_stop({road_use: geocode.road_use, nearby_pois, stopped_duration_minutes});
+
+        const check_after = new Date(Date.now() + CHECK_AFTER_GRACE_MS);
+
+        const event = await prisma.unexpected_stop_events.create({
+            data: {
+                trip_id,
+                status: STOP_EVENT_STATUS.POSSIBLE,
+                classification,
+                latitude: lat,
+                longitude: lng,
+                address: geocode.address,
+                poi_category,
+                stopped_at: stopped_at_date,
+                check_after,
+            },
+        });
+
+        return {
+            stop_event_id: event.event_id,
+            classification,
+            location_context: {
+                address: event.address,
+                poi_category: event.poi_category,
+            },
+            should_prompt: classification !== 'expected',
+        };
+        
+    },
+    //confirms a stop event
+    async confirm_stop(user_id: string, event_id: string){
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error("user not found");
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status: STOP_EVENT_STATUS.CONFIRMED, escalated_at: new Date() },
+        });
+
+        if(result.count == 0){
+             const existing = await prisma.unexpected_stop_events.findUnique({
+                where: { event_id }
+            });
+
+            return {
+                status: existing?.status ?? 'unknown', 
+                already_handled: true
+            };
+        }
+
+        await notify_unexpected_stop(retrieved_event);
+        
+        return {
+            status: STOP_EVENT_STATUS.CONFIRMED, 
+            already_handled: false
+        };
+    },
+    //resolve stop event
+    async resolve_stop(user_id: string, event_id: string, reason: string){
+
+        if(!reason || reason.trim().length == 0){
+            throw new Error('reason missing');
+        }
+
+        const status = reason == 'moved'? STOP_EVENT_STATUS.RESOLVED_MOVED : STOP_EVENT_STATUS.RESOLVED_OK;
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error('user not found');
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id },
+            select: {
+                trips: {
+                    select: {
+                        user_id: true
+                    }
+                }
+            }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
+        if(retrieved_event.trips.user_id !== user_id){
+            throw new Error('cannot access event');
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status, resolved_at: new Date() },
+        });
+
+        return {
+            resolved: result.count > 0
+        };
+    },
+    async has_trip_resumed_movement(trip_id: string, stopped_at: Date){
+
+        const trip = await prisma.trips.findFirst({
+            where: { trip_id },
+            select: {
+                last_recorded_at: true,
+            },
+        });
+
+        return Boolean(trip?.last_recorded_at && trip.last_recorded_at > stopped_at);
     }
+    
 };
