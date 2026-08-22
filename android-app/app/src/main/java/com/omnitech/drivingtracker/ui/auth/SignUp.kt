@@ -32,7 +32,7 @@ import com.omnitech.drivingtracker.R
 @Composable
 fun SignUp(
     uiState: UiState = UiState.Idle,
-    onRegister: (String, String, String, String, String, String, String, String, String, String, Boolean) -> Unit = { _, _, _, _, _, _, _, _, _, _, _ -> },
+    onRegister: (RegistrationData) -> Unit = { _ -> },
     onSignUpSuccess: () -> Unit = {}
 ) {
 
@@ -351,19 +351,20 @@ fun SignUp(
 
                 Button(
                     onClick = {
-                            username = "$name $surname"
                             onRegister(
-                                username,
-                                name,
-                                surname,
-                                email,
-                                password,
-                                confirmPassword,
-                                phoneNumber,
-                                day,
-                                month,
-                                year,
-                                consent_status
+                                RegistrationData(
+                                    username = "$name $surname",
+                                    name = name,
+                                    surname = surname,
+                                    email = email,
+                                    password = password,
+                                    confirmPassword = confirmPassword,
+                                    phoneNumber = phoneNumber,
+                                    day = day,
+                                    month = month,
+                                    year = year,
+                                    consent_status = consent_status
+                                )
                             )
                     },
                     modifier = Modifier
@@ -393,9 +394,7 @@ fun SignUpScreen(
 
     SignUp(
         uiState = uiState,
-        onRegister = { username, name, surname, email, password, confirmPassword, phoneNumber, day, month, year, consent ->
-            viewModel.register(username, name, surname, email, password,confirmPassword,phoneNumber, day, month, year,consent)
-        },
+        onRegister = { data -> viewModel.register(data) },
         onSignUpSuccess = onSignUpSuccess
     )
 }
