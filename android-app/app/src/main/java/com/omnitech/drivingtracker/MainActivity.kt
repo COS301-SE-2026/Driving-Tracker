@@ -63,8 +63,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.navDeepLink
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
+import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
+import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -111,6 +114,8 @@ sealed class Screen(val route: String){
     data object Profile : Screen("profile")
 
     data object More : Screen("more")
+
+    data object ForgotPassword : Screen("forgot_password")
 }
 
 @AndroidEntryPoint
@@ -222,16 +227,27 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
+                            navController = navController,
                             onLoginSuccess = { navigatePostAuth(navController) },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = { navigatePostAuth(navController) },
+                            onSignUpSuccess = {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.Welcome.route) {
+                                        inclusive = false
+                                    }
+                                }
+                            },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
+                    composable(Screen.ForgotPassword.route){
+                        ForgotPasswordScreen(onBackClick =  { navController.popBackStack() })
+                    }
+
                     composable(Screen.Dashboard.route){
                         Dashboard(navController = navController)
                     }
@@ -326,10 +342,45 @@ class MainActivity : ComponentActivity() {
 
                         LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
+
+                    composable(
+                        route = "verify-success",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://verify-success" }
+                        )
+                    ){
+                        LoginScreen(
+                            onLoginSuccess = { navigatePostAuth(navController) },
+                            onBackClick = { navController.popBackStack() },
+                            //verificationSuccess = true
+                        )
+                    }
+
+                    composable(
+                        route = "reset-password?token={token}",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://reset-password?token={token}" }
+                        ),
+                        arguments = listOf(
+                            navArgument("token"){
+                                type = NavType.StringType
+                            }
+                        )
+                    ){ backStackEntry ->
+                        val token = backStackEntry.arguments?.getString("token") ?: ""
+
+                        ResetPasswordScreen(
+                            token = token,
+                            onResetSuccess = {
+                                navController.navigate(Screen.Login.route){
+                                    popUpTo(Screen.Welcome.route){
+                                        inclusive = false
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
-
-
-
 
             }
         }

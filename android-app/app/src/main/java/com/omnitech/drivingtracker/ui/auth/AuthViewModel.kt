@@ -12,6 +12,20 @@ import java.time.LocalDate
 import java.time.Period
 import javax.inject.Inject
 
+data class RegistrationData(
+    val username: String,
+    val name: String,
+    val surname: String,
+    val email: String,
+    val password: String,
+    val confirmPassword: String,
+    val phoneNumber: String,
+    val day: String,
+    val month: String,
+    val year: String,
+    val consent_status: Boolean
+)
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(private val repository: AuthRepository) : ViewModel() {
 
@@ -26,45 +40,44 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
             val code: String? = null,
             val message: String
         ) : UiState()
+        object SuccessWaitVerification : UiState()
     }
 
     private val _uiState= MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
 
     fun register(
-        username: String,
-        name: String,
-        surname: String,
-        email: String,
-        password: String,
-        confirmPassword: String,
-        phoneNumber: String,
-        day: String,
-        month: String,
-        year: String,
-        consent_status: Boolean
+        data : RegistrationData
     ){
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
-            val validationError = validateRegister(username, name, surname, email, password, phoneNumber, day, month, year,consent_status)
+            val validationError = validateRegister(data)
 
             if(validationError != null){
                 _uiState.value = validationError
                 return@launch
             }
 
-            if(password != confirmPassword){
+            if(data.password != data.confirmPassword){
                 _uiState.value = UiState.Error("INVALID_CONFIRM", message="Passwords do not match")
                 return@launch
             }
 
-            val dob = "$year-$month-$day"
+            val dob = "${data.year}-${data.month}-${data.day}"
 
 
-            repository.register(username, name, surname, email, password, phoneNumber, dob, consent_status).fold(
+            repository.register(
+                data.username,
+                data.name,
+                data.surname,
+                data.email,
+                data.password,
+                data.phoneNumber,
+                dob,
+                data.consent_status).fold(
                 onSuccess = {
-                    _uiState.value = UiState.Success
+                    _uiState.value = UiState.SuccessWaitVerification
                 },
                 onFailure = { exception ->
                     when {
@@ -80,6 +93,34 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
                     }
                 }
             )
+        }
+    }
+
+    fun forgotPassword(email: String){
+        viewModelScope.launch{
+            _uiState.value = UiState.Loading
+            repository.forgotPassword(email).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = { handleError(it) }
+            )
+        }
+    }
+
+    fun resetPassword(token: String, newPassword: String){
+        viewModelScope.launch{
+            _uiState.value = UiState.Loading
+            repository.resetPassword(token, newPassword).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = { handleError(it) }
+            )
+        }
+    }
+
+    private fun handleError(exception: Throwable){
+        if(exception is ApiException){
+            _uiState.value = UiState.Error(code = exception.errorCode, message = exception.errorMessage ?: "Error")
+        }else{
+            _uiState.value = UiState.Error(message = exception.message ?: "Something went wrong")
         }
     }
 
@@ -172,29 +213,20 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
     }
 
     fun validateRegister(
-         username: String,
-         name: String,
-         surname: String,
-         email: String,
-         password: String,
-         phoneNumber: String,
-         day: String,
-         month: String,
-         year: String,
-         consent_status: Boolean
+         data: RegistrationData
     ): UiState.Error?{
 
-        if (username.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
-        if (name.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
-        if (surname.isBlank()) return UiState.Error("INVALID_SURNAME","Surname is required")
-        if (email.isBlank()) return UiState.Error("INVALID_EMAIL","Email is required")
-        if (password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
-        if (phoneNumber.isBlank()) return UiState.Error("INVALID_PHONE","Phone number is required")
-        if (!consent_status) return UiState.Error(message="You must accept the terms to register")
+        if (data.username.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
+        if (data.name.isBlank()) return UiState.Error("INVALID_NAME","Name is required")
+        if (data.surname.isBlank()) return UiState.Error("INVALID_SURNAME","Surname is required")
+        if (data.email.isBlank()) return UiState.Error("INVALID_EMAIL","Email is required")
+        if (data.password.isBlank()) return UiState.Error("INVALID_PASSWORD","Password is required")
+        if (data.phoneNumber.isBlank()) return UiState.Error("INVALID_PHONE","Phone number is required")
+        if (!data.consent_status) return UiState.Error(message="You must accept the terms to register")
 
-        val d = day.toIntOrNull() ?: return UiState.Error("INVALID_DAY","Invalid day")
-        val m = month.toIntOrNull() ?: return UiState.Error("INVALID_MONTH","Invalid month")
-        val y = year.toIntOrNull() ?: return UiState.Error("INVALID_YEAR","Invalid year")
+        val d = data.day.toIntOrNull() ?: return UiState.Error("INVALID_DAY","Invalid day")
+        val m = data.month.toIntOrNull() ?: return UiState.Error("INVALID_MONTH","Invalid month")
+        val y = data.year.toIntOrNull() ?: return UiState.Error("INVALID_YEAR","Invalid year")
 
         if (d !in 1..31) return UiState.Error("INVALID_DAY","Invalid day")
         if (m !in 1..12) return UiState.Error("INVALID_MONTH","Invalid month")

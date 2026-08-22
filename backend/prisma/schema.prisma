@@ -235,6 +235,10 @@ model users {
   alerts            alerts[]
   leaderboard       leaderboard[]
   trips             trips[]
+  email_verified    Boolean            @default(false)
+  verification_token  String?          @db.VarChar(255)
+  password_reset_token  String?        @db.VarChar(255)
+  reset_token_exp   DateTime?          @db.Timestamptz(6)
   //contacts the user owns
   trusted_contacts_owned  trusted_contacts[]  @relation("TrustedContactsOwner")
   //where a user is someone elses contact

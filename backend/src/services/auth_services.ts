@@ -1,9 +1,10 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
-import { generate_refresh_token, generate_token } from '../middleware/auth';
+import crypto from 'node:crypto';
+import { sendAuthEmail } from '../utils/email';
+import { generate_refresh_token, AppJwtPayload } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
-import { AppJwtPayload } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 
@@ -61,7 +62,7 @@ async function generate_unique_username(name: string, surname: string) {
 export const auth_services = {
 
     async register (email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean)
-    :Promise<{user: any, refresh_token: string}>{
+    :Promise<{user: any}>{
         //validating all parameters
         if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
 
@@ -128,6 +129,8 @@ export const auth_services = {
 
         let usernameLocal = username;
 
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const maxAttempts = 3;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
@@ -141,22 +144,34 @@ export const auth_services = {
                     phone_number,
                     password_hash: hashedPassword,
                     consent_status: consent_status,
+                    email_verified: false,
+                    verification_token: verificationToken
                     }
                 });
 
 
                 //generating refresh token
-                const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+                // const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
 
-                await prisma.users.update({
-                    where: {user_id: user.user_id}, 
-                    data: {
-                        refresh_token, 
-                        refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
-                    },
-                });
+                // await prisma.users.update({
+                //     where: {user_id: user.user_id}, 
+                //     data: {
+                //         refresh_token, 
+                //         refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
+                //     },
+                // });
 
-                return {user, refresh_token};
+                const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
+                await sendAuthEmail(
+                    normalized_email,
+                    "Verify your Driving Tracker Account",
+                    `<h1>Welcome to Driving Tracker!</h1>
+                    <p>Please click the link below to verify your email address and activate your account:</p>
+                    <a href="${verificationUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+                    <p>If you did not create this account, you may safely ignore this email.</p>`
+                );
+
+                return {user};
             
             } catch (err: any) {
                 if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -174,6 +189,99 @@ export const auth_services = {
         
     },
 
+    async verify_email(token: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Verification token is required", "token");
+        }
+        const user = await prisma.users.findFirst({
+            where: {
+                verification_token: token
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        await prisma.users.update({
+            where: {user_id: user.user_id },
+            data: {
+                email_verified: true,
+                verification_token: null
+            }
+        });
+    },
+
+    async request_password_reset(email: string){
+        const normalized_email = (email ?? "").trim().toLowerCase();
+
+        const email_result = validate_email(normalized_email);
+        if(!email_result.success){
+            return;
+        }
+
+        const user = await prisma.users.findUnique({
+            where:  { email: normalized_email }
+        });
+
+        if(!user) return;
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 3600000);
+
+        await prisma.users.update({
+            where: { email: normalized_email },
+            data: {
+                password_reset_token: resetToken,
+                reset_token_exp: expiry
+            }
+        });
+
+        const resetUrl = `${process.env.APP_URL}/api/auth/reset_password_link?token=${encodeURIComponent(resetToken)}`;
+
+        await sendAuthEmail(
+            email,
+            "Reset your Driving Tracker Password",
+            `<h1>Password Reset Request</h1>
+            <p>We received a request to reset your password. Click the button to reset your password:</p>
+            <a href="${resetUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>This link will expire in 1 hour.</p>`
+
+        );
+    },
+
+    async reset_password(token: string, newPassword: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Reset token is required", "token");
+        }
+
+        const password_result = validate_password(newPassword);
+        if(!password_result.success){
+            throw new ValidationError(password_result.error.issues.at(0)?.message!, "password");
+        }
+
+        const user = await prisma.users.findFirst({
+            where: {
+                password_reset_token: token,
+                reset_token_exp: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.users.update({
+            where: { user_id: user.user_id },
+            data: {
+                password_hash: hashedPassword,
+                password_reset_token: null,
+                reset_token_exp: null,
+                refresh_token: null,
+                refresh_token_exp: null
+            }
+        })
+    },
+
     async login(identifier: string, password: string){
 
         const normalized = identifier.trim().toLowerCase();
@@ -186,6 +294,10 @@ export const auth_services = {
         }});
 
         if(!user) throw new ValidationError("Incorrect username/email", "credentials");
+
+		if(!user.email_verified){
+			throw new ExtendedError("Please verify your email address before logging in.", "EMAIL_NOT_VERIFIED");
+		}
 
         const valid=await bcrypt.compare(password, user.password_hash);
 
