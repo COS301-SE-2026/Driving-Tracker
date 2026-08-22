@@ -2,10 +2,9 @@ import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import { sendAuthEmail } from '../utils/email';
-import { generate_refresh_token } from '../middleware/auth';
+import { generate_refresh_token, AppJwtPayload } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
-import { AppJwtPayload } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 

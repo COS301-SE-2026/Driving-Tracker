@@ -3,8 +3,6 @@ import {auth_services} from  "../services/auth_services";
 import {generate_token, AuthRequest} from "../middleware/auth";//the file containing the tokens 
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 import { identifier_limiter } from '../middleware/rate_limit';
-import { TokenExpiredError } from 'jsonwebtoken';
-import { verify } from 'node:crypto';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
