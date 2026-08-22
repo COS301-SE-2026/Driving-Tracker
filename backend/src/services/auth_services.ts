@@ -1,6 +1,6 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { sendAuthEmail } from '../utils/email';
 import { generate_refresh_token } from '../middleware/auth';
 import {z} from "zod";

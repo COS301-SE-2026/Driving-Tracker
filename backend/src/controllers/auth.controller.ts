@@ -4,7 +4,7 @@ import {generate_token, AuthRequest} from "../middleware/auth";//the file contai
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 import { identifier_limiter } from '../middleware/rate_limit';
 import { TokenExpiredError } from 'jsonwebtoken';
-import { verify } from 'crypto';
+import { verify } from 'node:crypto';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 

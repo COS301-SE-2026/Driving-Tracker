@@ -79,4 +79,63 @@ describe('Auth controller email verification and password reset endpoints', () =
         expect(status).toHaveBeenCalledWith(400);
         expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_TOKEN' }));
     });
+
+    it('returns 422 when verify_email throws ValidationError', async () => {
+        const req: any = { query: { token: 'bad-token' } };
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValueOnce({ json });
+        const res: any = { status };
+
+        jest.spyOn(auth_services, 'verify_email').mockRejectedValueOnce(
+            new ValidationError('Verification token is required', 'token')
+        );
+
+        await auth_controller.verify_email(req, res);
+
+        expect(status).toHaveBeenCalledWith(422);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_TOKEN' }));
+    });
+
+    it('returns 400 when verify_email throws generic error', async () => {
+        const req: any = { query: { token: 'expired-token' } };
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValueOnce({ json });
+        const res: any = { status };
+
+        jest.spyOn(auth_services, 'verify_email').mockRejectedValueOnce(
+            new Error('INVALID_OR_EXPIRED_TOKEN')
+        );
+
+        await auth_controller.verify_email(req, res);
+
+        expect(status).toHaveBeenCalledWith(400);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_TOKEN' }));
+    });
+
+    it('redirects to reset-password deep link when token exists', async () => {
+        const req: any = { query: { token: 'token' } };
+        const redirect = jest.fn();
+        const res: any = { redirect };
+
+        await auth_controller.reset_password_link(req, res);
+
+        expect(redirect).toHaveBeenCalledWith('driving-tracker://reset-password?token=token');
+    });
+
+
+    it('returns 500 when forgot_password service throws', async () => {
+        const req: any = { body: { email: 'test@example.com' } };
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValueOnce({ json });
+        const res: any = { status };
+
+        jest.spyOn(auth_services, 'request_password_reset').mockRejectedValueOnce(
+            new Error('INTERNAL_SERVER_ERROR')
+        );
+
+        await auth_controller.forgot_password(req, res);
+
+        expect(status).toHaveBeenCalledWith(500);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR' }));
+    });
 });
