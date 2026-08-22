@@ -37,90 +37,97 @@ fun ResetPasswordScreen(
     token: String,
     viewModel: AuthViewModel = hiltViewModel(),
     onResetSuccess: () -> Unit
-){
+) {
     var newPassword by remember { mutableStateOf("") }
-    var isNewPasswordVisible by remember { mutableStateOf(false) }
     var confirmPassword by remember { mutableStateOf("") }
-    var isConfirmPasswordVisible by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp),
+    var isFormValid = newPassword.isNotEmpty() && newPassword == confirmPassword
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center){
+        verticalArrangement = Arrangement.Center
+    ) {
         Text("Create New Password", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
-        OutlinedTextField(
+
+        PasswordField(
             value = newPassword,
             onValueChange = { newPassword = it },
-            label = { Text("New Password") },
-            visualTransformation = if(isNewPasswordVisible) VisualTransformation.None
-                                    else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = {
-                    isNewPasswordVisible = !isNewPasswordVisible
-                }) {
-                    Icon(
-                        imageVector = if(isNewPasswordVisible){
-                            Icons.Filled.Visibility
-                        }else{
-                            Icons.Filled.VisibilityOff
-                        },
-                        contentDescription = if(isNewPasswordVisible){
-                            "Hide new password"
-                        }else{
-                            "Show new password"
-                        }
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+            label = "New Password"
         )
-        OutlinedTextField(
+
+        PasswordField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirm New Password") },
-            visualTransformation = if(isConfirmPasswordVisible) VisualTransformation.None
-            else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = {
-                    isConfirmPasswordVisible = !isConfirmPasswordVisible
-                }) {
-                    Icon(
-                        imageVector = if(isConfirmPasswordVisible){
-                            Icons.Filled.Visibility
-                        }else{
-                            Icons.Filled.VisibilityOff
-                        },
-                        contentDescription = if(isConfirmPasswordVisible){
-                            "Hide confirmed password"
-                        }else{
-                            "Show confirmed password"
-                        }
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+            label = "Confirm New Password"
         )
+
         Button(
-            onClick = { viewModel.resetPassword(token, newPassword)},
+            onClick = { viewModel.resetPassword(token, newPassword) },
             modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-            enabled = newPassword.isNotEmpty() && newPassword == confirmPassword
-        ){
+            enabled = isFormValid
+        ) {
             Text("Update Password")
         }
-    }
-    if(uiState is AuthViewModel.UiState.Success){
-        LaunchedEffect(Unit){
-            showSuccessDialog = true
-        }
-    }
 
-    if(showSuccessDialog){
-        AlertDialog(onDismissRequest = {
-            showSuccessDialog = false
-            onResetSuccess()
+        LaunchedEffect(uiState) {
+            if (uiState is AuthViewModel.UiState.Success) {
+                showSuccessDialog = true
+            }
+        }
+
+        SuccessDialog(
+            show = showSuccessDialog,
+            onConfirm = {
+                showSuccessDialog = false
+                onResetSuccess()
+            }
+        )
+    }
+}
+
+@Composable
+private fun PasswordField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier
+){
+    var isVisible by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        visualTransformation = if(isVisible) VisualTransformation.None
+        else PasswordVisualTransformation(),
+        trailingIcon = {
+            val icon = if(isVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+            val description = if(isVisible) "Hide $label" else "Show $label"
+
+            IconButton(onClick = {
+                isVisible = !isVisible
+            }) {
+                Icon(
+                    imageVector = icon, contentDescription = description
+                )
+            }
         },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun SuccessDialog(
+    show: Boolean,
+    onConfirm: () -> Unit
+){
+    if(show){
+        AlertDialog(
+            onDismissRequest = onConfirm,
             title = {
                 Text("Password Reset Successful")
             },
@@ -129,14 +136,11 @@ fun ResetPasswordScreen(
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        showSuccessDialog = false
-                        onResetSuccess()
-                    }
+                    onClick = onConfirm
                 ){
                     Text("OK")
                 }
             }
-            )
+        )
     }
 }
