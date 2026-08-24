@@ -23,7 +23,8 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
                 make: 'Toyota',
                 model: 'Corolla',
                 year: 2020,
-                fuel_type: 'PETROL'
+                fuel_type: 'PETROL',
+                fuel_tank:60,
             });
 
         const vehicleId = vehicleRes.body.data.vehicle_id;
@@ -56,7 +57,8 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
                 make: 'Ford',
                 model: 'Fiesta',
                 year: 2019,
-                fuel_type: 'PETROL'
+                fuel_type: 'PETROL',
+                fuel_tank:60,
             }
         });
 
