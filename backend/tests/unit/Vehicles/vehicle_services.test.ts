@@ -108,6 +108,7 @@ describe('vehicle services assign user to vehicle', ()=>{
         model: 'M3',
         year: 2018,
         fuel_type: 'PETROL',
+        fuel_tank: 60,
     };
 
 
@@ -144,11 +145,31 @@ describe('vehicle services assign user to vehicle', ()=>{
     // });
 
     it('creates the vehicle when it does not exist yet, then assigns it', async() =>{
+        process.env.CARAPI_TOKEN = "token123";
+        process.env.CARAPI_SECRET = "secret123";
+
         mock_prisma.users.findUnique.mockResolvedValue({ user_id: 'u1' });
         
         // mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
         // mock_prisma.vehicles.findUnique.mockResolvedValue(null);
-
+         mock_fetch
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                text: async () => "jwt-token",
+            })
+        )
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    data: [{ combined_mpg: 25,
+                        trim_description:"Test trim",
+                    }],
+                }),
+            })
+        );
+        
         mock_prisma.vehicles.create.mockResolvedValue({
             vehicle_id: 'v-new-uuid',
             name:'My Car',
@@ -156,7 +177,9 @@ describe('vehicle services assign user to vehicle', ()=>{
             model: 'M3',
             registration: 'ABC123GP',
             year: 2018,
-            fuel_type: 'PETROL'
+            fuel_type: 'PETROL',
+            fuel_tank: 60,
+            fuel_efficiency: 235.215 / 25,
         });
 
         mock_prisma.users_vehicles.create.mockResolvedValue({});
@@ -173,6 +196,8 @@ describe('vehicle services assign user to vehicle', ()=>{
                 model: 'M3',
                 year: 2018,
                 fuel_type: 'PETROL',
+                fuel_tank: 60,
+                fuel_efficiency: 235.215 / 25,
             },
         });
         expect(mock_prisma.users_vehicles.create).toHaveBeenCalledWith({
@@ -186,6 +211,8 @@ describe('vehicle services assign user to vehicle', ()=>{
                 make: 'BMW',
                 model: 'M3',
                 year: 2018,
+                fuel_tank: 60,
+                fuel_efficiency: 235.215 / 25,
                 fuel_type: 'PETROL'
             },
         });
