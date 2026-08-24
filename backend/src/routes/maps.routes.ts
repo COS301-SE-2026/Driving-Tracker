@@ -10,4 +10,5 @@ map_router.get('/search',verify_token, map_controller.search_address);
 
 map_router.get('/route', verify_token, map_controller.suggested_route);
 map_router.get('/nearby/pois', verify_token, trip_reading_limiter ,map_controller.get_nearby_pois);
+map_router.get('/address/reverse', verify_token, trip_reading_limiter ,map_controller.get_address_reverse);
 export default map_router;

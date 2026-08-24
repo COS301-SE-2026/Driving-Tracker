@@ -53,6 +53,10 @@ data class SharedWithMeDto(
     val startLongitude: Double,
     @SerializedName("fuel_estimate")
     val fuelEstimate: Double,
+    @SerializedName("destination_latitude")
+    val destinationLatitude: Double? = null,
+    @SerializedName("destination_longitude")
+    val destinationLongitude: Double? = null
 )
 
 @Suppress("unused")
@@ -256,3 +260,55 @@ data class SuggestedRouteData(
     @SerializedName("points")
     val points: List<LocationDto>
 )
+
+data class StopEventCheckRequest(
+    val location: LocationDto,
+    @SerializedName("stopped_at")
+    val stoppedAt: Long
+)
+
+data class StopEventCheckResponse(
+    val message: String,
+    val data: StopEventCheckData
+)
+
+data class StopEventCheckData(
+    @SerializedName("stop_event_id")
+    val stopEventId: String,
+    val classification: String,
+    @SerializedName("location_context")
+    val locationContext: LocationContextData,
+    @SerializedName("should_prompt")
+    val shouldPrompt: Boolean
+)
+
+data class LocationContextData(
+    val address: String,
+    @SerializedName("poi_category")
+    val poiCategory: String
+)
+
+data class StopEventConfirmResponse(
+    val message: String,
+    val data: StopEventConfirmData
+)
+
+data class StopEventConfirmData(
+    val status: String,
+    @SerializedName("already_handled")
+    val alreadyHandled: Boolean
+)
+
+data class StopEventResolveRequest(
+    val reason: String
+)
+
+data class StopEventResolveResponse(
+    val message: String,
+    val data: StopEventResolveData
+)
+
+data class StopEventResolveData(
+    val resolved: Boolean
+)
+

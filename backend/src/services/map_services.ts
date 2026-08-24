@@ -24,7 +24,7 @@ const AZURE_MAPS_CATEGORIES = {
 }
 
 type PoiCategoryKey = keyof typeof AZURE_MAPS_CATEGORIES;
-type PoiRequestType = PoiCategoryKey | 'stops';
+type PoiRequestType = PoiCategoryKey | 'stops' | 'all';
 
 export interface AzureMapsTokenResponse{
     token: string ;
@@ -146,34 +146,39 @@ export const map_services ={
             throw new Error("Location coordinates missing or invalid");
         }
 
-        const normalizedType = type?.trim().toLowerCase();
+        const normalized_type = type?.trim().toLowerCase();
 
-        const isValidType = normalizedType === 'stops' || normalizedType in AZURE_MAPS_CATEGORIES;
+        const is_valid_type = normalized_type === 'stops' || normalized_type === 'all' || normalized_type in AZURE_MAPS_CATEGORIES;
 
-        if(!isValidType){
+        if(!is_valid_type){
             throw new Error("Invalid type");
         }
 
-        const poiType: PoiRequestType = type as PoiRequestType;
+        const poi_type: PoiRequestType = normalized_type as PoiRequestType;
 
-        const category_Ids: number[] = poiType === 'stops' 
-        ? [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
-        : [AZURE_MAPS_CATEGORIES[poiType]]
+        let category_Ids: number[] | null = null;
 
+        if(poi_type === 'stops'){
+            category_Ids = [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
 
-        const category_set = category_Ids.join(',');
-        //const query = category_names.join(' ').toLowerCase().replace(/_/g, ' ');
+        } else if(poi_type !== 'all'){
+            category_Ids = [AZURE_MAPS_CATEGORIES[poi_type]];
+        }
+
 
         const params = new URLSearchParams({
             'api-version':'1.0',
             lat: String(lat),
             lon: String(lng),
             radius: String(radiusMeters),
-            categorySet: category_set,
             limit: String(limit),
             language: 'en-US',
             'subscription-key': key,
         });
+
+        if(category_Ids){
+            params.set('categorySet', category_Ids.join(','));
+        }
 
         const url = `https://atlas.microsoft.com/search/nearby/json?${params.toString()}`;
 
@@ -195,6 +200,43 @@ export const map_services ={
             address: result.address?.freeformAddress ?? null
         }));
 
+    },
+    //gets address from coordinates including roadUse and speedLimit
+    async reverse_geocode(lat: number, lng: number){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const params = new URLSearchParams({
+            'api-version':'1.0',
+            query: `${lat},${lng}`,
+            language: 'en-US',
+            returnSpeedLimit: 'true',
+            returnRoadUse: 'true',
+            'subscription-key': key,
+        });
+
+        const url = `https://atlas.microsoft.com/search/address/reverse/json?${params.toString()}`;
+
+        const response = await fetch(url);
+
+        if(!response.ok){
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json() as { addresses: any[] };
+
+        const result = json.addresses?.[0];
+
+        return {
+            address: result.address?.freeformAddress ?? null,
+            road_use: result?.roadUse ?? null,
+            speed_limit: result?.address?.speedLimit ?? null,
+            municipality: result?.address?.municipality ?? null,
+            countryCode: result?.address?.countryCode ?? null,
+        };
     }
     
 }

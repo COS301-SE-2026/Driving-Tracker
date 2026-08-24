@@ -81,6 +81,9 @@ class SensorFusionManager @Inject constructor(
     //Raw gyroscope for yaw rate
     private val gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
+    //fallback for devices without sensors
+    private val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
     //Current sensor state
     private var linearAccel = FloatArray(3)
     private var rotationVector = FloatArray(4)
@@ -132,7 +135,11 @@ class SensorFusionManager @Inject constructor(
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
             Log.d(TAG, "Gyroscope registered")
         } ?: Log.w(TAG, "TYPE_GYROSCOPE not available")
-
+        //basic accelerometer listener
+        accelerometerSensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+            Log.d(TAG, "Basic accelerometer registered as fallback")
+        }
         Log.d(TAG, "Sensor fusion started")
     }
 
@@ -148,6 +155,7 @@ class SensorFusionManager @Inject constructor(
 
     override fun updateLocation(location: Location){
         currentLocation = location
+        emitReading()
     }
 
     //called when there's a new sensor reading
@@ -164,6 +172,11 @@ class SensorFusionManager @Inject constructor(
             }
             Sensor.TYPE_GYROSCOPE -> {
                 gyroscope = event.values.clone()
+            }
+            Sensor.TYPE_ACCELEROMETER ->{
+                if (linearAccelSensor == null) {
+                    linearAccel = event.values.clone()
+                }
             }
         }
         val now = System.currentTimeMillis()

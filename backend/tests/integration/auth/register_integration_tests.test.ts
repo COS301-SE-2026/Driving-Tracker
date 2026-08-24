@@ -1,7 +1,12 @@
+jest.mock('../../../src/utils/email', () => ({
+	sendAuthEmail: jest.fn(),
+}));
+
 import request from 'supertest';
-import { describe, expect, it, afterAll } from '@jest/globals';
+import { describe, expect, it, afterAll, jest } from '@jest/globals';
 import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
+import { sendAuthEmail } from '../../../src/utils/email';
 
 describe('Auth register integration test', () => {
 	afterAll(async () => {
@@ -23,8 +28,9 @@ describe('Auth register integration test', () => {
 		});
 
 		expect(response.status).toBe(201);
-		expect(response.body.token).toBeDefined();
-		expect(response.body.refresh_token).toBeDefined();
+		expect(response.body.message).toBe("Registration successful. Please verify your email before logging in.");
+		expect(response.body.token).toBeUndefined();
+		expect(response.body.refresh_token).toBeUndefined();
 
 		const createdUser = await prisma.users.findFirst({
 			where: { email: `register_${unique}@gmail.com`, },

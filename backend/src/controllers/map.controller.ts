@@ -112,7 +112,7 @@ const map_controller = {
             }
 
             const final_limit = Number.isFinite(parsed_limit)? parsed_limit : 10;
-            const final_radius = Number.isFinite(parsed_radius) ? parsed_radius : 10;
+            const final_radius = Number.isFinite(parsed_radius) ? parsed_radius : 5000;
             const poi_type = typeof type === "string" && type.trim() ? type : 'stops';
 
             const response = await map_services.get_nearby_pois(parsed_lat, parsed_lng, final_limit, poi_type, final_radius);
@@ -146,7 +146,55 @@ const map_controller = {
                 message: "Failed to fetch pois"
             });
         }
+    },
+    async get_address_reverse(req: AuthRequest, res: Response){
+
+        try{
+
+            const user_id = req.user?.sub;
+
+            if(!user_id){
+                res.status(401).json({
+                    error: "UNAUTHORIZED",
+                    message: "Can not access map services"
+                });
+                return;
+            };
+
+            const {lat, lng} = req.query;
+
+            const parsed_lat = Number(lat)
+            const parsed_lng = Number(lng)
+
+            if(!Number.isFinite(parsed_lat) || !Number.isFinite(parsed_lng)){
+                throw new Error("Location coordinates missing or invalid");
+            }
+
+            const response = await map_services.reverse_geocode(parsed_lat, parsed_lng);
+
+            res.status(200).json({
+                message: "Address data succesfully retrieved", 
+                data: { 
+                    address_data: response 
+                }
+            });
+
+        } catch(error: any){
+
+            if (error?.message?.includes("Location coordinates missing")){
+                res.status(422).json({ 
+                    error: "MISSING_LOCATION", 
+                    message: "Location coordinates missing or invalid" 
+                });
+            }
+
+            res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to fetch address"
+            });
+        }
     }
+    
 };
 
 export default map_controller;
