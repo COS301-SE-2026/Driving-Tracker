@@ -3,6 +3,7 @@ package com.omnitech.drivingtracker.ui.components
 import android.annotation.SuppressLint
 import android.location.Location
 import android.util.Log
+import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -170,6 +171,10 @@ fun AzureMapContainer(
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
+
+                    setSupportZoom(true)
+                    builtInZoomControls = true
+                    displayZoomControls = false
                     cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                     mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     allowFileAccess = true
@@ -179,7 +184,7 @@ fun AzureMapContainer(
                     @Suppress("DEPRECATION")
                     allowFileAccessFromFileURLs = true
                 }
-
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {

@@ -76,6 +76,22 @@ export const refresh_limiter = isTestEnv? (req: any, res: any, next: any) => nex
     message: {error: "TOO_MANY_ATTEMPTS", message: "Too many refresh attempts, please try again later" }
 });
 
+export const forgot_password_limiter = isTestEnv ? (req: any, res: any, next: any) => next() : rateLimit({
+    windowMs: 15*60*1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {error: "TOO_MANY_ATTEMPTS", message: "Too many password reset requests, please try again later" }
+});
+
+export const reset_password_limiter = isTestEnv ? (req: any, res: any, next: any) => next() : rateLimit({
+    windowMs: 15*60*1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {error: "TOO_MANY_ATTEMPTS", message: "Too many reset attempts, please try again later" }
+});
+
 //Sliding window limiter for login, Three-tier approach
 
 //IP + identifier combo for catching rapid credential stuffing

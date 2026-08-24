@@ -90,7 +90,7 @@
         window.setDestination = function(lat, lng) {
             if (!map) return;
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
-            if(Number.isNan(latN) || Number.isNan(lngN)) return;
+            if(!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
 
             var pos = [lngN, latN];
             if (!destinationMarker) {
@@ -251,7 +251,7 @@
 
         window.updateUserLocation = function(lat, lng) {
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
-            if (Number.isNan(latN) || Number.isNan(lngN)) return;
+            if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
 
             updateMarker(latN, lngN);
             updateRoute(latN, lngN);
@@ -259,7 +259,7 @@
         };
 
         window.centerOnUser = function(zoom) {
-            if (!map || !mapReady || Number.isNan(lastLat)) return;
+            if (!map || !mapReady || !Number.isFinite(lastLat)) return;
             try {
                 map.setCamera({
                     center: [lastLng, lastLat],

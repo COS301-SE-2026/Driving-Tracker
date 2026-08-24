@@ -45,7 +45,13 @@ interface ApiService{
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
     @POST("api/auth/register")
-    suspend fun register(@Body body: RegisterRequest): AuthResponse
+    suspend fun register(@Body body: RegisterRequest): RegisterResponse
+
+    @POST("api/auth/forgot_password")
+    suspend fun forgotPassword(@Body body : ForgotPasswordRequest) : GenericResponse
+
+    @POST("api/auth/reset_password")
+    suspend fun resetPassword(@Body body : ResetPasswordRequest) : GenericResponse
 
     @POST("api/auth/logout")
     suspend fun logout(): LogoutResponse
@@ -151,4 +157,22 @@ interface ApiService{
 
     @GET("trips/shared_with_me")
     suspend fun getTripsSharedWithMe(): SharedWithMeResponse
+
+    @POST("trips/{trip_id}/stop_event/check")
+    suspend fun checkStopEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: StopEventCheckRequest
+    ): StopEventCheckResponse
+
+    @POST("trips/{event_id}/stop_event/confirm")
+    suspend fun confirmStopEvent(
+        @Path("event_id") eventId: String
+    ): StopEventConfirmResponse
+
+    @POST("trips/{event_id}/stop_event/resolve")
+    suspend fun resolveStopEvent(
+        @Path("event_id") eventId: String,
+        @Body body: StopEventResolveRequest
+    ): StopEventResolveResponse
+
 }
