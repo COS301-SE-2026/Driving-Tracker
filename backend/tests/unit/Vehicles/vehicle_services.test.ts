@@ -38,7 +38,7 @@ jest.mock('../../../src/db/prisma', () => {
 import { describe, it, expect, jest, beforeEach,afterAll } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
-import { mock } from 'node:test';
+
 
 
 const mock_prisma = prisma as any ;
@@ -540,6 +540,55 @@ describe("additional vehicle service tests", ()=>{
 
         expect(result).toBeNull();
         expect(mock_fetch).not.toHaveBeenCalled();
+        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+    });
+    it("returns null when CarAPI returns no benchmark vehicles", async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({ user_id: "u1" });
+
+        mock_fetch.mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    text: async () => "jwt-token",
+                })
+            ).mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    json: async () => ({ data: [] }),
+                })
+            );
+
+        const result = await vehicle_services.assign_user_to_vehicle({
+            user_id: "u1",
+            name: "My Car",
+            registration: "ABC123GP",
+            make: "BMW",
+            model: "M3",
+            year: 2018,
+            fuel_type: "PETROL",
+            fuel_tank: 60,
+        });
+
+        expect(result).toBeNull();
+        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+    });
+    it("returns null when the benchmark lookup fails", async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({ user_id: "u1" });
+
+        delete process.env.CARAPI_TOKEN;
+        delete process.env.CARAPI_SECRET;
+
+        const result = await vehicle_services.assign_user_to_vehicle({
+            user_id: "u1",
+            name: "My Car",
+            registration: "ABC123GP",
+            make: "BMW",
+            model: "M3",
+            year: 2018,
+            fuel_type: "PETROL",
+            fuel_tank: 60,
+        });
+
+        expect(result).toBeNull();
         expect(mock_prisma.$transaction).not.toHaveBeenCalled();
     });
 })
