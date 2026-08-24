@@ -110,7 +110,7 @@ class ObdManager @Inject constructor(@param:ApplicationContext private val conte
             val fuelCmd = FuelLevelCommand()
             fuelCmd.run(input,out)
             val level = fuelCmd.fuelLevel
-            metrics.value = _metrics.value.copy(fuelLevel = level)
+            _metrics.value = _metrics.value.copy(fuelLevel = level)
             Log.d("OBD_LOG", "Fuel Level fetched: $level%")
             level
         }catch (e: Exception){
