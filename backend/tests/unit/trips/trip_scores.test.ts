@@ -16,6 +16,9 @@ jest.mock('../../../src/db/prisma', () => ({
         vehicles: {
             findUnique: jest.fn(),
         },
+        trips:{
+            findUnique: jest.fn(),
+        },
     },
 }));
 
@@ -41,39 +44,48 @@ describe('calculate_trip_scores', () => {
         jest.clearAllMocks();
     });
 
-    it('calls both scoring functions and computes overall score', async () => {
-        
+   it("calls both scoring functions and computes overall score", async () => {
         mocked_prisma.trip_events.groupBy.mockResolvedValue([]);
 
         mocked_prisma.vehicles.findUnique.mockResolvedValue({
             vehicle_id: vehicleId,
-            make: 'Toyota',
-            model: 'Camry',
-            year: 2018,
-        } as any); // cast to any to bypass missing fields
+            fuel_tank: 50,
+            fuel_efficiency: 8,
+        } as any);
 
-        // Benchmark returns combined MPG
-        mock_fetch_benchmark.mockResolvedValue([{ combined_mpg: 30 } as any]);
+        mocked_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: tripId,
+            vehicle_id: vehicleId,
+            fuel_level_start: 80,
+            fuel_level_end: 61.6,
+            distance_km: 100,
+        } as any);
 
-        const tripFuel = 9;
-        const result = await calculate_trip_scores(tripId, vehicleId, distance, tripFuel);
+        const result = await calculate_trip_scores(tripId, vehicleId, 100);
 
         expect(result.safety_score).toBe(100);
         expect(result.eco_score).toBe(70);
-        expect(result.overall_score).toBe(88); 
+        expect(result.overall_score).toBe(88);
     });
 
-    it('returns overall score equal to safety when eco_score is null', async () => {
+    it("returns overall score equal to safety when eco_score is null", async () => {
         mocked_prisma.trip_events.groupBy.mockResolvedValue([]);
 
         mocked_prisma.vehicles.findUnique.mockResolvedValue({
             vehicle_id: vehicleId,
-            make: 'Toyota',
-            model: 'Camry',
-            year: 2005,
+            fuel_tank: 50,
+            fuel_efficiency: 8,
         } as any);
 
-        const result = await calculate_trip_scores(tripId, vehicleId, distance, fuelEstimate);
+        mocked_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: tripId,
+            vehicle_id: vehicleId,
+            fuel_level_start: null,
+            fuel_level_end: null,
+            distance_km: 100,
+        } as any);
+
+        const result = await calculate_trip_scores(tripId, vehicleId, 100);
 
         expect(result.safety_score).toBe(100);
         expect(result.eco_score).toBeNull();
@@ -92,12 +104,22 @@ describe('calculate_trip_scores', () => {
             vehicle_id: vehicleId,
             make: 'Toyota',
             model: 'Corolla',
+            fuel_tank: 40,
+            fuel_efficiency: 8,
             year: 2016,
         } as any);
-        mock_fetch_benchmark.mockResolvedValue([{ combined_mpg: 30 } as any]);
+         mocked_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: tripId,
+            vehicle_id: vehicleId,
+            fuel_level_start: 100,
+            fuel_level_end: 0,
+            distance_km: 50,
+        } as any);
 
-        const result = await calculate_trip_scores(tripId, vehicleId, 50, 10);
+        const result = await calculate_trip_scores(tripId, vehicleId, 50);
 
+        expect(result.safety_score).toBe(73);
+        expect(result.eco_score).toBe(0);
         expect(result.overall_score).toBe(44);
         expect(Number.isInteger(result.overall_score)).toBe(true);
     });
@@ -107,13 +129,20 @@ describe('calculate_trip_scores', () => {
         mocked_prisma.trip_events.groupBy.mockResolvedValue([]); 
         mocked_prisma.vehicles.findUnique.mockResolvedValue({
             vehicle_id: vehicleId,
-            make: 'Toyota',
-            model: 'Camry',
-            year: 2018,
+            fuel_tank: 50,
+            fuel_efficiency: 8,
         } as any);
-        mock_fetch_benchmark.mockResolvedValue([{ combined_mpg: 30 } as any]);
 
-        const result = await calculate_trip_scores(tripId, vehicleId, 0, fuelEstimate);
+        mocked_prisma.trips.findUnique.mockResolvedValue({
+            trip_id: tripId,
+            vehicle_id: vehicleId,
+            fuel_level_start: null,
+            fuel_level_end: null,
+            distance_km: 0,
+        } as any);
+
+
+        const result = await calculate_trip_scores(tripId, vehicleId, 0);
         
         expect(result.safety_score).toBe(0);
     });

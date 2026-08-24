@@ -34,7 +34,7 @@ const event_weights = {
 async function calculate_safety_score(trip_id: string, distance_km: number): Promise<number>{
     //first check if the distance is valid 
     if(distance_km <= 0 ){
-        return 0 ;// nothing to evaluate 
+        return 0 ;
     }
 
     const event_group = await prisma.trip_events.groupBy({
