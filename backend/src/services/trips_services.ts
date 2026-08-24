@@ -28,17 +28,6 @@ function to_number(value: any): number | null {
     // Otherwise try to convert to number
     return Number(value);
 };
-//helper to convert mpg to l/km 
-function convert_mpg_to_lper_km(value:number):number|null{
-    const mpg = to_number(value);
-    if(!mpg){
-        return null;
-    }
-    if( mpg <= 0){
-        return 0;
-    }
-    return 235.215/mpg;
-}
 
 async function get_trip_shared_contacts(trip_id: string){
 

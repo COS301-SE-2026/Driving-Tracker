@@ -38,6 +38,7 @@ jest.mock('../../../src/db/prisma', () => {
 import { describe, it, expect, jest, beforeEach,afterAll } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+import { mock } from 'node:test';
 
 
 const mock_prisma = prisma as any ;
@@ -437,4 +438,109 @@ describe('fetch_vehicle_benchmark', () => {
         ).rejects.toThrow('No vehicle found for BMW M3 2018');
     });
 });
+describe("additional vehicle service tests", ()=>{
+    beforeEach(() =>{
+        jest.clearAllMocks();
+        mock_fetch.mockReset();
+        process.env.CARAPI_TOKEN ="token123";
+        process.env.CARAPI_SECRET="secret123";
+    });
+    it("returns an empty array when the user has no vehicles", async()=>{
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id:"u1",
+        });
+
+        mock_prisma.vehicles.findMany.mockResolvedValue([]);
+        const result = await vehicle_services.get_all_vehicles({
+            user_id: "u1"
+        });
+        expect(result).toEqual([]);
+        expect(mock_prisma.vehicles.findMany).toHaveBeenCalled();
+    });
+
+    it("returns null when the benchmark API returns no vehicles", async ()=>{
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: "u1"
+        });
+         mock_fetch.mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    text: async () => "jwt-token",
+                })
+            ).mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    json: async () => ({
+                        data: [],
+                    }),
+                })
+            );
+        const result = await vehicle_services.assign_user_to_vehicle({
+             user_id: "u1",
+            name: "My Car",
+            registration: "ABC123GP",
+            make: "BMW",
+            model: "M3",
+            year: 2018,
+            fuel_type: "PETROL",
+            fuel_tank: 60,
+        });
+        expect(result).toBeNull();
+        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+    });
+     it("rejects when the fuel tank is missing", async () => {
+        await expect(
+            vehicle_services.assign_user_to_vehicle({
+                user_id: "u1",
+                name: "My Car",
+                registration: "ABC123GP",
+                make: "BMW",
+                model: "M3",
+                year: 2018,
+                fuel_type: "PETROL",
+                fuel_tank: 0,
+            })
+        ).rejects.toThrow("Missing field(s)");
+
+        expect(mock_prisma.users.findUnique).not.toHaveBeenCalled();
+    });
+    it("throws when updating a vehicle fails", async () => {
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({
+            user_id: "u1",
+            vehicle_id: "v1",
+        });
+
+        mock_prisma.vehicles.update.mockRejectedValue(
+            new Error("Database update failed")
+        );
+
+        await expect(
+            vehicle_services.update_vehicle_name({
+                user_id: "u1",
+                vehicle_id: "v1",
+                name: "New Name",
+            })
+        ).rejects.toThrow("Database update failed");
+    });
+    it("returns null for vehicles outside the supported benchmark years", async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: "u1",
+        });
+
+        const result = await vehicle_services.assign_user_to_vehicle({
+            user_id: "u1",
+            name: "Old Car",
+            registration: "OLD123",
+            make: "BMW",
+            model: "M3",
+            year: 2010,
+            fuel_type: "PETROL",
+            fuel_tank: 60,
+        });
+
+        expect(result).toBeNull();
+        expect(mock_fetch).not.toHaveBeenCalled();
+        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+    });
+})
  
