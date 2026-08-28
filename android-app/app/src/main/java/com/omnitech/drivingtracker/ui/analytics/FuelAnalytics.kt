@@ -9,14 +9,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SentimentDissatisfied
+import androidx.compose.material.icons.filled.SentimentNeutral
+import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
+import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,9 +70,14 @@ fun FuelAnalytics(navController: NavController ?= null){
                 //Total card
                 item{
                     TotalCard()
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
                 //Graph
                 //Stats
+                item{
+                    StatsCard()
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
                 //How to improve
             }
         }
@@ -135,6 +147,91 @@ fun TotalCard(){
                 )
             }
         }
+    }
+}
+
+@Composable
+fun StatsCard(){
+    Card(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CardWhite
+        ),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .padding(16.dp)
+        ){
+            Text(
+                text = "Fuel Stats",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            FuelStat(
+                icon = Icons.Filled.SentimentVerySatisfied,
+                label = "Best",
+                value = "6.4 L/100 km"
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            FuelStat(
+                icon = Icons.Filled.SentimentNeutral,
+                label = "Average",
+                value = "7.28 L/100 km"
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            FuelStat(
+                icon = Icons.Filled.SentimentVeryDissatisfied,
+                label = "Worst",
+                value = "8.1 L/100 km"
+            )
+
+        }
+    }
+}
+
+@Composable
+fun FuelStat(
+    icon: ImageVector,
+    label: String,
+    value: String
+){
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ){
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = label,
+                fontSize = 12.sp
+            )
+        }
+
+        Text(
+            text = value,
+            fontSize = 12.sp
+        )
     }
 }
 
