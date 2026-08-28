@@ -126,10 +126,6 @@ fun DriverAnalytics(navController: NavController ?= null){
                     PerformanceSection(91,84,7.2,6)
                 }
 
-                item{
-                    HLine()
-                }
-
                 //Driving Insights or Things to improve
 
             }
