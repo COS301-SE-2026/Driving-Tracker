@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.analytics
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.SentimentDissatisfied
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.SentimentNeutral
 import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
@@ -27,12 +29,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +44,26 @@ import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.YourTopBar
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import androidx.compose.runtime.*
+
+data class FuelEfficiencyTip(
+    val title: String,val description: String
+)
+
+val fuelEfficiencyTips = listOf(
+    FuelEfficiencyTip(
+        title = "Accelerate smoothly",
+        description = "Avoid sudden acceleration to reduce unnecessary fuel consumption."
+    ),
+    FuelEfficiencyTip(
+        title = "Maintain a steady speed",
+        description = "Try to avoid unnecessary changes in speed when possible."
+    ),
+    FuelEfficiencyTip(
+        title = "Avoid unnecessary idling",
+        description = "Turn off the engine when stopped for extended periods."
+    )
+)
 
 @Composable
 fun FuelAnalytics(navController: NavController ?= null){
@@ -79,6 +102,9 @@ fun FuelAnalytics(navController: NavController ?= null){
                     Spacer(modifier = Modifier.height(6.dp))
                 }
                 //How to improve
+                item{
+                    TipsSection()
+                }
             }
         }
     }
@@ -231,6 +257,86 @@ fun FuelStat(
         Text(
             text = value,
             fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+fun TipsSection(){
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()
+        .padding(horizontal = 20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .clickable{
+                    expanded = !expanded
+                }
+                .padding(
+                    vertical = 8.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "How to improve my Fuel Efficiency",
+                modifier = Modifier.weight(1f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            Icon(
+                imageVector = if (expanded)
+                Icons.Default.ExpandLess
+                        else
+                Icons.Default.ExpandMore,
+
+                contentDescription = null
+            )
+        }
+        if (expanded){
+            Column(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(top = 8.dp)
+            ){
+                fuelEfficiencyTips.forEach{
+                    tip->
+                    TipsCard(
+                        title = tip.title,
+                        description = tip.description
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TipsCard(
+    title: String,
+    description: String
+){
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(
+                Color.White,
+                RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp)
+    ){
+        Text(
+            text = title,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = description,
+            fontSize = 11.sp,
+            color = Color.DarkGray
         )
     }
 }
