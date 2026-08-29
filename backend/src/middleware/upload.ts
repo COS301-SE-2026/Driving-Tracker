@@ -17,4 +17,4 @@ export const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_FILE_SIZE_BYTES },
     fileFilter: file_filter,
-})
+});
