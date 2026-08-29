@@ -21,6 +21,7 @@ jest.mock('../../../src/db/prisma', () => ({
         notifications: {
             createMany: jest.fn(),
             findMany: jest.fn(),
+            deleteMany: jest.fn(),
         },
         $transaction: jest.fn(),
     },
@@ -438,6 +439,26 @@ describe('notification_services', () => {
 
         });
 
+    });
+
+    describe('delete user notifications',()=>{
+        
+        it('returns deleted count on success', async () => {
+
+            const deleteManyMock = jest.fn<() => Promise<{count: number}>>().mockResolvedValue({ count: 2 });
+            
+            (mock_prisma.$transaction as jest.Mock).mockImplementation(async (callback: any) =>{
+                return callback({
+                    notifications: {
+                        deleteMany: deleteManyMock,
+                    }
+                });
+            });
+    
+            const result = await notification_services.delete_notifications('u1');
+    
+            expect(result).toBe(2);
+        });
     });
 });
 
