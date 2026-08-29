@@ -28,7 +28,7 @@ const notification_controller = {
 
         }catch(err: any){
 
-            return res.status(500).json({error: "INTERNAl_SERVER_ERROR", message: err?.message?? "Could not fetch notifications"});
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: err?.message?? "Could not fetch notifications"});
         }
 
     },
@@ -53,7 +53,7 @@ const notification_controller = {
 
         }catch(err: any){
 
-            return res.status(500).json({error: "INTERNAl_SERVER_ERROR", message: err?.message?? "Could not delete notifications"});
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: err?.message?? "Could not delete notifications"});
         }
 
     }
