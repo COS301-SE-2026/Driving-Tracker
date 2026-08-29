@@ -53,7 +53,7 @@ describe("update vehicle efficiency", () =>{
             expect(mock_prisma.vehicles.findUnique).not.toHaveBeenCalled();
         });
         it("when the trip count is a exactly of five(update to fuel eff)", async()=>{
-            mock_prisma.trips.mockResolvedValue(5);
+            mock_prisma.trips.count.mockResolvedValue(5);
             mock_prisma.vehicles.findUnique.mockResolvedValue({
                 fuel_tank: 50
             });
@@ -87,6 +87,43 @@ describe("update vehicle efficiency", () =>{
             expect(result.trip_count).toBe(10);
         });
     });
+    describe("vehicle validation", () =>{
+        beforeEach(()=>{jest.clearAllMocks()});
     
+        it("return early when the tank is null", async ()=>{
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique({
+                fuel_tank: null
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([]);
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result).toEqual({
+                updated: false,
+                trip_count: 5,
+                fuel_efficiency: null,
+            });
+            expect(mock_prisma.vehicles.update).not.toHaveBeenCalled();
+        });
+         it("returns early when fuel tank is zero or negative", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 0,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([]);
+
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result.updated).toBe(false);
+            expect(mock_prisma.vehicles.update).not.toHaveBeenCalled();
+        });
+        it("throws error when vehicle not found", async ()=>{
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue(null);
+            await expect(
+                update_vehicle_efficiency(trip_id,vehicle_id,user_id)
+            ).rejects.toThrow("Vehicle not found");
+        });
+    })
    
 })
