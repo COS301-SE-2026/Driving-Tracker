@@ -6,5 +6,6 @@ import { user_based_limiter } from "../middleware/rate_limit";
 const notifications_router = Router();
 
 notifications_router.get("/", verify_token, user_based_limiter, notifications_controller.fetch_notifications);
+notifications_router.post("/delete", verify_token, user_based_limiter, notifications_controller.delete_notifications);
 
 export default notifications_router;
