@@ -72,7 +72,9 @@ data class StartTripRequest(
     @SerializedName("share_with_contacts")
     val shareWithContacts: List<String>? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start")
+    val fuelLevelStart: Float? = null
 )
 
 @Suppress("unused")
@@ -187,6 +189,8 @@ data class TripSummaryDto(
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
     val destinationLongitude: Double? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null,
     val scores: TripScoreDto?,
     val events: List<TripEventDto>
 
@@ -226,7 +230,9 @@ data class EndTripRequest(
     @SerializedName("overall_score")
     val overallScore: Double? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null
 )
 
 data class EndTripResponse(
@@ -254,3 +260,55 @@ data class SuggestedRouteData(
     @SerializedName("points")
     val points: List<LocationDto>
 )
+
+data class StopEventCheckRequest(
+    val location: LocationDto,
+    @SerializedName("stopped_at")
+    val stoppedAt: Long
+)
+
+data class StopEventCheckResponse(
+    val message: String,
+    val data: StopEventCheckData
+)
+
+data class StopEventCheckData(
+    @SerializedName("stop_event_id")
+    val stopEventId: String,
+    val classification: String,
+    @SerializedName("location_context")
+    val locationContext: LocationContextData,
+    @SerializedName("should_prompt")
+    val shouldPrompt: Boolean
+)
+
+data class LocationContextData(
+    val address: String,
+    @SerializedName("poi_category")
+    val poiCategory: String
+)
+
+data class StopEventConfirmResponse(
+    val message: String,
+    val data: StopEventConfirmData
+)
+
+data class StopEventConfirmData(
+    val status: String,
+    @SerializedName("already_handled")
+    val alreadyHandled: Boolean
+)
+
+data class StopEventResolveRequest(
+    val reason: String
+)
+
+data class StopEventResolveResponse(
+    val message: String,
+    val data: StopEventResolveData
+)
+
+data class StopEventResolveData(
+    val resolved: Boolean
+)
+

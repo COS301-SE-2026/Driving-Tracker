@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
+import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.data.repository.TripStateManager
 import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
+import com.omnitech.drivingtracker.services.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,9 @@ import kotlinx.coroutines.flow.stateIn
 class TripSummaryViewModel @Inject constructor(
     private val repository: TripRepository,
     private val sensorFusionManager: SensorFusionManager,
-    private val tripStateManager: TripStateManager
+    private val tripStateManager: TripStateManager,
+    private val obdManager: ObdManager,
+    private val notificationHelper: NotificationHelper
 ) : ViewModel() {
     sealed class UiState {
         object Idle : UiState()
@@ -49,6 +53,10 @@ class TripSummaryViewModel @Inject constructor(
     val tripPath: StateFlow<List<LocationDto>> = _tripPath
 
     val nearbyPois = tripStateManager.nearbyPois
+
+    val safetyCheck = tripStateManager.safetyCheck
+
+    fun clearSafetyCheck() = tripStateManager.clearSafetyCheck()
 
     fun loadTripPath(tripId: String) {
         viewModelScope.launch {
@@ -150,6 +158,7 @@ class TripSummaryViewModel @Inject constructor(
             
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
+            val fuelLevelFinal = obdManager.metrics.value.fuelLevel
 
 
             repository.endTrip(
@@ -159,6 +168,7 @@ class TripSummaryViewModel @Inject constructor(
                 distanceKm = distance,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
+                fuelLevelEnd = fuelLevelFinal,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)
                 } else null,
@@ -190,6 +200,60 @@ class TripSummaryViewModel @Inject constructor(
                         exception.message ?: "Unknown error"
                     }
                     _endTripState.value = UiState.Error(message = errorMessage)
+                }
+            )
+        }
+    }
+
+    fun confirmStopEvent(eventId: String) {
+        viewModelScope.launch {
+
+            repository.confirmStopEvent(eventId).fold(
+                onSuccess = {
+                    notificationHelper.showGeneralNotification("Contacts Alerted", "Your trusted contacts have been notified of your stop.")
+                    tripStateManager.clearSafetyCheck()
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to confirm stop"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Unknown error"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun resolveStopEvent(eventId: String, reason: String) {
+        viewModelScope.launch {
+
+            repository.resolveStopEvent(eventId, reason).fold(
+                onSuccess = {
+                    tripStateManager.clearSafetyCheck()
+                    Log.d("Stop", "Resolved stop event")
+                },
+                onFailure = { exception ->
+                    when (exception) {
+                        is ApiException -> {
+                            _uiState.value = UiState.Error(
+                                code = exception.errorCode,
+                                message = exception.errorMessage ?: "Failed to confirm stop"
+                            )
+                        }
+                        else -> {
+                            _uiState.value = UiState.Error(
+                                message = exception.message ?: "Unknown error"
+                            )
+                        }
+                    }
                 }
             )
         }

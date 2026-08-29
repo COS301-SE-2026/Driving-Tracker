@@ -80,6 +80,16 @@ class DrivingTrackerApp : Application() {
                     description = "General notifications from Driving Tracker"
                 }
             )
+
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    NotificationChannels.CONTACT_ALERTS_HIGH,
+                    "High-priority Contact Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "High priority alerts from trips shared with you"
+                }
+            )
         }
     }
 

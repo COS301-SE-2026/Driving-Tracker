@@ -13,16 +13,10 @@ const auth_controller={
         const {email, username, password, name, surname, phone_number, dob, consent_status}=req.body;
 
         try{
-            //User and refresh token returned from service
-            const {user, refresh_token}=await auth_services.register(email,username,name,surname,password,phone_number,dob,consent_status);
+            await auth_services.register(email,username,name,surname,password,phone_number,dob,consent_status);
 
-            //Generating access token
-            const access_token=generate_token({sub: user.user_id, role: user.role});
-
-            //response body includes access token and refresh token for auto-login after signup
             return res.status(201).json({
-                token:access_token, 
-                refresh_token
+                message: "Registration successful. Please verify your email before logging in."
             });
 
         }catch(err:any){
@@ -42,6 +36,7 @@ const auth_controller={
             
         }
     },
+
     async login(req:Request, res: Response){
 
         const {identifier, password}=req.body;
@@ -78,6 +73,10 @@ const auth_controller={
                 res.status(401).json({error:err.errorCode, message: err.message});
                 return; 
             }
+
+			if(err instanceof ExtendedError){
+				return res.status(403).json({ error: err.errorCode, message: err.message });
+			}
 
             res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
             return;
@@ -151,6 +150,65 @@ const auth_controller={
                 error: "INTERNAL_SERVER_ERROR",
                 message: "Failed to retrieve profile"
             });
+        }
+    },
+
+    async verify_email(req: Request, res: Response){
+        const token  = typeof req.query.token === "string" ? req.query.token : "";
+        if(!token){
+            return res.status(400).json({
+                error: "INVALID_TOKEN",
+                message: "Verification token is required"
+            });
+        }
+        try{
+            await auth_services.verify_email(token);
+			//302 status code
+			return res.redirect("driving-tracker://verify-success");
+            //res.status(200).json({ message: "Email verified successfully"});
+        }catch(err: any){
+            if(err instanceof ValidationError){
+                return res.status(422).json({ error: err.errorCode, message: err.message})
+            }
+            res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
+        }
+    },
+
+    async forgot_password(req: Request, res: Response){
+        const { email } = req.body;
+        try{
+            await auth_services.request_password_reset(email);
+            res.status(200).json({ message: "Reset email sent if account exists"});
+        }catch(err){
+            res.status(500).json({ error: "INTERNAL_SERVER_ERROR"});
+        }
+    },
+
+    async reset_password_link(req: Request, res: Response){
+        const token = typeof req.query.token === "string" ? req.query.token : "";
+        if(!token){
+            return res.status(400).json({
+                error: "INVALID_TOKEN",
+                message: "Reset token is required"
+            });
+        }
+
+        return res.redirect(
+            `driving-tracker://reset-password?token=${encodeURIComponent(token)}`
+        );
+
+    },
+
+    async reset_password(req: Request, res: Response){
+        const { token, password } = req.body;
+        try{
+            await auth_services.reset_password(token, password);
+            res.status(200).json({ message: "Password reset successfully"});
+        }catch(err: any){
+            if(err instanceof ValidationError){
+                return res.status(422).json({ error: err.errorCode, message: err.message})
+            }
+            res.status(400).json({ error: "INVALID_TOKEN", message: err.message});
         }
     }
 

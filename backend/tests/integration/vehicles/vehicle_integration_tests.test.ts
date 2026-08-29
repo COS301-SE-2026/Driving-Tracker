@@ -15,20 +15,9 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
 
     it('successfully removes a vehicle from the user account', async () => {
         const unique = Date.now();
-        const { user, token } = await seedUserAndLogin(unique);
+        const { user, vehicle,token } = await seedUserAndLogin(unique);
 
-        const vehicleRes = await request(app).post('/vehicle/assign_vehicle').set('Authorization', `Bearer ${token}`)
-            .send({
-                name: 'Test Car',
-                make: 'Toyota',
-                model: 'Corolla',
-                year: 2020,
-                fuel_type: 'PETROL'
-            });
-
-        const vehicleId = vehicleRes.body.data.vehicle_id;
-
-        const res = await request(app).delete(`/vehicle/${vehicleId}`).set('Authorization', `Bearer ${token}`);
+        const res = await request(app).delete(`/vehicle/${vehicle}`).set('Authorization', `Bearer ${token}`);
 
         expect(res.status).toBe(200);
         expect(res.body.message).toBe('Vehicle removed successfully');
@@ -37,7 +26,7 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
             where: { 
                 user_id_vehicle_id: {
                     user_id: user.user_id,
-                    vehicle_id: vehicleId
+                    vehicle_id: vehicle
                 }
             }
         });
@@ -56,7 +45,8 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
                 make: 'Ford',
                 model: 'Fiesta',
                 year: 2019,
-                fuel_type: 'PETROL'
+                fuel_type: 'PETROL',
+                fuel_tank:60,
             }
         });
 
