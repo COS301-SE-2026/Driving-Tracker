@@ -124,6 +124,121 @@ describe("update vehicle efficiency", () =>{
                 update_vehicle_efficiency(trip_id,vehicle_id,user_id)
             ).rejects.toThrow("Vehicle not found");
         });
-    })
+        
+    });
+    describe("trip filtering and aggregation", () => {
+        it("skips trips with null fuel levels", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 50,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {
+                    fuel_level_start: null,
+                    fuel_level_end: 60,
+                    distance_km: 100,
+                },
+                {
+                    fuel_level_start: 80,
+                    fuel_level_end: null,
+                    distance_km: 100,
+                },
+            ]);
+
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result.updated).toBe(false);
+            expect(result.fuel_efficiency).toBeNull();
+        });
+
+        it("skips trips with null distance", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 50,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {
+                    fuel_level_start: 80,
+                    fuel_level_end: 60,
+                    distance_km: null,
+                },
+            ]);
+
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result.updated).toBe(false);
+        });
+
+        it("skips trips where fuel increased (start < end)", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 50,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {
+                    fuel_level_start: 50,
+                    fuel_level_end: 80,
+                    distance_km: 100,
+                },
+            ]);
+
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result.updated).toBe(false);
+        });
+
+        it("skips trips with zero or negative fuel used", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 50,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {
+                    fuel_level_start: 80,
+                    fuel_level_end: 80,
+                    distance_km: 100,
+                },
+            ]);
+
+            const result = await update_vehicle_efficiency(trip_id, vehicle_id, user_id);
+
+            expect(result.updated).toBe(false);
+        });
+
+        it("aggregates multiple valid trips correctly", async () => {
+            mock_prisma.trips.count.mockResolvedValue(5);
+            mock_prisma.vehicles.findUnique.mockResolvedValue({
+                fuel_tank: 50,
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {
+                    fuel_level_start: 80,
+                    fuel_level_end: 60,
+                    distance_km: 100,
+                },
+                {
+                    fuel_level_start: 60,
+                    fuel_level_end: 40,
+                    distance_km: 100,
+                },
+                {
+                    fuel_level_start: 40,
+                    fuel_level_end: 30,
+                    distance_km: 50,
+                },
+            ]);
+            mock_prisma.vehicles.update.mockResolvedValue({
+                fuel_efficiency: 10,
+            });
+
+            const result = await update_vehicle_efficiency(vehicle_id, vehicle_id, vehicle_id);
+
+            expect(result.updated).toBe(true);
+            expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+                where: { vehicle_id: vehicle_id },
+                data: { fuel_efficiency: 10 },
+            });
+        });
+    });
    
 })
