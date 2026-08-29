@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
+import com.omnitech.drivingtracker.ui.analytics.DriverAnalytics
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -111,6 +112,8 @@ sealed class Screen(val route: String){
     data object Profile : Screen("profile")
 
     data object More : Screen("more")
+
+    data object Analytics : Screen("analytics")
 }
 
 @AndroidEntryPoint
@@ -316,6 +319,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.Profile.route){
                         Profile(navController = navController)
+                    }
+                    composable(Screen.Analytics.route){
+                        DriverAnalytics(navController = navController)
                     }
                     composable(
                         route = Screen.LiveTripContacts.route,
