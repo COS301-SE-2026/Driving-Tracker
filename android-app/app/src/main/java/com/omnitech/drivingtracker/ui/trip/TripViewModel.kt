@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.data.models.ContactDto
 import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
+import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.ContactsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class TripViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val contactsRepository: ContactsRepository,
-    private val sensorFusion: SensorFusionManager
+    private val sensorFusion: SensorFusionManager,
+    private val obdManager: ObdManager
 ) : ViewModel(){
 
     sealed class UiState{
@@ -143,7 +145,7 @@ class TripViewModel @Inject constructor(
     ){
         viewModelScope.launch {
             _tripStartState.value = UiState.Loading
-
+            val currentFuel = obdManager.metrics.value.fuelLevel
             tripRepository.startTrip(
                 vehicleId = vehicleId,
                 dataSource = dataSource,
@@ -151,6 +153,7 @@ class TripViewModel @Inject constructor(
                 longitude = longitude,
                 destLat = destLat,
                 destLng = destLng,
+                fuelLevelStart = currentFuel,
                 selectedContactIds = selectedContactIds
             ).fold(
                 onSuccess = { tripId ->

@@ -36,7 +36,12 @@ export interface assign_vehicle{
 	make: string,
     model: string,
     year: number,
-    fuel_type: string
+    fuel_type: string,
+    fuel_tank:number
+}
+function mpg_to_lper100km(mpg: number): number | null {//helper function for converting mpg to lper100
+    if (!mpg || mpg <= 0) return null;
+    return 235.215 / mpg;
 }
 
 export const vehicle_services={
@@ -112,12 +117,14 @@ export const vehicle_services={
         vehicle_id     
     }
     */ 
+   
+
     async assign_user_to_vehicle(data:assign_vehicle){//post (will create a vehicle for the user)
       //users need the ability to add a vehicle as their own 
        //will it get the vehicle id from the vin number
        
        try{
-            if( !data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type){
+            if( !data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type || !data.fuel_tank){
                 throw new Error("Missing field(s)");
             } 
             const user = await prisma.users.findUnique({
@@ -127,7 +134,28 @@ export const vehicle_services={
             if(!user){
                 throw new Error("User does not exist");
             }
-            //create unique vehicle
+            //create unique vehicle       
+            //send the vehicle data to car api and populate the fuel efficiency 
+            //update to add the tank capacity
+            let benchmark_lper100km: number| null =null;
+                if(data.year >= 2015 && data.year <= 2020){
+                    try{
+                        const ben_trim = await fetch_vehicle_benchmark(data.make,data.model,data.year);
+                        if(ben_trim.length === 0){
+                            return null ;
+                        }
+            
+                        const  avg_mpg = ben_trim.reduce((sum, ben_trim) => sum + ben_trim.combined_mpg, 0) / ben_trim.length;
+                        benchmark_lper100km = mpg_to_lper100km(avg_mpg)
+                    }catch(error){
+                        console.error(`Benchmark lookup failed  `, error);
+                        return null;
+                    }
+                }
+                //if it comes back as null then the first trip will be used as the fuel efficiency of the car until the first 5 trips are reached 
+                if (benchmark_lper100km == null) return null;
+            
+             
             const result = await prisma.$transaction(async (tx) => {
                 const vehicle = await tx.vehicles.create({
                     data: {
@@ -136,7 +164,9 @@ export const vehicle_services={
                         make: data.make,
                         model: data.model,
                         year: data.year,
-                        fuel_type: data.fuel_type
+                        fuel_type: data.fuel_type,
+                        fuel_efficiency: benchmark_lper100km,
+                        fuel_tank:data.fuel_tank
                     }
                 });
 
@@ -158,6 +188,8 @@ export const vehicle_services={
                     make: result.make,
                     model: result.model,
                     year: result.year,
+                    fuel_tank: result.fuel_tank,
+                    fuel_efficiency: result.fuel_efficiency,
                     fuel_type: result.fuel_type
                 }
             };

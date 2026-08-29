@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
+import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.data.repository.TripStateManager
 import com.omnitech.drivingtracker.data.sensors.SensorFusionManager
@@ -24,6 +25,7 @@ class TripSummaryViewModel @Inject constructor(
     private val repository: TripRepository,
     private val sensorFusionManager: SensorFusionManager,
     private val tripStateManager: TripStateManager,
+    private val obdManager: ObdManager,
     private val notificationHelper: NotificationHelper
 ) : ViewModel() {
     sealed class UiState {
@@ -156,6 +158,7 @@ class TripSummaryViewModel @Inject constructor(
             
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
+            val fuelLevelFinal = obdManager.metrics.value.fuelLevel
 
 
             repository.endTrip(
@@ -165,6 +168,7 @@ class TripSummaryViewModel @Inject constructor(
                 distanceKm = distance,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
+                fuelLevelEnd = fuelLevelFinal,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)
                 } else null,

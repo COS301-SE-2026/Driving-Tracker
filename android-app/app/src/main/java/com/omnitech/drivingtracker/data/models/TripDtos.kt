@@ -72,7 +72,9 @@ data class StartTripRequest(
     @SerializedName("share_with_contacts")
     val shareWithContacts: List<String>? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start")
+    val fuelLevelStart: Float? = null
 )
 
 @Suppress("unused")
@@ -187,6 +189,8 @@ data class TripSummaryDto(
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
     val destinationLongitude: Double? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null,
     val scores: TripScoreDto?,
     val events: List<TripEventDto>
 
@@ -226,7 +230,9 @@ data class EndTripRequest(
     @SerializedName("overall_score")
     val overallScore: Double? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null
 )
 
 data class EndTripResponse(

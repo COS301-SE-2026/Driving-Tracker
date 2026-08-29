@@ -10,6 +10,7 @@ import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
+import { update_vehicle_efficiency } from '../utils/trip_counter';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -27,17 +28,6 @@ function to_number(value: any): number | null {
     // Otherwise try to convert to number
     return Number(value);
 };
-//helper to convert mpg to l/km 
-function convert_mpg_to_lper_km(value:number):number|null{
-    const mpg = to_number(value);
-    if(!mpg){
-        return null;
-    }
-    if( mpg <= 0){
-        return 0;
-    }
-    return 235.215/mpg;
-}
 
 async function get_trip_shared_contacts(trip_id: string){
 
@@ -81,6 +71,7 @@ export interface create_trip{
         lat:number;
         lng:number;
     };
+    fuel_level_start?: number;
     // distance_km?: number;
 };
 export interface trip_summary_filter {
@@ -100,6 +91,7 @@ export interface end_trip {
         lat:number;
         lng:number;
     };
+    fuel_level_end?: number;
     // safety_score: number;
     // eco_score: number;
     // overall_score: number;
@@ -346,19 +338,11 @@ export const trips_services ={
                     make:true,
                     model:true,
                     year:true,
+                    fuel_efficiency:true
                 }
             });
 
-            if (vehicle_info?.make==null || vehicle_info?.model==null || vehicle_info?.year==null) {
-                console.log(vehicle_info?.make,vehicle_info?.model,vehicle_info?.year, "null if no valid");
-               throw new Error("No car info found in database");
-            }
-
-            const make = vehicle_info?.make;
-            const model = vehicle_info?.model;
-            const year = vehicle_info?.year;
-            
-            console.log(make, model , year , "checking the vehicles info ");
+        
 
             let fuel_est: number | null = null;
             let planned_distance_km: number | null = null;
@@ -373,25 +357,8 @@ export const trips_services ={
                     dest_lng: data.end_location.lng,
                 });
                 planned_distance_km = route.distance_km;
- 
                 
-                if(year >= 2015 && year <= 2020){
-                    console.log("Using the fetch vehicle benchmark");
-                    
-                    const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
-                    if (benchmark_trims.length === 0) {
-                        console.log("No Benchmark data");
-                        throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
-                    }
-    
-                    const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
-                    const lper100km = convert_mpg_to_lper_km(avg_mpg);
-    
-                    if (lper100km !== null) {
-                        fuel_est = (lper100km / 100) * planned_distance_km;
-                    }
-                }
-                // fuel_est = null;
+                fuel_est = (to_number(vehicle_info?.fuel_efficiency)??0 / 100) * planned_distance_km;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
@@ -406,6 +373,7 @@ export const trips_services ={
                         end_longitude:data.end_location?.lng,
                         data_source: data.data_source,
                         fuel_estimate:fuel_est,
+                        fuel_level_start: data.fuel_level_start,
                         status: "IN_PROGRESS"
                     }
                 });
@@ -506,30 +474,31 @@ export const trips_services ={
                     fuel_estimate: data.fuel_estimate,
                     end_latitude:data.end_location?.lat,
                     end_longitude:data.end_location?.lng,
+                    fuel_level_end: data.fuel_level_end,
                     status: data.status
                 }
             });
             console.log("updated the trip status");
-            // revoke any active shares for this trip
-            // await prisma.trip_location_shares.updateMany({
-            //     where: { trip_id: data.trip_id, revoked_at: null },
-            //     data: { revoked_at: new Date() }
-            // });
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
-            //will need to calculate the scores separately to ensure the ai wont get in accurate readings from kotlin
-            //calculations for scores
+            
 
             if(!trip.vehicle_id ){
                 throw new Error("missing vehicle id");
             }
             console.log("computing the scores");
             let computed_scores=null; 
-            if(data.status === "COMPLETED"){
-                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km,to_number(trip.fuel_estimate)??0);
+            const vehicle_id = trip.vehicle_id;
+            if(data.status === "COMPLETED" && trip.vehicle_id){
+                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km);
+                setImmediate(() => {
+                    void update_vehicle_efficiency(data.trip_id, vehicle_id, data.user_id).catch((err) => {
+                        console.error("Background vehicle efficiency update failed", err);
+                    });
+                });
             }
             if(!computed_scores){
                 throw new Error("Computed scores came back as null ");

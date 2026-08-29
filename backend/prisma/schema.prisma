@@ -142,6 +142,9 @@ model trips {
   last_latitude    Decimal?        @db.Decimal(9, 6)
   last_speed_kmh   Decimal?        @db.Decimal(6, 2)
   last_recorded_at DateTime?       @db.Timestamptz(6)
+  fuel_level_start Decimal?        @db.Decimal(9, 6)
+  fuel_level_end   Decimal?        @db.Decimal(9, 6)
+
   alerts           alerts[]
   trip_events      trip_events[]
   trip_readings    trip_readings[]
@@ -286,6 +289,8 @@ model vehicles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   trips        trips[]
+  fuel_tank    Decimal       @db.Decimal(9, 6)
+  fuel_efficiency Decimal?    @db.Decimal(9, 6)
   users_vehicles        users_vehicles[]
 }
 
