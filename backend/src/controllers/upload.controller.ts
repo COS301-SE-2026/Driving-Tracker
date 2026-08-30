@@ -108,12 +108,13 @@ export const upload_controller = {
             const blob_name = await auth_services.get_profile_picture_blob_name(user_id);
             
             if(!blob_name){
-                res.status(401).json({ error: "NOT FOUND", message: "This user has no profile picture" });
+                res.status(404).json({ error: "NOT FOUND", message: "This user has no profile picture" });
+                return;
             }
             
-            const { stream, content_type, content_length } = await blob_storage_service.download_image(blob_name);
+            const { stream, content_Type, content_length } = await blob_storage_service.download("profile", blob_name);
 
-            res.setHeader("Content-Type", content_type);
+            res.setHeader("Content-Type", content_Type);
             if(content_length){
                 res.setHeader("Content-Length", content_length.toString());
             }
@@ -131,5 +132,40 @@ export const upload_controller = {
         }
     },
 
-    
+    async get_vehicle_image(req: AuthRequest, res: Response){
+        try{
+            const user_id = req.user?.sub;
+            if(!user_id){
+                res.status(401).json({
+                    error: "UNAUTHORIZED"
+                });
+                return;
+            }
+
+            const { vehicle_id } = req.params;
+
+            const blob_name = await vehicle_services.get_vehicle_image_blob_name(user_id, vehicle_id);
+            if(!blob_name){
+                res.status(404).json({ error: "NOT FOUND", message: "This vehicle has no image" });
+                return;
+            }
+            
+            const { stream, content_Type, content_length } = await blob_storage_service.download("vehicle", blob_name);
+
+            res.setHeader("Content-Type", content_Type);
+            if(content_length){
+                res.setHeader("Content-Length", content_length.toString());
+            }
+            res.setHeader("Cache-Control", "primate, max-age=3600");
+
+            stream.pipe(res);
+        }catch(error: any){
+            if(error?.message === "You do not own this vehicle"){
+                res.status(403).json({ error: "FORBIDDEN", message: error.message });
+                return;
+            }
+
+            res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: error?.message });
+        }
+    }
 }
