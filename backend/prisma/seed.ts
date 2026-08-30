@@ -263,7 +263,7 @@ async function main() {
             category: 'MILESTONE',
             icon_url: 'badge_first_drive',
             weeklyChallengeName: null,
-            criterion: { metric: 'trips_completed', operator: '>=', threshold: 1, target: 1 },
+            criterion: { metric: 'completed_trip_count', operator: '>=', threshold: 1, target: 1 },
         },
         {
             name: 'On Board',
@@ -271,7 +271,7 @@ async function main() {
             category: 'MILESTONE',
             icon_url: 'badge_on_board',
             weeklyChallengeName: null,
-            criterion: { metric: 'trips_completed', operator: '>=', threshold: 1, target: 1 },
+            criterion: { metric: 'completed_trip_count', operator: '>=', threshold: 1, target: 1 },
         },
         {
             name: 'Safety Officer',
@@ -300,7 +300,7 @@ async function main() {
     ];
 
     for (const badgeSeed of badgeSeeds) {
-        const weekly_challenge_id = badgeSeed.weeklyChallengeNmae
+        const weekly_challenge_id = badgeSeed.weeklyChallengeName
             ? weeklyChallengeIdByName.get(badgeSeed.weeklyChallengeName) ?? null
             : null;
         

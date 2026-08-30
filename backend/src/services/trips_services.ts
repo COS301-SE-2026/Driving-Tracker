@@ -10,6 +10,7 @@ import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
+import { badges_leaderboard_services } from './badges_leaderboard_services';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -88,8 +89,9 @@ export interface trip_summary_filter {
     user_id: string;
 };
 export interface end_trip {
-    trip_id: string;
-    user_id: string; 
+
+    trip_id: data.trip_id;
+    user_id: data.user_id;
     end_time: Date;
     route_polyline: string;
     distance_km: number;
@@ -431,6 +433,16 @@ export const trips_services ={
                 }
             }
             console.log("eval completed ");
+
+            try {
+                await badges_leaderboard_services.evaluate({
+                    user_id: data.user_id,
+                    trip_id: data.trip_id,
+                });
+            } catch (badgeError){
+                console.error("Badge evaluation failed", badgeError)
+            }
+
             console.log(driverProfile);
             return {
                 trip_id: updatedTrip.trip_id,

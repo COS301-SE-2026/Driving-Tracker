@@ -20,7 +20,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 data class BadgeUiModel(
-    val badgeId: Int,
+    val badgeId: String,
     val name: String,
     val description: String,
     val category: String,
@@ -89,11 +89,11 @@ class AchievementsViewModel @Inject constructor(
 
             //Fallback definitions if API fails
             val fallbackDefinitions = listOf(
-                BadgeDefinition(1, "First Drive", "Complete your very first trip", "MILESTONE", "", emptyList()),
-                BadgeDefinition(2, "On Board", "Connect to the OBD device for the first time", "MILESTONE", "", emptyList()),
-                BadgeDefinition(3, "Safety Officer", "Go 4 days without bad driving habits", "SAFETY", "", emptyList()),
-                BadgeDefinition(4, "Speed Angel", "Complete 3 trips with an average speed below 80km/h", "SAFETY", "", emptyList()),
-                BadgeDefinition(5, "Throttle Goat", "Complete 5 trips without a hard acceleration event", "SAFETY", "", emptyList())
+                BadgeDefinition("1", "First Drive", "Complete your very first trip", "MILESTONE", "", emptyList()),
+                BadgeDefinition("2", "On Board", "Connect to the OBD device for the first time", "MILESTONE", "", emptyList()),
+                BadgeDefinition("3", "Safety Officer", "Go 4 days without bad driving habits", "SAFETY", "", emptyList()),
+                BadgeDefinition("4", "Speed Angel", "Complete 3 trips with an average speed below 80km/h", "SAFETY", "", emptyList()),
+                BadgeDefinition("5", "Throttle Goat", "Complete 5 trips without a hard acceleration event", "SAFETY", "", emptyList())
             )
 
             val definitions = if (definitionsResult.isSuccess) definitionsResult.getOrThrow().badges else fallbackDefinitions
