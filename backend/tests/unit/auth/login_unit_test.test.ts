@@ -51,6 +51,7 @@ describe('Auth login endpoint',()=>{
                 verification_token: null,
                 password_reset_token: null,
                 reset_token_exp: null,
+                profile_picture_url: null,
             },
             refresh_token: 'refresh-1',
         });

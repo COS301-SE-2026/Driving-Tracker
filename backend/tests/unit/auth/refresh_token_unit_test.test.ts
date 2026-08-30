@@ -45,9 +45,10 @@ describe('Auth refresh endpoint', () => {
             phone_number: '+27781234567', 
             phone_verified: false, 
             email_verified: false,
-                verification_token: null,
-                password_reset_token: null,
-                reset_token_exp: null,
+            verification_token: null,
+            password_reset_token: null,
+            reset_token_exp: null,
+            profile_picture_url: null,
         },
         new_refresh_token: 'new-refresh-1',
         });
