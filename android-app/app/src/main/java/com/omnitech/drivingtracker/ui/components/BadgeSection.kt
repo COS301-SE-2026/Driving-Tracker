@@ -82,6 +82,6 @@ fun BadgeSection(
 
 fun getBadgeColor(category: String): Color = when (category.uppercase()) {
     "SAFETY" -> Green
-    "PERFORMANCE" -> Purple
+    "MILESTONE" -> Purple
     else -> Blue
 }

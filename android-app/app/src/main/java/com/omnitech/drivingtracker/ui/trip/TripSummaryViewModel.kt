@@ -151,7 +151,7 @@ class TripSummaryViewModel @Inject constructor(private val repository: TripRepos
                             scores = null,
                             events = emptyList()
                         ),
-                        isFirstTrip = data.isFirstTrip ?: false
+                        isFirstTrip = data.isFirstTrip == true
                     )
                 },
                 onFailure = { exception ->

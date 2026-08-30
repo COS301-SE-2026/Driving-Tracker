@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.BadgeDefinition
 import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.repository.AchievementsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
@@ -82,36 +83,48 @@ class AchievementsViewModel @Inject constructor(
     private fun fetchBadges() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingBadges = true)
+
             val definitionsResult = repository.getBadgeDefinitions()
             val earnedResult = repository.getBadges()
 
-            if (definitionsResult.isSuccess && earnedResult.isSuccess) {
-                val definitions = definitionsResult.getOrThrow().badges
-                val earned = earnedResult.getOrThrow().earned
+            //Fallback definitions if API fails
+            val fallbackDefinitions = listOf(
+                BadgeDefinition(1, "First Drive", "Complete your very first trip", "MILESTONE", "", emptyList()),
+                BadgeDefinition(2, "On Board", "Connect to the OBD device for the first time", "MILESTONE", "", emptyList()),
+                BadgeDefinition(3, "Safety Officer", "Go 4 days without bad driving habits", "SAFETY", "", emptyList()),
+                BadgeDefinition(4, "Speed Angel", "Complete 3 trips with an average speed below 80km/h", "SAFETY", "", emptyList()),
+                BadgeDefinition(5, "Throttle Goat", "Complete 5 trips without a hard acceleration event", "SAFETY", "", emptyList())
+            )
 
-                val badges = definitions.map { def ->
-                    val earnedBadge = earned.find { it.badgeId == def.badgeId }
-                    BadgeUiModel(
-                        badgeId = def.badgeId,
-                        name = def.name,
-                        description = def.description,
-                        category = def.category,
-                        iconRes = mapIconToRes(def.name),
-                        isEarned = earnedBadge != null,
-                        currentProgress = earnedBadge?.current ?: 0,
-                        targetProgress = def.criteria.firstOrNull()?.target?.toInt() ?: 1
-                    )
-                }
+            val definitions = if (definitionsResult.isSuccess) definitionsResult.getOrThrow().badges else fallbackDefinitions
+            val earned = if (earnedResult.isSuccess) earnedResult.getOrThrow().earned else emptyList()
 
-                //Active challenges are badges that aren't earned yet
-                val challenges = badges.filter { !it.isEarned }.map { badge ->
-                    Challenge(badge.badgeId.toString(), badge.name, badge.description, badge.currentProgress, badge.targetProgress)
-                }
 
-                _uiState.value = _uiState.value.copy(badges = badges, challenges = challenges, isLoadingBadges = false)
-            } else {
-                _uiState.value = _uiState.value.copy(isLoadingBadges = false)
+            val badges = definitions.map { def ->
+                val earnedBadge = earned.find { it.badgeId == def.badgeId }
+                BadgeUiModel(
+                    badgeId = def.badgeId,
+                    name = def.name,
+                    description = def.description,
+                    category = def.category,
+                    iconRes = mapIconToRes(def.name),
+                    isEarned = earnedBadge != null,
+                    currentProgress = earnedBadge?.current ?: 0,
+                    targetProgress = def.criteria.firstOrNull()?.target?.toInt() ?: 1
+                )
             }
+
+            //Active challenges are badges that aren't earned yet
+            val challenges = badges.filter { !it.isEarned }.map { badge ->
+                Challenge(badge.badgeId.toString(), badge.name, badge.description, badge.currentProgress, badge.targetProgress)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                badges = badges,
+                challenges = challenges,
+                isLoadingBadges = false
+            )
+
         }
     }
 
