@@ -11,7 +11,17 @@ export interface AppJwtPayload extends JwtPayload{
 
 //Interface that extends Request to add user which holds custom JwtPayload
 export interface AuthRequest extends Request{
-  user?: AppJwtPayload
+  user?: AppJwtPayload;
+  file?: {
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+  };
+  files?: Array<{
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+  }>;
 }
 
 //Generates a new access token
