@@ -90,8 +90,8 @@ export interface trip_summary_filter {
 };
 export interface end_trip {
 
-    trip_id: data.trip_id;
-    user_id: data.user_id;
+    trip_id: string;
+    user_id: string;
     end_time: Date;
     route_polyline: string;
     distance_km: number;
