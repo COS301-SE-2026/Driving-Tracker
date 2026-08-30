@@ -152,13 +152,17 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
-    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?) {
+    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
             
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
-            val fuelLevelFinal = obdManager.metrics.value.fuelLevel
+            var currentFuel = obdManager.metrics.value.fuelLevel;
+            if(currentFuel == null || currentFuel == 0f){
+                currentFuel = fuelLevelEnd
+            }
+
 
 
             repository.endTrip(
@@ -168,7 +172,7 @@ class TripSummaryViewModel @Inject constructor(
                 distanceKm = distance,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
-                fuelLevelEnd = fuelLevelFinal,
+                fuelLevelEnd = currentFuel,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)
                 } else null,
