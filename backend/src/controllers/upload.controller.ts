@@ -49,4 +49,87 @@ export const upload_controller = {
             res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: error?.message });
         }
     },
+
+    async upload_vehicle_image(req: AuthRequest, res: Response){
+        try{
+            const user_id = req.user?.sub;
+            if(!user_id){
+                res.status(401).json({
+                    error: "UNAUTHORIZED"
+                });
+                return;
+            }
+
+            const { vehicle_id } = req.params;
+            if(!req.file){
+                res.status(400).json({
+                    error: "NO_FILE_PROVIDED",
+                    message: "No image file was provided"
+                });
+                return;
+            }
+
+            const blob_name = await blob_storage_service.upload_image(req.file, "vehicle");
+            const { display_url, previous_blob_name } = await vehicle_services.update_vehicle_image(user_id, vehicle_id, blob_name);
+
+            void blob_storage_service.delete_image("profile", previous_blob_name);
+
+            res.status(200).json({
+                message: "Vehicle image uploaded successfully",
+                data: { profile_picture_url: display_url }
+            });
+        }catch(error: any){
+            if(error?.message === "You do not own this vehicle"){
+                res.status(403).json({ error: "FORBIDDEN", message: error.message });
+                return;
+            }
+
+            if(error instanceof ExtendedError && error.errorCode === "INVALID_FILE_TYPE"){
+                res.status(400).json({ error: "INVALID_FILE_TYPE", message: "Only jpeg, jpg, png, and webp images are allowed" });
+                return;
+            }
+
+            res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: error?.message });
+        }
+    },
+
+    async get_profile_picture(req:AuthRequest, res:Response){
+        try{
+            const requester_id = req.user?.sub;
+            if(!requester_id){
+                res.status(401).json({
+                    error: "UNAUTHORIZED"
+                });
+                return;
+            }
+
+            const { user_id } = req.params;
+
+            const blob_name = await auth_services.get_profile_picture_blob_name(user_id);
+            
+            if(!blob_name){
+                res.status(401).json({ error: "NOT FOUND", message: "This user has no profile picture" });
+            }
+            
+            const { stream, content_type, content_length } = await blob_storage_service.download_image(blob_name);
+
+            res.setHeader("Content-Type", content_type);
+            if(content_length){
+                res.setHeader("Content-Length", content_length.toString());
+            }
+            res.setHeader("Cache-Control", "primate, max-age=3600");
+
+            stream.pipe(res);
+
+        }catch(error: any){
+            if(error instanceof ExtendedError && error.errorCode === "USER_NOT_FOUND"){
+                res.status(404).json({ error: "USER_NOT_FOUND", message: error.message });
+                return;
+            }
+
+            res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: error?.message });
+        }
+    },
+
+    
 }
