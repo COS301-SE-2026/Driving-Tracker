@@ -111,3 +111,27 @@ export const remove_vehicle = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const get_fuel_analytics = async (req: AuthRequest, res: Response) => {
+
+    try{
+        const user_id = req.user?.sub;
+
+        if (!user_id){
+            res.status(403).json({message: 'Unauthorized'});
+            return;
+        }
+
+        const result = await vehicle_services.get_fuel_analytics({user_id});
+        res.status(200).json(result);
+    }
+    
+    catch(error: any){
+        res.status(500).json(
+            {
+                message: "Internal server error",
+                error: error.message
+            }
+        );
+    }
+}

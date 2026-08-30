@@ -15,4 +15,6 @@ vehicle_router.get("/get_all_vehicles", user_based_limiter, verify_token,vehicle
 vehicle_router.delete("/:vehicle_id", verify_token, vehicle.remove_vehicle);
 //Update 
 vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
+//read fuel analytics
+vehicle_router.get("/fuel_analytics", user_based_limiter, verify_token, vehicle.get_fuel_analytics);
 export default vehicle_router;
