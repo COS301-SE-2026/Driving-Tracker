@@ -11,6 +11,7 @@ import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
 import { badges_leaderboard_services } from './badges_leaderboard_services';
+import { update_vehicle_efficiency } from '../utils/trip_counter';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -28,17 +29,6 @@ function to_number(value: any): number | null {
     // Otherwise try to convert to number
     return Number(value);
 };
-//helper to convert mpg to l/km 
-function convert_mpg_to_lper_km(value:number):number|null{
-    const mpg = to_number(value);
-    if(!mpg){
-        return null;
-    }
-    if( mpg <= 0){
-        return 0;
-    }
-    return 235.215/mpg;
-}
 
 async function get_trip_shared_contacts(trip_id: string){
 
@@ -82,6 +72,7 @@ export interface create_trip{
         lat:number;
         lng:number;
     };
+    fuel_level_start?: number;
     // distance_km?: number;
 };
 export interface trip_summary_filter {
@@ -102,6 +93,7 @@ export interface end_trip {
         lat:number;
         lng:number;
     };
+    fuel_level_end?: number;
     // safety_score: number;
     // eco_score: number;
     // overall_score: number;
@@ -164,6 +156,150 @@ export interface trip_events_log{
     recorded_at: Date;
 }
 
+type road_use = 'LimitedAccess' | 'Arterial' | 'Terminal' | 'Ramp' | 'Entrance Ramp'| 'Rotary' | 'LocalStreet';
+
+export interface classify_input{
+    road_use: road_use[] | null;
+    nearby_pois: { category: string | null; distance_meters: number }[];
+    stopped_duration_minutes: number;
+}
+
+const HIGH_RISK_ROADS: road_use[] = ['LimitedAccess', 'Ramp','Entrance Ramp', 'Rotary'];
+const LOW_RISK_ROADS: road_use[] = ['LocalStreet', 'Terminal'];
+
+export const STOP_EVENT_STATUS = {
+    POSSIBLE: 'possible',
+    CONFIRMED: 'confirmed',
+    RESOLVED_OK: 'resolved_ok',
+    RESOLVED_MOVED: 'resolved_moved',
+} as const;
+
+export type STOP_EVENT_STATUS = typeof STOP_EVENT_STATUS[keyof typeof STOP_EVENT_STATUS];
+
+const EXPECTED_STOP_CATEGORIES = [
+    'PETROL_STATION', 'OPEN_PARKING_AREA',
+    'SHOP','RESTAURANT', 'REST_AREA', 'HOTEL_MOTEL',
+    'HOSPITAL','SHOPPING_CENTER', 'CAFE_PUB','MARKET',
+    'RESIDENTIAL_ACCOMMODATION', 'COMPANY'
+]
+
+const POI_PROXIMITY_THRESHOLD_M = 300;
+
+const CHECK_AFTER_GRACE_MS = 2*60*1000;
+
+export function classify_stop({ road_use, nearby_pois, stopped_duration_minutes}: classify_input){
+
+    const road_use_arr = road_use ?? []
+
+    const is_high_risk = road_use_arr.some(r => HIGH_RISK_ROADS.includes(r));
+    const is_low_risk = road_use_arr.some(r => LOW_RISK_ROADS.includes(r));
+
+    const closest_relevant_poi = nearby_pois.filter(p => p.category && EXPECTED_STOP_CATEGORIES.includes(p.category))
+        .sort((a, b) => a.distance_meters - b.distance_meters)[0];
+
+    const near_expected_poi = closest_relevant_poi && closest_relevant_poi.distance_meters <= POI_PROXIMITY_THRESHOLD_M;
+
+    //high risk road use 
+    if(is_high_risk) {
+        //but near an expected poi
+        if(near_expected_poi){
+            return {
+                classification: 'ambiguous',
+                poi_category: closest_relevant_poi.category
+            };
+        }
+
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+        
+    }
+
+    if(near_expected_poi){
+        return {
+            classification: 'expected',
+            poi_category: closest_relevant_poi.category
+        };
+    }
+
+    if(is_low_risk){
+        if(stopped_duration_minutes >= 60){
+            return {
+                classification: 'ambiguous',
+                poi_category: null
+            }
+        }
+
+        return {
+            classification: 'expected',
+            poi_category: null
+        }
+    }
+
+    //llean on duration when other metrics unavailable
+    if(stopped_duration_minutes >= 30){
+        return {
+            classification: 'unexpected',
+            poi_category: null
+        };
+    }
+
+    return {
+        classification: 'ambiguous',
+        poi_category: null
+    };
+}
+
+export async function notify_unexpected_stop(
+    event: {
+        event_id: string; 
+        trip_id: string; 
+        address: string | null;
+        stopped_at: Date;
+    }){
+
+    const trip = await prisma.trips.findUniqueOrThrow({
+        where: { trip_id: event.trip_id },
+        include:{ users: true }
+    });
+
+    const user = trip.users;
+
+    const { contact_user_ids }= await get_trip_shared_contacts(event.trip_id);
+
+    if(contact_user_ids.length === 0){
+        return;
+    }
+
+    const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+    const local_date = addHours(new Date(event.stopped_at), 2);
+
+    const formatted_date = format(local_date, 'MMM d, yyy h:mm a');
+
+    const messageNoti = event.address? `${full_name} stopped near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location`;
+
+    const message = event.address? `${full_name} made an unexpected stop near ${event.address} at ${formatted_date}` : `${full_name} stopped in an unexpected location for an extended period`;
+
+    const event_ids = new Array(contact_user_ids.length).fill(event.event_id);
+    
+    await add_notification({
+        user_ids: contact_user_ids,
+        type: "TRIP_ALERT",
+        title: "Unexpected stop",
+        body: message,
+        reference_ids: event_ids,
+        reference_type: "unexpected_stop_events",
+    });
+
+    //Get tokens for sending push notifications to contacts
+    const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+    await notification_services.send_unexpected_stop_notification(fcm_tokens, event.trip_id, event.event_id, messageNoti);
+
+}
+
 export const trips_services ={
     async create(data: create_trip){
         console.log("Starting trip");
@@ -204,19 +340,11 @@ export const trips_services ={
                     make:true,
                     model:true,
                     year:true,
+                    fuel_efficiency:true
                 }
             });
 
-            if (vehicle_info?.make==null || vehicle_info?.model==null || vehicle_info?.year==null) {
-                console.log(vehicle_info?.make,vehicle_info?.model,vehicle_info?.year, "null if no valid");
-               throw new Error("No car info found in database");
-            }
-
-            const make = vehicle_info?.make;
-            const model = vehicle_info?.model;
-            const year = vehicle_info?.year;
-            
-            console.log(make, model , year , "checking the vehicles info ");
+        
 
             let fuel_est: number | null = null;
             let planned_distance_km: number | null = null;
@@ -231,25 +359,8 @@ export const trips_services ={
                     dest_lng: data.end_location.lng,
                 });
                 planned_distance_km = route.distance_km;
- 
                 
-                if(year >= 2015 && year <= 2020){
-                    console.log("Using the fetch vehicle benchmark");
-                    
-                    const benchmark_trims = await fetch_vehicle_benchmark(make, model, year);
-                    if (benchmark_trims.length === 0) {
-                        console.log("No Benchmark data");
-                        throw new Error(`No benchmark data found for ${make} ${model} ${year}`);
-                    }
-    
-                    const avg_mpg = benchmark_trims.reduce((sum, trim) => sum + trim.combined_mpg, 0) / benchmark_trims.length;
-                    const lper100km = convert_mpg_to_lper_km(avg_mpg);
-    
-                    if (lper100km !== null) {
-                        fuel_est = (lper100km / 100) * planned_distance_km;
-                    }
-                }
-                // fuel_est = null;
+                fuel_est = (to_number(vehicle_info?.fuel_efficiency)??0 / 100) * planned_distance_km;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {
@@ -264,6 +375,7 @@ export const trips_services ={
                         end_longitude:data.end_location?.lng,
                         data_source: data.data_source,
                         fuel_estimate:fuel_est,
+                        fuel_level_start: data.fuel_level_start,
                         status: "IN_PROGRESS"
                     }
                 });
@@ -364,30 +476,31 @@ export const trips_services ={
                     fuel_estimate: data.fuel_estimate,
                     end_latitude:data.end_location?.lat,
                     end_longitude:data.end_location?.lng,
+                    fuel_level_end: data.fuel_level_end,
                     status: data.status
                 }
             });
             console.log("updated the trip status");
-            // revoke any active shares for this trip
-            // await prisma.trip_location_shares.updateMany({
-            //     where: { trip_id: data.trip_id, revoked_at: null },
-            //     data: { revoked_at: new Date() }
-            // });
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
             });
-            //will need to calculate the scores separately to ensure the ai wont get in accurate readings from kotlin
-            //calculations for scores
+            
 
             if(!trip.vehicle_id ){
                 throw new Error("missing vehicle id");
             }
             console.log("computing the scores");
             let computed_scores=null; 
-            if(data.status === "COMPLETED"){
-                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km,to_number(trip.fuel_estimate)??0);
+            const vehicle_id = trip.vehicle_id;
+            if(data.status === "COMPLETED" && trip.vehicle_id){
+                computed_scores = await calculate_trip_scores(data.trip_id,trip.vehicle_id,data.distance_km);
+                setImmediate(() => {
+                    void update_vehicle_efficiency(data.trip_id, vehicle_id, data.user_id).catch((err) => {
+                        console.error("Background vehicle efficiency update failed", err);
+                    });
+                });
             }
             if(!computed_scores){
                 throw new Error("Computed scores came back as null ");
@@ -928,5 +1041,171 @@ export const trips_services ={
         }))??[];
 
         return result;
+    },
+    //checks a stop and classifies it
+    async check_stop(user_id: string, trip_id: string, lat: number, lng: number, stopped_at: number){
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const trip = await prisma.trips.findUnique({
+                where: { trip_id: trip_id },
+                select: { user_id: true }
+            });
+
+        if(!trip){
+            throw new Error("Trip not found");
+        }
+        
+        if(trip.user_id !== user_id){
+            throw new Error("You do not own this trip");
+        }
+
+        const stopped_at_date = new Date(stopped_at);
+
+        if(stopped_at_date.getTime()>Date.now()+60_000){
+            throw new Error("stopped_at cannot be in the future");
+        }
+
+        const stopped_duration_minutes = Math.floor((Date.now() - stopped_at_date.getTime())/60_000);
+
+        const [geocode, nearby_pois_response] = await Promise.all([
+            map_services.reverse_geocode(lat, lng),
+            map_services.get_nearby_pois(lat, lng, 10, 'all', POI_PROXIMITY_THRESHOLD_M + 100)
+        ]);
+
+        const nearby_pois = (nearby_pois_response?? []).map((poi: any)=>({
+            category: poi.category as string | null,
+            distance_meters: poi.distanceMeters as number,
+        }));
+
+        const { classification, poi_category } = classify_stop({road_use: geocode.road_use, nearby_pois, stopped_duration_minutes});
+
+        const check_after = new Date(Date.now() + CHECK_AFTER_GRACE_MS);
+
+        const event = await prisma.unexpected_stop_events.create({
+            data: {
+                trip_id,
+                status: STOP_EVENT_STATUS.POSSIBLE,
+                classification,
+                latitude: lat,
+                longitude: lng,
+                address: geocode.address,
+                poi_category,
+                stopped_at: stopped_at_date,
+                check_after,
+            },
+        });
+
+        return {
+            stop_event_id: event.event_id,
+            classification,
+            location_context: {
+                address: event.address,
+                poi_category: event.poi_category,
+            },
+            should_prompt: classification !== 'expected',
+        };
+        
+    },
+    //confirms a stop event
+    async confirm_stop(user_id: string, event_id: string){
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error("user not found");
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status: STOP_EVENT_STATUS.CONFIRMED, escalated_at: new Date() },
+        });
+
+        if(result.count == 0){
+             const existing = await prisma.unexpected_stop_events.findUnique({
+                where: { event_id }
+            });
+
+            return {
+                status: existing?.status ?? 'unknown', 
+                already_handled: true
+            };
+        }
+
+        await notify_unexpected_stop(retrieved_event);
+        
+        return {
+            status: STOP_EVENT_STATUS.CONFIRMED, 
+            already_handled: false
+        };
+    },
+    //resolve stop event
+    async resolve_stop(user_id: string, event_id: string, reason: string){
+
+        if(!reason || reason.trim().length == 0){
+            throw new Error('reason missing');
+        }
+
+        const status = reason == 'moved'? STOP_EVENT_STATUS.RESOLVED_MOVED : STOP_EVENT_STATUS.RESOLVED_OK;
+
+        const retrieved_user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!retrieved_user){
+            throw new Error('user not found');
+        }
+
+        const retrieved_event = await prisma.unexpected_stop_events.findUnique({
+            where : { event_id },
+            select: {
+                trips: {
+                    select: {
+                        user_id: true
+                    }
+                }
+            }
+        });
+
+        if(!retrieved_event){
+            throw new Error('event not found');
+        }
+
+        if(retrieved_event.trips.user_id !== user_id){
+            throw new Error('cannot access event');
+        }
+
+        const result = await prisma.unexpected_stop_events.updateMany({
+            where: { event_id, status: STOP_EVENT_STATUS.POSSIBLE },
+            data: { status, resolved_at: new Date() },
+        });
+
+        return {
+            resolved: result.count > 0
+        };
+    },
+    async has_trip_resumed_movement(trip_id: string, stopped_at: Date){
+
+        const trip = await prisma.trips.findFirst({
+            where: { trip_id },
+            select: {
+                last_recorded_at: true,
+            },
+        });
+
+        return Boolean(trip?.last_recorded_at && trip.last_recorded_at > stopped_at);
     }
+    
 };

@@ -3,6 +3,7 @@ package com.omnitech.drivingtracker.ui.auth
 import android.R.attr.onClick
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -34,9 +35,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.platform.testTag
+import androidx.navigation.NavController
+import com.omnitech.drivingtracker.Screen
 
 @Composable
 fun Login(
+    navController: NavController? = null,
     uiState: UiState = UiState.Idle,
     onLogin: (String, String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit = {}
@@ -168,7 +172,7 @@ fun Login(
                         text = "Forgot password",
                         textDecoration = TextDecoration.Underline,
                         fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp).clickable{ navController?.navigate(Screen.ForgotPassword.route) }
                     )
 
                 }
@@ -182,7 +186,8 @@ fun Login(
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit = {},
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    navController: NavController? = null
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
@@ -190,6 +195,7 @@ fun LoginScreen(
     LaunchedEffect(uiState) { if (uiState is UiState.Success) onLoginSuccess() }
 
     Login(
+        navController = navController,
         uiState = uiState,
         onLogin = { identifier, password -> viewModel.login(identifier, password) },
         onBackClick = onBackClick

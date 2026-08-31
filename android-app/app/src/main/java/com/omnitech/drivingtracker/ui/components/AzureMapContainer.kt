@@ -1,7 +1,9 @@
 package com.omnitech.drivingtracker.ui.components
 
 import android.annotation.SuppressLint
+import android.location.Location
 import android.util.Log
+import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -13,11 +15,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.google.gson.Gson
+import com.omnitech.drivingtracker.data.models.MapPoiItem
 import org.json.JSONObject
 import java.util.Locale
 
@@ -30,8 +34,11 @@ private class MapJavascriptInterface(
     private val webView: WebView,
     private val onReady: () -> Unit,
     private val onStable: () -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val poiClickHandler: (String, Double, Double) -> Unit
 ) {
+
+    private var lastHandledClickId: String = ""
     @JavascriptInterface
     fun onMapReady() {
         webView.post { onReady() }
@@ -45,6 +52,20 @@ private class MapJavascriptInterface(
     @JavascriptInterface
     fun onMapError(message: String) {
         onError(message)
+    }
+
+    @JavascriptInterface
+    fun onPoiClick(name: String, lat: Double, lng: Double) {
+        val clickId = "$name-$lat$lng"
+
+        if(lastHandledClickId == clickId) return
+        lastHandledClickId = clickId
+
+        Log.d("AzureMap", "Kotlin: received POI click for $name at $lat, $lng")
+        webView.post {
+            poiClickHandler(name, lat, lng)
+            webView.postDelayed({lastHandledClickId = ""}, 2000)
+        }
     }
 }
 
@@ -60,18 +81,35 @@ fun AzureMapContainer(
     destination: LocationDto? = null,
     actualRoute : List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
-    onMapReady: () -> Unit = {}
+    detourRoute: List<LocationDto>? = null,
+    onPoiClick: (String, Double, Double) -> Unit = {_,_,_  -> },
+    onMapReady: () -> Unit = {},
+    nearbyPois: List<MapPoiItem>? = null
 ) {
     var isMapStable by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var hasInitialized by remember { mutableStateOf(false) }
+    var lastCameraLat by remember {mutableStateOf(0.0)}
+    var lastCameraLng by remember {mutableStateOf(0.0)}
+
+    val latestOnPoiClick by rememberUpdatedState(onPoiClick)
 
     // React to coordinate changes after the map is stable
     LaunchedEffect(latitude, longitude, zoom, isMapStable) {
         if (!isMapStable) return@LaunchedEffect
-        val lat = String.format(Locale.US, "%.8f", latitude)
-        val lng = String.format(Locale.US, "%.8f", longitude)
-        webViewRef?.evaluateJavascript("javascript:window.updateCamera($lat, $lng, $zoom)", null)
+
+        val results = FloatArray(2)
+        Location.distanceBetween(lastCameraLat, lastCameraLng, latitude, longitude, results)
+
+        if(results[0] > 50f){
+            val lat = String.format(Locale.US, "%.8f", latitude)
+            val lng = String.format(Locale.US, "%.8f", longitude)
+            webViewRef?.evaluateJavascript("javascript:window.updateCamera($lat, $lng, $zoom)", null)
+
+            lastCameraLat = latitude
+            lastCameraLng = longitude
+        }
+
     }
     // Automatic Marker Update (No camera move)
     LaunchedEffect(latitude, longitude, isMapStable) {
@@ -87,13 +125,13 @@ fun AzureMapContainer(
     }
     // destination that will be on the map
     LaunchedEffect(destination, isMapStable) {
-        if (isMapStable && destination != null) {
+        if (isMapStable && destination?.lat  != null  && destination.lng != null) {
             webViewRef?.evaluateJavascript("javascript:window.setDestination(${destination.lat}, ${destination.lng})", null)
         }
     }
     //shortest route
     LaunchedEffect(plannedRoute, isMapStable) {
-        if (isMapStable && plannedRoute != null) {
+        if (isMapStable && !plannedRoute.isNullOrEmpty()) {
             val pointsJson = Gson().toJson(plannedRoute)
             webViewRef?.evaluateJavascript("javascript:window.setPlannedRoute('$pointsJson')", null)
         }
@@ -102,6 +140,22 @@ fun AzureMapContainer(
         if (isMapStable && !actualRoute.isNullOrEmpty()) {
             val pointsJson = Gson().toJson(actualRoute)
             webViewRef?.evaluateJavascript("javascript:window.setActualRoute('$pointsJson')", null)
+        }
+    }
+
+    LaunchedEffect(nearbyPois, isMapStable) {
+        Log.d("AzureMapLoop" ,"nearbyPois update triggered! Count: ${nearbyPois?.size} ")
+        if(isMapStable && nearbyPois != null) {
+            val poisJson = Gson().toJson(nearbyPois)
+            webViewRef?.evaluateJavascript("javascript:window.setNearbyPois('$poisJson')", null)
+        }
+    }
+
+    //poi routing
+    LaunchedEffect(detourRoute, isMapStable) {
+        if(isMapStable && detourRoute != null) {
+            val json = Gson().toJson(detourRoute)
+            webViewRef?.evaluateJavascript("javascript:window.setDetourRoute('$json')", null)
         }
     }
 
@@ -117,6 +171,10 @@ fun AzureMapContainer(
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
+
+                    setSupportZoom(true)
+                    builtInZoomControls = true
+                    displayZoomControls = false
                     cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                     mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     allowFileAccess = true
@@ -126,7 +184,7 @@ fun AzureMapContainer(
                     @Suppress("DEPRECATION")
                     allowFileAccessFromFileURLs = true
                 }
-
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {
@@ -145,7 +203,8 @@ fun AzureMapContainer(
                             isMapStable = true
                             onMapReady()
                         },
-                        onError = { Log.e("AzureMap", "Error from JS: $it") }
+                        onError = { Log.e("AzureMap", "Error from JS: $it") },
+                        poiClickHandler = { name, lat, lng -> latestOnPoiClick(name, lat, lng) }
                     ),
                     "Android"
                 )
@@ -177,6 +236,17 @@ fun AzureMapContainer(
                 }
             }
         },
-        modifier = modifier
+        modifier = modifier,
+        onRelease = { webView ->
+            Log.d("AzureMap", "Cleaning up webview resources")
+            webView.apply{
+                stopLoading()
+                removeJavascriptInterface("Android")
+                loadUrl("about:blank")
+                clearHistory()
+                removeAllViews()
+                destroy()
+            }
+        }
     )
 }

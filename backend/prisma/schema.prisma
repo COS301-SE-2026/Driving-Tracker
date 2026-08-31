@@ -158,11 +158,15 @@ model trips {
   last_latitude    Decimal?        @db.Decimal(9, 6)
   last_speed_kmh   Decimal?        @db.Decimal(6, 2)
   last_recorded_at DateTime?       @db.Timestamptz(6)
+  fuel_level_start Decimal?        @db.Decimal(9, 6)
+  fuel_level_end   Decimal?        @db.Decimal(9, 6)
+
   alerts           alerts[]
   trip_events      trip_events[]
   trip_readings    trip_readings[]
   trip_scores      trip_scores[]
   trip_location_shares  trip_location_shares[]
+  unexpected_stop_events  unexpected_stop_events[]
   users            users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   vehicles         vehicles?       @relation(fields: [vehicle_id], references: [vehicle_id], onUpdate: NoAction)
 }
@@ -250,6 +254,10 @@ model users {
   alerts            alerts[]
   leaderboard       leaderboard[]
   trips             trips[]
+  email_verified    Boolean            @default(false)
+  verification_token  String?          @db.VarChar(255)
+  password_reset_token  String?        @db.VarChar(255)
+  reset_token_exp   DateTime?          @db.Timestamptz(6)
   //contacts the user owns
   trusted_contacts_owned  trusted_contacts[]  @relation("TrustedContactsOwner")
   //where a user is someone elses contact
@@ -297,6 +305,8 @@ model vehicles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   trips        trips[]
+  fuel_tank    Decimal       @db.Decimal(9, 6)
+  fuel_efficiency Decimal?    @db.Decimal(9, 6)
   users_vehicles        users_vehicles[]
 }
 
@@ -322,4 +332,25 @@ model notifications {
   created_at        DateTime            @default(now()) @db.Timestamptz(6)
 
   users             users               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model unexpected_stop_events{
+  event_id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trip_id         String      @db.Uuid
+  status          String      @db.VarChar(25)
+  classification  String?     @db.VarChar(25)
+  latitude        Decimal     @db.Decimal(9, 6)
+  longitude       Decimal     @db.Decimal(9, 6)
+  address         String?
+  road_use        String[]    @default([])
+  poi_category    String?     @db.VarChar(50)
+  stopped_at      DateTime    @db.Timestamptz(6)
+  detected_at     DateTime    @default(now()) @db.Timestamptz(6)
+  check_after     DateTime    @db.Timestamptz(6)
+  escalated_at    DateTime?   @db.Timestamptz(6)
+  resolved_at     DateTime?   @db.Timestamptz(6)
+
+  trips               trips                 @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status, check_after])
 }
