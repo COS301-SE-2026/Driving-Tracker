@@ -30,7 +30,7 @@ upload_controller.upload_profile_picture);
 router.post("/vehicle/:vehicle_id", user_based_limiter, verify_token, handle_single_upload("image"),
 upload_controller.upload_vehicle_image);
 
-router.get("/profile/:user_id", verify_token, upload_controller.get_profile_picture);
-router.get("/vehicle/:vehicle_id", verify_token, upload_controller.get_vehicle_image);
+router.get("/profile-picture/:user_id", verify_token, upload_controller.get_profile_picture);
+router.get("/vehicle-image/:vehicle_id", verify_token, upload_controller.get_vehicle_image);
 
 export default router;

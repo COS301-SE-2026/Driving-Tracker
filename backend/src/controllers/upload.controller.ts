@@ -72,11 +72,11 @@ export const upload_controller = {
             const blob_name = await blob_storage_service.upload_image(req.file, "vehicle");
             const { display_url, previous_blob_name } = await vehicle_services.update_vehicle_image(user_id, vehicle_id, blob_name);
 
-            void blob_storage_service.delete_image("profile", previous_blob_name);
+            void blob_storage_service.delete_image("vehicle", previous_blob_name);
 
             res.status(200).json({
                 message: "Vehicle image uploaded successfully",
-                data: { profile_picture_url: display_url }
+                data: { image_url: display_url }
             });
         }catch(error: any){
             if(error?.message === "You do not own this vehicle"){
@@ -118,7 +118,7 @@ export const upload_controller = {
             if(content_length){
                 res.setHeader("Content-Length", content_length.toString());
             }
-            res.setHeader("Cache-Control", "primate, max-age=3600");
+            res.setHeader("Cache-Control", "private, max-age=3600");
 
             stream.pipe(res);
 

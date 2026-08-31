@@ -8,7 +8,7 @@ data class UploadProfilePictureResponse(
 )
 
 data class ProfilePictureData(
-    @SerializedName("profile_picture_url") val ProfilePictureUrl: String
+    @SerializedName("profile_picture_url") val profilePictureUrl: String
 )
 
 data class UploadVehicleImageResponse(

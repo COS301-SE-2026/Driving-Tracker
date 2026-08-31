@@ -27,7 +27,7 @@ object ImageUploadUtils{
         }
 
         val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
-        return MultipartBody.Part.createFormData(partName, "upload.extension", requestBody)
+        return MultipartBody.Part.createFormData(partName, "upload.$extension", requestBody)
 
     }
 }
