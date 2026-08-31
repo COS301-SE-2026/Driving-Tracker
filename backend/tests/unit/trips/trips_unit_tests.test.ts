@@ -238,15 +238,15 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_NOT_FOUND', message: 'Trip not found' }));
         });
 
-		it('returns 401 when missing required fields', async () => {
+		it('returns 400 when missing required fields', async () => {
 			//mocking service to throw error message
 			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Missing required fields'));
 			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
 			const res: any = make_res();
 
 			await trips_controller.record_trip(req, res);
-			expect(res.status).toHaveBeenCalledWith(401);
-			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'Fill all valid fields'}));
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'MISSING_REQUIRED_FIELDS', message: 'Fill all valid fields'}));
 		});
 
 		it('returns 500 for unexpected interal error', async () => {
