@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.ui.trip
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -93,6 +94,12 @@ fun TripSummary(
             }catch(e: Exception){
                 trip.startedAt
             }
+            val dbPath = trip.routePolyline?.coordinates?.map {
+                LocationDto(it[1], it[0]) // GeoJSON is [lng, lat], convert to [lat, lng]
+            } ?: emptyList()
+
+            val displayPath = if (tripPath.isEmpty()) dbPath else tripPath
+
             val mappedData = TripSummaryData(
                 date = formattedDate,
                 route = "Trip ${trip.tripId}",
@@ -116,7 +123,7 @@ fun TripSummary(
             TripSummaryContent(trip = mappedData,
                 navController = navController,
                 mapToken = mapToken,
-                tripPath = tripPath
+                tripPath = displayPath
             )
         }
         else -> Unit
@@ -137,20 +144,56 @@ fun TripSummaryContent(
         title = "Trip Summary",
         bottomBarColor = "trip"
     ){
-        //Trip time and location
-        Card(
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(trip.date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+
+        // BIG STATIC MAP: Placed full-width under the labels
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                .height(200.dp) // Bigger size
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFFD0D8E0))
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(trip.date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            if (canShowMap) {
+                AzureMapContainer(
+                    subscriptionKey = mapToken!!,
+                    actualRoute = tripPath,
+                    isInteractive = false, // DISABLES SCROLL  here,
+                    zoom = 13,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Fallback UI (Placeholder + Spinner)
+                Image(
+                    painter = painterResource(id = R.drawable.map),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().alpha(0.6f)
+                )
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center).size(24.dp)
+                )
             }
         }
+        //Trip time and location
+//        Card(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 16.dp),
+//            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+//            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+//        ) {
+//            Column(modifier = Modifier.padding(20.dp)) {
+//                Text(trip.date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+//                Spacer(modifier = Modifier.height(8.dp))
+//                Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+//            }
+//        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -162,62 +205,15 @@ fun TripSummaryContent(
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    ScoreRingTwo(
-                        score = trip.score,
-                        modifier = Modifier.size(100.dp),
-                        rating = trip.rating
-                    )
-                }
-
-                //
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (canShowMap) {
-                        AzureMapContainer(
-                            subscriptionKey = mapToken!!,
-                            actualRoute = tripPath,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        // FALLBACK: Show placeholder image and spinner
-                        Image(
-                            painter = painterResource(id = R.drawable.map),
-                            contentDescription = "Trip map placeholder",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().alpha(0.6f)
-                        )
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-//                    AzureMapContainer(
-//                        subscriptionKey = mapToken ?: "", // Ensure mapToken is available in scope
-//                        actualRoute = tripPath,           // The List<LocationDto> loaded from VM
-//                        modifier = Modifier
-//                            .size(110.dp)
-//                            .clip(RoundedCornerShape(12.dp))
-//                    )
-                }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ScoreRingTwo(
+                    score = trip.score,
+                    modifier = Modifier.size(120.dp), // Normal larger size
+                    rating = trip.rating
+                )
             }
         }
 
