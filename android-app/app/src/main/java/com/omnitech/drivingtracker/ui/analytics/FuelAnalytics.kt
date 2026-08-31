@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -103,22 +104,20 @@ fun FuelAnalytics(navController: NavController ?= null,
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
                     .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 //Total card
                 item{
                     TotalCard()
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
                 //Graph
                 item{
                     FuelGraph(history = uiState.history)
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
                 //Stats
                 item{
                     StatsCard()
-                    Spacer(modifier = Modifier.height(6.dp))
                 }
                 //How to improve
                 item{
@@ -132,8 +131,7 @@ fun FuelAnalytics(navController: NavController ?= null,
 @Composable
 fun TotalCard(){
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
         ),
@@ -198,8 +196,7 @@ fun TotalCard(){
 @Composable
 fun StatsCard(){
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
         ),
@@ -285,7 +282,6 @@ fun TipsSection(){
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()
-        .padding(horizontal = 20.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -300,7 +296,7 @@ fun TipsSection(){
             Text(
                 text = "How to improve my Fuel Efficiency",
                 modifier = Modifier.weight(1f),
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
             )
 
@@ -346,7 +342,7 @@ fun TipsCard(
     ){
         Text(
             text = title,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )
 
@@ -354,7 +350,7 @@ fun TipsCard(
 
         Text(
             text = description,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
             color = Color.DarkGray
         )
     }
@@ -389,8 +385,7 @@ fun FuelGraph(history: List<FuelHistoryPointDto>){
     }
     else {
         Card(
-            modifier = Modifier.fillMaxWidth()
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = CardWhite),
             shape = RoundedCornerShape(8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -400,7 +395,7 @@ fun FuelGraph(history: List<FuelHistoryPointDto>){
             ) {
 
                 Text(
-                    text = "Fuel Efficiency Over your trips",
+                    text = "Fuel Efficiency over your trips",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -422,7 +417,7 @@ fun FuelGraph(history: List<FuelHistoryPointDto>){
                         ),
                     ),
                     modelProducer = modelProducer,
-                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                    modifier = Modifier.fillMaxWidth().height(280.dp)
                 )
             }
         }
