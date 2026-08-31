@@ -179,7 +179,7 @@ data class TripSummaryDto(
     @SerializedName("data_source")
     val dataSource: String?,
     @SerializedName("route_polyline")
-    val routePolyline: String?,
+    val routePolyline: GeoJsonLineString?,
     @SerializedName("distance_km")
     val distanceKm: Double?,
     @SerializedName("duration_minutes")
