@@ -150,6 +150,27 @@ fun TripSummaryContent(
             Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
 
+        //Trip Score
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ScoreRingTwo(
+                    score = trip.score,
+                    modifier = Modifier.size(120.dp), // Normal larger size
+                    rating = trip.rating
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
         // BIG STATIC MAP: Placed full-width under the labels
         Box(
             modifier = Modifier
@@ -177,42 +198,6 @@ fun TripSummaryContent(
                 )
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center).size(24.dp)
-                )
-            }
-        }
-        //Trip time and location
-//        Card(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(horizontal = 16.dp),
-//            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-//            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-//        ) {
-//            Column(modifier = Modifier.padding(20.dp)) {
-//                Text(trip.date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-//                Spacer(modifier = Modifier.height(8.dp))
-//                Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-//            }
-//        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        //Trip Score
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                ScoreRingTwo(
-                    score = trip.score,
-                    modifier = Modifier.size(120.dp), // Normal larger size
-                    rating = trip.rating
                 )
             }
         }
