@@ -193,6 +193,312 @@ const options: swaggerJsdoc.Options = {
                         address: { type: 'string', nullable: true },
                     }
                 },
+                MapToken: {
+                    type: 'object',
+                    required: ['token', 'auth_type'],
+                    properties: {
+                        token: { type: 'string', example: 'AZURE_SUB_KEY' },
+                        auth_type: { type: 'string', enum: ['subscriptionKey'], example: 'subscriptionKey' },
+                    },
+                },
+                AddressSearchResult: {
+                    type: 'object',
+                    required: ['address', 'lat', 'lng'],
+                    properties: {
+                        address: { type: 'string', example: '123 Main Street, Pretoria, Hatfield, South Africa' },
+                        lat: { type: 'number', example: 23.7128 },
+                        lng: { type: 'number', example: -24.0060 },
+                    }
+                },
+                RouteSummary: {
+                    type: 'object',
+                    required: ['distance_km', 'travel_time_seconds', 'traffic_delay_seconds', 'points'],
+                    properties: {
+                        distance_km: { type: 'number', example: 15.3 },
+                        travel_time_seconds: { type: 'integer', example: 1245 },
+                        traffic_delay_seconds: { type: 'integer', example: 180 },
+                        points: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                required: ['lat', 'lng'],
+                                properties: {
+                                    lat: { type: 'number', example: 40.7128 },
+                                    lng: { type: 'number', example: -74.0060 },
+                                }
+                            },
+                            example: [
+                                { lat: 40.7128, lng: -74.0060 },
+                                { lat: 40.7150, lng: -74.0050 },
+                                { lat: 40.7580, lng: -73.9855 }
+                            ]
+                        }
+                    }
+                },
+                PointOfInterest: {
+                    type: 'object',
+                    required: ['name', 'latitude', 'longitude', 'distanceMeters'],
+                    properties: {
+                        name: { type: 'string', example: 'Shell Gas Station' },
+                        category: { type: 'string', nullable: true, example: 'petrol' },
+                        latitude: { type: 'number', example: 28.7150 },
+                        longitude: { type: 'number', example: -24.0055 },
+                        distanceMeters: { type: 'number', example: 250.5 },
+                        address: { type: 'string', nullable: true, example: '100 Main St, Joburg, South Africa' },
+                    }
+                },
+                AddressData: {
+                    type: 'object',
+                    properties: {
+                        address: { type: 'string', nullable: true, example: '123 Main Street, Cape Town, WC, South Africa' },
+                        road_use: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            nullable: true,
+                            example: ['LimitedAccess','Arterial']
+                        },
+                        speed_limit: { type: 'string', nullable: true, example: '65 mph' },
+                        municipality: { type: 'string', nullable: true, example: 'New York' },
+                        countryCode: { type: 'string', nullable: true, example: 'US' },
+                    }
+                },
+                LeaderboardEntry: {
+                    type: 'object',
+                    required: ['rank', 'user_id', 'display_name', 'score'],
+                    properties: {
+                        rank: { type: 'integer', example: 1 },
+                        user_id: { type: 'string', format: 'uuid', example: 'user-1' },
+                        display_name: { type: 'string', example: 'John Doe' },
+                        score: { type: 'number', example: 95.5 },
+                    }
+                    },
+                LeaderboardResponse: {
+                    type: 'object',
+                    required: ['category', 'scope', 'entries', 'my_rank', 'my_score'],
+                    properties: {
+                        category: { type: 'string', example: 'safety' },
+                        scope: { type: 'string', example: 'global' },
+                        entries: {
+                        type: 'array',
+                        items: {
+                            $ref: '#/components/schemas/LeaderboardEntry'
+                        },
+                        example: [
+                            {
+                                rank: 1,
+                                user_id: 'user-1',
+                                display_name: 'Jane Smith',
+                                score: 98.5
+                            },
+                            {
+                                rank: 2,
+                                user_id: 'user-2',
+                                display_name: 'John Doe',
+                                score: 95.5
+                            },
+                            {
+                                rank: 3,
+                                user_id: 'user-3',
+                                display_name: 'Alice Johnson',
+                                score: 92.0
+                            }
+                        ]
+                        },
+                        my_rank: { type: 'integer', nullable: true, example: 2 },
+                        my_score: { type: 'number', example: 95.5 },
+                    }
+                },
+                CategoriesResponse: {
+                    type: 'object',
+                    required: ['categories'],
+                    properties: {
+                        categories: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            example: ['safety', 'efficiency', 'eco_driving', 'speed_compliance']
+                        }
+                    }
+                },
+                ScopesResponse: {
+                    type: 'object',
+                    required: ['scopes'],
+                    properties: {
+                        scopes: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            example: ['global', 'regional', 'friends', 'country']
+                        }
+                    }
+                },
+                BadgeEarned: {
+                    type: 'object',
+                    required: ['badge_id', 'name', 'description', 'category', 'earned_at'],
+                    properties: {
+                        badge_id: { type: 'string', format: 'uuid', example: 'badge-1' },
+                        name: { type: 'string', example: 'Safety Champion' },
+                        description: { type: 'string', example: 'Achieved 90+ safety score on a trip' },
+                        category: { type: 'string', example: 'safety' },
+                        earned_at: { type: 'string', format: 'date-time', example: '2026-08-31T12:00:00.000Z' },
+                        icon_url: { type: 'string', nullable: true, example: 'https://api.example.com/badges/safety_champion.png' },
+                        current: { type: 'integer', example: 1 },
+                    }
+                },
+                BadgeCategory: {
+                    type: 'object',
+                    required: ['category', 'current'],
+                    properties: {
+                        category: { type: 'string', example: 'safety' },
+                        current: { type: 'integer', example: 3 },
+                    }
+                },
+                BadgeSummary: {
+                    type: 'object',
+                    required: ['Total_earned', 'categories'],
+                    properties: {
+                        Total_earned: { type: 'integer', example: 5 },
+                        categories: {
+                        type: 'array',
+                        items: {
+                            $ref: '#/components/schemas/BadgeCategory'
+                        }
+                        }
+                    }
+                },
+                UserBadgesResponse: {
+                    type: 'object',
+                    required: ['earned', 'summary'],
+                    properties: {
+                        earned: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/BadgeEarned'
+                            },
+                            example: [
+                                {
+                                    badge_id: 'badge-1',
+                                    name: 'Safety Champion',
+                                    category: 'safety',
+                                    description: 'Achieved 90+ safety score on a trip',
+                                    current: 1,
+                                    earned_at: '2026-08-31T12:00:00.000Z'
+                                },
+                                {
+                                    badge_id: 'badge-2',
+                                    name: 'Eco Driver',
+                                    category: 'efficiency',
+                                    description: 'Maintained excellent fuel efficiency',
+                                    current: 1,
+                                    earned_at: '2026-08-30T15:30:00.000Z'
+                                }
+                            ]
+                        },
+                        summary: {
+                            $ref: '#/components/schemas/BadgeSummary'
+                        }
+                    }
+                },
+                BadgeCriterion: {
+                    type: 'object',
+                    required: ['metric', 'operator', 'threshold'],
+                    properties: {
+                        metric: { type: 'string', example: 'safety_score' },
+                        operator: { type: 'string', enum: ['>', '>=', '<', '<=', '=', '==', '!='], example: '>=' },
+                        threshold: { type: 'number', nullable: true, example: 90 },
+                        target: { type: 'number', nullable: true, example: 90 },
+                    }
+                },
+                BadgeDefinition: {
+                    type: 'object',
+                    required: ['badge_id', 'name', 'description', 'category', 'criteria'],
+                    properties: {
+                        badge_id: { type: 'string', format: 'uuid', example: 'badge-1' },
+                        name: { type: 'string', example: 'Safety Champion' },
+                        description: { type: 'string', example: 'Achieved 90+ safety score on a trip' },
+                        category: { type: 'string', example: 'safety' },
+                        icon_url: { type: 'string', nullable: true, example: 'https://api.example.com/badges/safety_champion.png' },
+                        criteria: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/BadgeCriterion'
+                            }
+                        }
+                    }
+                },
+
+                BadgeDefinitionsResponse: {
+                    type: 'object',
+                    required: ['badges'],
+                    properties: {
+                        badges: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/BadgeDefinition'
+                            },
+                            example: [
+                                {
+                                    badge_id: 'badge-1',
+                                    name: 'Safety Champion',
+                                    description: 'Achieved 90+ safety score on a trip',
+                                    category: 'safety',
+                                    icon_url: 'https://api.example.com/badges/safety_champion.png',
+                                    criteria: [
+                                        {
+                                        metric: 'safety_score',
+                                        operator: '>=',
+                                        threshold: 90,
+                                        target: null
+                                        }
+                                    ]
+                                },
+                                {
+                                    badge_id: 'badge-2',
+                                    name: 'Eco Driver',
+                                    description: 'Maintained excellent fuel efficiency',
+                                    category: 'efficiency',
+                                    icon_url: 'https://api.example.com/badges/eco_driver.png',
+                                    criteria: [
+                                        {
+                                        metric: 'eco_score',
+                                        operator: '>=',
+                                        threshold: 85,
+                                        target: null
+                                        },
+                                        {
+                                        metric: 'distance_km',
+                                        operator: '>',
+                                        threshold: 10,
+                                        target: null
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                BadgeEvaluationResponse: {
+                    type: 'object',
+                    required: ['evaluated', 'new_badges'],
+                    properties: {
+                        evaluated: { type: 'boolean', example: true },
+                        new_badges: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/BadgeEarned'
+                            },
+                            example: [
+                                {
+                                    badge_id: 'badge-3',
+                                    name: 'Long Distance Driver',
+                                    description: 'Completed a 50km+ trip',
+                                    category: 'distance',
+                                    earned_at: '2026-08-31T13:15:00.000Z',
+                                    icon_url: 'https://api.example.com/badges/long_distance.png',
+                                    current: 1
+                                }
+                            ]
+                        }
+                    }
+                },
             },
         },
         security: [{ bearerAuth: []}],
