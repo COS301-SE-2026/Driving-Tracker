@@ -293,7 +293,8 @@ fun LiveTrip(
                 longitude = liveMetrics.longitude,
                 distance = liveDistance,
                 durationMinutes = liveDurationMinutes,
-                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
+                path = tripPath
             )
         },
         navController = navController,
