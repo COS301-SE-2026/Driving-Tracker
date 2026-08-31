@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.omnitech.drivingtracker.data.local.NotificationChannels
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -20,7 +21,7 @@ interface ImageLoaderEntryPoint{
 }
 
 @HiltAndroidApp
-class DrivingTrackerApp : Application() {
+class DrivingTrackerApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
