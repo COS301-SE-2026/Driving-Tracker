@@ -596,7 +596,9 @@ describe("additional vehicle service tests", ()=>{
 
 describe('vehicle services get fuel analytics', ()=>{
     beforeEach(async() => jest.clearAllMocks());
-    afterEach(async() => jest.resetAllMocks());
+    afterEach(async() => {jest.restoreAllMocks();
+    jest.clearAllMocks();
+    });
 
     it('returns analytics for all valid completed trips', async () => {
         mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
@@ -627,7 +629,7 @@ describe('vehicle services get fuel analytics', ()=>{
     });
 
     it('returns 200 with analytics on success', async ()=> {
-        jest.spyOn(vehicle_services, 'get_fuel_analytics').mockResolvedValueOnce({
+        const spy = jest.spyOn(vehicle_services, 'get_fuel_analytics').mockResolvedValueOnce({
             average_fuel_efficiency: 8.5,
             best_fuel_efficiency: 7.2,
             worst_fuel_efficiency: 10.1,
@@ -645,6 +647,8 @@ describe('vehicle services get fuel analytics', ()=>{
         expect(json).toHaveBeenCalledWith(expect.objectContaining({
             average_fuel_efficiency: 8.5
         }));
+
+        spy.mockRestore();
     });
 
     it('returns 403 when unauthenticated', async ()=> {
