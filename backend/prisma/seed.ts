@@ -294,7 +294,7 @@ async function main() {
             description: 'No hard acceleration events for 5 trips',
             category: 'SAFETY',
             icon_url: 'badge_throttle_goat',
-            weeklyChallengeName: 'Speed Angel',
+            weeklyChallengeName: 'Throttle Goat',
             criterion: { metric: 'smooth_accel_trips_count', operator: '>=', threshold: 5, target: 5 },
         },
     ];
