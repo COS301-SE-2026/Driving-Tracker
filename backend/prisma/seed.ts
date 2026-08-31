@@ -271,7 +271,7 @@ async function main() {
             category: 'MILESTONE',
             icon_url: 'badge_on_board',
             weeklyChallengeName: null,
-            criterion: { metric: 'completed_trip_count', operator: '>=', threshold: 1, target: 1 },
+            criterion: { metric: 'obd_connection_count', operator: '>=', threshold: 1, target: 1 },
         },
         {
             name: 'Safety Officer',
@@ -279,7 +279,7 @@ async function main() {
             category: 'SAFETY',
             icon_url: 'badge_safety_officer',
             weeklyChallengeName: 'Safety Officer',
-            criterion: { metric: 'harsh_events_count', operator: '<=', threshold: 0, target: 4 },
+            criterion: { metric: 'safe_trips_count', operator: '>=', threshold: 4, target: 4 },
         },
         {
             name: 'Speed Angel',
@@ -295,7 +295,7 @@ async function main() {
             category: 'SAFETY',
             icon_url: 'badge_throttle_goat',
             weeklyChallengeName: 'Speed Angel',
-            criterion: { metric: 'harsh_acceleration_count', operator: '<=', threshold: 0, target: 5 },
+            criterion: { metric: 'smooth_accel_trips_count', operator: '>=', threshold: 5, target: 5 },
         },
     ];
 

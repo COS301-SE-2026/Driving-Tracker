@@ -102,6 +102,28 @@ export const badges_leaderboard_services = {
         },
         });
 
+        const safe_trips_count = await prisma.trips.count({
+            where: {
+                user_id: data.user_id,
+                status: "COMPLETED",
+                trip_events: {
+                    none: {
+                        type: { in: ["HARSH_BRAKE", "HARSH_ACCELERATION", "SHARP_CORNER"] }
+                    }
+                }
+            }
+        });
+
+        const smooth_accel_trips_count = await prisma.trips.count({
+            where: {
+                user_id: data.user_id,
+                status: "COMPLETED",
+                trip_events: {
+                    none: { type: "HARSH_ACCELERATION" }
+                }
+            }
+        });
+
         const metrics: MetricMap = {
             distance_km: Number(trip.distance_km ?? 0),
             duration_minutes: Number(trip.duration_minutes ?? 0),
@@ -116,6 +138,9 @@ export const badges_leaderboard_services = {
             crash_count: event_counts.crash_count,
             shared_trip_count: trip.trip_location_shares.length,
             completed_trip_count: user_trip_count,
+            safe_trips_count: safe_trips_count,
+            smooth_accel_trips_count: smooth_accel_trips_count,
+            obd_connection_count: trip.data_source === "OBD" ? 1 : 0,
         };
 
         const badges = await prisma.badges.findMany({
