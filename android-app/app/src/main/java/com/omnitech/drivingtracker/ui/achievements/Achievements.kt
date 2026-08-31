@@ -39,6 +39,8 @@ import com.omnitech.drivingtracker.ui.home.Dashboard
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.ui.components.BadgeDescriptionDialog
+import com.omnitech.drivingtracker.ui.components.BadgeGalleryDialog
 
 @Composable
 fun AchievementsScreen(
@@ -46,13 +48,33 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var showGallery by remember { mutableStateOf(false) }
+    var selectedBadge by remember { mutableStateOf<BadgeUiModel?>(null) }
     AchievementsContent(
         state = state,
         navController = navController,
+        onViewMore = { showGallery = true },
+        onBadgeClick = { selectedBadge = it },
+        onChallengesClick = { navController?.navigate(Screen.WeeklyChallenges.route) },
         onFilterChanged = {category, scope ->
             viewModel.getLeaderboard(category, scope)
         }
     )
+
+    if (showGallery) {
+        BadgeGalleryDialog(
+            badges = state.badges,
+            completedChallenges = state.badges.count { it.isEarned },
+            onDismiss = { showGallery = false },
+            onBadgeClick = {
+                selectedBadge = it
+                showGallery = false
+            }
+        )
+    }
+    selectedBadge?.let { badge ->
+        BadgeDescriptionDialog(badge = badge, onDismiss = { selectedBadge = null })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,6 +82,9 @@ fun AchievementsScreen(
 fun AchievementsContent(
     state: AchievementsUiState,
     navController: NavController? = null,
+    onViewMore: () -> Unit = {},
+    onBadgeClick: (BadgeUiModel) -> Unit = {},
+    onChallengesClick: () -> Unit = {},
     onFilterChanged: (category: String, scope: String) -> Unit = {_, _ -> }
 ) {
     var expandedCategory by remember { mutableStateOf(false) }
@@ -95,7 +120,7 @@ fun AchievementsContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp, vertical = 24.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
@@ -105,7 +130,22 @@ fun AchievementsContent(
 
             item {
                 // Badges Gallery (LazyRow)
-                BadgeSection()
+                BadgeSection(
+                    badges = state.badges,
+                    onViewMore = onViewMore,
+                    onBadgeClick = onBadgeClick
+                )
+            }
+
+            item {//Navigation to Weekly Challenges
+                Button(
+                    onClick = onChallengesClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                    shape = RoundedCornerShape(12.dp)
+                ){
+                    Text("View Weekly Challenges")
+                }
             }
 
             item {

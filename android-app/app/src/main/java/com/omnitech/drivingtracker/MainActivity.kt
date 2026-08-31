@@ -22,7 +22,7 @@ import com.omnitech.drivingtracker.ui.auth.SignUpScreen
 import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.home.Dashboard
-//import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
+import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
@@ -255,9 +255,9 @@ class MainActivity : ComponentActivity() {
                         Trips(navController = navController)
                     }
 
-                   //composable(Screen.WeeklyChallenges.route){
-                       //WeeklyChallenges(navController = navController)
-                    //}
+                   composable(Screen.WeeklyChallenges.route){
+                       WeeklyChallenges(navController = navController)
+                    }
 
                     composable(Screen.Contacts.route){
                         Contacts(navController = navController)

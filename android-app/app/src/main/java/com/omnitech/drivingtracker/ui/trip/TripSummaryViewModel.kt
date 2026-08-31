@@ -201,7 +201,7 @@ class TripSummaryViewModel @Inject constructor(
                             scores = null,
                             events = emptyList()
                         ),
-                        isFirstTrip = data.isFirstTrip ?: false
+                        isFirstTrip = data.isFirstTrip == true
                     )
                 },
                 onFailure = { exception ->

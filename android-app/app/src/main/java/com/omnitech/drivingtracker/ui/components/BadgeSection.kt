@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
 import com.omnitech.drivingtracker.R
+import com.omnitech.drivingtracker.ui.achievements.BadgeUiModel
 import com.omnitech.drivingtracker.ui.theme.Blue
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.Green
@@ -18,7 +20,11 @@ import com.omnitech.drivingtracker.ui.theme.Purple
 
 @Composable
 //This function is the bar with your badges, user can scroll sideways to see more
-fun BadgeSection() {
+fun BadgeSection(
+    badges: List<BadgeUiModel>,
+    onViewMore: () -> Unit,
+    onBadgeClick: (BadgeUiModel) -> Unit
+) {
 
     Column {
 
@@ -33,11 +39,12 @@ fun BadgeSection() {
                 style = MaterialTheme.typography.titleMedium
             )
 
-//            Text(
-//                "View more",
-//                style = MaterialTheme.typography.bodyMedium,
-//                color = Blue
-//            )
+            Text(
+                "View more",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Blue,
+                modifier = Modifier.clickable { onViewMore() }
+            )
 
         }
 
@@ -55,15 +62,26 @@ fun BadgeSection() {
                 modifier = Modifier.padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                Icon(painterResource(id = R.drawable.badge_01), null, tint = Purple)
-                Icon(painterResource(id = R.drawable.badge_02), null, tint = Green)
-                Icon(painterResource(id = R.drawable.badge_03), null, tint = Green)
-                Icon(painterResource(id = R.drawable.badge_04), null, tint = Purple)
-                Icon(painterResource(id = R.drawable.badge_05), null, tint = Purple)
+                badges.take(5).forEach { badge ->
+                    IconButton(onClick = { onBadgeClick(badge) }) {
+                        Icon(
+                            painter = painterResource(id = badge.iconRes),
+                            contentDescription = badge.name,
+                            tint = if (badge.isEarned) getBadgeColor(badge.category) else Color.Gray,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
             }
 
         }
 
     }
 
+}
+
+fun getBadgeColor(category: String): Color = when (category.uppercase()) {
+    "SAFETY" -> Green
+    "MILESTONE" -> Purple
+    else -> Blue
 }
