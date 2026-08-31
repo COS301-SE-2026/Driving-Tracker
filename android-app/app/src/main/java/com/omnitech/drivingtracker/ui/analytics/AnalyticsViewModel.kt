@@ -57,6 +57,7 @@ class AnalyticsViewModel @Inject constructor(
                     val totalDistance = trips.mapNotNull { it.distanceKm }.sum()
                     val totalMinutes = trips.mapNotNull { it.durationMinutes }.sum()
                     val tripCount = data.totalTrips ?:trips.size
+                    val totalEvents = trips.sumOf{it.trip_scores?.size ?: 0}
 
                     vehicleRepo.getFuelAnalytics().fold(
                         onSuccess = {
@@ -69,7 +70,8 @@ class AnalyticsViewModel @Inject constructor(
                                 fuelEfficiency = fuelData.averageFuelEfficiency,
                                 totalDistanceKm = totalDistance,
                                 tripCount = tripCount,
-                                totalMinutes = totalMinutes
+                                totalMinutes = totalMinutes,
+                                eventCount = totalEvents
                             )
                         },
                         onFailure = {

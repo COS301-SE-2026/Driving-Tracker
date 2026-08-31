@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
@@ -44,11 +46,40 @@ import com.omnitech.drivingtracker.ui.components.*
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
+import androidx.compose.runtime.getValue
+import kotlin.math.roundToInt
+
+private fun scoreDescription(score: Int?) : String{
+    return if (score == null){
+        "Complete a few trips to see personalized insights."
+    }
+    else if (score >= 85){
+        "You're driving well! Keep up the smooth acceleration and braking. Driving Tracker is proud!"
+    }
+    else if (score >= 60){
+        "Solid driving overall. A few harsh events are holding your score back. " +
+                "Work on them to optimise your driving"
+    }
+    else{
+        "There is room to improve. Try easing off sudden braking and acceleration."
+    }
+}
+
+private fun formatDuration(totalMinutes: Int?): String{
+    if (totalMinutes == null){
+        return "-"
+    }
+    val hours = totalMinutes/60
+    val minutes = totalMinutes%60
+    return "${hours}h ${minutes}m"
+}
 
 @Composable
-fun DriverAnalytics(navController: NavController ?= null){
+fun DriverAnalytics(navController: NavController ?= null,
+                    viewModel: AnalyticsViewModel = hiltViewModel()
+){
 
-    //val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -75,16 +106,14 @@ fun DriverAnalytics(navController: NavController ?= null){
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        ScoreCard(score = 92)
+                        ScoreCard(score = uiState.drivingScore ?: 0)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 //Description
                 item{
                     Text(
-                        "You're driving well! \n" +
-                                "Your score has improved because you've had " +
-                                "fewer harsh events recently.",
+                        text = scoreDescription(uiState.drivingScore),
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge
@@ -110,9 +139,12 @@ fun DriverAnalytics(navController: NavController ?= null){
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ){
-                            TripsAnalytic("24 km","Distance", modifier = Modifier.weight(1f), true)
-                            TripsAnalytic("24","Trips", modifier = Modifier.weight(1f), true)
-                            TripsAnalytic("11h 42m","Time", modifier = Modifier.weight(1f), true)
+                            TripsAnalytic(uiState.totalDistanceKm?.let{"${it.roundToInt()} km"} ?: "-",
+                                "Distance", modifier = Modifier.weight(1f), true)
+                            TripsAnalytic(uiState.tripCount?.toString() ?: "-",
+                                "Trips", modifier = Modifier.weight(1f), true)
+                            TripsAnalytic(formatDuration(uiState.totalMinutes),
+                                "Time", modifier = Modifier.weight(1f), true)
                         }
                     }
                 }
@@ -123,7 +155,13 @@ fun DriverAnalytics(navController: NavController ?= null){
 
                 //Performance cards
                 item{
-                    PerformanceSection(91,84,7.2,6)
+                    PerformanceSection(safety = uiState.safetyScore ?: 0,
+                        eco = uiState.ecoScore ?: 0,
+                        fuel = uiState.fuelEfficiency ?: 0.0,
+                        events = uiState.eventCount ?: 0,
+
+                        onFuelClick = { navController?.navigate("FuelAnalytics")}
+                    )
                 }
 
                 //Driving Insights or Things to improve
@@ -176,9 +214,11 @@ fun PerformanceCard(
     value: String,
     unit: String?,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (()-> Unit)? = null
 ){
     Card(
+        onClick = {onClick?.invoke()},
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
@@ -232,7 +272,8 @@ fun PerformanceSection(
     safety: Int,
     eco: Int,
     fuel: Double,
-    events: Int
+    events: Int,
+    onFuelClick: (()->Unit)?= null
 ){
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -276,7 +317,8 @@ fun PerformanceSection(
                 value = String.format(Locale.getDefault(),"%.1f", fuel),
                 unit = "L/100",
                 accentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onFuelClick
             )
             PerformanceCard(
                 icon = Icons.Default.Warning,
