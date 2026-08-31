@@ -33,7 +33,9 @@ class MockDecimal{
 }
 
 describe('evaluate badges ',()=>{
-    beforeEach(async()=>{ jest.clearAllMocks});
+    beforeEach(() => { 
+        jest.clearAllMocks
+    });
     it('evaluates trip and awards badges', async () => {
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
@@ -53,7 +55,7 @@ describe('evaluate badges ',()=>{
 
         mock_prisma.trips.count.mockResolvedValue(5);
 
-        mock_prisma.trips.findMany.mockedResolvedValue([]);
+        mock_prisma.trips.findMany.mockResolvedValue([]);
 
         mock_prisma.badges.findMany.mockResolvedValue([
             {
