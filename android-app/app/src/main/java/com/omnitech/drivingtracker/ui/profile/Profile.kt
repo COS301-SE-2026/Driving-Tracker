@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.profile
 
+import android.app.AlertDialog
 import androidx.compose.foundation.lazy.LazyColumn
 import com.omnitech.drivingtracker.ui.components.YourTopBar
 import androidx.compose.material.icons.Icons
@@ -44,6 +45,7 @@ import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.ui.Alignment
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.BuildConfig
 import com.omnitech.drivingtracker.ui.auth.ProfileViewModel
 
 @Composable
@@ -52,6 +54,8 @@ fun Profile(navController: NavController? = null,
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
+    val isUploadingPicture by viewModel.isUploadingPicture.collectAsState()
+    val uploadError by viewModel.uploadError.collectAsState()
 
     var showImagePicker by remember { mutableStateOf(false) }
     var profileImageUri by remember { mutableStateOf<String?>(null) }
@@ -75,6 +79,7 @@ fun Profile(navController: NavController? = null,
                     Alignment.Center))
                 is ProfileViewModel.UiState.Success -> {
                     val profile = state.profile
+                    val profileImageUrl = profile.profilePictureUrl?.let{ BuildConfig.BASE_URL + it }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -82,7 +87,7 @@ fun Profile(navController: NavController? = null,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            ProfileHeader(name = "${profile.name} ${profile.surname}", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUri)
+                            ProfileHeader(name = "${profile.name} ${profile.surname}", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUri, isUploading = isUploadingPicture)
                         }
                         item {
                             //Account Information
@@ -119,7 +124,7 @@ fun Profile(navController: NavController? = null,
 
         ImagePickerSheet(
             onImageSelected = { uri ->
-                profileImageUri = uri.toString()
+                viewModel.uploadProfilePicture(uri)
                 showImagePicker = false
             },
             onDismiss = {
@@ -128,10 +133,21 @@ fun Profile(navController: NavController? = null,
         )
 
     }
+
+    uploadError?.let{message ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearUploadError() },
+            title = { Text("Upload failed") },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearUploadError() }) { Text("OK") }
+            }
+        )
+    }
 }
 
 @Composable
-fun ProfileHeader(name: String, profilePicture: ImageVector,onEditClick: () -> Unit = {}, imageUri:String?=null) {
+fun ProfileHeader(name: String, profilePicture: ImageVector,onEditClick: () -> Unit = {}, imageUri:String?=null, isUploading: Boolean  = false) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -161,6 +177,9 @@ fun ProfileHeader(name: String, profilePicture: ImageVector,onEditClick: () -> U
                         modifier = Modifier.size(56.dp),
                         tint = Color(0xFF4B2E83)
                     )
+                }
+                if(isUploading){
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 }
             }
             //Edit Icon

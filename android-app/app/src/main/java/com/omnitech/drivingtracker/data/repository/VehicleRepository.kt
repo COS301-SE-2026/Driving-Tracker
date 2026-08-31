@@ -7,6 +7,7 @@ import com.omnitech.drivingtracker.data.models.UpdateVehicleNameRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.VehicleDto
+import okhttp3.MultipartBody
 import retrofit2.HttpException
 
 class VehicleRepository  @Inject constructor(private val apiService: ApiService){
@@ -42,6 +43,16 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
     suspend fun removeVehicle(vehicleId: String): Result<Unit> = try {
         apiService.removeVehicle(vehicleId)
         Result.success(Unit)
+    }catch (e: Exception){
+        Result.failure(e)
+    }
+
+    suspend fun uploadVehicleImage(vehicleId: String, imagePart: MultipartBody.Part): Result<VehicleDto> = try {
+        val response = apiService.uploadVehicleImage(vehicleId, imagePart)
+        Result.success(VehicleDto(vehicleId=vehicleId, imageUrl = response.data.imageUrl))
+    }catch (e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message ?: "Failed to upload vehicle image"))
     }catch (e: Exception){
         Result.failure(e)
     }
