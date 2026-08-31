@@ -120,4 +120,7 @@ dependencies {
 
     //Splashscreen
     implementation(libs.androidx.core.splashscreen)
+
+    //Graphs
+    implementation(libs.vico.compose.m3)
 }
