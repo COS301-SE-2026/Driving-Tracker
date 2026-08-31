@@ -287,7 +287,7 @@ async function main() {
             category: 'SAFETY',
             icon_url: 'badge_speed_angel',
             weeklyChallengeName: 'Speed Angel',
-            criterion: { metric: 'overspeed_events_count', operator: '<=', threshold: 0, target: 3 },
+            criterion: { metric: 'low_speed_trips_count', operator: '>=', threshold: 3, target: 3 },
         },
          {
             name: 'Throttle Goat',
