@@ -35,9 +35,10 @@ jest.mock('../../../src/db/prisma', () => {
 });
 
 
-import { describe, it, expect, jest, beforeEach,afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach,afterAll,afterEach } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+import { get_fuel_analytics } from '../../../src/controllers/vehicle.controller';
 
 
 
@@ -592,4 +593,98 @@ describe("additional vehicle service tests", ()=>{
         expect(mock_prisma.$transaction).not.toHaveBeenCalled();
     });
 })
+
+describe('vehicle services get fuel analytics', ()=>{
+    beforeEach(async() => jest.clearAllMocks());
+    afterEach(async() => jest.resetAllMocks());
+
+    it('returns analytics for all valid completed trips', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
+        mock_prisma.vehicles.findMany.mockResolvedValue([
+            {
+                vehicle_id: 'v1',
+                fuel_tank: 60,
+                trips: [
+                    {
+                        distance_km: 100,
+                        fuel_level_start: 80,
+                        fuel_level_end: 50,
+                        end_time: new Date('2026-08-01T00:00:00Z'),
+                    }
+                ]
+            }
+        ]);
+
+        const result = await vehicle_services.get_fuel_analytics({
+            user_id: 'u1'
+        });
+
+        expect(result.average_fuel_efficiency).toBeCloseTo(18,2);
+        expect(result.best_fuel_efficiency).toBeCloseTo(18,2);
+        expect(result.worst_fuel_efficiency).toBeCloseTo(18,2);
+        expect(result.history).toHaveLength(1);
+
+    });
+
+    it('returns 200 with analytics on success', async ()=> {
+        jest.spyOn(vehicle_services, 'get_fuel_analytics').mockResolvedValueOnce({
+            average_fuel_efficiency: 8.5,
+            best_fuel_efficiency: 7.2,
+            worst_fuel_efficiency: 10.1,
+            history: []
+        });
+
+        const req: any = {user: {sub: 'u1'}};
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValue({json});
+        const res: any = {status};
+
+        await get_fuel_analytics(req,res);
+
+        expect(status).toHaveBeenCalledWith(200);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({
+            average_fuel_efficiency: 8.5
+        }));
+    });
+
+    it('returns 403 when unauthenticated', async ()=> {
+        const req: any = {user:null};
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValue({json});
+        const res: any = {status};
+
+        await get_fuel_analytics(req,res);
+        expect(status).toHaveBeenCalledWith(403)
+    });
+
+    it('calculates average,best, and worst efficiency from valid trips', async ()=> {
+        mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
+        mock_prisma.vehicles.findMany.mockResolvedValue([
+            {
+                vehicle_id: 'v1',
+                fuel_tank: 60,
+                trips: [
+                    {
+                        distance_km : 100,
+                        fuel_level_start: 80,
+                        fuel_level_end: 50,
+                        end_time: new Date ('2026-08-02T00:00:00Z'),
+                    },
+                    {
+                        distance_km : 200,
+                        fuel_level_start: 90,
+                        fuel_level_end: 60,
+                        end_time: new Date ('2026-08-04T00:00:00Z'),
+                    }
+                ]
+            }
+        ]);
+        const result = await vehicle_services.get_fuel_analytics({user_id: 'u1'});
+
+        expect(result.history).toHaveLength(2);
+        expect(result.average_fuel_efficiency).toBeCloseTo(13.5,1);
+        expect(result.best_fuel_efficiency).toBeCloseTo(9,2);
+        expect(result.worst_fuel_efficiency).toBeCloseTo(18,2);
+    });
+});
  
