@@ -82,7 +82,7 @@ export interface end_trip {
     trip_id: string;
     user_id: string; 
     end_time: Date;
-    route_polyline: string;
+    route_polyline: any;
     distance_km: number;
     duration_minutes: number;
     fuel_estimate: number;

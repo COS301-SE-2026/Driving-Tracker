@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.GeoJsonLineString
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.obd.ObdManager
@@ -152,9 +153,18 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
-    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?) {
+    fun endTrip(tripId: String,latitude: Double?,
+                longitude: Double?,distance: Double?,
+                durationMinutes: Int?,fuelEstimate: Double?,
+                path : List<LocationDto>
+    ) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
+            val geoJson = GeoJsonLineString(
+                coordinates = path.mapNotNull {loc ->
+                    if(loc.lat != null && loc.lng != null) listOf(loc.lng,loc.lat) else null
+                }
+            )
             
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
@@ -169,6 +179,7 @@ class TripSummaryViewModel @Inject constructor(
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
                 fuelLevelEnd = fuelLevelFinal,
+                routePolyline = geoJson,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)
                 } else null,

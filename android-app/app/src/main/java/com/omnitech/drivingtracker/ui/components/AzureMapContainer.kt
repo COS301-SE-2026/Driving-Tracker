@@ -84,6 +84,7 @@ fun AzureMapContainer(
     detourRoute: List<LocationDto>? = null,
     onPoiClick: (String, Double, Double) -> Unit = {_,_,_  -> },
     onMapReady: () -> Unit = {},
+    isInteractive: Boolean = true,
     nearbyPois: List<MapPoiItem>? = null
 ) {
     var isMapStable by remember { mutableStateOf(false) }
@@ -172,8 +173,8 @@ fun AzureMapContainer(
                     javaScriptEnabled = true
                     domStorageEnabled = true
 
-                    setSupportZoom(true)
-                    builtInZoomControls = true
+                    setSupportZoom(isInteractive)
+                    builtInZoomControls = isInteractive
                     displayZoomControls = false
                     cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                     mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
@@ -183,6 +184,9 @@ fun AzureMapContainer(
                     allowUniversalAccessFromFileURLs = true
                     @Suppress("DEPRECATION")
                     allowFileAccessFromFileURLs = true
+                }
+                if(!isInteractive) {
+                    setOnTouchListener { _,_ -> true  }
                 }
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 webChromeClient = object : WebChromeClient() {
