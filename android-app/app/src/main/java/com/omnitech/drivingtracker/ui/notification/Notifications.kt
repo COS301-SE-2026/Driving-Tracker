@@ -25,6 +25,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.*
+import com.omnitech.drivingtracker.ui.theme.Blue
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -50,6 +52,13 @@ fun NotificationsScreen(
         viewModel.getTripsSharedWithMe()
     }
 
+    LaunchedEffect(state.deleted) {
+        if(state.deleted != null && state.deleted!! > 0){
+            delay(2000)
+            viewModel.resetDeleteStatus()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopBar(
@@ -63,169 +72,279 @@ fun NotificationsScreen(
             BottomNavBar(navController = navController, color = "alerts")
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier =  Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+
+        Box(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
 
-            //Pending requests
-            item{
-                NotificationSectionHeader("Requests", expandedRequests) { expandedRequests = !expandedRequests }
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+            ) {
+                if(state.groupedNotifications.isNotEmpty()){
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { viewModel.deleteNotifications() }) {
+                            Text(
+                                "Clear All",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Blue
+                            )
+                        }
+                    }
+                }
+                 }
 
-            item {
-                AnimatedVisibility(visible = expandedRequests) {
-                    Column {
-                        if(state.requests.isNotEmpty()){
+                //Pending requests
+                item {
+                    NotificationSectionHeader("Requests", expandedRequests) {
+                        expandedRequests = !expandedRequests
+                    }
+                }
 
-                            state.requests.forEach { request ->
-                                NotificationCard(NotificationItem(request.contactId, NotificationType.TRUSTED_CONTACT_REQUEST, request.username),
-                                    onAccept = { viewModel.respondTrustedContactRequest(request.contactId, "APPROVED")},
-                                    onIgnore = { viewModel.respondTrustedContactRequest(request.contactId, "DENIED")}
+                item {
+                    AnimatedVisibility(visible = expandedRequests) {
+                        Column {
+                            if (state.requests.isNotEmpty()) {
+
+                                state.requests.forEach { request ->
+                                    NotificationCard(
+                                        NotificationItem(
+                                            request.contactId,
+                                            NotificationType.TRUSTED_CONTACT_REQUEST,
+                                            request.username
+                                        ),
+                                        onAccept = {
+                                            viewModel.respondTrustedContactRequest(
+                                                request.contactId,
+                                                "APPROVED"
+                                            )
+                                        },
+                                        onIgnore = {
+                                            viewModel.respondTrustedContactRequest(
+                                                request.contactId,
+                                                "DENIED"
+                                            )
+                                        }
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
-                        }else {
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
                         }
                     }
                 }
-            }
 
-            item{ Spacer(modifier = Modifier.height(24.dp)) }
+                item { Spacer(modifier = Modifier.height(24.dp)) }
 
-            item{
-                NotificationSectionHeader("Trips Shared With You", expandedTrips) { expandedTrips = !expandedTrips }
-            }
-            item {
-                AnimatedVisibility(visible = expandedTrips) {
-                    Column {
+                item {
+                    NotificationSectionHeader(
+                        "Trips Shared With You",
+                        expandedTrips
+                    ) { expandedTrips = !expandedTrips }
+                }
+                item {
+                    AnimatedVisibility(visible = expandedTrips) {
+                        Column {
 
-                        val tripsSharedWithYou = state.trips
+                            val tripsSharedWithYou = state.trips
 
-                        if(tripsSharedWithYou.isEmpty()){
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        } else {
-                            tripsSharedWithYou.forEach{ trip ->
-                                val body = "View ${trip.owner}'s shared trip"
-                                NotificationCard(NotificationItem(trip.tripId, NotificationType.valueOf("VIEW_SHARED_TRIP"), body = body),
-                                    onAccept = { navController?.navigate(Screen.LiveTripContacts.createRoute(trip.tripId, trip.owner)) }
+                            if (tripsSharedWithYou.isEmpty()) {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
+                            } else {
+                                tripsSharedWithYou.forEach { trip ->
+                                    val body = "View ${trip.owner}'s shared trip"
+                                    NotificationCard(
+                                        NotificationItem(
+                                            trip.tripId,
+                                            NotificationType.valueOf("VIEW_SHARED_TRIP"),
+                                            body = body
+                                        ),
+                                        onAccept = {
+                                            navController?.navigate(
+                                                Screen.LiveTripContacts.createRoute(
+                                                    trip.tripId,
+                                                    trip.owner
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                //Today
+                item {
+                    NotificationSectionHeader("Today", expandedToday) {
+                        expandedToday = !expandedToday
+                    }
+                }
+                item {
+                    AnimatedVisibility(visible = expandedToday) {
+                        Column {
+                            val notificationsToday = state.groupedNotifications["Today"]
+
+                            if (notificationsToday.isNullOrEmpty()) {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+
+                                notificationsToday.forEach { notification ->
+                                    val notiType =
+                                        runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(
+                                            NotificationType.GENERAL
+                                        )
+                                    NotificationCard(
+                                        NotificationItem(
+                                            notification.notificationId,
+                                            notiType,
+                                            body = notification.body ?: ""
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                //Yesterday
+                item {
+                    NotificationSectionHeader("Yesterday", expandedYesterday) {
+                        expandedYesterday = !expandedYesterday
+                    }
+                }
+                item {
+                    AnimatedVisibility(visible = expandedYesterday) {
+                        Column {
+                            val notificationsYesterday = state.groupedNotifications["Yesterday"]
+
+                            if (notificationsYesterday.isNullOrEmpty()) {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                notificationsYesterday.forEach { notification ->
+                                    val notiType =
+                                        runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(
+                                            NotificationType.GENERAL
+                                        )
+                                    NotificationCard(
+                                        NotificationItem(
+                                            notification.notificationId,
+                                            notiType,
+                                            body = notification.body ?: ""
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //This Week
+                item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                item {
+                    NotificationSectionHeader("This Week", expandedThisWeek) {
+                        expandedThisWeek = !expandedThisWeek
+                    }
+                }
+                item {
+                    AnimatedVisibility(visible = expandedThisWeek) {
+                        Column {
+
+                            val notificationsWeek = state.groupedNotifications["This Week"]
+
+                            if (notificationsWeek.isNullOrEmpty()) {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                notificationsWeek.forEach { notification ->
+                                    val notiType =
+                                        runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(
+                                            NotificationType.GENERAL
+                                        )
+                                    NotificationCard(
+                                        NotificationItem(
+                                            notification.notificationId,
+                                            notiType,
+                                            body = notification.body ?: ""
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //Earlier
+                item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                item {
+                    NotificationSectionHeader("Earlier", expandedEarlier) {
+                        expandedEarlier = !expandedEarlier
+                    }
+                }
+                item {
+                    AnimatedVisibility(visible = expandedEarlier) {
+                        Column {
+                            val notificationsEarlier = state.groupedNotifications["Earlier"]
+
+                            if (notificationsEarlier.isNullOrEmpty()) {
+                                Text(
+                                    text = noNotificationError,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            } else {
+                                notificationsEarlier.forEach { notification ->
+                                    val notiType =
+                                        runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(
+                                            NotificationType.GENERAL
+                                        )
+                                    NotificationCard(
+                                        NotificationItem(
+                                            notification.notificationId,
+                                            notiType,
+                                            body = notification.body ?: ""
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            item{ Spacer(modifier = Modifier.height(24.dp)) }
-
-            //Today
-            item{
-                NotificationSectionHeader("Today", expandedToday) { expandedToday = !expandedToday }
-            }
-            item {
-                AnimatedVisibility(visible = expandedToday) {
-                    Column {
-                        val notificationsToday = state.groupedNotifications["Today"]
-
-                        if(notificationsToday.isNullOrEmpty()){
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }else {
-
-                            notificationsToday.forEach{ notification ->
-                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
-                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
-                            }
-                        }
-                    }
-                }
-            }
-
-            item{ Spacer(modifier = Modifier.height(24.dp)) }
-
-            //Yesterday
-            item{
-                NotificationSectionHeader("Yesterday", expandedYesterday) { expandedYesterday = !expandedYesterday }
-            }
-            item {
-                AnimatedVisibility(visible = expandedYesterday) {
-                    Column {
-                        val notificationsYesterday = state.groupedNotifications["Yesterday"]
-
-                        if(notificationsYesterday.isNullOrEmpty()){
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }else {
-                            notificationsYesterday.forEach{ notification ->
-                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
-                                NotificationCard(NotificationItem(notification.notificationId, notiType, body= notification.body?:""))
-                            }
-                        }
-                    }
-                }
-            }
-
-            //This Week
-            item{ Spacer(modifier = Modifier.height(24.dp)) }
-
-            item{
-                NotificationSectionHeader("This Week", expandedThisWeek) { expandedThisWeek = !expandedThisWeek }
-            }
-            item {
-                AnimatedVisibility(visible = expandedThisWeek) {
-                    Column {
-
-                        val notificationsWeek = state.groupedNotifications["This Week"]
-
-                        if(notificationsWeek.isNullOrEmpty()){
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        } else {
-                            notificationsWeek.forEach{ notification ->
-                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
-                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
-                            }
-                        }
-                    }
-                }
-            }
-
-            //Earlier
-            item{ Spacer(modifier = Modifier.height(24.dp)) }
-
-            item{
-                NotificationSectionHeader("Earlier", expandedEarlier) { expandedEarlier = !expandedEarlier }
-            }
-            item {
-                AnimatedVisibility(visible = expandedEarlier) {
-                    Column {
-                        val notificationsEarlier = state.groupedNotifications["Earlier"]
-
-                        if(notificationsEarlier.isNullOrEmpty()){
-                            Text(text = noNotificationError,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        } else {
-                            notificationsEarlier.forEach{ notification ->
-                                val notiType = runCatching { NotificationType.valueOf(notification.type) }.getOrDefault(NotificationType.GENERAL)
-                                NotificationCard(NotificationItem(notification.notificationId, notiType, body = notification.body?:""))
-                            }
-                        }
-                    }
-                }
-            }
+            NotificationFeedbackPill(
+                message = "Notifications cleared",
+                isVisible =  state.deleted != null && state.deleted!! > 0
+            )
         }
     }
+
+
 }
 
 @Composable

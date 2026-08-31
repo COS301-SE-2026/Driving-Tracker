@@ -17,6 +17,15 @@ if(!config_result.success){
 
 const azure_maps_config = config_result.data;
 
+const AZURE_MAPS_CATEGORIES = {
+    petrol: 7311,
+    rest_area: 7395,
+    parking: 7369,
+}
+
+type PoiCategoryKey = keyof typeof AZURE_MAPS_CATEGORIES;
+type PoiRequestType = PoiCategoryKey | 'stops' | 'all';
+
 export interface AzureMapsTokenResponse{
     token: string ;
     // client_id: string;
@@ -128,6 +137,106 @@ export const map_services ={
             lat: r.position.lat,
             lng: r.position.lon
         }));
+    },
+    //Fetches points of interest within a specified radius from the provided location
+    async get_nearby_pois(lat: number, lng: number, limit: number = 10, type: string = 'stops', radiusMeters: number = 5000){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+
+        if(!lat || !lng || lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const normalized_type = type?.trim().toLowerCase();
+
+        const is_valid_type = normalized_type === 'stops' || normalized_type === 'all' || normalized_type in AZURE_MAPS_CATEGORIES;
+
+        if(!is_valid_type){
+            throw new Error("Invalid type");
+        }
+
+        const poi_type: PoiRequestType = normalized_type as PoiRequestType;
+
+        let category_Ids: number[] | null = null;
+
+        if(poi_type === 'stops'){
+            category_Ids = [AZURE_MAPS_CATEGORIES.petrol, AZURE_MAPS_CATEGORIES.rest_area, AZURE_MAPS_CATEGORIES.parking]
+
+        } else if(poi_type !== 'all'){
+            category_Ids = [AZURE_MAPS_CATEGORIES[poi_type]];
+        }
+
+
+        const params = new URLSearchParams({
+            'api-version':'1.0',
+            lat: String(lat),
+            lon: String(lng),
+            radius: String(radiusMeters),
+            limit: String(limit),
+            language: 'en-US',
+            'subscription-key': key,
+        });
+
+        if(category_Ids){
+            params.set('categorySet', category_Ids.join(','));
+        }
+
+        const url = `https://atlas.microsoft.com/search/nearby/json?${params.toString()}`;
+
+        const response = await fetch(url);
+
+        if(!response.ok){
+            
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json() as { results: any[] };
+
+        return (json.results?? []).map((result: any)=>({
+            name: result.poi?.name ?? "Unknown",
+            category: result.poi?.classifications?.[0]?.code ?? result.poi?.categories?.[0] ?? null,
+            latitude: result.position?.lat,
+            longitude: result.position?.lon,
+            distanceMeters: result.dist,
+            address: result.address?.freeformAddress ?? null
+        }));
+
+    },
+    //gets address from coordinates including roadUse and speedLimit
+    async reverse_geocode(lat: number, lng: number){
+        const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
+
+        if(!lat || !lng|| lat == 0.0 || lng == 0.0){
+            throw new Error("Location coordinates missing or invalid");
+        }
+
+        const params = new URLSearchParams({
+            'api-version':'1.0',
+            query: `${lat},${lng}`,
+            language: 'en-US',
+            returnSpeedLimit: 'true',
+            returnRoadUse: 'true',
+            'subscription-key': key,
+        });
+
+        const url = `https://atlas.microsoft.com/search/address/reverse/json?${params.toString()}`;
+
+        const response = await fetch(url);
+
+        if(!response.ok){
+            throw new Error(`Azure Maps request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json() as { addresses: any[] };
+
+        const result = json.addresses?.[0];
+
+        return {
+            address: result.address?.freeformAddress ?? null,
+            road_use: result?.roadUse ?? null,
+            speed_limit: result?.address?.speedLimit ?? null,
+            municipality: result?.address?.municipality ?? null,
+            countryCode: result?.address?.countryCode ?? null,
+        };
     }
-    //further endpoints to be implemented relating to map integration
+    
 }

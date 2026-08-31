@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import auth_router from "./routes/auth.routes";
-//import 'dotenv/config';
+import 'dotenv/config';
 import contacts_router from "./routes/contacts.route";
 import trip_router from "./routes/trips.routes";
 import badges_leaderBoard_router from './routes/badges_leaderbord.routes';

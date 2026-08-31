@@ -407,7 +407,8 @@ private fun StartTripDialog(
     approvedContacts: List<ContactDto>,
     vehicles: List<VehicleDto>,
     onDismiss: () -> Unit,
-    onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, destLat: Double?, destLng: Double?, contactIds: List<String>) -> Unit, // Updated here
+    onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, destLat: Double?, destLng: Double?,
+                  contactIds: List<String>) -> Unit,
     tripViewModel: TripViewModel = hiltViewModel()
 ){
     var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }

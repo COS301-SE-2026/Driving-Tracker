@@ -54,11 +54,16 @@ class MessagingService: FirebaseMessagingService() {
                         message.notification?.body ?: "$sharedBy is sharing their live trip with you")
                 }
                 "TRIP_ALERT" -> {
-                    val tripId = message.data["trip_id"]
-                    notificationHelper.showTripAlert(
-                        message.notification?.title ?: "Trip Alert",
-                        message.notification?.body ?: "Check your driving status",
-                        tripId ?: ""
+                    notificationHelper.showContactAlert(
+                        message.notification?.title ?: "Contact Trip Alert",
+                        message.notification?.body ?: "An event has occurred on a trip shared with you"
+                    )
+                }
+                "UNEXPECTED_STOP" -> {
+
+                    notificationHelper.showHighContactAlert(
+                        message.notification?.title ?: "Unexpected Stop",
+                        message.notification?.body ?: "Unexpected stop detected on trip shared with you"
                     )
                 }
                 else -> {

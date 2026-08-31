@@ -44,6 +44,7 @@ async function main() {
             phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
             consent_status: true,
             status: 'ACTIVE',
+            email_verified: true,
         }
     });
 

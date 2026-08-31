@@ -227,6 +227,7 @@ fun LiveTripContacts(
                     longitude = currentLng,
                     actualRoute = tripPath,
                     plannedRoute = plannedRoute,
+                    destination = state.destination,
                     modifier = Modifier.fillMaxSize(),
                     recenterTrigger = recenterCount
                 )

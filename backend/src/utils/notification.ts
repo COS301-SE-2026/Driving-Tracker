@@ -17,7 +17,7 @@ export async function add_notification(input: {
     }){
 
         if(!Object.values(NotificationType).includes(input.type as NotificationType)){
-            throw coded_error("INVALID_STATUS");
+            throw coded_error("INVALID_NOTIFICATION_TYPE");
         }
 
         if(input.user_ids.length !== input.reference_ids?.length){
