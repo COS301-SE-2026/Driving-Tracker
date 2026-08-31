@@ -4,6 +4,7 @@ jest.mock('../../../src/db/prisma', () => ({
         trips: {
         findUnique: jest.fn(),
         count: jest.fn(),
+        findMany: jest.fn(),
         },
         badges: {
         findMany: jest.fn(),
@@ -51,6 +52,8 @@ describe('evaluate badges ',()=>{
         });
 
         mock_prisma.trips.count.mockResolvedValue(5);
+
+        mock_prisma.trips.findMany.mockedResolvedValue([]);
 
         mock_prisma.badges.findMany.mockResolvedValue([
             {
