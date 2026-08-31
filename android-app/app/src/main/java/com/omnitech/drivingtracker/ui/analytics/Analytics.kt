@@ -3,6 +3,7 @@ package com.omnitech.drivingtracker.ui.analytics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -100,8 +101,8 @@ fun DriverAnalytics(navController: NavController ?= null,
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
             LazyColumn(
-                modifier = Modifier.fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 //Driving Score
@@ -283,7 +284,7 @@ fun PerformanceSection(
     onFuelClick: (()->Unit)?= null
 ){
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier.fillMaxWidth()
     ){
         Text("Performance",
             fontWeight = FontWeight.Bold,

@@ -183,8 +183,8 @@ fun TotalCard(avgFuelEfficiency: Double?,
                     fontWeight = FontWeight.Medium,
                     color = when{
                         changeFromLastMonth == null -> Color.Black
-                        changeFromLastMonth > 0 -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.secondary
+                        changeFromLastMonth > 0 -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.error
                     }
                 )
             }
