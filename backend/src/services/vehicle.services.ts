@@ -41,7 +41,7 @@ export interface assign_vehicle{
 }
 
 export interface get_fuel_analytics{
-    user_id: String;
+    user_id: string;
 }
 
 function mpg_to_lper100km(mpg: number): number | null {//helper function for converting mpg to lper100
