@@ -45,6 +45,17 @@ import com.omnitech.drivingtracker.ui.components.YourTopBar
 import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.runtime.*
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.data.models.FuelHistoryPointDto
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 
 data class FuelEfficiencyTip(
     val title: String,val description: String
@@ -66,7 +77,11 @@ val fuelEfficiencyTips = listOf(
 )
 
 @Composable
-fun FuelAnalytics(navController: NavController ?= null){
+fun FuelAnalytics(navController: NavController ?= null,
+                  viewModel: FuelAnalyticsViewModel = hiltViewModel()
+){
+
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -96,6 +111,10 @@ fun FuelAnalytics(navController: NavController ?= null){
                     Spacer(modifier = Modifier.height(6.dp))
                 }
                 //Graph
+                item{
+                    FuelGraph(history = uiState.history)
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
                 //Stats
                 item{
                     StatsCard()
@@ -338,6 +357,75 @@ fun TipsCard(
             fontSize = 11.sp,
             color = Color.DarkGray
         )
+    }
+}
+
+@Composable
+fun FuelGraph(history: List<FuelHistoryPointDto>){
+    //y axis: fuel efficiency L/100Km
+    //x axis: dates
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(history) { //everytime there is new data in hist, re-fetch
+        if (history.isEmpty())
+            return@LaunchedEffect
+        modelProducer.runTransaction {
+            lineModel{
+                series(history.map { it.efficiencyLPer100Km ?: 0.0 })
+            }
+        }
+    }
+
+    if (history.isEmpty()){
+        Text(
+            text = "There is not enough trip data yet.",
+            fontSize = 12.sp,
+            color = Color.Black,
+            modifier = Modifier.fillMaxWidth()
+                .padding(vertical = 24.dp)
+        )
+        return
+    }
+    else {
+        Card(
+            modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            colors = CardDefaults.cardColors(containerColor = CardWhite),
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ){
+            Column(modifier = Modifier.fillMaxWidth()
+                .padding(16.dp)
+            ) {
+
+                Text(
+                    text = "Fuel Efficiency Over your trips",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                CartesianChartHost(
+                    chart = rememberCartesianChart(
+                        rememberLineCartesianLayer(),
+                        startAxis = VerticalAxis.rememberStart(
+                            title = {"L/100km"}
+                        ),
+                        bottomAxis = HorizontalAxis.rememberBottom(
+                            title = {"Date"},
+                            valueFormatter = CartesianValueFormatter{
+                                _,value,_-> //get the fuel efficiency hist and take only the day & month
+                                history.getOrNull(value.toInt())?.date?.takeLast(5) ?:""
+                            }
+                        ),
+                    ),
+                    modelProducer = modelProducer,
+                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                )
+            }
+        }
     }
 }
 
