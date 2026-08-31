@@ -115,8 +115,14 @@ class AchievementsViewModel @Inject constructor(
             }
 
             //Active challenges are badges that aren't earned yet
-            val challenges = badges.filter { !it.isEarned }.map { badge ->
-                Challenge(badge.badgeId.toString(), badge.name, badge.description, badge.currentProgress, badge.targetProgress)
+            val challenges = badges.map { badge ->
+                Challenge(
+                    id = badge.badgeId.toString(),
+                    title = badge.name,
+                    description = badge.description,
+                    currentProgress = badge.currentProgress,
+                    targetProgress = badge.targetProgress
+                )
             }
 
             _uiState.value = _uiState.value.copy(
