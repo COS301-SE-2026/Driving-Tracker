@@ -129,7 +129,7 @@ class AchievementsViewModel @Inject constructor(
     }
 
     private fun mapIconToRes(name: String): Int = when (name.lowercase()) {
-        "on-board" -> R.drawable.badge_on_board
+        "on-board", "on-board" -> R.drawable.badge_on_board
         "safety officer" -> R.drawable.badge_safety_officer
         "speed angel" -> R.drawable.badge_speed_angel
         "throttle goat" -> R.drawable.badge_throttle_goat
