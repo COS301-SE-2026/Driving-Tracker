@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -57,6 +58,9 @@ import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
+import kotlin.math.abs
 
 data class FuelEfficiencyTip(
     val title: String,val description: String
@@ -101,6 +105,9 @@ fun FuelAnalytics(navController: NavController ?= null,
             modifier = Modifier.fillMaxSize()
                 .padding(paddingValues)
         ){
+            if (uiState.isLoading){
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
                     .padding(horizontal = 16.dp),
@@ -109,7 +116,8 @@ fun FuelAnalytics(navController: NavController ?= null,
             ) {
                 //Total card
                 item{
-                    TotalCard()
+                    TotalCard(avgFuelEfficiency = uiState.avgFuelEfficiency,
+                        changeFromLastMonth = uiState.changeFromLastMonth)
                 }
                 //Graph
                 item{
@@ -117,7 +125,11 @@ fun FuelAnalytics(navController: NavController ?= null,
                 }
                 //Stats
                 item{
-                    StatsCard()
+                    StatsCard(
+                        best = uiState.bestTripFuel,
+                        average = uiState.avgFuelEfficiency,
+                        worst = uiState.worstTripFuel
+                    )
                 }
                 //How to improve
                 item{
@@ -129,7 +141,9 @@ fun FuelAnalytics(navController: NavController ?= null,
 }
 
 @Composable
-fun TotalCard(){
+fun TotalCard(avgFuelEfficiency: Double?,
+              changeFromLastMonth: Double?
+){
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -146,7 +160,7 @@ fun TotalCard(){
         ) {
 
             Text(
-                text = "7.28 L/100 km",
+                text = formatFuel(avgFuelEfficiency),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -159,10 +173,19 @@ fun TotalCard(){
             ) {
 
                 Text(
-                    text = "⬆ 0.6 L/100 km from last month",
+                    text = changeFromLastMonth?.let{
+                        val arrow = if (it >0) "⬆" else "⬇"
+                        String.format(Locale.getDefault(), "%s %.1f L/100 km from last month",
+                            arrow, abs(it)
+                        )
+                    } ?: "",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = when{
+                        changeFromLastMonth == null -> Color.Black
+                        changeFromLastMonth > 0 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.secondary
+                    }
                 )
             }
 
@@ -194,7 +217,7 @@ fun TotalCard(){
 }
 
 @Composable
-fun StatsCard(){
+fun StatsCard(best: Double?, average: Double?, worst: Double?){
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -220,7 +243,7 @@ fun StatsCard(){
             FuelStat(
                 icon = Icons.Filled.SentimentVerySatisfied,
                 label = "Best",
-                value = "6.4 L/100 km"
+                value = formatFuel(best)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -228,7 +251,7 @@ fun StatsCard(){
             FuelStat(
                 icon = Icons.Filled.SentimentNeutral,
                 label = "Average",
-                value = "7.28 L/100 km"
+                value = formatFuel(average)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -236,13 +259,15 @@ fun StatsCard(){
             FuelStat(
                 icon = Icons.Filled.SentimentVeryDissatisfied,
                 label = "Worst",
-                value = "8.1 L/100 km"
+                value = formatFuel(worst)
             )
 
         }
     }
 }
 
+private fun formatFuel(value: Double?): String =
+    value?.let {String.format(Locale.getDefault(), "%.2f L/100 km", it)} ?: "-"
 @Composable
 fun FuelStat(
     icon: ImageVector,

@@ -73,7 +73,3 @@ class FuelAnalyticsViewModel @Inject constructor(
 private fun yearMonthOfOrNull(date: String) : YearMonth? =
     runCatching { YearMonth.from(LocalDate.parse(date)) }.getOrNull()
 //returns null instead of crashing
-
-private fun List<Double>.averageOrNull(): Double? =
-    if (isEmpty()) null
-    else average()

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -95,6 +96,9 @@ fun DriverAnalytics(navController: NavController ?= null,
     ){
         paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)){
+            if (uiState.isLoading){
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
                     .padding(horizontal = 16.dp),
@@ -139,10 +143,13 @@ fun DriverAnalytics(navController: NavController ?= null,
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ){
-                            TripsAnalytic(uiState.totalDistanceKm?.let{"${it.roundToInt()} km"} ?: "-",
+                            TripsAnalytic(uiState.totalDistanceKm?.let
+                            {String.format(Locale.getDefault(), "%.1f km",it)} ?: "-",
                                 "Distance", modifier = Modifier.weight(1f), true)
+
                             TripsAnalytic(uiState.tripCount?.toString() ?: "-",
                                 "Trips", modifier = Modifier.weight(1f), true)
+
                             TripsAnalytic(formatDuration(uiState.totalMinutes),
                                 "Time", modifier = Modifier.weight(1f), true)
                         }
@@ -160,7 +167,7 @@ fun DriverAnalytics(navController: NavController ?= null,
                         fuel = uiState.fuelEfficiency ?: 0.0,
                         events = uiState.eventCount ?: 0,
 
-                        onFuelClick = { navController?.navigate("FuelAnalytics")}
+                        onFuelClick = { navController?.navigate(Screen.FuelAnalytics.route)}
                     )
                 }
 
