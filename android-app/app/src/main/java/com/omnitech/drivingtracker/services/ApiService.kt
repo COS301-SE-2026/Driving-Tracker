@@ -181,4 +181,7 @@ interface ApiService{
         @Body body: StopEventResolveRequest
     ): StopEventResolveResponse
 
+    @GET("vehicle/fuel_analytics")
+    suspend fun getFuelAnalytics(): FuelAnalyticsDto
+
 }
