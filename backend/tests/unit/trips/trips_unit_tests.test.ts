@@ -249,6 +249,17 @@ describe('Trips endpoints unit tests', ()=>{
 			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'MISSING_REQUIRED_FIELDS', message: 'Fill all valid fields'}));
 		});
 
+        it('returns 401 when user does not own trip', async () => {
+			//mocking service to throw error message
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('You do not own this trip'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(401);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'UNAUTHORIZED'}));
+		});
+
 		it('returns 500 for unexpected interal error', async () => {
 			//mocking error that doesnt match any if/else block
 			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
