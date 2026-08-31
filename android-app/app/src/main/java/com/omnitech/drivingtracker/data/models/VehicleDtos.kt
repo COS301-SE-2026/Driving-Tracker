@@ -12,6 +12,8 @@ data class VehicleDto(
     val year: Int? = null,
     @SerializedName("fuel_type")
     val fuelType: String? = null,
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
     val mileage: Int? = null,
     @SerializedName("trip_count")
     val tripCount: Int? = null,
