@@ -145,7 +145,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun uploadProfilePicture(imagePart : MultipartBody.Part) : Result<String> = try{
         val response = api.uploadProfilePicture(imagePart)
-        Result.success(response.data.ProfilePictureUrl)
+        Result.success(response.data.profilePictureUrl)
     }catch(e: HttpException){
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message?: "Failed to upload profile picture"))

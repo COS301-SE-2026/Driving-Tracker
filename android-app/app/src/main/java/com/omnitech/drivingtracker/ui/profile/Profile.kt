@@ -87,7 +87,7 @@ fun Profile(navController: NavController? = null,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            ProfileHeader(name = "${profile.name} ${profile.surname}", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUri, isUploading = isUploadingPicture)
+                            ProfileHeader(name = "${profile.name} ${profile.surname}", profilePicture = Icons.Default.Person, onEditClick = {showImagePicker = true}, imageUri = profileImageUrl, isUploading = isUploadingPicture)
                         }
                         item {
                             //Account Information
@@ -160,7 +160,7 @@ fun ProfileHeader(name: String, profilePicture: ImageVector,onEditClick: () -> U
                     .background(Color(0xFFE3D9FA), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                if (imageUri != null){ //Coil for loading pictures/Uri's
+                if (!imageUri.isNullOrBlank()){ //Coil for loading pictures/Uri's
                     AsyncImage(
                         model = imageUri,
                         contentDescription = "Profile picture",
