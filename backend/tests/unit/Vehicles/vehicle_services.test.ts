@@ -600,6 +600,18 @@ describe('vehicle services get fuel analytics', ()=>{
     jest.clearAllMocks();
     });
 
+    it('throws when the user_id is missing', async () =>{
+        await expect(vehicle_services.get_fuel_analytics({user_id: ''}))
+        .rejects.toThrow('Missing field(s)');
+    });
+
+    it('throws when the user is not found', async ()=>{
+        mock_prisma.users.findUnique.mockResolvedValue(null);
+
+        await expect(vehicle_services.get_fuel_analytics({user_id: 'u1'}))
+        .rejects.toThrow('User not found');
+    });
+
     it('returns analytics for all valid completed trips', async () => {
         mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
         mock_prisma.vehicles.findMany.mockResolvedValue([
@@ -689,6 +701,29 @@ describe('vehicle services get fuel analytics', ()=>{
         expect(result.average_fuel_efficiency).toBeCloseTo(13.5,1);
         expect(result.best_fuel_efficiency).toBeCloseTo(9,2);
         expect(result.worst_fuel_efficiency).toBeCloseTo(18,2);
+    });
+
+    it ('returns null analytics when no valid trip data exists',async()=>{
+        mock_prisma.users.findUnique.mockResolvedValue({user_id: 'u1'});
+        mock_prisma.vehicles.findMany.mockResolvedValue([
+            {
+                vehicle_id: 'v1',
+                fuel_tank: 60,
+                trips: [
+                    {
+                        distance_km: 0,
+                        fuel_level_start: 80,
+                        fuel_level_end: 50,
+                        end_time: new Date('2026-08-01T00:00:00Z'),
+                    }
+                ]
+            }
+        ]);
+        const result = await vehicle_services.get_fuel_analytics({user_id: 'u1'});
+        expect(result.average_fuel_efficiency).toBeNull();
+        expect(result.best_fuel_efficiency).toBeNull();
+        expect(result.worst_fuel_efficiency).toBeNull();
+        expect(result.history).toEqual([]);
     });
 });
  
