@@ -107,7 +107,7 @@ export const upload_controller = {
             const blob_name = await auth_services.get_profile_picture_blob_name(user_id);
             
             if(!blob_name){
-                res.status(404).json({ error: "NOT FOUND", message: "This user has no profile picture" });
+                res.status(404).json({ error: "NOT_FOUND", message: "This user has no profile picture" });
                 return;
             }
             
@@ -145,7 +145,7 @@ export const upload_controller = {
 
             const blob_name = await vehicle_services.get_vehicle_image_blob_name(user_id, vehicle_id);
             if(!blob_name){
-                res.status(404).json({ error: "NOT FOUND", message: "This vehicle has no image" });
+                res.status(404).json({ error: "NOT_FOUND", message: "This vehicle has no image" });
                 return;
             }
             
