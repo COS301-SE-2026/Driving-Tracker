@@ -52,16 +52,21 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLineComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.common.LegendItem
-import kotlin.math.roundToInt
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 data class TripDataPoint(
     val date: String,
@@ -380,13 +385,13 @@ fun AnalyticsGraph(tripData: List<TripDataPoint>){
         modelProducer.runTransaction {
             lineModel{
                 //fuel eff
-                series(tripData.map{it.fuelEfficiency ?: 0.0})
+                series(tripData.map{(it.fuelEfficiency ?: 0.0) * 10.0})
                 //eco score
                 series(tripData.map{it.ecoScore?.toDouble() ?: 0.0})
                 //safety score
                 series(tripData.map{it.safetyScore?.toDouble() ?: 0.0})
                 //events
-                series(tripData.map{it.eventCount?.toDouble() ?: 0.0})
+                series(tripData.map{(it.eventCount?.toDouble() ?: 0.0)*10.0})
             }
         }
     }
@@ -427,9 +432,26 @@ fun AnalyticsGraph(tripData: List<TripDataPoint>){
             Spacer(modifier = Modifier.height(10.dp))
             CartesianChartHost(
                 chart = rememberCartesianChart(
-                        rememberLineCartesianLayer(),
-                        startAxis = VerticalAxis.rememberStart(title = {"Score/Value"}),
+                        rememberLineCartesianLayer(
+                            lineProvider = LineCartesianLayer.LineProvider.series(
+                                LineCartesianLayer.rememberLine(fill = LineCartesianLayer.LineFill.single(Fill(
+                                    MaterialTheme.colorScheme.primary))),
+                                LineCartesianLayer.rememberLine(fill = LineCartesianLayer.LineFill.single(Fill(
+                                    MaterialTheme.colorScheme.secondary))),
+                                LineCartesianLayer.rememberLine(fill = LineCartesianLayer.LineFill.single(Fill(
+                                    MaterialTheme.colorScheme.tertiary))),
+                                LineCartesianLayer.rememberLine(fill = LineCartesianLayer.LineFill.single(Fill(
+                                    MaterialTheme.colorScheme.error))),
+                            )
+                        ),
+                        startAxis = VerticalAxis.rememberStart(label = rememberAxisLabelComponent(),
+                            titleComponent = rememberTextComponent(),
+                            title = {"Score/Value"}
+                        ),
                         bottomAxis = HorizontalAxis.rememberBottom(
+                            label = rememberAxisLabelComponent(),
+                            titleComponent = rememberTextComponent(),
+                            title = {"Trip Date"},
                             valueFormatter = CartesianValueFormatter{
                                 _,value,_ ->
                                 tripData.getOrNull(value.toInt())?.date?.takeLast(5) ?: ""
@@ -448,15 +470,14 @@ fun AnalyticsGraph(tripData: List<TripDataPoint>){
 private fun LegendItem(color: Color, label: String){
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.size(80.dp)
+        modifier = Modifier.padding(8.dp)
     ){
         Box(
             modifier = Modifier.size(12.dp)
-                .background(color, RoundedCornerShape(2.dp)
-        )){
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(label, fontSize = 10.sp)
-        }
+                .background(color, RoundedCornerShape(2.dp))
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium)
 
 
     }
