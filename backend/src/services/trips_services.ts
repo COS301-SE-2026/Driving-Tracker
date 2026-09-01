@@ -12,6 +12,7 @@ import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
 import { badges_leaderboard_services } from './badges_leaderboard_services';
 import { update_vehicle_efficiency } from '../utils/trip_counter';
+import leaderboard_services from './leaderboard_services';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -525,6 +526,16 @@ export const trips_services ={
                     }
                 });
             }
+
+            if(data.status == 'COMPLETED'){
+                setImmediate(() => {
+                    void leaderboard_services
+                        .update_user_leaderboards(data.user_id)
+                        .catch((err) => { console.error('Leaderboard update failed', err)});
+                });
+            }
+            
+
             console.log("scores computed and ready to return");
             //getting the user info
              const user = await prisma.users.findUnique({

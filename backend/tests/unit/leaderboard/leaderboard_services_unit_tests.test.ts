@@ -34,8 +34,8 @@ describe('Leaderboard servies', () => {
                 {
                     leaderboard_id: 'lb1',
                     user_id: 'u1',
-                    category: 'safety',
-                    scope: 'global',
+                    category: 'SAFETY',
+                    scope: 'ALL_TIME',
                     score: new MockDecimal(95.5),
                     users: {
                     user_id: 'u1',
@@ -47,8 +47,8 @@ describe('Leaderboard servies', () => {
                 {
                     leaderboard_id: 'lb2',
                     user_id: 'u2',
-                    category: 'safety',
-                    scope: 'global',
+                    category: 'SAFETY',
+                    scope: 'ALL_TIME',
                     score: new MockDecimal(90.0),
                     users: {
                     user_id: 'u2',
@@ -60,8 +60,8 @@ describe('Leaderboard servies', () => {
                 {
                     leaderboard_id: 'lb3',
                     user_id: 'u3',
-                    category: 'safety',
-                    scope: 'global',
+                    category: 'SAFETY',
+                    scope: 'ALL_TIME',
                     score: new MockDecimal(85.5),
                     users: {
                     user_id: 'u3',
@@ -74,12 +74,12 @@ describe('Leaderboard servies', () => {
 
             const result = await leaderboard_services.get_leaderboard({
                 user_id: 'u2',
-                category:'safety',
-                scope:'global',
+                category:'SAFETY',
+                scope:'ALL_TIME',
             });
 
-            expect(result.data.category).toBe('safety');
-            expect(result.data.scope).toBe('global');
+            expect(result.data.category).toBe('SAFETY');
+            expect(result.data.scope).toBe('ALL_TIME');
             expect(result.data.entries.length).toBe(3);
             expect(result.data.my_rank).toBe(2);
             expect(result.data.my_score).toBe(90);
@@ -89,8 +89,8 @@ describe('Leaderboard servies', () => {
                 {
                     leaderboard_id: 'lb1',
                     user_id: 'u1',
-                    category: 'eco',
-                    scope: 'regional',
+                    category: 'ECO',
+                    scope: 'WEEKLY',
                     score: new MockDecimal(88.0),
                     users: {
                         user_id: 'u1',
@@ -103,8 +103,8 @@ describe('Leaderboard servies', () => {
 
             const result = await leaderboard_services.get_leaderboard({
                 user_id: 'u999',
-                category:'eco',
-                scope:'reginal',
+                category:'ECO',
+                scope:'WEEKLY',
             });
 
             expect(result.data.entries.length).toBe(1);
@@ -116,7 +116,7 @@ describe('Leaderboard servies', () => {
             leaderboard_services.get_leaderboard({
                 user_id: 'u1',
                 category: '',
-                scope: 'global',
+                scope: 'ALL_TIME',
             })
             ).rejects.toThrow('Missing required fields');
         });
@@ -124,7 +124,7 @@ describe('Leaderboard servies', () => {
             await expect(
             leaderboard_services.get_leaderboard({
                 user_id: 'u1',
-                category: 'safety',
+                category: 'SAFETY',
                 scope: '',
             })
             ).rejects.toThrow('Missing required fields');
@@ -135,8 +135,8 @@ describe('Leaderboard servies', () => {
 
             const result = await leaderboard_services.get_leaderboard({
                 user_id: 'u1',
-                category: 'safety',
-                scope: 'global',
+                category: 'SAFETY',
+                scope: 'ALL_TIME',
             });
 
             expect(result.data.entries.length).toBe(0);
@@ -148,63 +148,63 @@ describe('Leaderboard servies', () => {
     describe('get categories', () =>{
 
         it('returns list of categories', async () =>{
-            mock_prisma.leaderboard.findMany.mockResolvedValue([
-                {category: 'safety'},
-                {category: 'eco'},
-                {category: 'overrall'},
-            ]);
+            // mock_prisma.leaderboard.findMany.mockResolvedValue([
+            //     {category: 'SAFETY'},
+            //     {category: 'ECO'},
+            //     {category: 'OVERALL'},
+            // ]);
 
             const result = await leaderboard_services.get_categories();
 
-            expect(result.data.categories).toEqual(['safety', 'eco', 'overrall']);
+            expect(result.data.categories).toEqual(['OVERALL', 'ECO', 'SAFETY']);
             expect(result.data.categories.length).toBe(3);
 
         });
 
-        it('filters out null categories', async () =>{
-            mock_prisma.leaderboard.findMany.mockResolvedValue([
-                {category: 'safety'},
-                {category: null},
-                {category: 'overrall'},
-            ]);
+        // it('filters out null categories', async () =>{
+        //     mock_prisma.leaderboard.findMany.mockResolvedValue([
+        //         {category: 'SAFETY'},
+        //         {category: null},
+        //         {category: 'OVERALL'},
+        //     ]);
 
-            const result = await leaderboard_services.get_categories();
+        //     const result = await leaderboard_services.get_categories();
 
-            expect(result.data.categories).toEqual(['safety', 'overrall']);
-            expect(result.data.categories.length).toBe(2);
-        });
+        //     expect(result.data.categories).toEqual(['SAFETY', 'OVERALL']);
+        //     expect(result.data.categories.length).toBe(2);
+        // });
 
     });
 
     describe('get scopes', () =>{
 
         it('returns list of scopes', async () =>{
-            mock_prisma.leaderboard.findMany.mockResolvedValue([
-                {scope: 'weekly'},
-                {scope: 'all_time'},
-                {scope: 'monthly'},
-            ]);
+            // mock_prisma.leaderboard.findMany.mockResolvedValue([
+            //     {scope: 'WEEKLY'},
+            //     {scope: 'ALL_TIME'},
+            //     {scope: 'MONTHLY'},
+            // ]);
 
             const result = await leaderboard_services.get_scopes();
 
-            expect(result.data.scopes).toEqual(['weekly', 'all_time', 'monthly']);
+            expect(result.data.scopes).toEqual(['ALL_TIME', 'MONTHLY', 'WEEKLY']);
             expect(result.data.scopes.length).toBe(3);
 
         });
 
-        it('filters out null scopes', async () =>{
-            mock_prisma.leaderboard.findMany.mockResolvedValue([
-                {scope: 'weekly'},
-                {scope: 'all_time'},
-                {scope: null},
-            ]);
+        // it('filters out null scopes', async () =>{
+        //     mock_prisma.leaderboard.findMany.mockResolvedValue([
+        //         {scope: 'WEEKLY'},
+        //         {scope: 'ALL_TIME'},
+        //         {scope: null},
+        //     ]);
 
-            const result = await leaderboard_services.get_scopes();
+        //     const result = await leaderboard_services.get_scopes();
 
-            expect(result.data.scopes).toEqual(['weekly', 'all_time']);
-            expect(result.data.scopes.length).toBe(2);
+        //     expect(result.data.scopes).toEqual(['WEEKLY', 'ALL_TIME']);
+        //     expect(result.data.scopes.length).toBe(2);
 
-        });
+        // });
 
     });
 

@@ -3,6 +3,10 @@ import { describe, expect, it, afterAll, beforeEach } from '@jest/globals';
 import app from '../../../src/app';
 import prisma from '../../../src/db/prisma';
 import { seedUserAndLogin, cleanDatabase } from '../helpers';
+import {
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 
 describe('GET /leaderboard integration test', () => {
 	beforeEach(async () => {
@@ -23,19 +27,21 @@ describe('GET /leaderboard integration test', () => {
 				{
 					user_id: other_user.user_id,
 					category: 'SAFETY',
-					scope: 'GLOBAL',
-					score: 95
+					scope: 'WEEKLY',
+					score: 95,
+					period_start: startOfWeek(new Date())
 				},
 				{
 					user_id: owner.user_id,
 					category: 'SAFETY',
-					scope: 'GLOBAL',
-					score: 85
+					scope: 'WEEKLY',
+					score: 85,
+					period_start: startOfWeek(new Date())
 				}
 			]
 		});
 
-		const res = await request(app).get('/leaderboard').query({category: 'SAFETY', scope: 'GLOBAL'})
+		const res = await request(app).get('/leaderboard').query({category: 'SAFETY', scope: 'WEEKLY'})
 			.set('Authorization', `Bearer ${token}`);
 
 		expect(res.status).toBe(200);

@@ -17,22 +17,22 @@ describe('GET /leaderboard/categories integration test', () => {
 		const unique = Date.now();
 		const { user, token } = await seedUserAndLogin(unique);
 
-		await prisma.leaderboard.createMany({
-			data: [
-				{
-					user_id: user.user_id, 
-					category: 'SAFETY',
-					scope: 'GLOBAL',
-					score: 80
-				},
-				{
-					user_id: user.user_id, 
-					category: 'ECO',
-					scope: 'GLOBAL',
-					score: 90
-				}
-			]
-		});
+		// await prisma.leaderboard.createMany({
+		// 	data: [
+		// 		{
+		// 			user_id: user.user_id, 
+		// 			category: 'SAFETY',
+		// 			scope: 'GLOBAL',
+		// 			score: 80
+		// 		},
+		// 		{
+		// 			user_id: user.user_id, 
+		// 			category: 'ECO',
+		// 			scope: 'GLOBAL',
+		// 			score: 90
+		// 		}
+		// 	]
+		// });
 
 		const res = await request(app).get('/leaderboard/categories').set('Authorization', `Bearer ${token}`);
 

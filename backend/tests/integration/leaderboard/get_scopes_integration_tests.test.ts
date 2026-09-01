@@ -17,28 +17,28 @@ describe('GET /leaderboard/scopes integration test', () => {
 		const unique = Date.now();
 		const { user, token } = await seedUserAndLogin(unique);
 
-		await prisma.leaderboard.createMany({
-			data: [
-				{
-					user_id: user.user_id, 
-					category: 'SAFETY',
-					scope: 'GLOBAL',
-					score: 80
-				},
-				{
-					user_id: user.user_id, 
-					category: 'ECO',
-					scope: 'LOCAL',
-					score: 90
-				}
-			]
-		});
+		// await prisma.leaderboard.createMany({
+		// 	data: [
+		// 		{
+		// 			user_id: user.user_id, 
+		// 			category: 'SAFETY',
+		// 			scope: 'GLOBAL',
+		// 			score: 80
+		// 		},
+		// 		{
+		// 			user_id: user.user_id, 
+		// 			category: 'ECO',
+		// 			scope: 'LOCAL',
+		// 			score: 90
+		// 		}
+		// 	]
+		// });
 
 		const res = await request(app).get('/leaderboard/scopes').set('Authorization', `Bearer ${token}`);
 
 		expect(res.status).toBe(200);
-		expect(res.body.data.scopes).toContain('GLOBAL');
-		expect(res.body.data.scopes).toContain('LOCAL');
+		expect(res.body.data.scopes).toContain('ALL_TIME');
+		expect(res.body.data.scopes).toContain('WEEKLY');
 	});
 
 	it('returns 401 when unauthorized', async () =>{
