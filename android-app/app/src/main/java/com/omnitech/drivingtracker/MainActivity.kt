@@ -67,6 +67,8 @@ import androidx.navigation.navDeepLink
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
+import com.omnitech.drivingtracker.ui.analytics.DriverAnalytics
+import com.omnitech.drivingtracker.ui.analytics.FuelAnalytics
 import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
@@ -114,6 +116,10 @@ sealed class Screen(val route: String){
     data object Profile : Screen("profile")
 
     data object More : Screen("more")
+
+    data object Analytics : Screen("analytics")
+
+    data object FuelAnalytics : Screen("fuel_analytics")
 
     data object ForgotPassword : Screen("forgot_password")
 }
@@ -332,6 +338,12 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.Profile.route){
                         Profile(navController = navController)
+                    }
+                    composable(Screen.Analytics.route){
+                        DriverAnalytics(navController = navController)
+                    }
+                    composable(Screen.FuelAnalytics.route){
+                        FuelAnalytics(navController = navController)
                     }
                     composable(
                         route = Screen.LiveTripContacts.route,
