@@ -1,13 +1,16 @@
 {
   "name": "k6-performance-tests",
   "version": "1.0.0",
-  "description": "k6 performance tests for Driving Tracker",
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && k6 run dist/trips.k6.js"
+    "test:smoke": "npm run build && dotenv -e ../backend/.env.test -- k6 run -e SCENARIO=smoke dist/trips.k6.js",
+    "test:light": "npm run build && dotenv -e ../backend/.env.test -- k6 run -e SCENARIO=light dist/trips.k6.js",
+    "test:stress": "npm run build && dotenv -e ../backend/.env.test -- k6 run -e SCENARIO=stress dist/trips.k6.js",
+    "test:spike": "npm run build && dotenv -e ../backend/.env.test -- k6 run -e SCENARIO=spike dist/trips.k6.js"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/k6": "*"
+    "@types/k6": "*",
+    "dotenv-cli": "^11.0.0",
+    "typescript": "^5.0.0"
   }
 }

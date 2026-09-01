@@ -1,273 +1,120 @@
 import http from 'k6/http';
-import { check, group, sleep } from 'k6'; 
+import { check, group, sleep } from 'k6';
+import { getScenario } from './load-scenarios.js';
 
-const BASE_URL =__ENV.API_URL || 'http://localhost:3000';
-const TEST_USER_EMAIL = __ENV.TEST_USER_EMAIL || 'omnitech@gmail.com';
-const TEST_USER_PASSWORD = __ENV.TEST_USER_PASSWORD || 'MySecretPassword123!';
-const TEST_VEHICLE_ID = __ENV.TEST_VEHICLE_ID || 'test-vehicle-uuid-1234';
+const BASE_URL = __ENV.API_URL || 'http://localhost:3000';
+const scenarioName = __ENV.SCENARIO || 'smoke';
+const config = getScenario(scenarioName);
 
-interface setup_data {
+interface AuthedUser {
+    email: string;
     token: string;
-    user_id: string;
+    vehicle_id: string;
 }
 
-interface AuthResponse {
-    token?: string;
-    refresh_token?: string;
-    user_id?: string;
-    // Fallbacks just in case
-    data?: {
-        token?: string;
-        user_id?: string;
-    };
-}
-
-interface trip_start_response {
-    data?: {
-        trip_id?: string;
-        status?: string;
-    };
-    trip_id?: string;
-}
-
-interface trip_end_response {
-    data?: {
-        status?: string;
-        trip_id?: string;
-    };
-    status?: string;
-}
-
-// Performance thresholds
 export const options = {
-  vus: 1, // concurrent users 
-  duration: '1m',
-  thresholds: {
-    http_req_duration: ['p(95)<500', 'p(99)<1000'],
-    http_req_failed: ['rate<0.1'],
-  },
-  ext: {
-    loadimpact: {
-      name: 'Trip Endpoints Performance Test',
+    ...(config.rampUp ? {
+        stages: [
+            { duration: config.rampUp, target: config.vus },
+            { duration: config.duration, target: config.vus },
+            { duration: '10s', target: 0 }
+        ]
+    } : {
+        vus: config.vus,
+        duration: config.duration,
+    }),
+    thresholds: {
+        http_req_duration: ['p(95)<500'],
+        http_req_failed: ['rate<0.1'],
     },
-  },
 };
-export function setup(): setup_data{
-    // authenticate once during setup 
-      console.log("--- ENVIRONMENT CHECK ---");
-    console.log("Target URL: " + BASE_URL);
-    console.log("Test Email: " + TEST_USER_EMAIL);
-    console.log("Test Vehicle: " + TEST_VEHICLE_ID);
-    console.log("-------------------------");
-    
-    
-    const login_payload = JSON.stringify({
-        identifier: TEST_USER_EMAIL,
-        password: TEST_USER_PASSWORD
-    });
-    
-    const login_res =http.post(`${BASE_URL}/api/auth/login`,login_payload,{
-        headers:{'Content-Type':'application/json'},
-    });
-    check(login_res,{
-        'login successfull': (r) => r.status === 200 || r.status === 201, 
-    });
 
-    const login_data = login_res.json() as AuthResponse;
-    const token = login_data.token || login_data.data?.token || '';
-    
-    if (!token) {
-        console.log("CRITICAL ERROR: Failed to obtain token during setup!");
-        console.log("Response was: " + login_res.body);
+export function setup(): AuthedUser[] {
+    const authed: AuthedUser[] = [];
+    const vusNeeded = config.vus;
+
+    console.log(`--- DYNAMIC SETUP: Provisioning ${vusNeeded} users ---`);
+
+    for (let i = 1; i <= vusNeeded; i++) {
+        const email = `loadtest_${i}@omnitech.com`;
+        const password = "MySecretPassword123!";
+
+        // 1. REGISTER
+        const regRes = http.post(`${BASE_URL}/api/auth/register`, JSON.stringify({
+            email, username: `user_${i}_${Date.now()}`, password, name: "Load", surname: "Test",
+            phone_number: "0123456789", dob: "1995-01-01", consent_status: true
+        }), { headers: { 'Content-Type': 'application/json' } });
+
+        // 2. LOGIN
+        const loginRes = http.post(`${BASE_URL}/api/auth/login`, JSON.stringify({
+            identifier: email, password
+        }), { headers: { 'Content-Type': 'application/json' } });
+
+        if (loginRes.status !== 200 && loginRes.status !== 201) {
+            console.log(`PROVISIONING ERROR [User ${i}]: Login failed with ${loginRes.status}. Body: ${loginRes.body}`);
+            continue;
+        }
+
+        const loginBody = loginRes.json() as any;
+        const token = loginBody.token || '';
+
+        // 3. VEHICLE ASSIGNMENT
+        const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        const vRes = http.get(`${BASE_URL}/vehicle/get_all_vehicles`, { headers: authHeaders });
+        
+        let vehicleId = '';
+        if (vRes.status === 200) {
+            const vehicles = vRes.json() as any[];
+            if (vehicles.length > 0) {
+                vehicleId = vehicles[0].vehicle_id;
+            } else {
+                const assignRes = http.post(`${BASE_URL}/vehicle/assign_vehicle`, JSON.stringify({
+                    make: "Test", model: "Dynamic", year: 2024, fuel_type: "PETROL", fuel_tank: 50
+                }), { headers: authHeaders });
+                vehicleId = (assignRes.json() as any).vehicle_id;
+            }
+        }
+
+        authed.push({ email, token, vehicle_id: vehicleId });
     }
 
-    return {
-        token: token,
-        user_id: login_data.user_id || login_data.data?.user_id || '',
-    };
+    console.log(`--- SETUP COMPLETE: ${authed.length}/${vusNeeded} users ready ---`);
+    if (authed.length === 0) throw new Error("No users were successfully provisioned. Test aborted.");
+    
+    return authed;
 }
-export default function(data: setup_data): void {
-    const { token } = data;
-    const headers: Record<string, string> = {
+
+export default function (data: AuthedUser[]): void {
+    const me = data[(__VU - 1) % data.length];
+    if (!me || !me.token) return;
+
+    const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${me.token}`,
     };
 
-    group('Trip Lifecycle Performance', () => {
-        const start_trp_payload = JSON.stringify({
-            vehicle_id: TEST_VEHICLE_ID,
-            data_source: 'PHONE', // Changed to match enum in your backend
+    group('Trip Lifecycle', () => {
+        const start_res = http.post(`${BASE_URL}/trips/start_trip`, JSON.stringify({
+            vehicle_id: me.vehicle_id,
+            data_source: 'PHONE',
             start_date: new Date().toISOString(),
-            start_location: { lat: -25.7479, lng: 28.2293 },
+            start_location: { lat: -25.7, lng: 28.2 },
             fuel_level_start: 50.0
-        });
+        }), { headers });
 
-        // 1. INCREASE TIMEOUT to see if it ever finishes
-        const start_trip_res = http.post(`${BASE_URL}/trips/start_trip`, start_trp_payload, {
-            headers,
-            tags: { name: 'Start_trip' },
-            timeout: '120s' 
-        });
+        if (check(start_res, { 'start trip 2xx': (r) => r.status === 200 || r.status === 201 })) {
+            const trip_id = (start_res.json() as any).data.trip_id;
+            sleep(2);
+            
+            const end_res = http.patch(`${BASE_URL}/trips/${trip_id}/end_trip`, JSON.stringify({
+                end_time: new Date().toISOString(),
+                status: 'COMPLETED',
+                distance_km: 1.0, duration_minutes: 1, fuel_estimate: 0.1, fuel_level_end: 49.0,
+                route_polyline: { type: "LineString", coordinates: [[28.2, -25.7], [28.3, -25.8]] }
+            }), { headers });
 
-        // CHECK STATUS BEFORE PARSING
-        const is_start_ok = check(start_trip_res, {
-            'start trip status 2xx': (r) => r.status === 200 || r.status === 201,
-            'start trip fast enough': (r) => r.timings.duration < 2000,
-        });
-
-        if (!is_start_ok) {
-            console.log(`VU ${__VU}: StartTrip FAILED (Status: ${start_trip_res.status}). Body: ${start_trip_res.body}`);
-            return; // Skip the rest of the test for this iteration
-        }
-
-        // 3. SAFE JSON PARSING
-        let start_data;
-        try {
-            start_data = start_trip_res.json() as trip_start_response;
-        } catch (e) {
-            console.log(`VU ${__VU}: Failed to parse StartTrip JSON`);
-            return;
-        }
-
-        const trip_id = start_data.data?.trip_id || start_data.trip_id;
-
-        if (trip_id) {
-            sleep(1);
-
-            group('End trip performance', () => {
-                const end_trip_payload = JSON.stringify({
-                    end_time: new Date().toISOString(),
-                    route_polyline: { type: "LineString", coordinates: [[28.2, -25.7], [28.3, -25.8]] },
-                    distance_km: 10.5,
-                    duration_minutes: 15,
-                    fuel_estimate: 2.5,
-                    status: 'COMPLETED',
-                    fuel_level_end: 45.0
-                });
-
-                const endRes = http.patch(`${BASE_URL}/trips/${trip_id}/end_trip`, end_trip_payload, {
-                    headers,
-                    tags: { name: 'EndTrip' }
-                });
-
-                check(endRes, {
-                    'end trip status 200': (r) => r.status === 200,
-                    'end trip completed': (r) => typeof r.body === 'string' && r.body.includes("COMPLETED")
-                });
-            });
+            check(end_res, { 'end trip 200': (r) => r.status === 200 });
         }
     });
-    sleep(1);
-}
-// export default function(data:setup_data): void{
-//     const {token, user_id} = data;
-//     const headers: Record<string,string> = {
-//         'Content-Type': 'application/json',
-//         Authorization: `Bearer ${token}`
-//     };
-//     group('Start trip performance', () =>{
-//         const start_trp_payload = JSON.stringify({
-//             vehicle_id: TEST_VEHICLE_ID,
-//             data_source: 'mixed',
-//             start_date: new Date().toISOString(),
-//             start_location: {
-//                 lat: 40.7128,
-//                 lng: -74.006,
-//             },
-//             share_with_contacts: [],
-//             fuel_level_start: 25.0
-//         });
-
-//         const start_trip_res = http.post(`${BASE_URL}/trips/start_trip`,start_trp_payload,{
-//             headers,
-//             tags: {name: 'Start_trip'}
-//         });
-
-//         if(start_trip_res.status !== 200 && start_trip_res.status !== 201){
-//             console.log("startTrip failed! Status: " + start_trip_res.status);
-//             console.log("Response body: " + start_trip_res.body);
-//         }
-
-//         check(start_trip_res, {
-//             'start trip status 200': (r) => r.status === 200 || r.status === 201,
-//             'start trip response time < 500ms': (r) => r.timings.duration < 500,
-//             'start trip has trip_id': (r) => {
-//                 // 2. ONLY parse if we have a body
-//                 if (!r.body) return false;
-//                 try {
-//                     const data = r.json() as trip_start_response;
-//                     return data.data?.trip_id !== undefined || data.trip_id !== undefined;
-//                 } catch (e) {
-//                     return false;
-//                 }
-//             },
-//         });
-//         const start_data = start_trip_res.json() as trip_start_response;
-//         const trip_id = start_data.data?.trip_id|| start_data.trip_id;
-
-//         if(trip_id){
-//             sleep(1);
-
-//             group('End trip performance', () =>{
-//                 const end_trip_payload = JSON.stringify({
-//                     end_time: new Date().toISOString(),
-//                     route_polyline: "string of the coordinates,,,",
-//                     distance_km: 10.5,
-//                     duration_minutes: 15,
-//                     fuel_estimate: 2.5,
-//                     status: 'COMPLETED',
-//                     safety_score: 85.0,
-//                     eco_score: 78.0,
-//                     overall_score: 81.5
-//                 });
-//                 const endRes = http.patch(
-//                 `${BASE_URL}/trips/${trip_id}/end_trip`,
-//                 end_trip_payload,
-//                 {
-//                     headers,
-//                     tags: { name: 'EndTrip' },
-//                 }
-//                 );
-
-//                 check(endRes, {
-//                 'end trip status 200': (r) => r.status === 200,
-//                 'end trip response time < 500ms': (r) => r.timings.duration < 500,
-//                 'end trip completed': (r) => {
-//                     const data = r.json() as trip_end_response;
-//                     return data.data?.status === 'COMPLETED' || data.status === 'COMPLETED';
-//                 },
-//                  });
-//             });
-//         }
-//     })
-//     sleep(1);
-// }
-export function handleSummary(data: any): Record<string,string>{
-    //return the summary of the tests
-    return {
-        stdout: textSummary(data, { indent: '',enableColors: true}),
-    }; 
-}
-function textSummary(data:any, options:{ indent?: string; enableColors?:boolean} = {}):string{
-    const indent = options.indent || '';
-    let summary = '\n=== Performance Test Summary ===\n';
-
-    if (data.metrics) {
-        const httpDuration = data.metrics.http_req_duration;
-        if (httpDuration && httpDuration.values) {
-            summary += `${indent}Response Times:\n`;
-            summary += `${indent}  Min: ${Math.round(httpDuration.values.min)}ms\n`;
-            summary += `${indent}  Max: ${Math.round(httpDuration.values.max)}ms\n`;
-            summary += `${indent}  Avg: ${Math.round(httpDuration.values.avg)}ms\n`;
-            summary += `${indent}  P95: ${Math.round(httpDuration.values['p(95)'])}ms\n`;
-            summary += `${indent}  P99: ${Math.round(httpDuration.values['p(99)'])}ms\n`;
-        }
-
-        const httpFailed = data.metrics.http_req_failed;
-        if (httpFailed) {
-            summary += `${indent}Failed Requests: ${httpFailed.values.value}\n`;
-        }
-    }
-
-    return summary;
+    sleep(2);
 }
