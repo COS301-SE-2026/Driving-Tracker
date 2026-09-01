@@ -258,6 +258,27 @@ fun AchievementsContent(
                         )
                         HorizontalDivider()
                     }
+
+                    val isUserInList = leaderboard.entries.any { it.rank == leaderboard.myRank }
+
+                    if(!isUserInList && leaderboard.myRank != null) {
+                        item{
+                            Column(horizontalAlignment = Alignment.CenterHorizontally){
+                                Text(
+                                    text ="•\n•\n•",
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    color = Color.Black
+                                )
+
+                                RankCard(
+                                    name = "You",
+                                    score = leaderboard.myScore,
+                                    isUser = true
+                                )
+                                HorizontalDivider()
+                            }
+                        }
+                    }
                 }
             }
         }

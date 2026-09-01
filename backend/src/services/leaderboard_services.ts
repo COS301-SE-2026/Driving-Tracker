@@ -111,12 +111,14 @@ export const leaderboard_services = {
       },
     });
 
-    const entries = rows.map((row: any, idx:any) => ({
+    const allEntries = rows.map((row: any, idx:any) => ({
       rank: idx + 1,
       user_id: row.user_id,
       display_name: `${row.users.name ?? row.users.username ?? ''} ${row.users.surname ?? ''}`.trim(),
       score: to_number(row.score ?? 0),
     }));
+
+    const entries = allEntries.slice(0, 25);
 
     const myIndex = rows.findIndex((r:any) => r.user_id === user_id);
     const my_rank = myIndex >= 0 ? myIndex + 1 : null;

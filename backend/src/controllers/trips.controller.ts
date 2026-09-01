@@ -73,6 +73,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             });
             return;
         }
+        
         const end_trip_results = await trips_services.end_trip({
             trip_id,
             user_id,
