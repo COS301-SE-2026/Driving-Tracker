@@ -13,7 +13,7 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             res.status(403).json({error: 'UNAUTHORIZED'});
             return ;
         }
-        const { vehicle_id, start_date, data_source, start_location, share_with_contacts,end_location}= req.body;
+        const { vehicle_id, start_date, data_source, start_location, share_with_contacts,end_location, fuel_level_start}= req.body;
 
         //sending to services
         const new_trip = await trips_services.create({
@@ -23,7 +23,8 @@ export const start_trip = async (req: AuthRequest, res: Response) =>{
             data_source,
             start_location,
             end_location,
-            share_with_contacts
+            share_with_contacts,
+            fuel_level_start
         });
 
         res.status(200).json({
@@ -64,7 +65,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const { trip_id } = req.params;
         const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
-        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location } = req.body;
+        const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location,fuel_level_end } = req.body;
 
         if(!user_id){
             res.status(403).json({
@@ -72,6 +73,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             });
             return;
         }
+        
         const end_trip_results = await trips_services.end_trip({
             trip_id,
             user_id,
@@ -82,6 +84,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             end_location,
             fuel_estimate,
             status,
+            fuel_level_end
         });
 
         res.status(200).json({
@@ -156,8 +159,9 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
         if(error.message === "Missing required fields"){
 			/* istanbul ignore next -- unreachable via HTTP: trip_id is guaranteed by thr route, 
 			user_id is checked earlier in the controller */
-			res.status(401).json({
-                error: "Fill all valid fields"
+			res.status(400).json({
+                error:"MISSING_REQUIRED_FIELDS",
+                message: "Fill all valid fields"
             });
         }else if(error.message === "Trip not found"){
             res.status(404).json({
@@ -165,7 +169,7 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
 				message:"Trip not found"
             });
         }else if(error.message === "You do not own this trip"){
-            res.status(400).json({error:"UNAUTHORIZED"});
+            res.status(401).json({error:"UNAUTHORIZED"});
         }else{
 			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message });
 		}

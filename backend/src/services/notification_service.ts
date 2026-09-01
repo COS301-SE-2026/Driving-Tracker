@@ -199,6 +199,24 @@ export const notification_services= {
         }));
 
         return notification_arr;
+    },
+
+    //Delete notifications for a user
+    async delete_notifications(user_id: string){
+
+        const deleted = await prisma.$transaction(async (tx) => {
+               
+            const result = await tx.notifications.deleteMany({
+                where: {
+                    user_id
+                }
+            });
+
+            return result;
+        });
+
+        return deleted.count;
+
     }
 
 }

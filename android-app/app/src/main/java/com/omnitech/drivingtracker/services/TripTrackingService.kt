@@ -155,6 +155,11 @@ class TripTrackingService: Service() {
                     startLocationUpdates()
                     startSensorFusion()
                     startSyncLoop()
+                    serviceScope.launch {
+                        if (isObdConnected()) {
+                            obdManager.fetchFuelLevel()
+                        }
+                    }
                 } else {
                     Log.d("Tracking", "Service already tracking")
                 }
@@ -476,6 +481,11 @@ class TripTrackingService: Service() {
 
     private fun stopEverything(){
         Log.d(TAG, "Stopping all tracking tasks")
+        serviceScope.launch {
+            if (isObdConnected()) {
+                obdManager.fetchFuelLevel()
+            }
+        }
         stopLocationUpdates()
         sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)

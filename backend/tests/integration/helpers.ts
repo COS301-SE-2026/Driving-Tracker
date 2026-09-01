@@ -37,6 +37,7 @@ export const seedUserAndLogin = async (unique: number) => {
 			model: 'M3',
 			year: 2022,
 			fuel_type: 'PETROL',
+			fuel_tank:60
 		},
 	});
 

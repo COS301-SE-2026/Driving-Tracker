@@ -14,6 +14,9 @@ import map_router from './routes/maps.routes';
 import notifications_router from './routes/notifications.routes';
 import upload_router from './routes/upload.routes';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger';
+
 const app = express();
 
 //security middleware
@@ -36,6 +39,16 @@ app.get('/health', (req, res) => {
         status: 'ok',
         message: 'Driving Tracker API is running'
     });
+});
+
+const swaggerHandlers = swaggerUi.serve as any;
+const swaggerSetup = swaggerUi.setup as any;
+
+app.use('/api-docs', swaggerHandlers, swaggerSetup(swaggerSpec));
+
+app.use('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
 });
 
 app.use("/api/auth", auth_router);

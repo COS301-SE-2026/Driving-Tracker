@@ -125,6 +125,7 @@ class TripRepository @Inject constructor(
         longitude: Double,
         destLat: Double? = null,
         destLng: Double? = null,
+        fuelLevelStart: Float? = null,
         selectedContactIds: List<String>?
     ) : Result<String>{
         return try{
@@ -136,7 +137,8 @@ class TripRepository @Inject constructor(
                 dataSource = dataSource,
                 startLocation = LocationDto(lat = latitude, lng = longitude),
                 endLocation = if (destLat != null && destLng != null) LocationDto(lat = destLat, lng = destLng) else null,
-                shareWithContacts = selectedContactIds
+                shareWithContacts = selectedContactIds,
+                fuelLevelStart = fuelLevelStart
             )
 
             val response = api.startTrip(request)
@@ -241,6 +243,8 @@ class TripRepository @Inject constructor(
         fuelEstimate: Double? = null,
         overallScore: Double? = null,
         endLocation: LocationDto? = null,
+        routePolyline: GeoJsonLineString? = null,
+        fuelLevelEnd: Float? = null
     ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(
@@ -250,7 +254,9 @@ class TripRepository @Inject constructor(
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
                 overallScore = overallScore,
-                endLocation = endLocation
+                endLocation = endLocation,
+                routePolyline = routePolyline,
+                fuelLevelEnd = fuelLevelEnd
             )
             val response = api.endTrip(tripId, request)
             Result.success(response.data)

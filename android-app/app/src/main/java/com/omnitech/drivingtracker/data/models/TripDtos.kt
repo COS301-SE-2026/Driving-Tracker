@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.data.models
 
+import android.R
 import com.google.gson.annotations.SerializedName
 
 @Suppress("unused")
@@ -72,7 +73,9 @@ data class StartTripRequest(
     @SerializedName("share_with_contacts")
     val shareWithContacts: List<String>? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start")
+    val fuelLevelStart: Float? = null
 )
 
 @Suppress("unused")
@@ -176,7 +179,7 @@ data class TripSummaryDto(
     @SerializedName("data_source")
     val dataSource: String?,
     @SerializedName("route_polyline")
-    val routePolyline: String?,
+    val routePolyline: GeoJsonLineString?,
     @SerializedName("distance_km")
     val distanceKm: Double?,
     @SerializedName("duration_minutes")
@@ -187,6 +190,8 @@ data class TripSummaryDto(
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
     val destinationLongitude: Double? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null,
     val scores: TripScoreDto?,
     val events: List<TripEventDto>
 
@@ -205,13 +210,16 @@ data class TripEventDto(
     @SerializedName("time_stamp")
     val timestamp: String
 )
-
+data class GeoJsonLineString(
+    val type: String = "LineString",
+    val coordinates: List<List<Double>>
+)
 // End Trip Request
 data class EndTripRequest(
     @SerializedName("end_time")
     val endTime: String,
     @SerializedName("route_polyline")
-    val routePolyline: String? = null,
+    val routePolyline: GeoJsonLineString? = null,
     @SerializedName("distance_km")
     val distanceKm: Double? = null,
     @SerializedName("duration_minutes")
@@ -226,7 +234,9 @@ data class EndTripRequest(
     @SerializedName("overall_score")
     val overallScore: Double? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null
 )
 
 data class EndTripResponse(

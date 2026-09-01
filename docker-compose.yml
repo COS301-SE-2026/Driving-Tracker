@@ -128,6 +128,8 @@ services:
       - ./backend/tsconfig.build.json:/app/tsconfig.build.json
       - ./backend/tests/jest.setup.ts:/app/tests/jest.setup.ts
       - ./backend/.env.test:/app/.env.test
+    env_file:
+      - ./backend/.env.test
     environment:
       NODE_ENV: test
     depends_on:

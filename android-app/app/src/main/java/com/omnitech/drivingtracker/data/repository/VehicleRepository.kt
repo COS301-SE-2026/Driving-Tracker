@@ -8,6 +8,7 @@ import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.VehicleDto
 import okhttp3.MultipartBody
+import com.omnitech.drivingtracker.data.models.FuelAnalyticsDto
 import retrofit2.HttpException
 
 class VehicleRepository  @Inject constructor(private val apiService: ApiService){
@@ -56,4 +57,16 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
     }catch (e: Exception){
         Result.failure(e)
     }
+    
+    suspend fun getFuelAnalytics(): Result<FuelAnalyticsDto> = try{
+        Result.success(apiService.getFuelAnalytics())
+    }
+    catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message ?: "Failed to fetch fuel analytics."))
+    }
+    catch( e: Exception){
+        Result.failure(e)
+    }
+
 }

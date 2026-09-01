@@ -114,7 +114,7 @@ interface ApiService{
     @GET("leaderboard/scopes")
     suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
 
-    //Notifications
+    //Maps
     @POST("devices/fcm_token")
     suspend fun registerFcmToken(@Body body: RegisterFcmRequest): RegisterFcmResponse
   
@@ -141,9 +141,15 @@ interface ApiService{
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
 
+    //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
-  
+
+    @DELETE("notifications/delete")
+    suspend fun deleteNotifications(): DeleteNotificationsResponse
+
+
+    //Live Trips
     @POST("trips/{trip_id}/readings/record")
     suspend fun recordReading(
         @Path("trip_id") tripId: String,
@@ -187,5 +193,8 @@ interface ApiService{
         @Path("event_id") eventId: String,
         @Body body: StopEventResolveRequest
     ): StopEventResolveResponse
+
+    @GET("vehicle/fuel_analytics")
+    suspend fun getFuelAnalytics(): FuelAnalyticsDto
 
 }
