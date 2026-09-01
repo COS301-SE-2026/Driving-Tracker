@@ -4,7 +4,6 @@ import { blob_storage_service } from "../services/blob_storage_service";
 import { auth_services } from "../services/auth_services";
 import { vehicle_services } from "../services/vehicle.services";
 import { ExtendedError } from "../utils/errors";
-import { ResponseParseType } from "@google/genai";
 
 
 export const upload_controller = {
