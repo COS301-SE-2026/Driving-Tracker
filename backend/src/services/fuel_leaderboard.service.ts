@@ -72,6 +72,61 @@ export const fuel_leaderboard_service = {
         );
 
         //querying the DB for all users driving the same vehicle
+        const rows = await prisma.$queryRaw<AggregetedUser[]>(Prisma.sql`
+            SELECT
+                t.user_id,
+                CONCAT_WS(' ', u.name, u.surname) AS display_name,
+                SUM(t.fuel_consumed)::float AS total_fuel,
+                SUM(t.distance_km)::float AS total_distance
+            FROM "trips" t
+            INNER JOIN "vehicles" v ON v.vehicle_id = t.vehicle_id
+            INNER JOIN "users" u ON u.user_id = t.user_id
+            WHERE t.status = 'COMPLETED'
+                AND COALESCE(t.end_time, t.created_at) >= ${since}
+                AND t.fuel_consumed IS NOT NULL
+                AND t.distance_km IS NOT NULL
+                AND t.distance_km > 0
+                AND LOWER(v.make) = LOWER(${vehicle.make})
+                AND LOWER(v.model) = LOWER(${vehicle.model})
+                AND v.year = ${vehicle.year}
+                AND LOWER(v.engine_type) = LOWER(${vehicle.engine_type})
+                AND u.status = 'ACTIVE'
+            GROUP BY t.user_id, u.name, u.surname
+            HAVING SUM(t.distance_km) > 0
+            ORDER BY SUM(t.fuel_consumed) / SUM(t.distance_km) ASC
+        `);
+
+        //converting database results to ranked list
+        const ranked: RankedUser[] = rows
+            .map((row) => {
+                const totalFuel = Number(row.totatl_fuel);
+                const totalDistance = Number(row.total_distance);
+
+                return {
+                    ...row,
+                    total_fuel: totalFuel,
+                    total_distance: totalDistance,
+                    dispaly_name: row.display_name || "Driver",
+                    efficiency: (totalFuel / totalDistance) * 100,
+                    rank: 0,
+                };
+            })
+            .sort((a, b) => {
+                if (a.efficiency !== b.efficiency) {
+                    return a.efficiency - b.efficiency;
+                }
+
+                return a.display_name.localeCompare(b.display_name);
+            })
+            .map((entry, index) => ({
+                ...entry,
+                rank: index + 1,
+            }));
+        
+        const currentUser = ranked.find(
+            (entry) => entry.user_id === params.user_id,
+        );
+
         
     }
 }
