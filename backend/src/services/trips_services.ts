@@ -527,14 +527,11 @@ export const trips_services ={
                 });
             }
 
-            if(data.status == 'COMPLETED'){
-                setImmediate(() => {
-                    void leaderboard_services
-                        .update_user_leaderboards(data.user_id)
-                        .catch((err) => { console.error('Leaderboard update failed', err)});
-                });
-            }
-            
+            setImmediate(() => {
+                void leaderboard_services
+                    .update_user_leaderboards(data.user_id)
+                    .catch((err) => { console.error('Leaderboard update failed', err)});
+            });
 
             console.log("scores computed and ready to return");
             //getting the user info
