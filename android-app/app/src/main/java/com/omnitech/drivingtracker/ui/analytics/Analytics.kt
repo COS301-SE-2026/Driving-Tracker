@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.analytics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -49,8 +51,25 @@ import com.omnitech.drivingtracker.ui.theme.CardWhite
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.LegendItem
 import kotlin.math.roundToInt
 
+data class TripDataPoint(
+    val date: String,
+    val fuelEfficiency: Double?,
+    val ecoScore: Int?,
+    val safetyScore: Int?,
+    val eventCount: Int?
+)
 private fun scoreDescription(score: Int?) : String{
     return if (score == null){
         "Complete a few trips to see personalized insights."
@@ -157,6 +176,12 @@ fun DriverAnalytics(navController: NavController ?= null,
                     }
                 }
 
+                item{
+                    HLine()
+                }
+                item{
+                    AnalyticsGraph(tripData = uiState.history)
+                }
                 item{
                     HLine()
                 }
@@ -337,6 +362,103 @@ fun PerformanceSection(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+@Composable
+fun AnalyticsGraph(tripData: List<TripDataPoint>){
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(
+        tripData
+    ) {
+        if (tripData.isEmpty()){
+            return@LaunchedEffect
+        }
+
+        modelProducer.runTransaction {
+            lineModel{
+                //fuel eff
+                series(tripData.map{it.fuelEfficiency ?: 0.0})
+                //eco score
+                series(tripData.map{it.ecoScore?.toDouble() ?: 0.0})
+                //safety score
+                series(tripData.map{it.safetyScore?.toDouble() ?: 0.0})
+                //events
+                series(tripData.map{it.eventCount?.toDouble() ?: 0.0})
+            }
+        }
+    }
+    if (tripData.isEmpty()){
+        Text("No trip data is available", modifier = Modifier.fillMaxWidth()
+            .padding(vertical = 24.dp))
+        return
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .padding(16.dp)
+        ){
+
+            Text (
+                text = "Performance Analytics across trips",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                LegendItem(color = MaterialTheme.colorScheme.primary, label = "Fuel")
+                LegendItem(color = MaterialTheme.colorScheme.secondary, label = "Eco")
+                LegendItem(color = MaterialTheme.colorScheme.tertiary, label = "Safety")
+                LegendItem(color = MaterialTheme.colorScheme.error, label = "Events")
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                        rememberLineCartesianLayer(),
+                        startAxis = VerticalAxis.rememberStart(title = {"Score/Value"}),
+                        bottomAxis = HorizontalAxis.rememberBottom(
+                            valueFormatter = CartesianValueFormatter{
+                                _,value,_ ->
+                                tripData.getOrNull(value.toInt())?.date?.takeLast(5) ?: ""
+                            }
+                        )),
+                        modelProducer = modelProducer,
+                        modifier = Modifier.fillMaxWidth()
+                            .height(280.dp)
+                )
+        }
+    }
+
+}
+
+@Composable
+private fun LegendItem(color: Color, label: String){
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.size(80.dp)
+    ){
+        Box(
+            modifier = Modifier.size(12.dp)
+                .background(color, RoundedCornerShape(2.dp)
+        )){
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(label, fontSize = 10.sp)
+        }
+
+
     }
 }
 

@@ -23,6 +23,7 @@ data class AnalyticsUiState(
     val tripCount: Int? = null,
     val totalMinutes: Int? = null,
     val eventCount: Int? = null,
+    val history: List<TripDataPoint> = emptyList(),
     val error: String? = null
 )
 
@@ -62,6 +63,22 @@ class AnalyticsViewModel @Inject constructor(
                     vehicleRepo.getFuelAnalytics().fold(
                         onSuccess = {
                             fuelData ->
+                            val fuelByDate = fuelData.history.associateBy {
+                                it.date.take(10)
+                            }
+                            val history = trips.map{
+                                trip->
+                                val score = trip.trip_scores?.firstOrNull()
+                                val date = (trip.endTime ?: trip.startTime).take(10)
+
+                                TripDataPoint(
+                                    date = date,
+                                    fuelEfficiency = fuelByDate[date]?.efficiencyLPer100Km,
+                                    ecoScore = score?.ecoScore?.roundToInt(),
+                                    safetyScore = score?.safetyScore?.roundToInt(),
+                                    eventCount = 0
+                                )
+                            }
                             _uiState.value = AnalyticsUiState(
                                 isLoading = false,
                                 drivingScore = avgOverall,
@@ -71,7 +88,8 @@ class AnalyticsViewModel @Inject constructor(
                                 totalDistanceKm = totalDistance,
                                 tripCount = tripCount,
                                 totalMinutes = totalMinutes,
-                                eventCount = totalEvents
+                                eventCount = totalEvents,
+                                history = history
                             )
                         },
                         onFailure = {
