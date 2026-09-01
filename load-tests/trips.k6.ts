@@ -40,7 +40,7 @@ interface trip_end_response {
 
 // Performance thresholds
 export const options = {
-  vus: 10,
+  vus: 10, // concurrent users 
   duration: '30s',
   thresholds: {
     http_req_duration: ['p(95)<500', 'p(99)<1000'],
@@ -72,4 +72,40 @@ export function setup(): setup_data{
         token: login_data.data?.token || login_data.access_token ||'',
         user_id: login_data.data?.user_id || login_data.user_id || '',
     };
+}
+export default function(data:setup_data): void{
+    const {token, user_id} = data;
+    const headers: Record<string,string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+    };
+    group('Start trip performance', () =>{
+        const start_trp_payload = JSON.stringify({
+            vehicle_id: TEST_VEHICLE_ID,
+            data_source: 'mixed',
+            start_date: new Date().toISOString(),
+            start_location: {
+                lat: 40.7128,
+                lng: -74.006,
+            },
+        });
+
+        const start_trip_res = http.post(`${BASE_URL}/trips/start_trip`,start_trp_payload,{
+            headers,
+            tags: {name: 'Start_trip'}
+        });
+
+        check(start_trip_res,{
+            'start trip status 200': (r) => r.status ==- 200,
+            'start trip response time < 500ms': (r) => r.timings.duration < 500,
+            'start trip has trip_id': (r) => {
+                const data = r.json() as trip_start_response;
+                return data.data?.trip_id !== undefined || data.trip_id !== undefined;
+            },
+        })
+
+
+    })
+
+
 }
