@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "module": "ESNext",
+    "lib": ["ES2020","DOM"],
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": false,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "ignoreDeprecations": "5.0"
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
