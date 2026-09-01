@@ -149,6 +149,7 @@ model trips {
   end_latitude     Decimal?        @db.Decimal(9, 6)
   route_polyline   Json?           @db.JsonB
   distance_km      Decimal?        @db.Decimal(9, 6)
+  fuel_consumed    Decimal?        @db.Decimal(10, 4)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
   data_source      DataSource?     @default(OBD)
@@ -169,6 +170,8 @@ model trips {
   unexpected_stop_events  unexpected_stop_events[]
   users            users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   vehicles         vehicles?       @relation(fields: [vehicle_id], references: [vehicle_id], onUpdate: NoAction)
+
+  @@index([status, end_time, vehicle_id, user_id])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -301,13 +304,28 @@ model vehicles {
   make         String? @db.VarChar(50)
   model        String? @db.VarChar(50)
   year         Int?
+  engine_type  String? @db.VarChar(100)
   fuel_type    String? @db.VarChar(20)
   created_at   DateTime @default(now()) @db.Timestamptz(6)
-
   trips        trips[]
   fuel_tank    Decimal       @db.Decimal(9, 6)
   fuel_efficiency Decimal?    @db.Decimal(9, 6)
   users_vehicles        users_vehicles[]
+
+  @@index([make, model, year, engine_type])
+}
+
+model manufacturer_efficiency_cache {
+  cache_id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  make                        String  @db.VarChar(50)
+  model                       String  @db.VarChar(50)
+  year                        Int
+  engine_type                 String  @db.VarChar(100)
+  official_efficiency_l_100km Decimal @db.Decimal(10, 4)
+  updated_at                  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@unique([make, model, year, engine_type])
+  @@index([make, model, year, engine_type])
 }
 
 model user_devices {
