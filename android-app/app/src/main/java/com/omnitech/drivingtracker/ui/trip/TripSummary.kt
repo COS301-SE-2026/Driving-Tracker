@@ -184,7 +184,7 @@ fun TripSummaryContent(
                 AzureMapContainer(
                     subscriptionKey = mapToken!!,
                     actualRoute = tripPath,
-                    isInteractive = false, // DISABLES SCROLL  here,
+                    isInteractive = true, // DISABLES SCROLL  here,
                     zoom = 13,
                     modifier = Modifier.fillMaxSize()
                 )

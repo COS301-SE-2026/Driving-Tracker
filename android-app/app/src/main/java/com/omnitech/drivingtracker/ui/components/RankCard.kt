@@ -45,7 +45,7 @@ fun RankCard(name: String, score: Double, isUser: Boolean = false, compact: Bool
 
         //weight(1f) pushes everything after it to the end of the row
         Text(
-            text = name,
+            text = if(isUser){"You"} else {name},
             modifier = Modifier.weight(1f),
             style = textStyle,
             fontWeight = if (isUser) FontWeight.Bold else FontWeight.Normal

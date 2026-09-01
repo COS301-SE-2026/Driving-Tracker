@@ -1,7 +1,11 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
 import { faker } from '@faker-js/faker';
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt';
+import {
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 
 //SA coordinates (coordinates for SA only)
 const SACords = {
@@ -67,6 +71,7 @@ async function main() {
                 model: 'M3',
                 year: 2024,
                 fuel_type: 'PETROL',
+                fuel_tank: 50
             }
         });
         await prisma.users_vehicles.create({
@@ -345,12 +350,19 @@ async function main() {
             //Checking if user already has a leaderboard to avoid unique constraint crashes
             const existingBoard = await prisma.leaderboard.findFirst({ where: { user_id: user.user_id }});
             if (!existingBoard) {
+
+                const scope = faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']);
+
+                const period_start = 
+                    scope === 'ALL_TIME'? new Date('1970-01-01T00:00:00.000Z')
+                    :scope === 'WEEKLY'? startOfWeek(new Date()): startOfMonth(new Date());
                 await prisma.leaderboard.create({
                     data: {
                         user_id: user.user_id,
                         category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
-                        scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
-                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 })
+                        scope,
+                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
+                        period_start
                     }
                 });
 
@@ -444,6 +456,7 @@ async function main() {
                     model: faker.vehicle.model(),
                     year: faker.date.past({ years: 15 }).getFullYear(),
                     fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                    fuel_tank: 50
                 }
             });
 
