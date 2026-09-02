@@ -581,6 +581,29 @@ export const trips_services ={
             throw error;
         }
     },
+    async get_trip_shares(user_id: string, trip_id: string){
+        //gets current active shares for a trip 
+        const trip =await prisma.trips.findUnique({
+            where :{ trip_id,
+                user_id:user_id
+            },
+            select:{ user_id:true}
+        });
+        if(!trip) throw new Error("trip not found or You do not own this trip");
+
+        return await prisma.trip_location_shares.findMany({
+            where:{ trip_id,revoked_at:null},
+            include:{
+                contact:{
+                    select:{
+                        contact_id:true,
+                        name:true,
+                        email:true
+                    }
+                }
+            }
+        })
+    },
 
     async record(data:record_data){//consistent trip update endpoint 
         if(!data.trip_id){
