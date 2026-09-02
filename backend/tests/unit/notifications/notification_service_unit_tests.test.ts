@@ -21,6 +21,7 @@ jest.mock('../../../src/db/prisma', () => ({
         notifications: {
             createMany: jest.fn(),
             findMany: jest.fn(),
+            deleteMany: jest.fn(),
         },
         $transaction: jest.fn(),
     },
@@ -385,6 +386,78 @@ describe('notification_services', () => {
             expect(result[0].reference_id).toBe('contact-1');
             expect(result[1].notification_id).toBe('noti-2');
             expect(result[1].reference_id).toBe('contact-2');
+        });
+    });
+
+    describe('send_unexpected_stop_notification', () => {
+        it('sends unexpected stop notification', async () => {
+            mockSendEachForMulticast.mockResolvedValue(undefined);
+
+            await notification_services.send_unexpected_stop_notification(
+                ['token-1'],
+                't1',
+                'event-1',
+                'Unexpected stop occurred'
+            );
+
+            expect(mockSendEachForMulticast).toHaveBeenCalledWith({
+                fids: ['token-1'],
+                notification: {
+                    title: 'Unexpected Stop',
+                    body: 'Unexpected stop occurred',
+                },
+                data: {
+                    type: 'UNEXPECTED_STOP',
+                    event_id: 'event-1',
+                    trip_id: 't1',
+                }
+            });
+
+        });
+
+        it('throws when no tokens are provided', async () => {
+            await expect(
+                notification_services.send_unexpected_stop_notification([], 't1', 'event-1', 'Unexpected stop occurred')
+            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
+        });
+
+        it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_unexpected_stop_notification(
+                    ['token-1'],
+                    't1',
+                    'event-1',
+                    'Unexpected stop occurred'
+                )
+            ).rejects.toMatchObject({ errorCode: 'COULD_NOT_SEND_NOTIFICATION' });
+
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+
+        });
+
+    });
+
+    describe('delete user notifications',()=>{
+        
+        it('returns deleted count on success', async () => {
+
+            const deleteManyMock = jest.fn<() => Promise<{count: number}>>().mockResolvedValue({ count: 2 });
+            
+            (mock_prisma.$transaction as jest.Mock).mockImplementation(async (callback: any) =>{
+                return callback({
+                    notifications: {
+                        deleteMany: deleteManyMock,
+                    }
+                });
+            });
+    
+            const result = await notification_services.delete_notifications('u1');
+    
+            expect(result).toBe(2);
         });
     });
 });

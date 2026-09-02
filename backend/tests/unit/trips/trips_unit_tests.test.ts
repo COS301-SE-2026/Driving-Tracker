@@ -238,15 +238,26 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'TRIP_NOT_FOUND', message: 'Trip not found' }));
         });
 
-		it('returns 401 when missing required fields', async () => {
+		it('returns 400 when missing required fields', async () => {
 			//mocking service to throw error message
 			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Missing required fields'));
 			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
 			const res: any = make_res();
 
 			await trips_controller.record_trip(req, res);
+			expect(res.status).toHaveBeenCalledWith(400);
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'MISSING_REQUIRED_FIELDS', message: 'Fill all valid fields'}));
+		});
+
+        it('returns 401 when user does not own trip', async () => {
+			//mocking service to throw error message
+			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('You do not own this trip'));
+			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: {}};
+			const res: any = make_res();
+
+			await trips_controller.record_trip(req, res);
 			expect(res.status).toHaveBeenCalledWith(401);
-			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'Fill all valid fields'}));
+			expect(res.json).toHaveBeenCalledWith(expect.objectContaining({error: 'UNAUTHORIZED'}));
 		});
 
 		it('returns 500 for unexpected interal error', async () => {
@@ -794,4 +805,323 @@ describe('Trips endpoints unit tests', ()=>{
         });
     });
 
-})
+    describe('Check stop event endpoint', ()=>{
+        it('returns 200 when stop checked successfully', async()=>{
+            const mock_result = {
+                stop_event_id: 'stop-1',
+                classification: 'expected',
+                location_context: {
+                    address: 'Main Street',
+                    poi_category: null,
+                },
+                should_prompt: true,
+            };
+
+            jest.spyOn(trips_services,'check_stop').mockResolvedValueOnce(mock_result as any);
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { trip_id: 'trip-1'},
+                body: {
+                    location: { lat: 25.23, lng: -26.93},
+                    stopped_at: Date.now() - 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(trips_services.check_stop).toHaveBeenCalledWith(
+                'user-1',
+                'trip-1',
+                25.23,
+                -26.93,
+                req.body.stopped_at
+            );
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Stop event check completed successfully', data: mock_result}));
+        });
+
+         it('Returns 401 when user unauthenticated', async()=>{
+            const req: any = {
+                user: { sub: null },  
+                params: { trip_id: 'trip-1'},
+                body: {
+                    location: { lat: 25.23, lng: -26.93},
+                    stopped_at: Date.now() - 5*60*1000,
+                },
+            };
+
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);            
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to log unexpected stop event"}));
+        });
+
+        it('Returns 400 when location coordinates are invalid', async () => {
+            jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('Location coordinates missing'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {
+                    location: { lat: 0.0, lng: 0.0},
+                    stopped_at: Date.now() - 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_LOCATION', message: 'Location coordinates missing or invalid'}));
+        });
+
+        it('Returns 422 when stopped_at is in the future', async () => {
+            jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('stopped_at cannot be in the future'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {
+                    location: { lat: 0.0, lng: 0.0},
+                    stopped_at: Date.now() + 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_STOP', message: 'Stopped_at cannot be in the future'}));
+        });
+
+        it('Returns 500 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'check_stop').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { trip_id: 'trip-1'},
+                body: {
+                    location: { lat: 25.23, lng: -26.93},
+                    stopped_at: Date.now() - 5*60*1000,
+                },
+            };
+            const res: any = make_res();
+
+            await trips_controller.check_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not successfully check stop'}));
+        });
+    });
+
+    describe('Confirm stop event endpoint', ()=>{
+        it('returns 200 when stop is confirmed successfully', async()=>{
+            const mock_result = {
+                status: 'confirmed',
+                already_handled: false,
+            };
+
+            jest.spyOn(trips_services,'confirm_stop').mockResolvedValueOnce(mock_result as any);
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);
+
+            expect(trips_services.confirm_stop).toHaveBeenCalledWith(
+                'user-1',
+                'event-1',
+            );
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Unexpected stop confirmed', data: mock_result}));
+        });
+
+         it('Returns 401 when user unauthenticated', async()=>{
+            const req: any = {
+                user: { sub: null },  
+                params: { event_id: 'event-1'}, 
+            };
+
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);            
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to confirm unexpected stop event"}));
+        });
+
+        it('Returns 400 when the stop event is not found', async () => {
+            jest.spyOn(trips_services, 'confirm_stop').mockRejectedValueOnce(new Error('event not found'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'EVENT_NOT_FOUND', message: 'Unexpected stop event not found'}));
+        });
+
+         it('Returns 403 when the user is not found', async () => {
+            jest.spyOn(trips_services, 'confirm_stop').mockRejectedValueOnce(new Error('user not found'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'User not found'}));
+        });
+
+        it('Returns 500 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'confirm_stop').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not successfully confirm stop'}));
+        });
+    });
+
+    describe('Resolve stop event endpoint', ()=>{
+        it('returns 200 when stop is resolved successfully', async()=>{
+            const mock_result = {
+                resolved: true,
+            };
+
+            jest.spyOn(trips_services,'resolve_stop').mockResolvedValueOnce(mock_result as any);
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved' },
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(trips_services.resolve_stop).toHaveBeenCalledWith(
+                'user-1',
+                'event-1',
+                'moved'
+            );
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Unexpected stop resolved', data: mock_result}));
+        });
+
+         it('Returns 401 when user unauthenticated', async()=>{
+            const req: any = {
+                user: { sub: null },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved'},
+            };
+
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);            
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to resolve unexpected stop event"}));
+        });
+
+        it('Returns 400 when the stop event is not found', async () => {
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('event not found'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved'}
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'EVENT_NOT_FOUND', message: 'Unexpected stop event not found'}));
+        });
+
+        it('Returns 422 when the reason is missing', async () => {
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('reason missing'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {}
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(422);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'REASON_MISSING', message: 'Reason parameter needed'}));
+        });
+
+        it('Returns 403 when user does not own the event or trip', async () => {
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('cannot access event'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: {}
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message: 'Cannot access this event'}));
+        });
+
+         it('Returns 403 when the user is not found', async () => {
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('user not found'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'User not found'}));
+        });
+
+        it('Returns 500 on unexpected error', async () => {
+            jest.spyOn(trips_services, 'confirm_stop').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = {
+                user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved'},
+            };
+            const res: any = make_res();
+
+            await trips_controller.confirm_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not successfully confirm stop'}));
+        });
+    });
+
+
+
+});

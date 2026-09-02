@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import auth_router from "./routes/auth.routes";
-//import 'dotenv/config';
+import 'dotenv/config';
 import contacts_router from "./routes/contacts.route";
 import trip_router from "./routes/trips.routes";
 import badges_leaderBoard_router from './routes/badges_leaderbord.routes';
@@ -13,6 +13,9 @@ import user_devices_router from './routes/user_devices.routes';
 import map_router from './routes/maps.routes';
 import notifications_router from './routes/notifications.routes';
 import user_router from './routes/user.routes';
+
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger';
 
 const app = express();
 
@@ -36,6 +39,16 @@ app.get('/health', (req, res) => {
         status: 'ok',
         message: 'Driving Tracker API is running'
     });
+});
+
+const swaggerHandlers = swaggerUi.serve as any;
+const swaggerSetup = swaggerUi.setup as any;
+
+app.use('/api-docs', swaggerHandlers, swaggerSetup(swaggerSpec));
+
+app.use('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
 });
 
 app.use("/api/auth", auth_router);

@@ -33,7 +33,7 @@ data class GetBadgesResponse(val data: GetBadgesData)
 data class GetBadgesData(val earned: List<EarnedBadge>, val summary: BadgeSummary)
 
 data class EarnedBadge(
-    @SerializedName("badge_id") val badgeId: Int,
+    @SerializedName("badge_id") val badgeId: String,
     val name: String,
     val category: String,
     val description: String,
@@ -53,7 +53,7 @@ data class BadgeDefinitionsResponse(val data: BadgeDefinitionsData)
 data class BadgeDefinitionsData(val badges: List<BadgeDefinition>)
 
 data class BadgeDefinition(
-    @SerializedName("badge_id") val badgeId: Int,
+    @SerializedName("badge_id") val badgeId: String,
     val name: String,
     val description: String,
     val category: String,

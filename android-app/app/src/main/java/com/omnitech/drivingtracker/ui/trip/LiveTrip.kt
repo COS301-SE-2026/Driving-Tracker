@@ -61,6 +61,9 @@ import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.omnitech.drivingtracker.data.models.MapPoiItem
+import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
+import com.omnitech.drivingtracker.ui.theme.Warning
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -77,8 +80,11 @@ fun LiveTrip(
     val mapToken by viewModel.mapTokenState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
+    val nearbyPois by viewModel.nearbyPois.collectAsState()
+    val safetyState by viewModel.safetyCheck.collectAsState()
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
+    val detourRoute by viewModel.detourRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
 
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
@@ -193,6 +199,19 @@ fun LiveTrip(
         }
     }
 
+    if(safetyState.shouldPrompt){
+        SafetyPromptDialog(
+            address = safetyState.address?:"Unknown Location",
+            onConfirm = {
+                viewModel.resolveStopEvent(safetyState.stopEventId!!,  "ok")
+
+            },
+            onHelp = {
+                viewModel.confirmStopEvent(safetyState.stopEventId!!)
+            }
+        )
+    }
+
     var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
@@ -274,18 +293,32 @@ fun LiveTrip(
                 longitude = liveMetrics.longitude,
                 distance = liveDistance,
                 durationMinutes = liveDurationMinutes,
-                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
+                path = tripPath
             )
         },
         navController = navController,
         destination = destinationLoc,
         plannedRoute = plannedRoute,
+        detourRoute = detourRoute,
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
+        onPoiClick = { _, lat, lng ->
+            viewModel.fetchDetourRoute(
+                startLat = liveMetrics.latitude,
+                startLng = liveMetrics.longitude,
+                destLat = lat,
+                destLng = lng
+            )
+
+            //Show popup for rerouting
+        },
         isMinimized = isMinimized,
         onMinimizeClick = {navController?.navigate(Screen.Dashboard.route){
             popUpTo(Screen.Dashboard.route){inclusive = true}
         } },
-        vehicleMetrics = metrics
+        vehicleMetrics = metrics,
+        nearbyPois = nearbyPois,
+
     )
 }
 
@@ -301,11 +334,14 @@ fun LiveTripContent(
     destination: LocationDto? = null,
     actualRoute: List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
+    detourRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
+    onPoiClick: (String, Double, Double) -> Unit = { _, _, _ -> },
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
     localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
+    nearbyPois: List<MapPoiItem>? = null,
     liveDistance: Double =0.0,
     liveDuration: Int= 0
 ) {
@@ -417,13 +453,16 @@ fun LiveTripContent(
                             navController = navController,
                             contactsState = contactsState,
                             onShareTrip = onShareTrip,
+                            onPoiClick = onPoiClick,
                             destination = destination,
                             plannedRoute = plannedRoute,
+                            detourRoute = detourRoute,
                             actualRoute = actualRoute,
                             liveDistance = liveDistance,
                             liveDuration = liveDuration,
                             localEvents = localEvents,
-                            vehicleMetrics = vehicleMetrics
+                            vehicleMetrics = vehicleMetrics,
+                            nearbyPois = nearbyPois
                         )
                     }
 
@@ -446,11 +485,14 @@ private fun TripDetails(
     destination: LocationDto? = null,
     actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
+    detourRoute: List<LocationDto>?=null,
     onShareTrip: (List<String>) -> Unit,
+    onPoiClick: (String, Double, Double) -> Unit = { _, _, _ -> },
     liveDistance: Double = 0.0,
     liveDuration: Int = 0,
     localEvents: List<TripEventEntity>,
-    vehicleMetrics: VehicleMetrics
+    vehicleMetrics: VehicleMetrics,
+    nearbyPois: List<MapPoiItem>? = null
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -486,7 +528,10 @@ private fun TripDetails(
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    nearbyPois = nearbyPois,
+                    detourRoute = detourRoute,
+                    onPoiClick = onPoiClick,
                 )
                 IconButton(
                     onClick = { recenterCount++ },

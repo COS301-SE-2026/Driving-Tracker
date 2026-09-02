@@ -36,6 +36,17 @@ data class LogoutResponse(
     val message: String? = null
 )
 
+data class RegisterResponse(
+    val message: String
+)
+
+data class ForgotPasswordRequest(val email : String)
+
+data class ResetPasswordRequest(
+    val token : String,
+    @SerializedName("password") val newPassword: String
+)
+
 data class ProfileData(
     @SerializedName("user_id")
     val userId: String,

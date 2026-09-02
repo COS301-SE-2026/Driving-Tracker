@@ -59,7 +59,7 @@ const leaderboard_controller = {
 
     } catch(e: any) {
 
-      return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not retrieve categories"});
+      return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Could not retrieve scopes"});
     }
   },
 };

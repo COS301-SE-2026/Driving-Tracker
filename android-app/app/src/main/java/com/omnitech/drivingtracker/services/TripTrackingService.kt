@@ -26,6 +26,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.models.BatchReadingRequest
 import com.omnitech.drivingtracker.data.models.DataSource
+import com.omnitech.drivingtracker.data.models.FatigueConfig
 import com.omnitech.drivingtracker.data.models.LogEventRequest
 import com.omnitech.drivingtracker.data.models.RecordReadingRequest
 import com.omnitech.drivingtracker.data.sensors.FusedReading
@@ -39,8 +40,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.models.PoiType
 import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
+import com.omnitech.drivingtracker.data.repository.TripStateManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.Instant
@@ -62,6 +65,9 @@ class TripTrackingService: Service() {
     @Inject
     lateinit var tripRepository: TripRepository
 
+    @Inject
+    lateinit var tripStateManager: TripStateManager
+
     private var currentTripId: String? = null
 
     private var lastKnownSpeed: Float = 0f
@@ -72,6 +78,33 @@ class TripTrackingService: Service() {
     private var lastSavedLat: Double? = null
     private var lastSavedLng: Double? = null
     private val MIN_DISTANCE_METERS = 10f
+
+    private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
+
+    private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
+        val tripId = currentTripId ?:return@StopMonitor
+
+        serviceScope.launch {
+            tripRepository.checkStopEvent(tripId, lat, lng, stoppedAt).onSuccess { data ->
+                if(data.shouldPrompt){
+                    tripStateManager.updateSafetyCheck(
+                        TripStateManager.SafetyCheckState(
+                            stopEventId = data.stopEventId,
+                            address = data.locationContext.address,
+                            shouldPrompt = true
+                        )
+                    )
+
+                    notificationHelper.showSafetyAlert(
+                        "Unexpected Stop",
+                        "You've stopped at an unexpected location. Are you okay?",
+                        tripId
+                    )
+                }
+            }
+        }
+
+    }
 
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -122,6 +155,11 @@ class TripTrackingService: Service() {
                     startLocationUpdates()
                     startSensorFusion()
                     startSyncLoop()
+                    serviceScope.launch {
+                        if (isObdConnected()) {
+                            obdManager.fetchFuelLevel()
+                        }
+                    }
                 } else {
                     Log.d("Tracking", "Service already tracking")
                 }
@@ -218,6 +256,36 @@ class TripTrackingService: Service() {
         val lastLat = lastSavedLat
         val lastLng = lastSavedLng
 
+        val obdConnected = isObdConnected()
+
+        val currentSpeed = if(obdConnected){
+            obdManager.metrics.value.speed.toFloat()
+        } else {
+            reading.speedKmh
+        }
+
+        val safetyState =  tripStateManager.safetyCheck.value
+        if(safetyState.shouldPrompt && currentSpeed > 10f){
+            serviceScope.launch {
+                safetyState.stopEventId?.let { id ->
+                    tripRepository.resolveStopEvent(id, "movement")
+                    tripStateManager.clearSafetyCheck()
+                }
+            }
+        }
+
+        val recordedAt = runCatching {
+            Instant.parse(reading.timestamp).toEpochMilli()
+        }.getOrDefault(System.currentTimeMillis())
+
+        fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
+
+        val stoppedAt = Instant.parse(reading.timestamp)
+
+        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, stoppedAt)
+
+        lastKnownSpeed = currentSpeed
+
         if(lastLat != null && lastLng != null){
             val results = FloatArray(1)
             android.location.Location.distanceBetween(lastLat, lastLng, reading.latitude, reading.longitude, results)
@@ -228,21 +296,7 @@ class TripTrackingService: Service() {
         lastSavedLat = reading.latitude
         lastSavedLng = reading.longitude
 
-        val obdConnected = isObdConnected()
-
-
-
-        lastKnownSpeed = if(obdConnected){
-            obdManager.metrics.value.speed.toFloat()
-        } else {
-            reading.speedKmh
-        }
-
         serviceScope.launch {
-
-            val recordedAt = runCatching {
-                Instant.parse(reading.timestamp).toEpochMilli()
-            }.getOrDefault(System.currentTimeMillis())
 
             var rpm: Int? = null
             var speed: Float? = reading.speedKmh
@@ -282,6 +336,50 @@ class TripTrackingService: Service() {
             Log.d(TAG, "Saved reading: ${readingEntity}")
 
         }
+    }
+
+    private fun handleFatigueAlert(level: FatigueMonitor.FatigueAlertLevel){
+        //Notification trigger
+
+        val tripId = currentTripId?: return
+        var title = "Rest alert"
+
+        val message: String = when (level) {
+            FatigueMonitor.FatigueAlertLevel.URGENT -> {
+                title = "Urgent Rest alert"
+                "Please pull over and rest soon"
+            }
+            FatigueMonitor.FatigueAlertLevel.RE_ALERT -> {
+                title = "Rest reminder"
+                "Taking a break would help your concentration"
+            }
+            else -> {
+                "You've been driving for a while. Consider taking a break"
+            }
+        }
+
+        notificationHelper.showRestAlert(title, message, tripId)
+
+        val lastLat = lastSavedLat
+        val lastLng = lastSavedLng
+
+        if(lastLat == null || lastLng == null) return
+
+        serviceScope.launch {
+            val result = tripRepository.getNearbyPois(lastLat, lastLng, PoiType.STOPS, 5000, 5)
+
+            result.onSuccess { data ->
+                tripStateManager.updateNearbyPois(data.pois)
+                Log.d("Fatigue", "Num Pois: ${data.pois.size}")
+            }.onFailure { exception ->
+                if (exception is com.omnitech.drivingtracker.data.api.ApiException) {
+                    Log.e("Fatigue", "API Error: ${exception.errorCode} - ${exception.errorMessage}", exception)
+                } else {
+                    Log.e("Fatigue", "Unknown Error: ${exception.message}", exception)
+                }
+            }
+        }
+
     }
 
     private fun computeSyncDelay(): Long {
@@ -383,11 +481,17 @@ class TripTrackingService: Service() {
 
     private fun stopEverything(){
         Log.d(TAG, "Stopping all tracking tasks")
+        serviceScope.launch {
+            if (isObdConnected()) {
+                obdManager.fetchFuelLevel()
+            }
+        }
         stopLocationUpdates()
         sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
+        tripStateManager.clearTripState()
     }
 }
