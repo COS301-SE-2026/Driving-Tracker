@@ -1,6 +1,6 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
-import { faker } from '@faker-js/faker';
+import { faker, fakerEN_AU_ocker } from '@faker-js/faker';
 import bcrypt from 'bcrypt'
 
 //SA coordinates (coordinates for SA only)
@@ -67,6 +67,7 @@ async function main() {
                 model: 'M3',
                 year: 2024,
                 fuel_type: 'PETROL',
+                fuel_tank: 50.5
             }
         });
         await prisma.users_vehicles.create({
@@ -350,7 +351,8 @@ async function main() {
                         user_id: user.user_id,
                         category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
                         scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
-                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 })
+                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
+                        updated_at: new Date(),
                     }
                 });
 
@@ -444,6 +446,7 @@ async function main() {
                     model: faker.vehicle.model(),
                     year: faker.date.past({ years: 15 }).getFullYear(),
                     fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                    fuel_tank: 50.5,
                 }
             });
 

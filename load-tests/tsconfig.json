@@ -1,21 +1,24 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "module": "ESNext",
-    "lib": ["ES2020","DOM"],
-    "outDir": "./dist",
-    "rootDir": "./",
-    "strict": false,
+    "target": "es2020",
+    "module": "esnext",
     "moduleResolution": "bundler",
+    "lib": ["es2020","DOM"],
+    "types": ["k6"],
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@utils/*": ["./utils/*"],
+      "@scenarios/*": ["./scenarios/*"]
+    },
+    "noEmit": true,
+    "strict": false,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "ignoreDeprecations": "5.0"
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
 }
