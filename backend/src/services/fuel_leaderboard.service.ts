@@ -72,7 +72,7 @@ export const fuel_leaderboard_service = {
         );
 
         //querying the DB for all users driving the same vehicle
-        const rows = await prisma.$queryRaw<AggregetedUser[]>(Prisma.sql`
+        const rows = await prisma.$queryRaw<AggregatedUser[]>(Prisma.sql`
             SELECT
                 t.user_id,
                 CONCAT_WS(' ', u.name, u.surname) AS display_name,
@@ -99,7 +99,7 @@ export const fuel_leaderboard_service = {
         //converting database results to ranked list
         const ranked: RankedUser[] = rows
             .map((row) => {
-                const totalFuel = Number(row.totatl_fuel);
+                const totalFuel = Number(row.total_fuel);
                 const totalDistance = Number(row.total_distance);
 
                 return {
@@ -162,7 +162,7 @@ export const fuel_leaderboard_service = {
             totalPeers,
             leaderboard: ranked.map((entry) => ({
                 rank: entry.rank,
-                displayName: toDispalyName(...),
+                displayName: entry.display_name || "Driver",
                 efficiencyL100km: Number(entry.efficiency.toFixed(2)),
                 isCurrentUser: entry.user_id === params.user_id,
             })),

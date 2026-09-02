@@ -41,7 +41,7 @@ export const manufacturer_baseline_service = {
         //checking if data is already in cache
         const cached = await prisma.manufacturer_efficiency_cache.findUnique({
             where: {
-                make_model_engine_type: {
+                make_model_year_engine_type: {
                     make,
                     model,
                     year: params.year,
