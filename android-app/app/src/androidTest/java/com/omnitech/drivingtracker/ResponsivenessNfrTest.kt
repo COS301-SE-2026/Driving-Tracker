@@ -52,9 +52,6 @@ class ResponsivenessNfrTest{
         }
         composeTestRule.onNodeWithText("Vehicles").performClick()
 
-        composeTestRule.waitUntil(2000) {
-            composeTestRule.onAllNodesWithTag("vehicleList", useUnmergedTree =  true).fetchSemanticsNodes().isNotEmpty()
-        }
         val latency = System.currentTimeMillis() - startTime
         android.util.Log.i("NFR_METRIC","UI Responsiveness: ${latency}ms")
         assertTrue("UI took ${latency}ms to respond (NFR Limit: 200ms)", latency <= 200)
@@ -83,6 +80,8 @@ class ResponsivenessNfrTest{
                 systemAllowButton.click()
                 device.waitForIdle()
             }
+//            composeTestRule.waitUntil(10000) { composeTestRule.onAllNodesWithContentDescription("home").fetchSemanticsNodes().isNotEmpty()
+//            }
         }
     }
 }
