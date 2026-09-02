@@ -155,6 +155,7 @@ const mock_fetch_vehicle_benchmark = fetch_vehicle_benchmark as jest.MockedFunct
 const mock_calculate_trip_scores = calculate_trip_scores as jest.MockedFunction<typeof calculate_trip_scores>;
 const mock_driver_profile = driver_profile as jest.MockedFunction<typeof driver_profile>;
 import { map_services } from '../../../src/services/map_services';
+import { map } from 'zod';
  
 const mock_map_services = map_services as any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -808,6 +809,72 @@ describe('Trips services.get_summary', () => {
             })
         ).rejects.toThrow('You do not own this trip');
     });
+
+	it('geocodes and caches missing start/end address from coordinates', async () => {
+		mock_prisma.trips.findUnique.mockResolvedValue({
+			trip_id: 't1',
+			user_id: 'u1',
+			vehicle_id: 'v1',
+			status: 'COMPLETED',
+			data_source: 'OBD',
+			route_polyline: 'polyline',
+			distance_km: new MockDecimal(45.5),
+			duration_minutes: 60,
+			fuel_estimate: new MockDecimal(3.2),
+			start_time: new Date(),
+			end_time: new Date(),
+			start_address: null,
+			end_address: null,
+			start_latitude: -26.2041,
+			start_longitude: 28.0473,
+			end_latitude: -26.2100,
+			end_longitude: 28.0520,
+			trip_scores: [{ safety_score: 95, eco_score: 88, overall_score: 91 }],
+			trip_events: [],
+		});
+		mock_prisma.trip_readings.findMany.mockResolvedValue([]);
+		mock_prisma.trips.update.mockResolvedValue({
+			trip_id: 't1',
+			start_address: '1 Start Street',
+			end_address: '1 End Avenue',
+		} as any);
+
+		jest.spyOn(map_services, 'reverse_geocode').mockResolvedValueOnce({
+			address: '1 Start Street',
+			road_use: null,
+			speed_limit: null,
+			municipality: null,
+			countryCode: null,
+		}).mockResolvedValueOnce({
+			address: '1 End Avenue',
+			road_use: null,
+			speed_limit: null,
+			municipality: null,
+			countryCode: null,
+		});
+
+		await trips_services.get_summary({
+			trip_id: 't1',
+			user_id: 'u1',
+		});
+
+		expect(map_services.reverse_geocode).toHaveBeenCalledWith(
+			Number(-26.2041),
+			Number(28.0473)
+		);
+		expect(map_services.reverse_geocode).toHaveBeenCalledWith(
+			Number(-26.2100),
+			Number(28.0520)
+		);
+
+		expect(mock_prisma.trips.update).toHaveBeenCalledWith({
+			where: { trip_id: 't1' },
+			data: {
+				start_address: '1 Start Street',
+				end_address: '1 End Avenue'
+			}
+		});
+	});
 });
 
 describe('Trips services.events_log', () => {

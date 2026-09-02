@@ -199,6 +199,13 @@ data class TripSummaryDto(
     val durationMinutes: Int?,
     @SerializedName("fuel_estimate")
     val fuelEstimate: Double?,
+
+    @SerializedName("start_address")
+    val startAddress: String? = null,
+
+    @SerializedName("end_address")
+    val endAddress: String? = null,
+
     @SerializedName("destination_latitude")
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
