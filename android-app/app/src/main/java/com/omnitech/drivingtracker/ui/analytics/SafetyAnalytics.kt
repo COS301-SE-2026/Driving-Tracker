@@ -13,22 +13,27 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.YourTopBar
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import androidx.compose.runtime.getValue
 
 @Composable
-fun SafetyAnalytics(navController: NavController ?= null){
+fun SafetyAnalytics(navController: NavController ?= null,
+                    viewModel: AnalyticsViewModel = hiltViewModel()
+){
 
-    val ecoScore = 35
-    val scoreHistory = listOf(78f,84f,10f, 79f,45f,78f,98f)
+    val uiState by viewModel.uiState.collectAsState()
+    val safetyHistory = uiState.safetyHistory
 
 
     AnalyticsHeader(
@@ -41,7 +46,7 @@ fun SafetyAnalytics(navController: NavController ?= null){
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                ScoreCard(score = ecoScore ?: 0)
+                ScoreCard(score = uiState.safetyScore ?: 0)
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -49,7 +54,7 @@ fun SafetyAnalytics(navController: NavController ?= null){
         item{
             ScoreChart(
                 title = "Safety Score over time",
-                values = scoreHistory
+                values = safetyHistory
             )
             Spacer(modifier = Modifier.height(8.dp))
         }

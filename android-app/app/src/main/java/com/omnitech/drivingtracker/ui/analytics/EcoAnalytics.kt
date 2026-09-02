@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,15 +51,18 @@ import androidx.compose.runtime.getValue
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 
 @Composable
-fun EcoAnalytics(navController: NavController ?= null){
+fun EcoAnalytics(navController: NavController ?= null,
+                 viewModel: AnalyticsViewModel = hiltViewModel()
+){
 
-    val ecoScore = 85
-    val scoreHistory = listOf(80f,84f,79f,45f,78f,98f)
+    val uiState by viewModel.uiState.collectAsState()
+    val ecoHistory = uiState.ecoHistory
 
     AnalyticsHeader(
         leftWord = "Eco ",
@@ -66,12 +70,12 @@ fun EcoAnalytics(navController: NavController ?= null){
         navController = navController
     ) {
         item{
-            ScoreCard(score = ecoScore ?: 0)
+            ScoreCard(score = uiState.ecoScore ?: 0)
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         item{
-            ScoreChart(title = "Eco Score over time", values = scoreHistory)
+            ScoreChart(title = "Eco Score over time", values = ecoHistory)
             Spacer(modifier = Modifier.height(8.dp))
         }
 

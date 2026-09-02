@@ -198,7 +198,10 @@ fun DriverAnalytics(navController: NavController ?= null,
                         fuel = uiState.fuelEfficiency ?: 0.0,
                         events = uiState.eventCount ?: 0,
 
-                        onFuelClick = { navController?.navigate(Screen.FuelAnalytics.route)}
+                        onFuelClick = { navController?.navigate(Screen.FuelAnalytics.route)},
+                        onEcoClick = { navController?.navigate(Screen.EcoAnalytics.route)},
+                        onSafetyClick = { navController?.navigate(Screen.SafetyAnalytics.route)},
+                        onEventsClick = { navController?.navigate(Screen.EventsAnalytics.route)}
                     )
                 }
 
@@ -311,7 +314,10 @@ fun PerformanceSection(
     eco: Int,
     fuel: Double,
     events: Int,
-    onFuelClick: (()->Unit)?= null
+    onFuelClick: (()->Unit)?= null,
+    onEventsClick: (()->Unit)?= null,
+    onEcoClick: (()->Unit)?= null,
+    onSafetyClick: (()->Unit)?= null
 ){
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -331,7 +337,8 @@ fun PerformanceSection(
                 value = "$safety",
                 unit = "/100",
                 accentColor = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onSafetyClick
             )
             PerformanceCard(
                 icon = Icons.Default.Eco,
@@ -339,7 +346,8 @@ fun PerformanceSection(
                 value = "$eco",
                 unit = "/100",
                 accentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onEcoClick
             )
         }
 
@@ -364,7 +372,8 @@ fun PerformanceSection(
                 value = "$events",
                 unit = "",
                 accentColor = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onEventsClick
             )
         }
     }
