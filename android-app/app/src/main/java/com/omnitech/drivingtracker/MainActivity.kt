@@ -69,6 +69,7 @@ import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 import com.omnitech.drivingtracker.ui.analytics.DriverAnalytics
 import com.omnitech.drivingtracker.ui.analytics.FuelAnalytics
+import com.omnitech.drivingtracker.ui.analytics.FuelComparisonScreen
 import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
@@ -122,6 +123,8 @@ sealed class Screen(val route: String){
     data object FuelAnalytics : Screen("fuel_analytics")
 
     data object ForgotPassword : Screen("forgot_password")
+
+    data object FuelComparison : Screen("fuel_comparison")
 }
 
 @AndroidEntryPoint
@@ -391,6 +394,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
+                    }
+
+                    composable(Screen.FuelComparison.route) {
+                        FuelComparisonScreen(navController = navController)
                     }
                 }
 
