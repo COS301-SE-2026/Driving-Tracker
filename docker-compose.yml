@@ -138,17 +138,17 @@ services:
         condition: service_completed_successfully
     command: sh -lc "yarn jest --config /app/jest.config.cjs --runInBand --detectOpenHandles"
 
-  db-test:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_TEST_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_TEST_DB:-driving_tracker_test}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-driving_tracker_test}"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+  # db-test:
+    # image: postgres:15-alpine
+    # environment:
+    #   POSTGRES_USER: ${POSTGRES_TEST_USER:-postgres}
+    #   POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-password}
+    #   POSTGRES_DB: ${POSTGRES_TEST_DB:-driving_tracker_test}
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-driving_tracker_test}"]
+    #   interval: 3s
+    #   timeout: 3s
+    #   retries: 10
 
   prisma-migrate-test:
     build:
@@ -159,7 +159,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
     depends_on:
-      db-test:
+      db:
         condition: service_healthy
     command: sh -lc "yarn prisma:migrate:deploy && yarn prisma:generate"
     restart: "no"
@@ -175,7 +175,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       NODE_ENV: test
     depends_on:
-      db-test:
+      db:
         condition: service_healthy
       prisma-migrate-test:
         condition: service_completed_successfully
@@ -200,7 +200,7 @@ services:
       retries: 12
       start_period: 15s
     depends_on:
-      db-test:
+      db:
         condition: service_healthy
       prisma-migrate-test:
         condition: service_completed_successfully

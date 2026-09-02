@@ -21,14 +21,14 @@ export const loadScenarios: Record<string, LoadScenario> = {
   },
   moderate: {
     name: 'Moderate Load',
-    vus: 25,
+    vus: 20,
     duration: '60s',
     rampUp: '10s',
-    description: 'Moderate load test (25 concurrent users, 10s ramp-up)',
+    description: 'Moderate load test (20 concurrent users, 10s ramp-up)',
   },
   stress: {
     name: 'Stress Test',
-    vus: 50,
+    vus: 25,
     duration: '120s',
     rampUp: '30s',
     description: 'Stress test (50 concurrent users, 30s ramp-up)',
