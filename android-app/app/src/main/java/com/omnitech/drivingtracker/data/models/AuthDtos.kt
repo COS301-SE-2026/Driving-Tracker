@@ -57,6 +57,8 @@ data class ProfileData(
     @SerializedName("phone_number")
     val phoneNumber: String,
     val dob: String,
+    @SerializedName("profile_picture_url")
+    val profilePictureUrl: String? = null,
     @SerializedName("trip_count")
     val tripCount: Int,
     @SerializedName("badge_count")

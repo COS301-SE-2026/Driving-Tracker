@@ -51,6 +51,8 @@ import com.omnitech.drivingtracker.ui.vehicles.VehiclesViewModel
 import kotlin.collections.forEach
 import java.util.UUID
 import com.omnitech.drivingtracker.Screen
+import android.net.Uri
+import com.omnitech.drivingtracker.BuildConfig
 
 
 //Data model for vehicle UI
@@ -140,6 +142,7 @@ fun Vehicles(
                                 trips = dto.tripCount?: 0,
                                 fuelEfficiency = dto.avgFuelEfficiency?: 0.0,
                                 needsService = isWithinServiceWindow,
+                                imageUri = dto.imageUrl?.let { BuildConfig.BASE_URL + it },
                                 registration = dto.registration,
                                 year = dto.year,
                                 fuelType = dto.fuelType
@@ -237,7 +240,12 @@ fun Vehicles(
 
         ImagePickerSheet(
             onImageSelected = { uri ->
-                //TODO implement image upload logic
+                val editingVehicle = vehicleToEditImage
+                if(editingVehicle != null){
+                    viewModel.uploadVehicleImage(editingVehicle.id, uri)
+                }else{
+                    tempNewVehicleImage = uri.toString()
+                }
                 showImagePicker = false
                 vehicleToEditImage = null
             },
@@ -258,7 +266,8 @@ fun Vehicles(
                 tempNewVehicleImage = null
             },
             onConfirm = { name, registration, make, model, year, fuelType ->
-                viewModel.addVehicle( name, registration, make, model, year, fuelType)
+                val imageUri = tempNewVehicleImage?.let{ Uri.parse(it) }
+                viewModel.addVehicle( name, registration, make, model, year, fuelType, imageUri)
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             }

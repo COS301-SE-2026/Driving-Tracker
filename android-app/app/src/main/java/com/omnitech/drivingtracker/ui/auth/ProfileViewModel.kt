@@ -11,13 +11,25 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import kotlin.fold
 import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.models.ProfileData
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.net.Uri
+import com.omnitech.drivingtracker.utils.ImageUploadUtils
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    @ApplicationContext private val context: Context
 ): ViewModel(){
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
+
+    private val _isUploadingPicture = MutableStateFlow(false)
+    val isUploadingPicture = _isUploadingPicture.asStateFlow()
+
+    private val _uploadError = MutableStateFlow<String?>(null)
+    val uploadError = _uploadError.asStateFlow()
 
     init{
         loadProfile()
@@ -37,6 +49,34 @@ class ProfileViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun uploadProfilePicture(uri: Uri){
+        viewModelScope.launch {
+            _uploadError.value = null
+            _isUploadingPicture.value = true
+            try{
+                val part = ImageUploadUtils.uriToMultipart(context, uri, "image")
+
+                repository.uploadProfilePicture(part).fold(
+                    onSuccess = { loadProfile() },
+                    onFailure = { exception ->
+                        _uploadError.value = when (exception){
+                            is ApiException -> exception.errorMessage?: "Failed to upload profile picture"
+                            else -> exception.message?: "Unknown error"
+                        }
+                    }
+                )
+            }catch (e: IllegalArgumentException){
+                _uploadError.value = e.message ?: "Invalid image"
+            }finally {
+                _isUploadingPicture.value = false
+            }
+        }
+    }
+
+    fun clearUploadError(){
+        _uploadError.value = null
     }
 
     sealed class UiState{

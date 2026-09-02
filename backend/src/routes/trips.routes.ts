@@ -1251,6 +1251,8 @@ trips_router.get("/shared_with_me", verify_token, create_user_based_limiter(), t
  *             example:
  *               error: INTERNAL_SERVER_ERROR
  */
+trips_router.get("/:trip_id/shares", verify_token, create_user_based_limiter(), trips_controller.get_all_active_shares);
+trips_router.delete("/:trip_id/shares/:contact_id", verify_token, create_user_based_limiter(), trips_controller.revoke_trip_shares);
 trips_router.patch("/:trip_id/end_trip",verify_token, create_user_based_limiter(), trips_controller.end_trip);
 
 /**
