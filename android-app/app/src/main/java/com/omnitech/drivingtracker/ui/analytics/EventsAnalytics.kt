@@ -46,8 +46,11 @@ import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.patrykandpatrick.vico.compose.cartesian.data.columnModel
+import androidx.compose.runtime.getValue
 
 data class EventStat(
     val label: String,
@@ -55,15 +58,17 @@ data class EventStat(
     val description: String
 )
 @Composable
-fun EventsAnalytics(navController: NavController ?= null){
+fun EventsAnalytics(navController: NavController ?= null,
+                    viewModel: AnalyticsViewModel = hiltViewModel()
+){
+    val uiState by viewModel.uiState.collectAsState()
 
-    val perTripCounts = listOf(1,0,2,1,0,1,1)
+
     val eventStats = listOf(
-        EventStat("Harsh Acceleration", 2, "Accelerating faster " +
+        EventStat("Harsh Acceleration", uiState.accelerationEvents, "Accelerating faster " +
                 "than your normal driving"),
-        EventStat("Harsh Braking",6,"Unsafe, sudden braking on trips.")
+        EventStat("Harsh Braking",uiState.brakingEvents,"Unsafe, sudden braking on trips.")
     )
-    val totalEvents = eventStats.sumOf { it.count }
 
     AnalyticsHeader(
         leftWord = "Events ",
@@ -71,12 +76,12 @@ fun EventsAnalytics(navController: NavController ?= null){
         navController = navController
     ){
         item{
-            TotalEvents(totalEvents)
+            TotalEvents(uiState.eventCount ?: 0)
             Spacer(modifier = Modifier.height(6.dp))
         }
 
         item{
-            EventsChart(perTripCounts)
+            EventsChart(uiState.eventHistory)
             Spacer(modifier = Modifier.height(4.dp))
         }
 
