@@ -72,7 +72,10 @@ fun Dashboard(navController: NavController? = null,
                 Box(
                     modifier = Modifier
                         .weight(1.3f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .clickable{
+                            navController?.navigate(Screen.Analytics.route)
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     ScoreCard(score = uiState.overallScore)
