@@ -199,7 +199,61 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR' }));
         });
     });
+    describe("Get all active shares endpoint", ()=>{
+        it('Returns 200 and the list of active shares', async()=>{
+            const mock_shares = [
+                { share_id: 's1', contact: { contact_id: 'c1', name: 'Jane', email: 'jane@example.com' } },
+                { share_id: 's2', contact: { contact_id: 'c2', name: 'Bob', email: 'bob@example.com' } },
+            ];
+            jest.spyOn(trips_services,"get_trip_shares").mockResolvedValueOnce(mock_shares as any);
 
+            const req: any = {
+                user: {sub: 'user-1'},
+                params:{ trip_id: 't1'},
+            };
+            const res: any = make_res();
+            await trips_controller.get_all_active_shares(req,res);
+
+            expect(trips_services.get_trip_shares).toHaveBeenLastCalledWith('user-1','t1');
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ data: mock_shares}));
+        });
+        it('Return 402 when user is unauthenticated', async ()=>{
+            const req: any = {
+                user:{sub: null},
+                params: { trip_id: 't1'},
+            };
+            const res: any  = make_res();
+            await trips_controller.get_all_active_shares(req,res);
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error:"UNAUTHORIZED"}));
+            expect(trips_services.get_trip_shares).not.toHaveBeenCalled();
+        });it('Returns 403 when trip is not found or not owen by the user', async () =>{
+            jest.spyOn(trips_services,'get_trip_shares').mockRejectedValueOnce(new Error('trip not found or You do not own this trip'));
+            const req: any = {
+                user: {sub: 'user-1'},
+                params:{ trip_id: 't1'}
+            };
+            const res: any = make_res();
+
+            await trips_controller.get_all_active_shares(req,res);
+            expect(res.status).toHaveBeenCalledWith(403);
+        });
+        it('Returns 500 on unexpected error', async ()=>{
+            jest.spyOn(trips_services, 'get_trip_shares').mockRejectedValueOnce(new Error('Db crash'));
+
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1' },
+            };
+            const res: any = make_res();
+
+            await trips_controller.get_all_active_shares(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+        })
+
+    })
     describe('Record trip end point',()=>{
         it('Returns 201 on successful call', async()=>{
             jest.spyOn(trips_services,'record').mockResolvedValueOnce(undefined);
