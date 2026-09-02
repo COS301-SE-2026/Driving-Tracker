@@ -1126,16 +1126,44 @@ describe('Trips endpoints unit tests', ()=>{
     });
 
      describe('Unusual duration event endpoint', ()=>{
+        const baseReq = (overrides: any = {}) =>({
+            user: { sub: 'user-1' },  
+                params: { trip_id: 'trip-1'},
+                body: { expected_seconds: 1000, moving_seconds: 1500},
+                ...overrides,
+        });
+
+        const expectError = async (
+            req: any,
+            mockError: Error,
+            expectedStatus: number,
+            expectedError: string,
+            expectedMessage?: string
+        ) => {
+            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(mockError);
+
+            const res: any = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+            };
+
+            await trips_controller.alert_unusual_trip_duration(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(expectedStatus);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    error: expectedError,
+                    ...(expectedMessage ? { message: expectedMessage }: {}),
+                })
+            );
+        };
+
         it('returns 200 when duration event is logged and notifications sent successfully', async()=>{
             const mock_result ='Unusual trip duration notifications successfully sent';
 
             jest.spyOn(trips_services,'alert_unusual_trip_duration').mockResolvedValueOnce(mock_result as any);
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: 1000, moving_seconds: 1500},
-            };
+            const req: any = baseReq();
             const res: any = make_res();
 
             await trips_controller.alert_unusual_trip_duration(req, res);
@@ -1151,11 +1179,7 @@ describe('Trips endpoints unit tests', ()=>{
         });
 
          it('Returns 401 when user unauthenticated', async()=>{
-            const req: any = {
-                user: { sub: null },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: 1000, moving_seconds: 1500},
-            };
+            const req: any = baseReq();
 
             const res: any = make_res();
 
@@ -1164,87 +1188,56 @@ describe('Trips endpoints unit tests', ()=>{
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to log unusual duration event"}));
         });
 
-        it('Returns 422 when expected_seconds greater than moving_seconds', async () => {
-            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(new Error('Expected greater than moving'));
+        it.each([
+            [
+                'expected_seconds greater than moving_seconds',
+                { expected_seconds: 1500, moving_seconds: 1000 },
+                422,
+                'INVALID_PARAMETERS',
+                'Moving seconds cannot be greater than expected',
+            ],
+            [
+                'expected_seconds invalid',
+                { expected_seconds: -1000, moving_seconds: 1000 },
+                422,
+                'INVALID_EXPECTED_SECONDS',
+                'Expected_seconds missing or invalid',
+            ],
+            [
+                'moving_seconds invalid',
+                { expected_seconds: 1000, moving_seconds: -1000 },
+                422,
+                'INVALID_MOVING_SECONDS',
+                'Moving_seconds missing or invalid',
+            ],
+            [
+                'user not found',
+                { user: { sub: 'user-1' } },
+                403,
+                'USER_NOT_FOUND',
+                'User not found',
+            ],
+        ])('returns the correct response for %s', async (_, body, status, error, message)=>{
+            const req: any = baseReq({
+                ...(typeof body === 'object' && body && 'user' in body ? body : { body }),
+            });
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: 1500, moving_seconds: 1000},
-            };
-            const res: any = make_res();
-
-            await trips_controller.alert_unusual_trip_duration(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(422);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_PARAMETERS', message: 'Moving seconds cannot be greater than expected'}));
-        });
-
-        it('Returns 422 when expected_seconds invalid', async () => {
-            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(new Error('expected_seconds invalid'));
-
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: -1000, moving_seconds: 1000},
-            };
-            const res: any = make_res();
-
-            await trips_controller.alert_unusual_trip_duration(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(422);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_EXPECTED_SECONDS', message: 'Expected_seconds missing or invalid'}));
-        });
-
-        it('Returns 422 when moving_seconds invalid', async () => {
-            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(new Error('moving_seconds invalid'));
-
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: 1000, moving_seconds: -1000},
-            };
-            const res: any = make_res();
-
-            await trips_controller.alert_unusual_trip_duration(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(422);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_MOVING_SECONDS', message: 'Moving_seconds missing or invalid'}));
-        });
-
-         it('Returns 403 when the user is not found', async () => {
-            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(new Error('user not found'));
-
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'event-1'},
-                body: { expected_seconds: 1000, moving_seconds: 1500},
-            };
-            const res: any = make_res();
-
-            await trips_controller.alert_unusual_trip_duration(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(403);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'User not found'}));
-        });
-
-        it('Returns 500 on unexpected error', async () => {
-            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(new Error('Db crash'));
-
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { trip_id: 'trip-1'},
-                body: { expected_seconds: 1000, moving_seconds: 1500},
-            };
-            const res: any = make_res();
-
-            await trips_controller.alert_unusual_trip_duration(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not successfully log unusual duration'}));
+            await expectError(
+                req,
+                new Error(
+                    message === 'User not found'
+                        ? 'user not found'
+                        : message === 'Moving seconds cannot be greater than expected'
+                        ? 'Expected greater than moving'
+                        : message === 'Expected_seconds missing or invalid'
+                        ? 'expected_seconds invalid'
+                        : 'moving_seconds invalid'
+                ),
+                status,
+                error,
+                message
+            );
         });
     });
-
-
 
 });
