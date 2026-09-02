@@ -596,6 +596,13 @@ export const alert_unusual_trip_duration = async (req: AuthRequest, res: Respons
 
     } catch(error: any){
 
+        if (error.message.includes("user not found")){
+            return res.status(403).json({ 
+                error: "USER_NOT_FOUND", 
+                message: "User not found" 
+            });
+        }
+
         if (error.message.includes("Expected greater than moving")){
             res.status(422).json({ 
                 error: "INVALID_PARAMETERS", 
@@ -610,7 +617,7 @@ export const alert_unusual_trip_duration = async (req: AuthRequest, res: Respons
             });
         }
 
-        if (error.message.includes("movings_seconds invalid")){
+        if (error.message.includes("moving_seconds invalid")){
             res.status(422).json({ 
                 error: "INVALID_MOVING_SECONDS", 
                 message: "Moving_seconds missing or invalid" 

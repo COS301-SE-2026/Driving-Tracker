@@ -1227,11 +1227,11 @@ export const trips_services ={
             throw new Error("user not found");
         }
 
-		if(!Number.isFinite(expected_seconds)){
+		if(!Number.isFinite(expected_seconds) || expected_seconds < 0){
 			throw new Error('expected_seconds invalid');
 		}
 
-		if(!Number.isFinite(moving_seconds)){
+		if(!Number.isFinite(moving_seconds) || moving_seconds < 0){
 			throw new Error('moving_seconds invalid');
 		}
 
@@ -1264,7 +1264,7 @@ export const trips_services ={
             
             await add_notification({
                 user_ids: contact_user_ids,
-                type: "UNUSUAL_DURATION",
+                type: "TRIP_ALERT",
                 title: "Unusual Duration",
                 body: message,
                 reference_ids: event_ids,
