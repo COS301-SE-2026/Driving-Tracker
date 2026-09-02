@@ -45,6 +45,39 @@ describe('notification_services', () => {
         });
     });
 
+    it('returns without sending when no FCM tokens are provided', async () => {
+        await notification_services.send_trusted_contact_request_notification(
+            [], 'John Doe', 'c1'
+        );
+
+        await notification_services.send_trusted_contact_response_notification(
+            [], 'John Doe', 'APPROVED' as any
+        );
+
+        await notification_services.send_trip_shared_notification(
+            [], 'John Doe', 't1'
+        );
+
+        await notification_services.send_trip_alert_notification(
+            [], 't1', 'HARSH_BRAKE', 'Harsh brake detected'
+        );
+
+        await notification_services.send_general_notification(
+            [], 'General Update', 'Message Body'
+        );
+
+        await notification_services.send_badge_notification(
+            [], 'Badge Unlocked', 'You earned a new badge', 'b1', 'icon.png'
+        );
+
+        await notification_services.send_unexpected_stop_notification(
+            [], 't1', 'event-1', 'Unexpected stop occurred'
+        );
+
+        expect(mockGetMessaging).not.toHaveBeenCalled();
+        expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+    });
+
     describe('send_trusted_contact_request_notification', () => {
         it('sends the trusted contact request notification', async () => {
             mockSendEachForMulticast.mockResolvedValue(undefined);
