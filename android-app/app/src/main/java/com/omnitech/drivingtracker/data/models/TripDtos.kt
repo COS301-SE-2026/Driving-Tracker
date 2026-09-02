@@ -165,7 +165,20 @@ data class TripScoreDto(
 data class TripSummaryResponse(
     val data: TripSummaryDto
 )
-
+data class TripSharesResponse(
+    val data: List<TripShareDto>
+)
+data class TripShareDto(
+    @SerializedName("share_id")
+    val shareId: String,
+    val contact: ContactDetailDto
+)
+data class ContactDetailDto(
+    @SerializedName("contact_id")
+    val contactId: String,
+    val name: String,
+    val email: String?,
+)
 data class TripSummaryDto(
     @SerializedName("trip_id")
     val tripId: String,
