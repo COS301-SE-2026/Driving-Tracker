@@ -5,7 +5,9 @@
 
 */
 -- AlterTable
-ALTER TABLE "trips" ADD COLUMN     "fuel_consumed" DECIMAL(10,4);
+ALTER TABLE "trips" ADD COLUMN IF NOT EXISTS "fuel_consumed" DECIMAL(10,4);
+
+UPDATE "vehicles" SET "fuel_tank" = 60 WHERE "fuel_tank" IS NULL;
 
 -- AlterTable
 ALTER TABLE "vehicles" ADD COLUMN     "engine_type" VARCHAR(100),

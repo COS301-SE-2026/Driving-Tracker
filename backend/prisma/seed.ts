@@ -67,6 +67,7 @@ async function main() {
                 model: 'M3',
                 year: 2024,
                 fuel_type: 'PETROL',
+                fuel_tank: 60,
             }
         });
         await prisma.users_vehicles.create({
