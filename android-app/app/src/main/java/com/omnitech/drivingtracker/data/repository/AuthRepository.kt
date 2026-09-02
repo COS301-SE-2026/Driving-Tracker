@@ -16,6 +16,7 @@ import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.ProfileData
 import com.omnitech.drivingtracker.data.models.ResetPasswordRequest
+import okhttp3.MultipartBody
 import com.omnitech.drivingtracker.data.models.DeleteAccountRequest
 
 class AuthRepository @Inject constructor(
@@ -145,6 +146,16 @@ class AuthRepository @Inject constructor(
         Result.failure(e)
     }
 
+    suspend fun uploadProfilePicture(imagePart : MultipartBody.Part) : Result<String> = try{
+        val response = api.uploadProfilePicture(imagePart)
+        Result.success(response.data.profilePictureUrl)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to upload profile picture"))
+    }catch(e: Exception){
+        Result.failure(e)
+    }
+    
     suspend fun deleteAccount(password: String): Result<Unit>{
         return try{
             api.deleteAccount(DeleteAccountRequest(password))
