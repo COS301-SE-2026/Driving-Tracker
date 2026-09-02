@@ -80,6 +80,25 @@ export const notification_services= {
         })
 
     },
+    //sends notification for revoked access 
+    async send_trip_revoked_notification(fcm_tokens: string[],shared_by: string, trip_id: string){
+        if(fcm_tokens.length == 0 )return;
+
+        await getMessaging().sendEachForMulticast({
+            tokens: fcm_tokens,
+            notification:{
+                title:"Trip access revoked",
+                body: `${shared_by}  is no longer sharing their live trip locationwith you `
+            },
+            data:{
+                type: "TRIP_REVOKED",
+                trip_id,
+                shared_by
+            }
+        }).catch((err: any)=>{
+            console.error("Failed to send trip revoked notification: ",err.message);
+        })
+    },
     //sends push notification for trip related alerts
     async send_trip_alert_notification(fcm_tokens: string[], trip_id: string, alert_type: string, message: string){
 

@@ -605,19 +605,42 @@ export const trips_services ={
         })
     },
     async revoke_share(user_id: string, contact_id:string, trip_id: string){
-        const trip = await prisma.trips.findUnique({
-            where:{trip_id,user_id},
-            select:{ user_id: true}
-        });
-        if(!trip) throw new Error("trip not found or You do not own this trip");
-        
-        return await prisma.trip_location_shares.deleteMany({
-            where:{
-                trip_id,
-                contact_id,
-                owner_user_id:user_id
+        const share = await prisma.trip_location_shares.findFirst({
+            where:{ trip_id, contact_id, owner_user_id:user_id},
+            include:{
+                owner:{select:{
+                    username: true, name:true,
+                    surname: true
+                }},
+                contact:{select:{contact_user_id:true}}
             }
         });
+        if (!share) {
+            throw new Error("Share record not found or you do not own this trip");
+        }
+        const contact_user_id = share?.contact.contact_user_id;
+        const owner_name = `${share?.owner.name ?? ""} ${share?.owner.surname ?? ""}`.trim() || share?.owner.username;
+        await prisma.trip_location_shares.delete({
+            where: { share_id: share?.share_id }
+        });
+
+        //Add In-App Notification for the contact
+        await add_notification({
+            user_ids: [contact_user_id],
+            type: "GENERAL",
+            title: "Trip Access Revoked",
+            body: `${owner_name} has stopped sharing their trip with you.`,
+            reference_ids: [trip_id],
+            reference_type: "trips"
+        });
+
+        // Send Push Notification
+        const tokens = await user_devices_services.get_multiple_users_fcm_tokens([contact_user_id]);
+        await notification_services.send_trip_revoked_notification(tokens, owner_name, trip_id);
+
+        return { success: true };
+
+
     },
 
     async record(data:record_data){//consistent trip update endpoint 

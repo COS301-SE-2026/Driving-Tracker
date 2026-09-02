@@ -131,8 +131,8 @@ export const revoke_trip_shares = async(req: AuthRequest, res: Response)=>{
         if(!user_id){
             return res.status(403).json({error: "UNAUTHORIZED"});
         }
-        const revoke = await trips_services.revoke_share(user_id,contact_id,trip_id);
-        return res.status(200).json({ revoke});
+        await trips_services.revoke_share(user_id,contact_id,trip_id);
+        return res.status(200).json({ message: "SUCCESSFUL"});
     }catch(error: any){
         if(error.message ==="trip not found or You do not own this trip" ){
             return res.status(403).json({
