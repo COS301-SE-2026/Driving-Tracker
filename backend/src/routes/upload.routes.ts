@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { verify_token } from "../middleware/auth";
-import { user_based_limiter } from "../middleware/rate_limit";
+import { create_user_based_limiter } from "../middleware/rate_limit";
 import { upload } from "../middleware/upload";
 import { upload_controller } from "../controllers/upload.controller";
 
@@ -25,9 +25,9 @@ function handle_single_upload(field_name: string){
     };
 }
 
-router.post("/profile", user_based_limiter, verify_token, handle_single_upload("image"),
+router.post("/profile", create_user_based_limiter(), verify_token, handle_single_upload("image"),
 upload_controller.upload_profile_picture);
-router.post("/vehicle/:vehicle_id", user_based_limiter, verify_token, handle_single_upload("image"),
+router.post("/vehicle/:vehicle_id", create_user_based_limiter(), verify_token, handle_single_upload("image"),
 upload_controller.upload_vehicle_image);
 
 router.get("/profile-picture/:user_id", verify_token, upload_controller.get_profile_picture);
