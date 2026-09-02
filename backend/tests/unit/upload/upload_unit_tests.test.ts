@@ -4,6 +4,7 @@ import { blob_storage_service } from '../../../src/services/blob_storage_service
 import { auth_services } from '../../../src/services/auth_services';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 import { ExtendedError } from '../../../src/utils/errors';
+import { blob } from 'stream/consumers';
 
 describe('Upload controller', () => {
 	beforeEach(() => {
@@ -231,6 +232,64 @@ describe('Upload controller', () => {
 				error: 'FORBIDDEN',
 				message: 'You do not own this vehicle'
 			});
+		});
+	});
+
+	describe('upload_profile_picture errors', () => {
+		it('returns 404 when user is not found', async () => {
+			jest.spyOn(blob_storage_service, 'upload_image').mockResolvedValueOnce('img.png');
+			jest.spyOn(auth_services, 'update_profile_picture').mockRejectedValueOnce(
+				new ExtendedError("User not found", "USER_NOT_FOUND")
+			);
+
+			const req: any = { user: { sub: 'user-1' }, file: { buffer: Buffer.from(''), mimetype: 'image/png'}};
+			const json = jest.fn();
+			const res: any = { status: jest.fn().mockReturnValue({ json })};
+
+			await upload_controller.upload_profile_picture(req, res);
+			expect(res.status).toHaveBeenCalledWith(404);
+		});
+
+		it('returns 500 on unexpected failure', async () => {
+			jest.spyOn(blob_storage_service, 'upload_image').mockRejectedValueOnce(new Error('Storage down'));
+
+			const req: any = { user: { sub: 'user-1' }, file: { buffer: Buffer.from(''), mimetype: 'image/png'}};
+			const json = jest.fn();
+			const res: any = { status: jest.fn().mockReturnValue({ json })};
+
+			await upload_controller.upload_profile_picture(req, res);
+			expect(res.status).toHaveBeenCalledWith(500);
+		});
+	});
+
+	describe('get_profile_picture', () => {
+		it('pipes the blob stream to the response', async () => {
+			jest.spyOn(auth_services, 'get_profile_picture_blob_name').mockResolvedValueOnce('blob-123.png');
+			const pipe = jest.fn();
+			jest.spyOn(blob_storage_service, 'download').mockResolvedValueOnce({
+				stream: { pipe } as any,
+				content_Type: 'image/png',
+				content_length: 5000
+			});
+			
+
+			const req: any = { user: { sub: 'user-1' }, params: { user_id: 'user-1'}};
+			const res: any = { setHeader: jest.fn() };
+
+			await upload_controller.get_profile_picture(req, res);
+			expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+			expect(pipe).toHaveBeenCalledWith(res);
+		});
+
+		it('returns 404 if no blob name exists', async () => {
+			jest.spyOn(auth_services, 'get_profile_picture_blob_name').mockResolvedValueOnce(null);
+
+			const req: any = { user: { sub: 'user-1' }, params: { user_id: 'user-1'}};
+			const json = jest.fn();
+			const res: any = { status: jest.fn().mockReturnValue({ json })};
+
+			await upload_controller.get_profile_picture(req, res);
+			expect(res.status).toHaveBeenCalledWith(404);
 		});
 	});
 });

@@ -22,6 +22,12 @@ function file_filter(req: unknown, file: Express.Multer.File, callback: FileFilt
 //files kept in memory, then handed to blob
 export const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_FILES_PER_REQUEST },
+    limits: { 
+        fileSize: MAX_FILE_SIZE_BYTES, 
+        files: MAX_FILES_PER_REQUEST, 
+        fieldSize: 1024*1024 ,
+        parts: 5,
+        fieldNameSize: 100
+    },
     fileFilter: file_filter,
 });
