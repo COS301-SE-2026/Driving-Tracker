@@ -292,4 +292,36 @@ describe('Upload controller', () => {
 			expect(res.status).toHaveBeenCalledWith(404);
 		});
 	});
+
+	describe('get_vehicle_image', () => {
+		it('pipes vehicle image stream successfully', async () => {
+			jest.spyOn(vehicle_services, 'get_vehicle_image_blob_name').mockResolvedValueOnce('v-img.png');
+			const pipe = jest.fn();
+			jest.spyOn(blob_storage_service, 'download').mockResolvedValueOnce({
+				stream: { pipe } as any,
+				content_Type: 'image/png',
+				content_length: 1234
+			});
+
+			const req: any = { user: { sub: 'user-1' }, params: { vehicle_id: 'v-1'}};
+			const res: any = { setHeader: jest.fn() };
+
+			await upload_controller.get_vehicle_image(req, res);
+			expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+			expect(pipe).toHaveBeenCalledWith(res);
+		});
+
+		it('returns 403 if user does not own vehicle', async () => {
+			jest.spyOn(vehicle_services, 'get_vehicle_image_blob_name').mockRejectedValueOnce(
+				new Error('You do not own this vehicle')
+			);
+
+			const req: any = { user: { sub: 'user-1' }, params: { vehicle_id: 'v-1'}};
+			const json = jest.fn();
+			const res: any = { status: jest.fn().mockReturnValue({ json })};
+
+			await upload_controller.get_vehicle_image(req, res);
+			expect(res.status).toHaveBeenCalledWith(403);
+		});
+	})
 });
