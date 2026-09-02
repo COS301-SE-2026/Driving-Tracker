@@ -527,6 +527,79 @@ describe('Trips sevice.get_trip_shares', () =>{
         expect(mock_prisma.trip_location_shares.findMany).not.toHaveBeenCalled();
     });
 });
+describe('Trips services.revoke_share', () =>{
+    beforeEach(async () => jest.clearAllMocks());
+    it('Revokes a share, notifies the contact in-app via push', async () => {
+        mock_prisma.trip_location_shares.findFirst.mockResolvedValue({
+            share_id: 's1',
+            owner: { username: 'jsmith', name: 'John', surname: 'Smith'},
+            contact: { contact_user_id: 'u2'},
+        });
+        mock_prisma.trip_location_shares.delete.mockResolvedValue({ share_id: 's1'});
+
+        jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens').mockResolvedValue(['fcm-token-1']);
+        jest.spyOn(notification_services,'send_trip_revoked_notification').mockResolvedValue(undefined);
+        mock_add_notification.mockResolvedValue(undefined);
+        const result = await trips_services.revoke_share('u1', 'c1', 't1');
+
+        expect(mock_prisma.trip_location_shares.findFirst).toHaveBeenCalledWith({
+            where: { trip_id: 't1', contact_id: 'c1', owner_user_id: 'u1' },
+            include: {
+                owner: { select: { username: true, name: true, surname: true } },
+                contact: { select: { contact_user_id: true } },
+            },
+        });
+
+        expect(mock_prisma.trip_location_shares.delete).toHaveBeenCalledWith({
+            where: { share_id: 's1' },
+        });
+
+        expect(mock_add_notification).toHaveBeenCalledWith({
+            user_ids: ['u2'],
+            type: 'GENERAL',
+            title: 'Trip Access Revoked',
+            body: 'John Smith has stopped sharing their trip with you.',
+            reference_ids: ['t1'],
+            reference_type: 'trips',
+        });
+
+        expect(user_devices_services.get_multiple_users_fcm_tokens).toHaveBeenCalledWith(['u2']);
+        expect(notification_services.send_trip_revoked_notification).toHaveBeenCalledWith(
+            ['fcm-token-1'],
+            'John Smith',
+            't1'
+        );
+
+        expect(result).toEqual({ success: true });
+    });
+    it('falls back to username when owner name/surname are missing', async () => {
+        mock_prisma.trip_location_shares.findFirst.mockResolvedValue({
+            share_id: 's1',
+            owner: { username: 'jsmith', name: null, surname: null },
+            contact: { contact_user_id: 'u2' },
+        });
+        mock_prisma.trip_location_shares.delete.mockResolvedValue({ share_id: 's1' });
+
+        jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens')
+            .mockResolvedValue(['fcm-token-1']);
+        jest.spyOn(notification_services, 'send_trip_revoked_notification')
+            .mockResolvedValue(undefined);
+        mock_add_notification.mockResolvedValue(undefined);
+
+        await trips_services.revoke_share('u1', 'c1', 't1');
+
+        expect(mock_add_notification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                body: 'jsmith has stopped sharing their trip with you.',
+            })
+        );
+        expect(notification_services.send_trip_revoked_notification).toHaveBeenCalledWith(
+            ['fcm-token-1'],
+            'jsmith',
+            't1'
+        );
+    });
+})
 describe('Trips services.record', () => {
     beforeEach(async() => jest.clearAllMocks());
 
