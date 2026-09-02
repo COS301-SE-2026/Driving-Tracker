@@ -15,10 +15,10 @@ describe('rate limiting', () =>{
         jest.resetModules();
         const module = await import('../../../src/middleware/rate_limit');
         login_limiter_sliding = module.login_limiter_sliding;
-        user_based_limiter = module.user_based_limiter;
-        trip_reading_limiter = module.trip_reading_limiter;
+        user_based_limiter = module.create_user_based_limiter();
+        trip_reading_limiter = module.create_trip_reading_limiter();
         trip_event_limiter = module.trip_event_limiter;
-        map_token_limiter = module.map_token_limiter;
+        map_token_limiter = module.create_map_token_limiter();
         register_fcm_token_limiter = module.register_fcm_token_limiter;
 
     });

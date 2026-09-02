@@ -39,6 +39,7 @@ import bcrypt from 'bcrypt';
 import { sendAuthEmail } from '../../../src/utils/email';
 import { ValidationError } from '../../../src/utils/errors';
 import { refreshToken } from 'firebase-admin/app';
+import { mock } from 'node:test';
 
 const mock_prisma = prisma as any;
 const mock_bcrypt = bcrypt as any;
@@ -362,5 +363,20 @@ describe('Auth services.reset_password', () => {
         await expect(auth_services.reset_password('', 'Password123!')).rejects.toThrow(ValidationError);
     });
 });
+
+describe('Auth services profile picture', () => {
+    it('updates profile picture blob successfully', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+            profile_picture_url: 'old.jpg'
+        });
+		mock_prisma.users.update.mockResolvedValue({ profile_picture_url: 'new.jpg'});
+
+        const result = await auth_services.update_profile_picture('u1', 'new.jpg');
+
+        expect(result.previous_blob_name).toBe('old.jpg');
+    });
+});
+
 
 

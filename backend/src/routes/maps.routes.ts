@@ -1,7 +1,7 @@
 import { Router } from "express";
 import map_controller from "../controllers/map.controller"
 import { verify_token } from "../middleware/auth";
-import { map_token_limiter, trip_reading_limiter, user_based_limiter } from "../middleware/rate_limit";
+import { create_map_token_limiter, create_trip_reading_limiter, create_user_based_limiter } from "../middleware/rate_limit";
 
 const map_router = Router();
 
@@ -56,7 +56,7 @@ const map_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to retrieve map token
  */
-map_router.get("/token", verify_token, map_token_limiter, map_controller.get_map_token);
+map_router.get("/token", verify_token, create_map_token_limiter(), map_controller.get_map_token);
 
 /**
  * @openapi
@@ -127,7 +127,7 @@ map_router.get("/token", verify_token, map_token_limiter, map_controller.get_map
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to translate address
  */
-map_router.get('/search',verify_token, user_based_limiter, map_controller.search_address);
+map_router.get('/search',verify_token, create_user_based_limiter(), map_controller.search_address);
 
 /**
  * @openapi
@@ -215,7 +215,7 @@ map_router.get('/search',verify_token, user_based_limiter, map_controller.search
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to retrieve route
  */
-map_router.get('/route', verify_token, trip_reading_limiter ,map_controller.suggested_route);
+map_router.get('/route', verify_token, create_trip_reading_limiter() ,map_controller.suggested_route);
 
 /**
  * @openapi
@@ -324,7 +324,7 @@ map_router.get('/route', verify_token, trip_reading_limiter ,map_controller.sugg
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to fetch pois
  */
-map_router.get('/nearby/pois', verify_token, trip_reading_limiter ,map_controller.get_nearby_pois);
+map_router.get('/nearby/pois', verify_token, create_trip_reading_limiter() ,map_controller.get_nearby_pois);
 
 /**
  * @openapi
@@ -406,5 +406,5 @@ map_router.get('/nearby/pois', verify_token, trip_reading_limiter ,map_controlle
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to fetch address
  */
-map_router.get('/address/reverse', verify_token, trip_reading_limiter ,map_controller.get_address_reverse);
+map_router.get('/address/reverse', verify_token, create_trip_reading_limiter() ,map_controller.get_address_reverse);
 export default map_router;

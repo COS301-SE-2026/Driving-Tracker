@@ -1,7 +1,7 @@
 import {Router, request, response } from "express";
 import badge_leaderboard_controller from "../controllers/badges_leaderboard.controller";
 import {verify_token} from '../middleware/auth';
-import { user_based_limiter } from "../middleware/rate_limit";
+import { create_user_based_limiter } from "../middleware/rate_limit";
 
 const badges_leaderBoard_router = Router();
 
@@ -93,7 +93,7 @@ const badges_leaderBoard_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not evaluate badges
  */
-badges_leaderBoard_router.post("/evaluate", verify_token, user_based_limiter, badge_leaderboard_controller.evaluate_badges); 
+badges_leaderBoard_router.post("/evaluate", verify_token, create_user_based_limiter(), badge_leaderboard_controller.evaluate_badges); 
 
 //read basically get
  /**
@@ -139,7 +139,7 @@ badges_leaderBoard_router.post("/evaluate", verify_token, user_based_limiter, ba
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not retrieve badges
  */
-badges_leaderBoard_router.get("/",verify_token, user_based_limiter, badge_leaderboard_controller.get_badges);
+badges_leaderBoard_router.get("/",verify_token, create_user_based_limiter(), badge_leaderboard_controller.get_badges);
 
 /**
  * @openapi
@@ -184,7 +184,7 @@ badges_leaderBoard_router.get("/",verify_token, user_based_limiter, badge_leader
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not retrieve badge definitions
  */
-badges_leaderBoard_router.get("/definitions", verify_token, user_based_limiter, badge_leaderboard_controller.get_badge_definitions);
+badges_leaderBoard_router.get("/definitions", verify_token, create_user_based_limiter(), badge_leaderboard_controller.get_badge_definitions);
 //delete 
 
 //Update 

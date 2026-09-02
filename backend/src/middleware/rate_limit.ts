@@ -5,7 +5,7 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
-export const user_based_limiter = isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
+export const create_user_based_limiter = () => isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
     windowMs: 15*60*1000, //15 minutes
     max: 100, //100 requests
     standardHeaders: true,
@@ -16,7 +16,7 @@ export const user_based_limiter = isTestEnv? (req: any, res: any, next: any) => 
     message: {error: "TOO_MANY_REQUESTS", message: "Too many requests, please try again later" }
 });
 
-export const trip_reading_limiter = isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
+export const create_trip_reading_limiter = () => isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
     windowMs: 60*1000, //1 minute
     max: 30, //30 requests (about 1 every 2 seconds)
     standardHeaders: true,
@@ -38,7 +38,7 @@ export const trip_event_limiter = isTestEnv? (req: any, res: any, next: any) => 
     message: {error: "TOO_MANY_REQUESTS", message: "Too many requests, please try again later" }
 });
 
-export const map_token_limiter = isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
+export const create_map_token_limiter = () => isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
     windowMs: 15*60*1000,
     max: 30,
     standardHeaders: true,
