@@ -13,6 +13,7 @@ import user_devices_router from './routes/user_devices.routes';
 import map_router from './routes/maps.routes';
 import notifications_router from './routes/notifications.routes';
 import upload_router from './routes/upload.routes';
+import user_router from './routes/user.routes';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
@@ -64,5 +65,6 @@ app.use('/devices', user_devices_router);
 app.use('/map', map_router);
 app.use('/notifications', notifications_router);
 app.use('/upload', upload_router);
+app.use('/users', user_router);
 
 export default app;

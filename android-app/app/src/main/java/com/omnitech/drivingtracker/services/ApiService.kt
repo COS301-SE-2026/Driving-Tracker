@@ -197,4 +197,9 @@ interface ApiService{
     @GET("vehicle/fuel_analytics")
     suspend fun getFuelAnalytics(): FuelAnalyticsDto
 
+
+    @POST("users/me/delete")
+    suspend fun deleteAccount(
+        @Body request: DeleteAccountRequest
+    )
 }
