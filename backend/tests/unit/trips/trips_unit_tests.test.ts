@@ -5,6 +5,25 @@ import * as trips_controller from '../../../src/controllers/trips.controller';
 import { trips_services } from '../../../src/services/trips_services';
 import { ExtendedError } from '../../../src/utils/errors';
 
+function getReadingItem(){
+
+    return {
+            recorded_at: new Date().toISOString(),
+            data_source: 'gps',
+            location: { lat: 0, lon: 0 },
+            speed_kmh: 76,
+            accelerometer: 2.2,
+            gyroscope_x: 0,
+            gyroscope_y: 0,
+            gyroscope_z: 0,
+            rpm: 1500,
+            coolant_temp: 80,
+            fuel_trim_percent: 7,
+            throttle_position: 80,
+            dtc_codes: [],
+        }
+}
+
 describe('Trips endpoints unit tests', ()=>{
     beforeEach(async () => jest.resetAllMocks());
 
@@ -376,36 +395,8 @@ describe('Trips endpoints unit tests', ()=>{
 				params: { trip_id: 't1' },
                 body: {
                     readings: [
-                        {
-                            recorded_at: new Date().toISOString(),
-                            data_source: 'gps',
-                            location: { lat: 0, lon: 0 },
-                            speed_kmh: 76,
-                            accelerometer: 2.2,
-                            gyroscope_x: 0,
-                            gyroscope_y: 0,
-                            gyroscope_z: 0,
-                            rpm: 1500,
-                            coolant_temp: 80,
-                            fuel_trim_percent: 7,
-                            throttle_position: 80,
-                            dtc_codes: [],
-                        },
-                        {
-                            recorded_at: new Date().toISOString(),
-                            data_source: 'OBD',
-                            location: { lat: 0, lon: 0 },
-                            speed_kmh: 60,
-                            accelerometer: 1.2,
-                            gyroscope_x: 0,
-                            gyroscope_y: 0,
-                            gyroscope_z: 0,
-                            rpm: 3000,
-                            coolant_temp: 90,
-                            fuel_trim_percent: 5,
-                            throttle_position: 50,
-                            dtc_codes: [],
-                        },
+                        getReadingItem(),
+                        getReadingItem(),
                     ]
                     
                 },
@@ -425,36 +416,8 @@ describe('Trips endpoints unit tests', ()=>{
             jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('Trip not found'));
             const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
                 readings: [
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'obd',
-                        location: { lat: 26, lon: -46 },
-                        speed_kmh: 90,
-                        accelerometer: 1.8,
-                        gyroscope_x: 0,
-                        gyroscope_y: 20,
-                        gyroscope_z: 0,
-                        rpm: 1000,
-                        coolant_temp: 100,
-                        fuel_trim_percent: 1,
-                        throttle_position: 20,
-                        dtc_codes: [],
-                    },
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'OBD',
-                        location: { lat: 0, lon: 0 },
-                        speed_kmh: 60,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 0,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
+                    getReadingItem(),
+                    getReadingItem(),
                 ]} };
 
             const res: any = make_res();
@@ -490,36 +453,8 @@ describe('Trips endpoints unit tests', ()=>{
             jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('You do not own this trip'));
             const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
                 readings: [
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'gps',
-                        location: { lat: 27, lon: -29 },
-                        speed_kmh: 85,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 10,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'OBD',
-                        location: { lat: 23, lon: -25 },
-                        speed_kmh: 47,
-                        accelerometer: 1.2,
-                        gyroscope_x: 23,
-                        gyroscope_y: 0,
-                        gyroscope_z: 9,
-                        rpm: 6200,
-                        coolant_temp: 60,
-                        fuel_trim_percent: 12,
-                        throttle_position: 23,
-                        dtc_codes: [],
-                    },
+                    getReadingItem(),
+                    getReadingItem(),
                 ]} };
 
             const res: any = make_res();
@@ -533,36 +468,8 @@ describe('Trips endpoints unit tests', ()=>{
 			//mocking error that doesnt match any if/else block
 			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
 			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: { readings: [
-                {
-                    recorded_at: new Date().toISOString(),
-                    data_source: 'gps',
-                    location: { lat: 17, lon: -25 },
-                    speed_kmh: 67,
-                    accelerometer: 5.4,
-                    gyroscope_x: 0,
-                    gyroscope_y: 0,
-                    gyroscope_z: 9,
-                    rpm: 1350,
-                    coolant_temp: 82,
-                    fuel_trim_percent: 9,
-                    throttle_position: 47,
-                    dtc_codes: [],
-                },
-                {
-                    recorded_at: new Date().toISOString(),
-                    data_source: 'OBD',
-                    location: { lat: -14, lon: 20 },
-                    speed_kmh: 60,
-                    accelerometer: 1.2,
-                    gyroscope_x: 23,
-                    gyroscope_y: 0,
-                    gyroscope_z: 0,
-                    rpm: 2780,
-                    coolant_temp: 60,
-                    fuel_trim_percent: 8,
-                    throttle_position: 32,
-                    dtc_codes: [],
-                },
+                getReadingItem(),
+                getReadingItem(),
             ]}};
 			const res: any = make_res();
 
