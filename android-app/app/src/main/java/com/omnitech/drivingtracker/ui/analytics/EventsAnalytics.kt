@@ -46,6 +46,7 @@ import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import androidx.compose.foundation.lazy.items
+import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.patrykandpatrick.vico.compose.cartesian.data.columnModel
 
 data class EventStat(
@@ -64,61 +65,42 @@ fun EventsAnalytics(navController: NavController ?= null){
     )
     val totalEvents = eventStats.sumOf { it.count }
 
-    Scaffold(
-        topBar = {
-            YourTopBar(
-                leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                rightIcon = Icons.Default.Settings,
-                leftWord = "Trip ",
-                rightWord = "Events",
-                onLeftClick = { navController?.popBackStack()},
-                onRightClick = {navController?.navigate(Screen.Settings.route)}
-            )
+    AnalyticsHeader(
+        leftWord = "Events ",
+        rightWord = "Analytics",
+        navController = navController
+    ){
+        item{
+            TotalEvents(totalEvents)
+            Spacer(modifier = Modifier.height(6.dp))
         }
-    ) {
-            paddingValues->
-        Box(
-            modifier = Modifier.fillMaxSize()
-                .padding(paddingValues)
-        ){
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item{
-                    TotalEvents(totalEvents)
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
 
-                item{
-                    EventsChart(perTripCounts)
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
+        item{
+            EventsChart(perTripCounts)
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
-                item{
-                    Text(
-                        text = "Breakdown",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
+        item{
+            Text(
+                text = "Breakdown",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
-                items(eventStats){ stat->
-                    EventsValuesCard(stat)
-                }
+        items(eventStats){ stat->
+            EventsValuesCard(stat)
+        }
 
-                item{
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
+        item{
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
-                item{
-                    AboutEvents()
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
+        item{
+            AboutEvents()
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }

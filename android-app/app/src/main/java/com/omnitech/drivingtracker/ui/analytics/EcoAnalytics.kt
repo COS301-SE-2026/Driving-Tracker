@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 
@@ -59,59 +60,40 @@ fun EcoAnalytics(navController: NavController ?= null){
     val ecoScore = 85
     val scoreHistory = listOf(80f,84f,79f,45f,78f,98f)
 
-    Scaffold(
-        topBar = {
-            YourTopBar(
-                leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
-                rightIcon = Icons.Default.Settings,
-                leftWord = "Eco ",
-                rightWord = "Analytics",
-                onLeftClick = { navController?.popBackStack()},
-                onRightClick = {navController?.navigate(Screen.Settings.route)}
+    AnalyticsHeader(
+        leftWord = "Eco ",
+        rightWord = "Analytics",
+        navController = navController
+    ) {
+        item{
+            ScoreCard(score = ecoScore ?: 0)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item{
+            ScoreChart(title = "Eco Score over time", values = scoreHistory)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item{
+            QuestionItem(
+                question = "Eco driving recommendations",
+                answer = "Try smoother acceleration, less harsh breaking" +
+                        ", keeping a steady speed and releasing the accelerator " +
+                        "when approaching a red light."
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item{
+            QuestionItem(
+                question = "How is my Eco Score Calculated?",
+                answer = "Your Eco Score looks at fuel-efficient driving " +"patterns. " +
+                        "If your fuel efficiency is good, you will have a better eco score."
             )
         }
-    ) {
-            paddingValues->
-        Box(
-            modifier = Modifier.fillMaxSize()
-                .padding(paddingValues)
-        ){
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item{
-                    ScoreCard(score = ecoScore ?: 0)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
 
-                item{
-                    ScoreChart(title = "Eco Score over time", values = scoreHistory)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item{
-                    QuestionItem(
-                        question = "Eco driving recommendations",
-                        answer = "Try smoother acceleration, less harsh breaking" +
-                                ", keeping a steady speed and releasing the accelerator " +
-                                "when approaching a red light."
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item{
-                    QuestionItem(
-                        question = "How is my Eco Score Calculated?",
-                        answer = "Your Eco Score looks at fuel-efficient driving " +"patterns. " +
-                                "If your fuel efficiency is good, you will have a better eco score."
-                    )
-                }
-
-                item{Spacer(modifier = Modifier.height(8.dp))}
-            }
-        }
+        item{Spacer(modifier = Modifier.height(8.dp))}
     }
 }
 
