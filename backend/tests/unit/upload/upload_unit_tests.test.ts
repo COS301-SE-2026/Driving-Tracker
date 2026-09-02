@@ -4,7 +4,6 @@ import { blob_storage_service } from '../../../src/services/blob_storage_service
 import { auth_services } from '../../../src/services/auth_services';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 import { ExtendedError } from '../../../src/utils/errors';
-import { blob } from 'stream/consumers';
 
 describe('Upload controller', () => {
 	beforeEach(() => {
