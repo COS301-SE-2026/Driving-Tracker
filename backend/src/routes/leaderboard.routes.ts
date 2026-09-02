@@ -2,6 +2,7 @@ import { Router } from 'express';
 import leaderboard_controller from '../controllers/leaderboard.controller';
 import { verify_token } from '../middleware/auth';
 import { user_based_limiter } from '../middleware/rate_limit';
+import { get_fuel_leaderboard } from "../controllers/fuel_leaderboard.controller";
 
 const leaderboard_router = Router();
 
@@ -166,5 +167,90 @@ leaderboard_router.get('/categories', verify_token, user_based_limiter, leaderbo
  *               message: Could not retrieve scopes
  */
 leaderboard_router.get('/scopes', verify_token, user_based_limiter, leaderboard_controller.get_scopes);
+
+/**
+ * @openapi
+ * /api/leaderboard/fuel:
+ *   get:
+ *    tags:
+ *      - Leaderboard
+ *    summary: Get fuel efficiency leaderboard for a specific vehicle
+ *    description: Compare your fuel consumption against other drivers with the same vehicle
+ *    parameters: 
+ *      - in: query
+ *        name: vehicleId
+ *        required: true
+ *        schema:
+ *          type: string
+ *          format: uuid
+ *        description: The vehicle ID to get leaderboard for
+ *      - in: query
+ *        name: timeframeDays
+ *        required: false
+ *        schema:
+ *          type: integer
+ *          default: 30
+ *          minimum: 1
+ *          maximum: 3650
+ *        description: Number of days to look back for trip data
+ *    responses: 
+ *      200:
+ *        description: Fuel leaderboard retrieved successfully
+ *        content: 
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                vehicle:
+ *                  type: object
+ *                  properties:
+ *                    vehicle:
+ *                      type: object
+ *                      properties:
+ *                        make:
+ *                          type: string
+ *                        model:
+ *                          type: string
+ *                        year:
+ *                          type: integer
+ *                        engineType:
+ *                          type: string
+ *                    manufacturerStandardL100km:
+ *                      type: number
+ *                    userEfficiencyL100km:
+ *                      type: number
+ *                    userRank:
+ *                      type: integer
+ *                    userPercentile:
+ *                      type: number
+ *                    totalPeers:
+ *                      type: integer
+ *                    leaderboard:
+ *                      type: array
+ *                      items:
+ *                        type: object
+ *                        properties:
+ *                          rank:
+ *                            type: integer
+ *                          displayName:
+ *                            type: string
+ *                          efficiencyL100km:
+ *                            type: number
+ *                          isCurrentUser:
+ *                            type: boolean
+ *      400:
+ *        description: Missing or invalid vehicleId or timeframeDays
+ *      401:
+ *        description: User not authenticated
+ *      403:
+ *        description: userId does not match authenticated user
+ *      404: 
+ *        description: Vehicle not found or not owned by user
+ *      422:
+ *        description: Vehicle missing required specification fields
+ *      500:
+ *        description: Internal server error
+ */
+leaderboard_router.get("/fuel", verify_token, user_based_limiter, get_fuel_leaderboard,);
 
 export default leaderboard_router;
