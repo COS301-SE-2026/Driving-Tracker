@@ -10,6 +10,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 //import androidx.preference.isNotEmpty
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -35,17 +38,16 @@ class ResponsivenessNfrTest{
     @Test
     fun testNavigationResponsiveness_Target200ms(){
         //once a user is logged in start on dashboard
-        composeTestRule.waitUntil(1000){
-            try{
-                composeTestRule.onAllNodesWithTag("topBarLeftButtion").fetchSemanticsNodes().isNotEmpty()
-            }catch (e: Exception){
-                false
-            }
+        composeTestRule.waitUntil(2000){
+            composeTestRule.onAllNodesWithTag("topBarLeftButton").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("topBarLeftButton").performClick()
+        composeTestRule.waitUntil(1000) {
+            composeTestRule.onAllNodesWithText("Vehicles").fetchSemanticsNodes().isNotEmpty()
+        }
         val startTime = System.currentTimeMillis() //timer to see how long navigation takes
 
-        composeTestRule.waitUntil(5000) {
+        composeTestRule.waitUntil(1000) {
             composeTestRule.onAllNodesWithText("Vehicles").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText("Vehicles").performClick()
@@ -68,7 +70,18 @@ class ResponsivenessNfrTest{
             composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("omnitech@gmail.com")
             composeTestRule.onNodeWithTag("loginPassword").performTextInput("MySecretPassword123!")
             composeTestRule.onNodeWithTag("loginButton").performClick()
-            composeTestRule.waitUntil(10000) { composeTestRule.onAllNodesWithContentDescription("Dashboard").fetchSemanticsNodes().isNotEmpty()
+
+            composeTestRule.waitUntil(7000) {
+                composeTestRule.onAllNodesWithText("Allow").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            composeTestRule.onNodeWithText("Allow").performClick()
+
+            val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+            val systemAllowButton = device.findObject(UiSelector().textMatches("(?i)allow|while using the app"))
+            if(systemAllowButton.exists()){
+                systemAllowButton.click()
+                device.waitForIdle()
             }
         }
     }
