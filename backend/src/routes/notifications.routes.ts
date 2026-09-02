@@ -1,7 +1,7 @@
 import { Router } from "express";
 import notifications_controller from "../controllers/notifications.controller"
 import { verify_token } from "../middleware/auth";
-import { user_based_limiter } from "../middleware/rate_limit";
+import { create_user_based_limiter } from "../middleware/rate_limit";
 
 const notifications_router = Router();
 
@@ -63,7 +63,7 @@ const notifications_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not fetch notifications
  */
-notifications_router.get("/", verify_token, user_based_limiter, notifications_controller.fetch_notifications);
+notifications_router.get("/", verify_token, create_user_based_limiter(), notifications_controller.fetch_notifications);
 
 /**
  * @openapi
@@ -124,6 +124,6 @@ notifications_router.get("/", verify_token, user_based_limiter, notifications_co
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not delete notifications
  */
-notifications_router.delete("/delete", verify_token, user_based_limiter, notifications_controller.delete_notifications);
+notifications_router.delete("/delete", verify_token, create_user_based_limiter(), notifications_controller.delete_notifications);
 
 export default notifications_router;
