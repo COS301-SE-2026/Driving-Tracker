@@ -251,8 +251,50 @@ describe('Trips endpoints unit tests', ()=>{
             await trips_controller.get_all_active_shares(req, res);
 
             expect(res.status).toHaveBeenCalledWith(500);
-        })
+        });
+    });
+    describe('Revoke trip shares endpoint', ()=>{
+        it('Returns 200 when the trip as been  successfully removes share ', async ()=>{
+            jest.spyOn(trips_services, 'revoke_share').mockResolvedValueOnce({ success: true } as any);
 
+            const req: any = {
+                user:{sub :'user-1'},
+                params: { trip_id: 't1', contact_id: 'c1'}
+            };
+            const res: any = make_res() ;
+            await trips_controller.revoke_trip_shares(req,res);
+            expect(trips_services.revoke_share).toHaveBeenCalledWith('user-1', 'c1', 't1');
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'SUCCESSFUL'}))
+        });
+        it('Throws 403 when the user is unauthenticated', async()=>{
+            const req: any = {
+                user:{sub: null},
+                params: {trip_id: 't1',contact_id: 'c1'}
+            };
+            const res: any = make_res();
+            await trips_controller.revoke_trip_shares(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+            expect(trips_services.revoke_share).not.toHaveBeenCalled();
+        });
+        it('Returns 403 when trip not found or not owned by user', async () => {
+            jest.spyOn(trips_services, 'revoke_share').mockRejectedValueOnce(
+                new Error('trip not found or You do not own this trip')
+            );
+
+            const req: any = {
+                user: { sub: 'user-1' },
+                params: { trip_id: 't1', contact_id: 'c1' },
+            };
+            const res: any = make_res();
+
+            await trips_controller.revoke_trip_shares(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED' }));
+        });
     })
     describe('Record trip end point',()=>{
         it('Returns 201 on successful call', async()=>{
