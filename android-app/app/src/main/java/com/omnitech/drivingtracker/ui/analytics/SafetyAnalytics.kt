@@ -33,7 +33,8 @@ fun SafetyAnalytics(navController: NavController ?= null,
 ){
 
     val uiState by viewModel.uiState.collectAsState()
-    val safetyHistory = uiState.safetyHistory
+    val safetyHistory = uiState.history.filter { it.safetyScore != null }
+    val scores = safetyHistory.map { it.safetyScore!!.toFloat() }
 
 
     AnalyticsHeader(
@@ -54,7 +55,8 @@ fun SafetyAnalytics(navController: NavController ?= null,
         item{
             ScoreChart(
                 title = "Safety Score over time",
-                values = safetyHistory
+                scores = scores,
+                history = safetyHistory
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
