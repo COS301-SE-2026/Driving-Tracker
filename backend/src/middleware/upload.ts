@@ -1,6 +1,8 @@
 import multer, { type FileFilterCallback } from "multer";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILES_PER_REQUEST = 1;
+
 const ALLOWED_MIMETYPES = new Set([
     "image/jpeg", 
     "image/jpg", 
@@ -20,6 +22,6 @@ function file_filter(req: unknown, file: Express.Multer.File, callback: FileFilt
 //files kept in memory, then handed to blob
 export const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_FILE_SIZE_BYTES },
+    limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_FILES_PER_REQUEST },
     fileFilter: file_filter,
 });
