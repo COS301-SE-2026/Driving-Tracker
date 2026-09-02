@@ -825,6 +825,37 @@ export const trips_services ={
                 throw new Error("You do not own this trip");
             }
 
+			let startAddr = trip.start_address;
+			let endAddr = trip.end_address;
+			let dbUpdateNeeded = false;
+
+			if(!startAddr && trip.start_latitude && trip.start_longitude){
+				try{
+					const geo = await map_services.reverse_geocode(Number(trip.start_latitude), Number(trip.start_longitude));
+					startAddr = geo.address;
+					dbUpdateNeeded = true;
+				}catch(e){
+					console.error("Start address geocode failed", e);
+				}
+			}
+
+			if(!endAddr && trip.end_latitude && trip.end_longitude){
+				try{
+					const geo = await map_services.reverse_geocode(Number(trip.end_latitude), Number(trip.end_longitude));
+					endAddr = geo.address;
+					dbUpdateNeeded = true;
+				}catch(e){
+					console.error("End address geocode failed", e);
+				}
+			}
+
+			if(dbUpdateNeeded){
+				void prisma.trips.update({
+					where: { trip_id: trip.trip_id },
+					data: { start_address: startAddr, end_address: endAddr }
+				}).catch(err => console.error("Failed to cache trip addresses", err));
+			}
+
             // Determine data source (MIXED if both OBD and PHONE exist)
             const readings = await prisma.trip_readings.findMany({
                 where: { trip_id: data.trip_id },

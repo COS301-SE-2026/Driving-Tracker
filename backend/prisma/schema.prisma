@@ -150,6 +150,8 @@ model trips {
   end_longitude    Decimal?        @db.Decimal(9, 6)
   end_latitude     Decimal?        @db.Decimal(9, 6)
   route_polyline   Json?           @db.JsonB
+  start_address	   String?
+  end_address	   String?		   
   distance_km      Decimal?        @db.Decimal(9, 6)
   duration_minutes Int?
   fuel_estimate    Decimal?        @db.Decimal(10, 2)
