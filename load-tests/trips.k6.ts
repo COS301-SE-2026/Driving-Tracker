@@ -1,10 +1,10 @@
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
-import { getScenario } from './load-scenarios.js';
+import { getScenario } from './load-scenarios.ts';
 
-const BASE_URL = __ENV.API_URL || 'http://localhost:3000';
-const scenarioName = __ENV.SCENARIO || 'smoke';
-const config = getScenario(scenarioName);
+const BASE_URL = __ENV.API_URL || 'http://api-nfr:3000';
+const SCENARIO = __ENV.SCENARIO || 'smoke';
+const config = getScenario(SCENARIO);
 
 interface AuthedUser {
     email: string;
@@ -24,69 +24,108 @@ export const options = {
         duration: config.duration,
     }),
     thresholds: {
-        http_req_duration: ['p(95)<500'],
-        http_req_failed: ['rate<0.1'],
+        // Measure duration ONLY on tagged core trip endpoints
+        'http_req_duration{name:StartTrip}': ['p(95)<500'],
+        'http_req_duration{name:EndTrip}': ['p(95)<500'],
+        'http_req_failed': ['rate<0.1'],
     },
 };
+
+function safeJson(res: any) {
+    try {
+        return res.json();
+    } catch (e) {
+        return null;
+    }
+}
 
 export function setup(): AuthedUser[] {
     const authed: AuthedUser[] = [];
     const vusNeeded = config.vus;
-
-    console.log(`--- DYNAMIC SETUP: Provisioning ${vusNeeded} users ---`);
+    const runId = Date.now();
 
     for (let i = 1; i <= vusNeeded; i++) {
-        const email = `loadtest_${i}@omnitech.com`;
+        const email = `loadtest_${runId}_${i}@omnitech.com`;
+        const username = `user_${runId}_${i}`;
         const password = "MySecretPassword123!";
+        const phoneNumber = `0${Math.floor(100000000 + Math.random() * 900000000)}`;
 
-        // 1. REGISTER
+        //REGISTER
         const regRes = http.post(`${BASE_URL}/api/auth/register`, JSON.stringify({
-            email, username: `user_${i}_${Date.now()}`, password, name: "Load", surname: "Test",
-            phone_number: "0123456789", dob: "1995-01-01", consent_status: true
+            email, username, password, name: "Load", surname: "Test",
+            phone_number: phoneNumber, dob: "1995-01-01", consent_status: true
         }), { headers: { 'Content-Type': 'application/json' } });
 
-        // 2. LOGIN
+        if (regRes.status >= 400) {
+            console.log(`[User ${i}] Register Failed (${regRes.status}): ${regRes.body}`);
+            continue;
+        }
+
+        //LOGIN
         const loginRes = http.post(`${BASE_URL}/api/auth/login`, JSON.stringify({
             identifier: email, password
         }), { headers: { 'Content-Type': 'application/json' } });
 
-        if (loginRes.status !== 200 && loginRes.status !== 201) {
-            console.log(`PROVISIONING ERROR [User ${i}]: Login failed with ${loginRes.status}. Body: ${loginRes.body}`);
+        const loginBody = safeJson(loginRes);
+        const token = loginBody?.token || loginBody?.data?.token || loginBody?.accessToken || '';
+
+        if (!token) {
+            console.log(`[User ${i}] Login Failed (${loginRes.status}): ${loginRes.body}`);
             continue;
         }
 
-        const loginBody = loginRes.json() as any;
-        const token = loginBody.token || '';
-
-        // 3. VEHICLE ASSIGNMENT
         const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+        //ASSIGN VEHICLE (Added required 'name' field)
+        const assignRes = http.post(`${BASE_URL}/vehicle/assign_vehicle`, JSON.stringify({
+            name: `Test Car ${i}`,
+            registration: `K6-${runId.toString().slice(-4)}-${i}`,
+            make: "Toyota",
+            model: "Corolla",
+            year: 2017,
+            fuel_type: "Petrol",
+            fuel_tank: 50,
+            fuel_efficiency: 50
+        }), { headers: authHeaders });
+
+        console.log(`[User ${i}] ASSIGN RES (${assignRes.status}): ${assignRes.body}`);
+
+        const assignBody = safeJson(assignRes);
+        let vehicleId = assignBody?.vehicle_id || assignBody?.data?.vehicle_id || assignBody?.id || assignBody?.data?.id || '';
+
+        //FETCH ALL VEHICLES IF NOT IN ASSIGN RESPONSE
         const vRes = http.get(`${BASE_URL}/vehicle/get_all_vehicles`, { headers: authHeaders });
-        
-        let vehicleId = '';
-        if (vRes.status === 200) {
-            const vehicles = vRes.json() as any[];
-            if (vehicles.length > 0) {
-                vehicleId = vehicles[0].vehicle_id;
-            } else {
-                const assignRes = http.post(`${BASE_URL}/vehicle/assign_vehicle`, JSON.stringify({
-                    make: "Test", model: "Dynamic", year: 2024, fuel_type: "PETROL", fuel_tank: 50
-                }), { headers: authHeaders });
-                vehicleId = (assignRes.json() as any).vehicle_id;
+        console.log(`[User ${i}] GET VEHICLES RES (${vRes.status}): ${vRes.body}`);
+
+        if (!vehicleId) {
+            const vBody = safeJson(vRes);
+            const vehicleList = Array.isArray(vBody) ? vBody : (vBody?.data || vBody?.vehicles || []);
+            if (Array.isArray(vehicleList) && vehicleList.length > 0) {
+                vehicleId = vehicleList[0]?.vehicle_id || vehicleList[0]?.id || '';
             }
         }
 
-        authed.push({ email, token, vehicle_id: vehicleId });
+        console.log(`[User ${i}] Resolved Vehicle ID: '${vehicleId}'`);
+
+        if (token && vehicleId) {
+            authed.push({ email, token, vehicle_id: vehicleId });
+        }
     }
 
-    console.log(`--- SETUP COMPLETE: ${authed.length}/${vusNeeded} users ready ---`);
-    if (authed.length === 0) throw new Error("No users were successfully provisioned. Test aborted.");
-    
+    if (authed.length === 0) {
+        throw new Error("No users with valid vehicles were provisioned. Review the ASSIGN RES and GET VEHICLES logs above.");
+    }
+
     return authed;
 }
 
 export default function (data: AuthedUser[]): void {
     const me = data[(__VU - 1) % data.length];
-    if (!me || !me.token) return;
+
+    if (!me || !me.token) {
+        sleep(1);
+        return;
+    }
 
     const headers = {
         'Content-Type': 'application/json',
@@ -100,21 +139,35 @@ export default function (data: AuthedUser[]): void {
             start_date: new Date().toISOString(),
             start_location: { lat: -25.7, lng: 28.2 },
             fuel_level_start: 50.0
-        }), { headers });
+        }), { headers, tags: {name:'StartTrip'} });
 
-        if (check(start_res, { 'start trip 2xx': (r) => r.status === 200 || r.status === 201 })) {
-            const trip_id = (start_res.json() as any).data.trip_id;
-            sleep(2);
-            
-            const end_res = http.patch(`${BASE_URL}/trips/${trip_id}/end_trip`, JSON.stringify({
-                end_time: new Date().toISOString(),
-                status: 'COMPLETED',
-                distance_km: 1.0, duration_minutes: 1, fuel_estimate: 0.1, fuel_level_end: 49.0,
-                route_polyline: { type: "LineString", coordinates: [[28.2, -25.7], [28.3, -25.8]] }
-            }), { headers });
+        if (start_res.status < 200 || start_res.status >= 300) {
+            console.log(`[Start Trip Failed - Status ${start_res.status}]: ${start_res.body}`);
+        }
 
-            check(end_res, { 'end trip 200': (r) => r.status === 200 });
+        const startPassed = check(start_res, { 'start trip 2xx': (r) => r.status === 200 || r.status === 201 });
+
+        if (startPassed) {
+            const body = safeJson(start_res);
+            const trip_id = body?.data?.trip_id || body?.trip_id;
+
+            if (trip_id) {
+                sleep(2);
+
+                const end_res = http.patch(`${BASE_URL}/trips/${trip_id}/end_trip`, JSON.stringify({
+                    end_time: new Date().toISOString(),
+                    status: 'COMPLETED',
+                    distance_km: 1.0, 
+                    duration_minutes: 1, 
+                    fuel_estimate: 0.1, 
+                    fuel_level_end: 49.0,
+                    route_polyline: { type: "LineString", coordinates: [[28.2, -25.7], [28.3, -25.8]] }
+                }), { headers, tags:{name:'EndTrip'} });
+
+                check(end_res, { 'end trip 200': (r) => r.status === 200 });
+            }
         }
     });
+
     sleep(2);
 }
