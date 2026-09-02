@@ -51,6 +51,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.patrykandpatrick.vico.compose.cartesian.data.columnModel
 import androidx.compose.runtime.getValue
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 data class EventStat(
     val label: String,
@@ -81,7 +84,7 @@ fun EventsAnalytics(navController: NavController ?= null,
         }
 
         item{
-            EventsChart(uiState.eventHistory)
+            EventsChart(uiState.history)
             Spacer(modifier = Modifier.height(4.dp))
         }
 
@@ -151,14 +154,22 @@ fun TotalEvents(totalEvents: Int){
 }
 
 @Composable
-fun EventsChart(perTripCounts: List<Int>){
+fun EventsChart(history: List<TripDataPoint>){
     val modelProducer = remember { CartesianChartModelProducer() }
+    val counts = history.map {it.eventCount ?: 0}
 
-    LaunchedEffect(perTripCounts) {
-        modelProducer.runTransaction {
-            columnModel { series(perTripCounts) }
+    LaunchedEffect(counts) {
+        if (counts.isNotEmpty()){
+            modelProducer.runTransaction {
+                columnModel { series(counts) }
+            }
         }
     }
+
+    if (counts.isEmpty()){
+        return
+    }
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -178,8 +189,20 @@ fun EventsChart(perTripCounts: List<Int>){
             CartesianChartHost(
                 chart = rememberCartesianChart(
                     rememberColumnCartesianLayer(),
-                    startAxis = VerticalAxis.rememberStart(),
-                    bottomAxis = HorizontalAxis.rememberBottom(),
+                    startAxis = VerticalAxis.rememberStart(
+                        label = rememberAxisLabelComponent(),
+                        titleComponent = rememberTextComponent(),
+                        title = {"Count"}
+                    ),
+                    bottomAxis = HorizontalAxis.rememberBottom(
+                        label = rememberAxisLabelComponent(),
+                        titleComponent = rememberTextComponent(),
+                        title = {"Date"},
+                        valueFormatter = CartesianValueFormatter{
+                            _, value, _ ->
+                            history.getOrNull(value.toInt())?.date?.takeLast(5) ?: ""
+                        }
+                    ),
                 ),
                 modelProducer = modelProducer,
             )

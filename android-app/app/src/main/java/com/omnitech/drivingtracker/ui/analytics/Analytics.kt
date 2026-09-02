@@ -66,6 +66,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 data class TripDataPoint(
@@ -442,6 +443,7 @@ fun AnalyticsGraph(tripData: List<TripDataPoint>){
             CartesianChartHost(
                 chart = rememberCartesianChart(
                         rememberLineCartesianLayer(
+                            rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = 100.0),
                             lineProvider = LineCartesianLayer.LineProvider.series(
                                 LineCartesianLayer.rememberLine(fill = LineCartesianLayer.LineFill.single(Fill(
                                     MaterialTheme.colorScheme.primary))),

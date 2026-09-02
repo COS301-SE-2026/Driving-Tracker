@@ -15,6 +15,7 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.navigation.NavController
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.ui.theme.CardWhite
 
 @Composable
 fun OBDMain(navController: NavController? =null){
@@ -39,7 +40,8 @@ fun MenuCard(label: String, onClick:()->Unit){
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ){
         Column{
             MRow(label, onClick)

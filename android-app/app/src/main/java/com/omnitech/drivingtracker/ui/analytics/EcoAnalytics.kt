@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,11 +51,17 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import androidx.compose.runtime.getValue
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.components.AnalyticsChart
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 @Composable
 fun EcoAnalytics(navController: NavController ?= null,
@@ -62,7 +69,8 @@ fun EcoAnalytics(navController: NavController ?= null,
 ){
 
     val uiState by viewModel.uiState.collectAsState()
-    val ecoHistory = uiState.ecoHistory
+    val ecoHistory = uiState.history.filter { it.ecoScore != null }
+    val scores = ecoHistory.map{it.ecoScore !!.toFloat()}
 
     AnalyticsHeader(
         leftWord = "Eco ",
@@ -75,7 +83,7 @@ fun EcoAnalytics(navController: NavController ?= null,
         }
 
         item{
-            ScoreChart(title = "Eco Score over time", values = ecoHistory)
+            ScoreChart(title = "Eco Score over time", scores = scores, history = ecoHistory)
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -102,13 +110,26 @@ fun EcoAnalytics(navController: NavController ?= null,
 }
 
 @Composable
-fun ScoreChart(title: String, values: List<Float>){
+fun ScoreChart(title: String, scores: List<Float>, history: List<TripDataPoint>){
     val modelProducer = remember { CartesianChartModelProducer() }
+    val scores = history.mapNotNull{it.ecoScore?.toFloat()?: it.safetyScore?.toFloat()}
 
-    LaunchedEffect(values) {
-        modelProducer.runTransaction {
-            lineModel {series(values)}
+    LaunchedEffect(scores) {
+        if (scores.isNotEmpty()) {
+            modelProducer.runTransaction {
+                lineModel { series(scores) }
+            }
         }
+    }
+
+    if (scores.isEmpty()){
+        Text(
+            text = "No data available for this chart.",
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodySmall
+        )
+        return
     }
 
     Card(
@@ -129,10 +150,9 @@ fun ScoreChart(title: String, values: List<Float>){
             Spacer(modifier = Modifier.height(12.dp))
 
             CartesianChartHost(
-                chart = rememberCartesianChart(
-                    rememberLineCartesianLayer(),
-                    startAxis = VerticalAxis.rememberStart(),
-                    bottomAxis = HorizontalAxis.rememberBottom(),
+                chart = AnalyticsChart(
+                    yAxisTitle = "Score",
+                    dates = history.map{it.date}
                 ),
                 modelProducer = modelProducer
             )

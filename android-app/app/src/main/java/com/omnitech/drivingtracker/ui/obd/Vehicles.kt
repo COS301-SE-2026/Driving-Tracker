@@ -53,6 +53,7 @@ import java.util.UUID
 import com.omnitech.drivingtracker.Screen
 import android.net.Uri
 import com.omnitech.drivingtracker.BuildConfig
+import com.omnitech.drivingtracker.ui.components.YourTopBar
 
 
 //Data model for vehicle UI
@@ -98,9 +99,11 @@ fun Vehicles(
 
     Scaffold(
         topBar = {
-            TopBar(
+            YourTopBar(
                 leftIcon = Icons.AutoMirrored.Filled.ArrowBack,
                 rightIcon = Icons.Default.Settings,
+                leftWord = "Your ",
+                rightWord = "Vehicles",
                 onLeftClick = { navController?.popBackStack() },
                 onRightClick = { navController?.navigate(Screen.Settings.route) }
             )
@@ -155,17 +158,6 @@ fun Vehicles(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
                     ) {
-                        item{//Header section
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp),
-                                horizontalArrangement = Arrangement.Center
-                            ){
-                                Text("Your ", style = MaterialTheme.typography.titleMedium )
-                                Text("Vehicles", style = MaterialTheme.typography.titleLarge, color = Blue)
-                            }
-                        }
 
                         items(vehicles, key = { it.id }) { vehicle ->
                             VehicleCard(
