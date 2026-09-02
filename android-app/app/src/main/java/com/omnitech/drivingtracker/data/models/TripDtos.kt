@@ -18,7 +18,10 @@ data class LatestLocationResponse(
     val message: String,
     val data: LatestLocationData
 )
-
+data class GeoJsonLineString(
+    val type: String = "LineString",
+    val coordinates: List<List<Double>>
+)
 data class LatestLocationData(
     @SerializedName("last_latitude")
     val lastLatitude: Double,
@@ -178,7 +181,7 @@ data class TripSummaryDto(
     @SerializedName("data_source")
     val dataSource: String?,
     @SerializedName("route_polyline")
-    val routePolyline: String?,
+    val routePolyline: GeoJsonLineString?,
     @SerializedName("distance_km")
     val distanceKm: Double?,
     @SerializedName("duration_minutes")
@@ -215,7 +218,7 @@ data class EndTripRequest(
     @SerializedName("end_time")
     val endTime: String,
     @SerializedName("route_polyline")
-    val routePolyline: String? = null,
+    val routePolyline: GeoJsonLineString? = null,
     @SerializedName("distance_km")
     val distanceKm: Double? = null,
     @SerializedName("duration_minutes")

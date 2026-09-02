@@ -243,7 +243,8 @@ class TripRepository @Inject constructor(
         fuelEstimate: Double? = null,
         overallScore: Double? = null,
         endLocation: LocationDto? = null,
-        fuelLevelEnd: Float? = null
+        fuelLevelEnd: Float? = null,
+        routePolyline: GeoJsonLineString? = null
     ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(

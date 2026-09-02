@@ -196,7 +196,8 @@ fun LiveTrip(
             distance = liveDistance,
             durationMinutes = liveDurationMinutes,
             fuelEstimate = currentTrip?.fuelEstimate ?: 0.0,
-            fuelLevelEnd = finalFuel // PASS TO VM
+            fuelLevelEnd = finalFuel ,// PASS TO VM
+            path = tripPath
         )
     }
     var isMinimized by remember {mutableStateOf(false)}
@@ -289,7 +290,8 @@ fun LiveTrip(
                 distance = liveDistance,
                 durationMinutes = liveDurationMinutes,
                 fuelEstimate = currentTrip?.fuelEstimate?:0.0,
-                fuelLevelEnd = obdFuel
+                fuelLevelEnd = obdFuel,
+                path = tripPath
             )
         },
         navController = navController,
