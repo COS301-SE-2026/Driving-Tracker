@@ -445,6 +445,7 @@ async function main() {
                     model: faker.vehicle.model(),
                     year: faker.date.past({ years: 15 }).getFullYear(),
                     fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                    fuel_tank: 60,
                 }
             });
 
