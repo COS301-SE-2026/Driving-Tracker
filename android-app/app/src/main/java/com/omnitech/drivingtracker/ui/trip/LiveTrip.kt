@@ -10,11 +10,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import com.omnitech.drivingtracker.data.models.ContactDto
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -86,6 +90,9 @@ fun LiveTrip(
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     val detourRoute by viewModel.detourRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
+
+    val activeShares by contactsViewModel.activeShares.collectAsState()
+    var showActiveViewersDialog by remember { mutableStateOf(false) }
 
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
         listOf(
@@ -196,6 +203,7 @@ fun LiveTrip(
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
             viewModel.observeTripEvents(tripId)
+            contactsViewModel.loadActiveShares(tripId)
         }
     }
 
@@ -276,6 +284,10 @@ fun LiveTrip(
         actualRoute = tripPath,
         contactsState = contactsState,
         localEvents = localEvents,
+        activeShares = activeShares,
+        showActiveViewersDialog = showActiveViewersDialog,
+        onToggleActiveViewersDialog = {showActiveViewersDialog = it},
+        onRevokeShare = { contactId -> contactsViewModel.revokeTripShare(tripId, contactId) },
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -329,6 +341,10 @@ fun LiveTripContent(
     mapToken: String? = null,
     liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
+    activeShares: List<ContactDto> = emptyList(),
+    showActiveViewersDialog: Boolean = false,
+    onToggleActiveViewersDialog: (Boolean) -> Unit = {},
+    onRevokeShare: (String) -> Unit = {},
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
     destination: LocationDto? = null,
@@ -360,7 +376,10 @@ fun LiveTripContent(
 
         if(showAlert && latestEvent != null){
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(16.dp).testTag("LiveTripAlertBanner"),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .testTag("LiveTripAlertBanner"),
                 color = MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(8.dp)
             ){
@@ -462,7 +481,11 @@ fun LiveTripContent(
                             liveDuration = liveDuration,
                             localEvents = localEvents,
                             vehicleMetrics = vehicleMetrics,
-                            nearbyPois = nearbyPois
+                            nearbyPois = nearbyPois,
+                            activeShares = activeShares,
+                            showActiveViewersDialog = showActiveViewersDialog,
+                            onToggleActiveViewersDialog = onToggleActiveViewersDialog,
+                            onRevokeShare = onRevokeShare,
                         )
                     }
 
@@ -492,7 +515,11 @@ private fun TripDetails(
     liveDuration: Int = 0,
     localEvents: List<TripEventEntity>,
     vehicleMetrics: VehicleMetrics,
-    nearbyPois: List<MapPoiItem>? = null
+    nearbyPois: List<MapPoiItem>? = null,
+    activeShares: List<ContactDto> = emptyList(),
+    showActiveViewersDialog: Boolean = false,
+    onToggleActiveViewersDialog: (Boolean) -> Unit = {},
+    onRevokeShare: (String) -> Unit = {}
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -680,6 +707,19 @@ private fun TripDetails(
                 Text("Share Trip", color = Color.White)
             }
         }
+        if (activeShares.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { onToggleActiveViewersDialog(true) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            ) {
+                Icon(Icons.Default.PersonRemove, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Manage Viewers (${activeShares.size})")
+            }
+        }
 
         Spacer(modifier = Modifier.height(25.dp))
 
@@ -753,8 +793,33 @@ private fun TripDetails(
             }
         }
     }
+    if (showActiveViewersDialog) {
+        ActiveViewersDialog(
+            activeShares = activeShares,
+            onRevoke = onRevokeShare,
+            onDismiss = { onToggleActiveViewersDialog(false) }
+        )
+    }
 }
 
+@Composable
+fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Active Viewers", fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(activeShares) { contact ->
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                        Column { Text(contact.name, fontWeight = FontWeight.Medium); Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall) }
+                        IconButton(onClick = { onRevoke(contact.contactId) }) { Icon(Icons.Default.PersonRemove, "Revoke", tint = MaterialTheme.colorScheme.error) }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
 @Composable
 fun SummaryItem(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -811,7 +876,9 @@ fun LiveTripPreview() {
         durationMinutes = 20,
         fuelEstimate = 8.5,
         scores = null,
-        events = emptyList()
+        events = emptyList(),
+        startAddress = "",
+        endAddress = ""
     )
 
     DrivingTrackerTheme {

@@ -725,5 +725,22 @@ describe('vehicle services get fuel analytics', ()=>{
         expect(result.worst_fuel_efficiency).toBeNull();
         expect(result.history).toEqual([]);
     });
+
+	describe('vehicle services update vehicle image', () => {
+		it('updates image successfully', async () => {
+			mock_prisma.users_vehicles.findUnique.mockResolvedValue({user_id: 'user-1', vehicle_id: 'v1'});
+			mock_prisma.vehicles.findUnique.mockResolvedValue({ vehicle_id: 'v1', image_url: 'old'});
+			mock_prisma.vehicles.update.mockResolvedValue({});
+
+			const result = await vehicle_services.update_vehicle_image('user-1', 'v1', 'new');
+			expect(result.previous_blob_name).toBe('old');
+		});
+
+		it('throws if ownerships check fails', async () => {
+			mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
+			await expect(vehicle_services.update_vehicle_image('user-1', 'v1', 'new'))
+				.rejects.toThrow('You do not own this vehicle');
+		});
+	});
 });
  

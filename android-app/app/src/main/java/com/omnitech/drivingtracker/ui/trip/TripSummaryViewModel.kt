@@ -211,7 +211,9 @@ class TripSummaryViewModel @Inject constructor(
                             durationMinutes = durationMinutes,
                             fuelEstimate = fuelEstimate,
                             scores = null,
-                            events = emptyList()
+                            events = emptyList(),
+                            startAddress = null,
+                            endAddress = null
                         ),
                         isFirstTrip = data.isFirstTrip == true
                     )

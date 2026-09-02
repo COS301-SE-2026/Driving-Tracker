@@ -45,6 +45,39 @@ describe('notification_services', () => {
         });
     });
 
+    it('returns without sending when no FCM tokens are provided', async () => {
+        await notification_services.send_trusted_contact_request_notification(
+            [], 'John Doe', 'c1'
+        );
+
+        await notification_services.send_trusted_contact_response_notification(
+            [], 'John Doe', 'APPROVED' as any
+        );
+
+        await notification_services.send_trip_shared_notification(
+            [], 'John Doe', 't1'
+        );
+
+        await notification_services.send_trip_alert_notification(
+            [], 't1', 'HARSH_BRAKE', 'Harsh brake detected'
+        );
+
+        await notification_services.send_general_notification(
+            [], 'General Update', 'Message Body'
+        );
+
+        await notification_services.send_badge_notification(
+            [], 'Badge Unlocked', 'You earned a new badge', 'b1', 'icon.png'
+        );
+
+        await notification_services.send_unexpected_stop_notification(
+            [], 't1', 'event-1', 'Unexpected stop occurred'
+        );
+
+        expect(mockGetMessaging).not.toHaveBeenCalled();
+        expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+    });
+
     describe('send_trusted_contact_request_notification', () => {
         it('sends the trusted contact request notification', async () => {
             mockSendEachForMulticast.mockResolvedValue(undefined);
@@ -68,12 +101,6 @@ describe('notification_services', () => {
                 }
             });
 
-        });
-
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_trusted_contact_request_notification([], 'John Doe', 'c1')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
@@ -119,12 +146,6 @@ describe('notification_services', () => {
 
         });
 
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_trip_shared_notification([], 'John Doe', 'c1')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
-        });
-
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
             const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -141,6 +162,45 @@ describe('notification_services', () => {
             expect(errorSpy).toHaveBeenCalled();
             errorSpy.mockRestore();
 
+        });
+    });
+    describe("send_trip_shared_revoked_notification", ()=>{
+        it('sends trip revoked notification', async ()=>{
+            mockSendEachForMulticast.mockResolvedValue(undefined);
+            await notification_services.send_trip_revoked_notification(
+                ['token-1'],
+                'John Doe',
+                't1'
+            );
+            expect(mockSendEachForMulticast).toHaveBeenCalledWith({
+                tokens:['token-1'],
+                notification:{
+                    title: 'Trip access revoked',
+                    body: 'John Doe is no longer sharing their live trip location with you ',
+                },
+                data:{
+                    type: 'TRIP_REVOKED',
+                    trip_id: 't1',
+                    shared_by:'John Doe'
+                }
+            });
+        });
+        it('does not call sendEachForMUlticast when no tokens are provided', async()=>{
+            await notification_services.send_trip_revoked_notification([], 'John Doe','t1');
+            expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+        });
+        it('does not throw and logs the error when firebase send fails',async ()=>{
+            const errorSpy = jest.spyOn(console,'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_trip_revoked_notification(['token-1'], 'John Doe', 't1')
+            ).resolves.toBeUndefined();
+
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Failed to send trip revoked notification: ','firebase failed'
+            );
+            errorSpy.mockRestore();
         });
     });
 
@@ -168,12 +228,6 @@ describe('notification_services', () => {
                 }
             });
 
-        });
-
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_trip_alert_notification([], 't1', 'HARSH_BRAKE', 'Harsh brake detected')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
@@ -217,12 +271,6 @@ describe('notification_services', () => {
                 }
             });
 
-        });
-
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_general_notification([], 'General Update', 'Message Body')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
@@ -294,13 +342,6 @@ describe('notification_services', () => {
                 }
             });
 
-        });
-
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_badge_notification([],'Badge Unlocked',
-                'You earned a new badge','b1','icon.png')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{
@@ -413,12 +454,6 @@ describe('notification_services', () => {
                 }
             });
 
-        });
-
-        it('throws when no tokens are provided', async () => {
-            await expect(
-                notification_services.send_unexpected_stop_notification([], 't1', 'event-1', 'Unexpected stop occurred')
-            ).rejects.toMatchObject({ errorCode: 'NO_TOKENS_PROVIDED' });
         });
 
         it('throws COULD_NOT_SEND_NOTIFICATION when firebase send fails', async () =>{

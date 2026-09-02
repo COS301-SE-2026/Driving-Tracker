@@ -90,6 +90,7 @@ export const vehicle_services={
                     model: v.model,
                     year: v.year,
                     fuel_type: v.fuel_type,
+                    image_url: v.image_url ? `upload/vehicle-image/${v.vehicle_id}` : null,
                     mileage: Math.round(total_distance),
                     trip_count: v.trips.length,
                     avg_fuel_efficiency: parseFloat(avg_efficiency.toFixed(2))
@@ -114,6 +115,48 @@ export const vehicle_services={
             where: { vehicle_id: data.vehicle_id },
             data: { name: data.name}
         });
+    },
+
+    async update_vehicle_image(user_id: string, vehicle_id: string, blob_name: string){
+        const assignment = await prisma.users_vehicles.findUnique({
+            where: { user_id_vehicle_id: {
+                user_id,
+                vehicle_id
+            }}
+        });
+
+        if(!assignment) throw new Error("You do not own this vehicle");
+
+        const existing = await prisma.vehicles.findUnique({
+            where: { vehicle_id },
+            select: { image_url: true }
+        });
+
+        await prisma.vehicles.update({
+            where: { vehicle_id },
+            data: { image_url: blob_name }
+        });
+
+        return {
+            display_url: `upload/vehicle-image/${vehicle_id}`,
+            previous_blob_name: existing?.image_url
+        };
+    },
+
+    async get_vehicle_image_blob_name(user_id: string, vehicle_id: string): Promise<string | null> {
+        const assignment = await prisma.users_vehicles.findUnique({
+            where: { user_id_vehicle_id: { user_id, vehicle_id}}
+        });
+
+        if
+        (!assignment) throw new Error("You do not own this vehicle");
+
+        const vehicle = await prisma.vehicles.findUnique({
+            where: { vehicle_id },
+            select: { image_url: true }
+        });
+
+        return vehicle?.image_url ?? null;
     },
 
     /*
