@@ -46,5 +46,15 @@ data class NotificationDto(
     val createdAt: String
 )
 
+data class DeleteNotificationsResponse(
+    val message: String,
+    val data: DeleteNotificationsData
+)
+
+data class DeleteNotificationsData(
+    @SerializedName("deleted_count")
+    val deletedCount: Int
+)
+
 
 

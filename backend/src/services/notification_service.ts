@@ -156,6 +156,30 @@ export const notification_services= {
         })
 
     },
+    //send unexpected stop notifications
+    async send_unexpected_stop_notification(fcm_tokens: string[], trip_id: string, event_id: string, message: string){
+
+        if(fcm_tokens.length === 0){
+            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+        }
+
+        await getMessaging().sendEachForMulticast({
+            fids: fcm_tokens,
+            notification: {
+                title: "Unexpected Stop",
+                body: message
+            },
+            data: {
+                type: "UNEXPECTED_STOP",
+                event_id,
+                trip_id
+            }
+        }).catch( (err: any) => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to send stop alert: ", errorMessage)
+            throw new ExtendedError("Could not send unexpected stop notification","COULD_NOT_SEND_NOTIFICATION"); 
+        });
+    },
     //Fetch users notifications
     async fetch_notifications(user_id: string){
 
@@ -175,6 +199,24 @@ export const notification_services= {
         }));
 
         return notification_arr;
+    },
+
+    //Delete notifications for a user
+    async delete_notifications(user_id: string){
+
+        const deleted = await prisma.$transaction(async (tx) => {
+               
+            const result = await tx.notifications.deleteMany({
+                where: {
+                    user_id
+                }
+            });
+
+            return result;
+        });
+
+        return deleted.count;
+
     }
 
 }

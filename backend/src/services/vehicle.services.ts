@@ -36,7 +36,17 @@ export interface assign_vehicle{
 	make: string,
     model: string,
     year: number,
-    fuel_type: string
+    fuel_type: string,
+    fuel_tank:number
+}
+
+export interface get_fuel_analytics{
+    user_id: string;
+}
+
+function mpg_to_lper100km(mpg: number): number | null {//helper function for converting mpg to lper100
+    if (!mpg || mpg <= 0) return null;
+    return 235.215 / mpg;
 }
 
 export const vehicle_services={
@@ -112,12 +122,14 @@ export const vehicle_services={
         vehicle_id     
     }
     */ 
+   
+
     async assign_user_to_vehicle(data:assign_vehicle){//post (will create a vehicle for the user)
       //users need the ability to add a vehicle as their own 
        //will it get the vehicle id from the vin number
        
        try{
-            if( !data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type){
+            if( !data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type || !data.fuel_tank){
                 throw new Error("Missing field(s)");
             } 
             const user = await prisma.users.findUnique({
@@ -127,7 +139,28 @@ export const vehicle_services={
             if(!user){
                 throw new Error("User does not exist");
             }
-            //create unique vehicle
+            //create unique vehicle       
+            //send the vehicle data to car api and populate the fuel efficiency 
+            //update to add the tank capacity
+            let benchmark_lper100km: number| null =null;
+                if(data.year >= 2015 && data.year <= 2020){
+                    try{
+                        const ben_trim = await fetch_vehicle_benchmark(data.make,data.model,data.year);
+                        if(ben_trim.length === 0){
+                            return null ;
+                        }
+            
+                        const  avg_mpg = ben_trim.reduce((sum, ben_trim) => sum + ben_trim.combined_mpg, 0) / ben_trim.length;
+                        benchmark_lper100km = mpg_to_lper100km(avg_mpg)
+                    }catch(error){
+                        console.error(`Benchmark lookup failed  `, error);
+                        return null;
+                    }
+                }
+                //if it comes back as null then the first trip will be used as the fuel efficiency of the car until the first 5 trips are reached 
+                if (benchmark_lper100km == null) return null;
+            
+             
             const result = await prisma.$transaction(async (tx) => {
                 const vehicle = await tx.vehicles.create({
                     data: {
@@ -136,7 +169,9 @@ export const vehicle_services={
                         make: data.make,
                         model: data.model,
                         year: data.year,
-                        fuel_type: data.fuel_type
+                        fuel_type: data.fuel_type,
+                        fuel_efficiency: benchmark_lper100km,
+                        fuel_tank:data.fuel_tank
                     }
                 });
 
@@ -158,6 +193,8 @@ export const vehicle_services={
                     make: result.make,
                     model: result.model,
                     year: result.year,
+                    fuel_tank: result.fuel_tank,
+                    fuel_efficiency: result.fuel_efficiency,
                     fuel_type: result.fuel_type
                 }
             };
@@ -184,6 +221,111 @@ export const vehicle_services={
             await prisma.vehicles.delete({ where: { vehicle_id }});
         }
         return { message: "Vehicle removed successfully"};
+    },
+
+    async get_fuel_analytics(data: get_fuel_analytics){
+        //get all vehicles that a user has, reads all the completed trips for each vehicle, computes each trip's fuel usage
+        //then calculates the best,worst and average fuel efficiency
+        //as well as the historical array by date
+
+        const user_id = data.user_id;
+
+        if (!user_id){
+            throw new Error("Missing field(s)");
+        }
+        try{
+            const user = await prisma.users.findUnique({where: {user_id}});
+
+            if(!user){
+                throw new Error("User not found");
+            }
+
+            const vehicles = await prisma.vehicles.findMany({
+
+                where: {
+                    users_vehicles: {some: {user_id}}
+                },
+
+                include: { //gets the trips' fuel start,end and distance for analytics
+                    trips: {
+                        where: {status: "COMPLETED"},
+                        select: {
+                            distance_km: true,
+                            fuel_level_start: true,
+                            fuel_level_end: true,
+                            end_time: true
+                        }
+                    }
+                }
+            });
+
+            const points: { //trip/fuel usage history
+                date: string; //needed for the date (so we can make a graph)
+                distance_km: number;
+                fuel_used_liters: number;
+                efficiency_l_per_100km: number;
+            }[] = [];
+
+            for (const v of vehicles){ //Check the fuel usage for each car (analytics isn't based on 1 car)
+
+                const tank_liters = v.fuel_tank ? Number(v.fuel_tank) : null;
+
+                if (!tank_liters || tank_liters <= 0){
+                    continue;
+                }
+
+                for (const t of v.trips){ 
+
+                    const distance_km = t.distance_km ? Number(t.distance_km) : null;
+                    const fuel_level_start = t.fuel_level_start != null ? Number(t.fuel_level_start) : null;
+                    const fuel_level_end = t.fuel_level_end != null ? Number(t.fuel_level_end) : null;
+
+                    if (distance_km === null || distance_km <= 0 || fuel_level_start === null || fuel_level_end === null){
+                        continue;
+                    }
+
+                    const fuel_used_liters = ( (fuel_level_start - fuel_level_end) / 100) * tank_liters; //same as in eco score calculations
+
+                    if (fuel_used_liters <= 0){ //bad reading or if fuel was added
+                        continue;
+                    }
+
+                    const efficiency_l_per_100km = (fuel_used_liters / distance_km) * 100;
+
+                    points.push({
+                        date: t.end_time ? t.end_time.toISOString().slice(0,10) : "", distance_km,
+                        fuel_used_liters: parseFloat(fuel_used_liters.toFixed(2)),
+                        efficiency_l_per_100km: parseFloat(efficiency_l_per_100km.toFixed(2))
+                    });
+                }
+            }
+            if (points.length === 0){ //no cars with a tank capacity or no trips without valid fuel data
+                return{
+                    average_fuel_efficiency: null,
+                    best_fuel_efficiency: null,
+                    worst_fuel_efficiency: null,
+                    history: []
+                };
+            }
+            const efficiencies = points.map(
+                p=> p.efficiency_l_per_100km
+            );
+            const average = efficiencies.reduce(
+                (sum,e) => sum + e, 0
+            ) / efficiencies.length;
+
+            return{
+                average_fuel_efficiency: parseFloat(average.toFixed(2)),
+                best_fuel_efficiency: Math.min(...efficiencies),
+                worst_fuel_efficiency: Math.max(...efficiencies),
+                history: points.sort(
+                    (a,b) => a.date.localeCompare(b.date)
+                )
+            };
+        }
+        catch(error){
+            throw error;
+        }
     }
 };
 

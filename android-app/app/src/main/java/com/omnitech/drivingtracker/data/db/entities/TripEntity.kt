@@ -30,5 +30,7 @@ data class TripEntity(
     val durationMinutes: Int? = null,
     val status: String?,
     val routeGeoJson: String? = null,
+    val fuelLevelStart: Double? = null,
+    val fuelLevelEnd : Double? = null,
     val synced: Boolean = false
 )

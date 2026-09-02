@@ -56,6 +56,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter android:label="Auth Redirect">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="driving-tracker" android:host="verify-success" />
+                <data android:scheme="driving-tracker" android:host="reset-password" />
+            </intent-filter>
         </activity>
         <service
             android:name=".services.MessagingService"

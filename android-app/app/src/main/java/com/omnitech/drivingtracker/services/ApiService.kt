@@ -45,7 +45,13 @@ interface ApiService{
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
     @POST("api/auth/register")
-    suspend fun register(@Body body: RegisterRequest): AuthResponse
+    suspend fun register(@Body body: RegisterRequest): RegisterResponse
+
+    @POST("api/auth/forgot_password")
+    suspend fun forgotPassword(@Body body : ForgotPasswordRequest) : GenericResponse
+
+    @POST("api/auth/reset_password")
+    suspend fun resetPassword(@Body body : ResetPasswordRequest) : GenericResponse
 
     @POST("api/auth/logout")
     suspend fun logout(): LogoutResponse
@@ -95,7 +101,7 @@ interface ApiService{
     @GET("leaderboard/scopes")
     suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
 
-    //Notifications
+    //Maps
     @POST("devices/fcm_token")
     suspend fun registerFcmToken(@Body body: RegisterFcmRequest): RegisterFcmResponse
   
@@ -105,6 +111,15 @@ interface ApiService{
     @GET("map/search")
     suspend fun searchAddress(@Query("address")address: String): AddressSearchResponse
 
+    @GET("map/nearby/pois")
+    suspend fun getNearbyPois(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("type") type: String?,
+        @Query("radius") radius: Int?,
+        @Query("limit") limit: Int?
+    ): MapPoiResponse
+
     @GET("map/route")
     suspend fun getSuggestedRoute(
         @Query("start_lat") startLat: Double?,
@@ -113,9 +128,15 @@ interface ApiService{
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
 
+    //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
-  
+
+    @DELETE("notifications/delete")
+    suspend fun deleteNotifications(): DeleteNotificationsResponse
+
+
+    //Live Trips
     @POST("trips/{trip_id}/readings/record")
     suspend fun recordReading(
         @Path("trip_id") tripId: String,
@@ -147,4 +168,24 @@ interface ApiService{
     suspend fun deleteAccount(
         @Body request: DeleteAccountRequest
     )
+    @POST("trips/{trip_id}/stop_event/check")
+    suspend fun checkStopEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: StopEventCheckRequest
+    ): StopEventCheckResponse
+
+    @POST("trips/{event_id}/stop_event/confirm")
+    suspend fun confirmStopEvent(
+        @Path("event_id") eventId: String
+    ): StopEventConfirmResponse
+
+    @POST("trips/{event_id}/stop_event/resolve")
+    suspend fun resolveStopEvent(
+        @Path("event_id") eventId: String,
+        @Body body: StopEventResolveRequest
+    ): StopEventResolveResponse
+
+    @GET("vehicle/fuel_analytics")
+    suspend fun getFuelAnalytics(): FuelAnalyticsDto
+
 }

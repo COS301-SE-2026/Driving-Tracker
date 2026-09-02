@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.data.models
 
+import android.R
 import com.google.gson.annotations.SerializedName
 
 @Suppress("unused")
@@ -53,6 +54,10 @@ data class SharedWithMeDto(
     val startLongitude: Double,
     @SerializedName("fuel_estimate")
     val fuelEstimate: Double,
+    @SerializedName("destination_latitude")
+    val destinationLatitude: Double? = null,
+    @SerializedName("destination_longitude")
+    val destinationLongitude: Double? = null
 )
 
 @Suppress("unused")
@@ -68,7 +73,9 @@ data class StartTripRequest(
     @SerializedName("share_with_contacts")
     val shareWithContacts: List<String>? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start")
+    val fuelLevelStart: Float? = null
 )
 
 @Suppress("unused")
@@ -172,7 +179,7 @@ data class TripSummaryDto(
     @SerializedName("data_source")
     val dataSource: String?,
     @SerializedName("route_polyline")
-    val routePolyline: String?,
+    val routePolyline: GeoJsonLineString?,
     @SerializedName("distance_km")
     val distanceKm: Double?,
     @SerializedName("duration_minutes")
@@ -183,6 +190,8 @@ data class TripSummaryDto(
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
     val destinationLongitude: Double? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null,
     val scores: TripScoreDto?,
     val events: List<TripEventDto>
 
@@ -201,13 +210,16 @@ data class TripEventDto(
     @SerializedName("time_stamp")
     val timestamp: String
 )
-
+data class GeoJsonLineString(
+    val type: String = "LineString",
+    val coordinates: List<List<Double>>
+)
 // End Trip Request
 data class EndTripRequest(
     @SerializedName("end_time")
     val endTime: String,
     @SerializedName("route_polyline")
-    val routePolyline: String? = null,
+    val routePolyline: GeoJsonLineString? = null,
     @SerializedName("distance_km")
     val distanceKm: Double? = null,
     @SerializedName("duration_minutes")
@@ -222,7 +234,9 @@ data class EndTripRequest(
     @SerializedName("overall_score")
     val overallScore: Double? = null,
     @SerializedName("end_location")
-    val endLocation: LocationDto? = null
+    val endLocation: LocationDto? = null,
+    @SerializedName("fuel_level_end")
+    val fuelLevelEnd: Float? = null
 )
 
 data class EndTripResponse(
@@ -250,3 +264,55 @@ data class SuggestedRouteData(
     @SerializedName("points")
     val points: List<LocationDto>
 )
+
+data class StopEventCheckRequest(
+    val location: LocationDto,
+    @SerializedName("stopped_at")
+    val stoppedAt: Long
+)
+
+data class StopEventCheckResponse(
+    val message: String,
+    val data: StopEventCheckData
+)
+
+data class StopEventCheckData(
+    @SerializedName("stop_event_id")
+    val stopEventId: String,
+    val classification: String,
+    @SerializedName("location_context")
+    val locationContext: LocationContextData,
+    @SerializedName("should_prompt")
+    val shouldPrompt: Boolean
+)
+
+data class LocationContextData(
+    val address: String,
+    @SerializedName("poi_category")
+    val poiCategory: String
+)
+
+data class StopEventConfirmResponse(
+    val message: String,
+    val data: StopEventConfirmData
+)
+
+data class StopEventConfirmData(
+    val status: String,
+    @SerializedName("already_handled")
+    val alreadyHandled: Boolean
+)
+
+data class StopEventResolveRequest(
+    val reason: String
+)
+
+data class StopEventResolveResponse(
+    val message: String,
+    val data: StopEventResolveData
+)
+
+data class StopEventResolveData(
+    val resolved: Boolean
+)
+

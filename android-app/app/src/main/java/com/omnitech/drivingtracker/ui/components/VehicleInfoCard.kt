@@ -100,7 +100,9 @@ fun VehicleInfoCard(
                             label = "Needs Service?",
                             tint = if (vehicle.needsService) Error else Green,
                             value = if (vehicle.needsService) "YES" else "No",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            tooltipText = "Alerts every 15,000 Km. You have a 500 Km buffer to service before" +
+                                    " the alert resets for the next interval."
                         )
 
                     }
