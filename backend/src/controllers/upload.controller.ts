@@ -5,6 +5,23 @@ import { auth_services } from "../services/auth_services";
 import { vehicle_services } from "../services/vehicle.services";
 import { ExtendedError } from "../utils/errors";
 
+const sendFileResponse = (
+    res: Response,
+    {
+        stream, 
+        content_Type, 
+        content_length,
+    }: { stream: any; content_Type: string; content_length?: number | null},
+    cacheControl: string
+) => {
+    res.setHeader("Content-Type", content_Type);
+    if(content_length){
+        res.setHeader("Content-Length", content_length.toString());
+    }
+    res.setHeader("Cache-Control", cacheControl);
+
+    stream.pipe(res);
+}
 
 export const upload_controller = {
     async upload_profile_picture(req: AuthRequest, res: Response){
@@ -112,14 +129,7 @@ export const upload_controller = {
             }
             
             const { stream, content_Type, content_length } = await blob_storage_service.download("profile", blob_name);
-
-            res.setHeader("Content-Type", content_Type);
-            if(content_length){
-                res.setHeader("Content-Length", content_length.toString());
-            }
-            res.setHeader("Cache-Control", "private, max-age=3600");
-
-            stream.pipe(res);
+            sendFileResponse(res, {stream, content_Type, content_length }, "private, max-age=3600");
 
         }catch(error: any){
             if(error instanceof ExtendedError && error.errorCode === "USER_NOT_FOUND"){
@@ -150,14 +160,8 @@ export const upload_controller = {
             }
             
             const { stream, content_Type, content_length } = await blob_storage_service.download("vehicle", blob_name);
+            sendFileResponse(res, {stream, content_Type, content_length }, "private, max-age=3600");
 
-            res.setHeader("Content-Type", content_Type);
-            if(content_length){
-                res.setHeader("Content-Length", content_length.toString());
-            }
-            res.setHeader("Cache-Control", "primate, max-age=3600");
-
-            stream.pipe(res);
         }catch(error: any){
             if(error?.message === "You do not own this vehicle"){
                 res.status(403).json({ error: "FORBIDDEN", message: error.message });

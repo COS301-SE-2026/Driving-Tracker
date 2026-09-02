@@ -4,9 +4,9 @@ import { blob_storage_service } from '../../../src/services/blob_storage_service
 
 jest.mock('../../../src/services/blob_storage_service', () => ({
 	blob_storage_service: {
-		upload_image: jest.fn<any>().mockResolvedValue('uploaded-image.png'),
-		delete_image: jest.fn<any>().mockResolvedValue(undefined),
-		download: jest.fn<any>()
+		upload_image: jest.fn(async (): Promise<string> => 'uploaded-image.png'),
+		delete_image: jest.fn(async () => undefined),
+		download: jest.fn()
 	}
 }));
 

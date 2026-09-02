@@ -54,34 +54,36 @@ describe('Vehicle controller get_all_vehicles', () => {
 		await get_all_vehicles(req, res);
 
 		expect(json).toHaveBeenCalledWith({
+			error: 'UNAUTHORIZED',
 			message: 'Unauthorized'
 		});
 	});
 
 	it('returns 403 when the service reports missing fields', async () => {
-		jest.spyOn(vehicle_services, 'get_all_vehicles').mockRejectedValueOnce(new Error('Missing required fields'));
-
-		const req: any = {
-			user: { sub: 'user-1' }
-		};
-
-		const json = jest.fn();
-		const status = jest.fn().mockReturnValue({ json });
-		const res: any = { status };
-
-		await get_all_vehicles(req, res);
-
-		expect(status).toHaveBeenCalledWith(403);
-		expect(json).toHaveBeenCalledWith({
-			message: 'user or vehicle not known'
-		});
+		await expectForbiddenVehicleResponse(
+			new Error('Missing required fields'),
+			{ sub: 'user-1' },
+			{error: 'INVALID_FIELDS', message: 'user or vehicle not known'}
+		);
 	});
 
 	it('returns 403 when the service reports an unknown user', async () => {
-		jest.spyOn(vehicle_services, 'get_all_vehicles').mockRejectedValueOnce(new Error('User not found'));
+		await expectForbiddenVehicleResponse(
+			new Error('User not found'),
+			{ sub: 'unknown user' },
+			{error: 'UNAUTHORIZED', message: 'Unauthorized'}
+		);
+	});
+
+	const expectForbiddenVehicleResponse = async(
+		error: Error,
+		user: Record<string, string>,
+		expectedBody: Record<string, string>
+	) => {
+		jest.spyOn(vehicle_services, 'get_all_vehicles').mockRejectedValueOnce(error);
 
 		const req: any = {
-			user: { sub: 'unknown-user' }
+			user: { sub: user.sub }
 		};
 
 		const json = jest.fn();
@@ -91,8 +93,6 @@ describe('Vehicle controller get_all_vehicles', () => {
 		await get_all_vehicles(req, res);
 
 		expect(status).toHaveBeenCalledWith(403);
-		expect(json).toHaveBeenCalledWith({
-			message: 'Unauthorized'
-		});
-	});
+		expect(json).toHaveBeenCalledWith(expectedBody);
+	}
 });
