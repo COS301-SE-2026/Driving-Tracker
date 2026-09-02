@@ -609,11 +609,11 @@ export const trips_services ={
             where:{trip_id,user_id},
             select:{ user_id: true}
         });
-        if(!trip) throw new Error("trip not found or you do not own this trips");
+        if(!trip) throw new Error("trip not found or You do not own this trip");
         
         return await prisma.trip_location_shares.deleteMany({
             where:{
-                trip_id,\
+                trip_id,
                 contact_id,
                 owner_user_id:user_id
             }
