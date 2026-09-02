@@ -88,7 +88,7 @@ export const notification_services= {
             tokens: fcm_tokens,
             notification:{
                 title:"Trip access revoked",
-                body: `${shared_by}  is no longer sharing their live trip locationwith you `
+                body: `${shared_by} is no longer sharing their live trip location with you `
             },
             data:{
                 type: "TRIP_REVOKED",
