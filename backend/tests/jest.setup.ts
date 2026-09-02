@@ -3,6 +3,9 @@ dotenv.config({ path: '.env.test' });
 import { jest } from '@jest/globals';
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+process.env.AZURE_STORAGE_CONNECTION_STRING = "UseDevelopmentStorage=true";
+process.env.AZURE_STORAGE_PROFILE_CONTAINER_NAME = "test-profile-container";
+process.env.AZURE_STORAGE_VEHICLE_CONTAINER_NAME = "test-vehicle-container";
 
 const asyncNoop = async () => undefined;
 
