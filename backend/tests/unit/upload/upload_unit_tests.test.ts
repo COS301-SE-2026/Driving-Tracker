@@ -4,6 +4,7 @@ import { blob_storage_service } from '../../../src/services/blob_storage_service
 import { auth_services } from '../../../src/services/auth_services';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 import { ExtendedError } from '../../../src/utils/errors';
+import prisma from '../../../src/db/prisma';
 
 describe('Upload controller', () => {
 	beforeEach(() => {
@@ -322,5 +323,55 @@ describe('Upload controller', () => {
 			await upload_controller.get_vehicle_image(req, res);
 			expect(res.status).toHaveBeenCalledWith(403);
 		});
-	})
+	});
+
+	describe('blob name getters', () => {
+		it('returns the profile picture blob name for an existing user', async () => {
+			jest.spyOn(prisma.users, 'findUnique').mockResolvedValueOnce({
+				profile_picture_url: 'profile-blob.png'
+			}as any);
+
+			await expect(auth_services.get_profile_picture_blob_name('user-1')).resolves.toBe('profile-blob.png');
+		});
+
+		it('throws USER_NOT_FOUND when profile picture owner does not exist', async () => {
+			jest.spyOn(prisma.users, 'findUnique').mockResolvedValueOnce(null);
+
+			await expect(auth_services.get_profile_picture_blob_name('missing-user')).rejects.toMatchObject({
+				errorCode: 'USER_NOT_FOUND'
+			});
+		});
+
+		it('returns the vehicle image blob name for an owned vehicle', async () => {
+			jest.spyOn(prisma.users_vehicles, 'findUnique').mockResolvedValueOnce({
+				user_id: 'user-1',
+				vehicle_id: 'vehicle-1'
+			}as any);
+
+			jest.spyOn(prisma.vehicles, 'findUnique').mockResolvedValueOnce({
+				image_url: 'vehicle-blob.png'
+			}as any);
+
+			await expect(vehicle_services.get_vehicle_image_blob_name('user-1', 'vehicle-1')).resolves.toBe('vehicle-blob.png');
+		});
+
+		it('throws when the user does not own the vehicle', async () => {
+			jest.spyOn(prisma.users_vehicles, 'findUnique').mockResolvedValueOnce(null);
+
+			await expect(vehicle_services.get_vehicle_image_blob_name('user-1', 'vehicle-1')).rejects.toThrow('You do not own this vehicle');
+		});
+
+		it('returns null when the vehicle exists but has no image url', async () => {
+			jest.spyOn(prisma.users_vehicles, 'findUnique').mockResolvedValueOnce({
+				user_id: 'user-1',
+				vehicle_id: 'vehicle-1'
+			}as any);
+
+			jest.spyOn(prisma.vehicles, 'findUnique').mockResolvedValueOnce({
+				image_url: null
+			}as any);
+
+			await expect(vehicle_services.get_vehicle_image_blob_name('user-1', 'vehicle-1')).resolves.toBeNull();
+		});		
+	});
 });
