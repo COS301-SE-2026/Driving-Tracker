@@ -334,4 +334,15 @@ class TripRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun logUnusualDuration(tripId: String, expectedSeconds: Int, movingSeconds: Int ): Result<String> {
+        return try {
+            val response = api.logUnusualDurationEvent(tripId, UnusualDurationRequest(expectedSeconds, movingSeconds))
+            Result.success(response.message)
+
+        } catch (e: Exception) {
+            Log.d("UnusualDuration", "Failed to log unusual duration")
+            Result.failure(e)
+        }
+    }
 }

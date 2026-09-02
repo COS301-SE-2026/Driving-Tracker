@@ -1,46 +1,51 @@
 package com.omnitech.drivingtracker.services
 
+import android.util.Log
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 
 class TripDurationMonitor(
-    private val expectedTravelTimeSeconds: Long,
+    val expectedTravelTimeSeconds: Int,
     private val overPercentThreshold: Double = 0.5,
-    private val minimumOverSeconds: Long = 600,
+    private val minimumOverSeconds: Int = 600,
     private val stopSpeedThresholdKmh: Float = 5f,
-    private val onUnusualDuration: (movingSeconds: Long, expectedSeconds: Long) -> Unit
+    private val onUnusualDuration: (movingSeconds: Int, expectedSeconds: Int) -> Unit
 ) {
 
-    private var accumulatedMovingSeconds: Long = 0
+    var accumulatedMovingMillis: Long = 0
     private var lastUpdateAt: Instant? = null
     private var isCurrentlyStopped = false
     private var thresholdFired = false
 
     fun onLocationUpdate(speedKmh: Float, timestamp: Instant){
+
         if(thresholdFired) return
 
         val last = lastUpdateAt
         if(last != null && !isCurrentlyStopped){
 
-            val deltaSeconds = Duration.between(last, timestamp).seconds
-            if(deltaSeconds > 0){
-                accumulatedMovingSeconds += deltaSeconds
+            val deltaMillis = Duration.between(last, timestamp).toMillis()
+            if(deltaMillis > 0){
+                accumulatedMovingMillis += deltaMillis
             }
         }
 
-        isCurrentlyStopped = speedKmh <=stopSpeedThresholdKmh
+        isCurrentlyStopped = speedKmh <= stopSpeedThresholdKmh
         lastUpdateAt = timestamp
 
+        val movingSeconds = (accumulatedMovingMillis / 1000).toInt()
+
         val thresholdSeconds = maxOf(
-            (expectedTravelTimeSeconds * (1 + overPercentThreshold)).roundToLong(),
+            (expectedTravelTimeSeconds * (1 + overPercentThreshold)).roundToInt(),
             expectedTravelTimeSeconds + minimumOverSeconds
             )
 
-        if(accumulatedMovingSeconds >= thresholdSeconds){
+        if(movingSeconds >= thresholdSeconds){
             thresholdFired = true
-            onUnusualDuration(accumulatedMovingSeconds, expectedTravelTimeSeconds)
+            onUnusualDuration(movingSeconds, expectedTravelTimeSeconds)
         }
     }
 }
