@@ -1837,7 +1837,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:^4.17.25":
+"@types/express@npm:^4.17.21":
   version: 4.17.25
   resolution: "@types/express@npm:4.17.25"
   dependencies:
@@ -2584,7 +2584,7 @@ __metadata:
     "@prisma/client": "npm:7.8.0"
     "@types/bcrypt": "npm:^6.0.0"
     "@types/cors": "npm:^2.8.19"
-    "@types/express": "npm:^4.17.25"
+    "@types/express": "npm:^4.17.21"
     "@types/jest": "npm:^30.0.0"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/jsonwebtoken": "npm:^9.0.10"
