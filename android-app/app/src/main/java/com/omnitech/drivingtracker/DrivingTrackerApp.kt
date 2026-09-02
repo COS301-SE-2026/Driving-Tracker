@@ -4,15 +4,33 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.omnitech.drivingtracker.data.local.NotificationChannels
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+fun interface ImageLoaderEntryPoint{
+    fun okHttpClient(): OkHttpClient
+}
 
 @HiltAndroidApp
-class DrivingTrackerApp : Application() {
+class DrivingTrackerApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+    }
+
+    override fun newImageLoader(): ImageLoader{
+        val entryPoint = EntryPointAccessors.fromApplication(this, ImageLoaderEntryPoint::class.java)
+        return ImageLoader.Builder(this).okHttpClient(entryPoint.okHttpClient()).build()
     }
 
     private fun createNotificationChannels(){

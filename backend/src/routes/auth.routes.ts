@@ -4,7 +4,7 @@ import { verify_token } from '../middleware/auth';
 import { 
     register_limiter, 
     refresh_limiter, 
-    user_based_limiter, 
+    create_user_based_limiter, 
     login_limiter_sliding, 
     forgot_password_limiter,
     reset_password_limiter
@@ -259,7 +259,7 @@ auth_router.post("/login", login_limiter_sliding, auth_controller.login);
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to log out
  */
-auth_router.post("/logout", verify_token, user_based_limiter, auth_controller.logout);
+auth_router.post("/logout", verify_token, create_user_based_limiter(), auth_controller.logout);
 
 /**
  * @openapi
@@ -407,7 +407,7 @@ auth_router.post("/refresh", refresh_limiter ,auth_controller.refresh);
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to retrieve profile
  */
-auth_router.get("/profile", verify_token, user_based_limiter, auth_controller.get_profile);
+auth_router.get("/profile", verify_token, create_user_based_limiter(), auth_controller.get_profile);
 
 /**
  * @openapi
