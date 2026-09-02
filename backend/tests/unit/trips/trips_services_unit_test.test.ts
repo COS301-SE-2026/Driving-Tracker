@@ -34,7 +34,9 @@ jest.mock('../../../src/db/prisma', () => {
         updateMany: jest.fn(),
         createMany: jest.fn(),
         findMany: jest.fn(),
-        count: jest.fn()
+        count: jest.fn(),
+        findFirst: jest.fn(),
+        delete: jest.fn()
     };
     const trip_scores = {
         create: jest.fn(),
@@ -96,6 +98,7 @@ jest.mock('../../../src/services/notification_service', () => ({
         send_trip_shared_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         send_trip_alert_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
         send_unexpected_stop_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        send_trip_revoked_notification: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
     },
 }));
 jest.mock('../../../src/services/vehicle.services', () => ({
@@ -471,7 +474,59 @@ describe('Trips services end_trip',()=>{
         ).rejects.toThrow('Cannot end a trip with status');
     });
 });
+describe('Trips sevice.get_trip_shares', () =>{
+    beforeEach(async () => jest.clearAllMocks());
+    it('returns active shares for a trip the user owns',async () =>{
+        mock_prisma.trips.findUnique.mockResolvedValue({ user_id: 'u1'});
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([
+            {
+                share_id: 's1',
+                trip_id: 't1',
+                revoked_at: null,
+                contact:{
+                    contact_id: 'c1',
+                    name: 'Jane',
+                    email:' jane@example.com',
+                },
+            },
+        ]);
+        const result = await trips_services.get_trip_shares('u1','t1');
 
+        expect(mock_prisma.trips.findUnique).toHaveBeenCalledWith({
+            where: {trip_id: 't1', user_id: 'u1'},
+            select: { user_id: true}
+        });
+        expect(mock_prisma.trip_location_shares.findMany).toHaveBeenCalledWith({
+            where: {trip_id: 't1', revoked_at: null},
+            include:{ 
+                contact:{
+                    select:{
+                        contact_id: true,
+                        name: true, 
+                        email: true,
+                    },
+                },
+            },
+        });
+        expect(result.length).toBe(1);
+        expect(result[0].contact.contact_id).toBe('c1');
+    });
+    it('returns empty array when the trip has no active shares', async ()=>{
+        mock_prisma.trips.findUnique.mockResolvedValue({ user_id: 'u1' });
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([]);
+
+        const result = await trips_services.get_trip_shares('u1', 't1');
+
+        expect(result).toEqual([]);
+    });
+    it('throws when the trip is not found or not owned by the user', async()=>{
+        mock_prisma.trips.findUnique.mockResolvedValue(null);
+        await expect(
+            trips_services.get_trip_shares('u1','t1')
+        ).rejects.toThrow('trip not found or You do not own this trip');
+        expect(mock_prisma.trip_location_shares.findMany).not.toHaveBeenCalled();
+    });
+});
 describe('Trips services.record', () => {
     beforeEach(async() => jest.clearAllMocks());
 
