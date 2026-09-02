@@ -7,7 +7,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import android.content.Context
 
 object ImageUploadUtils{
-    private const val MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024
+    private const val MAX_FILE_SIZE_BYTES = 7 * 1024 * 1024
 
     fun uriToMultipart(context: Context, uri: Uri, partName: String): MultipartBody.Part{
        val contentResolver = context.contentResolver
@@ -17,7 +17,7 @@ object ImageUploadUtils{
            ?: throw IllegalArgumentException("Unable to read the selected image")
 
         require(bytes.size <= MAX_FILE_SIZE_BYTES){
-            "Image must be 8 MB or smaller"
+            "Image must be 7 MB or smaller"
         }
 
         val extension = when (mimeType){

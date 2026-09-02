@@ -1,6 +1,6 @@
 import multer, { type FileFilterCallback } from "multer";
 
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 7 * 1024 * 1024;
 const MAX_FILES_PER_REQUEST = 1;
 
 const ALLOWED_MIMETYPES = new Set([
