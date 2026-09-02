@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../db/prisma";
-import { manufacturer_baseline_services } from "./manufacturer_baseline.service";
+import { manufacturer_baseline_service } from "./manufacturer_baseline.service";
 
 export interface FuelLeaderboardParams {
     user_id: string;
@@ -127,6 +127,46 @@ export const fuel_leaderboard_service = {
             (entry) => entry.user_id === params.user_id,
         );
 
+        //getting manufactures official efficiency standard
+        const manufacturerStandard = 
+            await manufacturer_baseline_service.get_efficiency({
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year,
+                engine_type: vehicle.engine_type,
+            });
+
+
+        //calculating percentile
+        const totalPeers = ranked.length; //how many drivers have the same car
+
+        const userPercentile = currentUser
+            ? totalPeers === 1
+                ? 100
+                : ((totalPeers - currentUser.rank) / (totalPeers - 1)) * 100
+            : null;
+
         
+        //final response to send back to the app
+        return {
+            vehicle: {
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year,
+                engineType: vehicle.engine_type,
+            },
+            manufacturerStandardL100km: manufacturerStandard,
+            userEfficiencyL100km: currentUser ? Number(currentUser.efficiency.toFixed(2)) : null,
+            userRank: currentUser?.rank ?? null,
+            userPerecentile: userPercentile === null ? null : Number(userPercentile.toFixed(2)),
+            totalPeers,
+            leaderboard: ranked.map((entry) => ({
+                rank: entry.rank,
+                displayName: toDispalyName(...),
+                efficiencyL100km: Number(entry.efficiency.toFixed(2)),
+                isCurrentUser: entry.user_id === params.user_id,
+            })),
+        };
+
     }
-}
+};
