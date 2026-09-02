@@ -143,6 +143,45 @@ describe('notification_services', () => {
 
         });
     });
+    describe("send_trip_shared_revoked_notification", ()=>{
+        it('sends trip revoked notification', async ()=>{
+            mockSendEachForMulticast.mockResolvedValue(undefined);
+            await notification_services.send_trip_revoked_notification(
+                ['token-1'],
+                'John Doe',
+                't1'
+            );
+            expect(mockSendEachForMulticast).toHaveBeenCalledWith({
+                tokens:['token-1'],
+                notification:{
+                    title: 'Trip access revoked',
+                    body: 'John Doe is no longer sharing their live trip location with you ',
+                },
+                data:{
+                    type: 'TRIP_REVOKED',
+                    trip_id: 't1',
+                    shared_by:'John Doe'
+                }
+            });
+        });
+        it('does not call sendEachForMUlticast when no tokens are provided', async()=>{
+            await notification_services.send_trip_revoked_notification([], 'John Doe','t1');
+            expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+        });
+        it('does not throw and logs the error when firebase send fails',async ()=>{
+            const errorSpy = jest.spyOn(console,'error').mockImplementation(() => {});
+            mockSendEachForMulticast.mockRejectedValueOnce(new Error('firebase failed'));
+
+            await expect(
+                notification_services.send_trip_revoked_notification(['token-1'], 'John Doe', 't1')
+            ).resolves.toBeUndefined();
+
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Failed to send trip revoked notification: ','firebase failed'
+            );
+            errorSpy.mockRestore();
+        });
+    });
 
     describe('send_trip_alert_notification', () => {
         it('sends trip alert notification', async () => {

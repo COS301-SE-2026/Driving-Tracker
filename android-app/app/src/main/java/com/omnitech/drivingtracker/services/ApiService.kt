@@ -197,6 +197,15 @@ interface ApiService{
     @GET("vehicle/fuel_analytics")
     suspend fun getFuelAnalytics(): FuelAnalyticsDto
 
+    @GET("trips/{trip_id}/shares")
+    suspend fun getTripShares(@Path("trip_id") tripId: String): TripSharesResponse
+
+    @DELETE("trips/{trip_id}/shares/{contact_id}")
+    suspend fun revokeTripShare(
+        @Path("trip_id") tripId: String,
+        @Path("contact_id") contactId: String
+    ): GenericResponse
+
 
     @POST("users/me/delete")
     suspend fun deleteAccount(
