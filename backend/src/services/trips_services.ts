@@ -880,7 +880,9 @@ export const trips_services ={
                     distance_km: to_number(trip.distance_km),
                     duration_minutes: trip.duration_minutes,
                     fuel_estimate: to_number(trip.fuel_estimate),
-                    scores: trip.trip_scores?.[0] ? {
+                    start_address: startAddr,
+					end_address: endAddr,
+					scores: trip.trip_scores?.[0] ? {
                         safety_score: to_number(trip.trip_scores[0].safety_score),
                         eco_score: to_number(trip.trip_scores[0].eco_score),
                         overall_score: to_number(trip.trip_scores[0].overall_score)
