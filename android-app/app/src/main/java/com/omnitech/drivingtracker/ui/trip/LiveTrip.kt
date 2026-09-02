@@ -876,7 +876,9 @@ fun LiveTripPreview() {
         durationMinutes = 20,
         fuelEstimate = 8.5,
         scores = null,
-        events = emptyList()
+        events = emptyList(),
+        startAddress = "",
+        endAddress = ""
     )
 
     DrivingTrackerTheme {
