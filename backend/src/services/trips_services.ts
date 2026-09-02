@@ -604,6 +604,21 @@ export const trips_services ={
             }
         })
     },
+    async revoke_share(user_id: string, contact_id:string, trip_id: string){
+        const trip = await prisma.trips.findUnique({
+            where:{trip_id,user_id},
+            select:{ user_id: true}
+        });
+        if(!trip) throw new Error("trip not found or you do not own this trips");
+        
+        return await prisma.trip_location_shares.deleteMany({
+            where:{
+                trip_id,\
+                contact_id,
+                owner_user_id:user_id
+            }
+        });
+    },
 
     async record(data:record_data){//consistent trip update endpoint 
         if(!data.trip_id){
