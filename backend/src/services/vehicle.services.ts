@@ -331,6 +331,48 @@ export const vehicle_services={
     }
 };
 
+async get_fuel_comparison(data: { user_id: string }) {
+    const { user_id } = data;
+
+    //getting user's primary vehicle
+    const vehicle = await prisma.vehicles.findFirst({
+        where: { users_vehicles: { some: { user_id } } },
+        include: { trips: { where: { status: "COMPLETED" } } }
+    });
+
+    if (!vehicle) throw new Error("No vehicle found for this user");
+
+    //calculating user average
+    const totalDist = vehicle.trips.reduce((sum, t) => sum + Number(t.distance_km || 0), 0);
+    const totalFuel = vehicle.trips.reduce((sum, t) => sum + Number(t.fuel_estimate || 0), 0);
+    const userAvg = totalDist > 0 ? (totalFuel / totalDist) * 100 : 0;
+
+    //getting peer leaderboard
+    const peers = await prisma.users.findMany({
+        where: {
+            users_vehicles: { some: { vehicle: { make: vehicle.make, model: vehicle.model } } },
+        },
+    take: 5
+    });
+
+    return {
+        vehicle: {
+            vehicle_id: vehicle.vehicle_id,
+            make: vehicle.make,
+            model: vehicle.model,
+            registration: vehicle.registration
+        },
+        manufacturer_standard: Number(vehicle.fuel_efficiency || 8.0),
+        user_average: parseFloat(userAvg.toFixed(2)),
+        peer_leaderboard: peers.map((p, index) => ({
+            rank: index + 1,
+            user_id: p.user_id,
+            display_name: p.name,
+            efficiency: 7.5 //placehoder for peer logic
+        }))
+    };
+}
+
 export async function fetch_jwt_car_token(){
     const url = `https://carapi.app/api/auth/login`;
     const api_token = process.env.CARAPI_TOKEN;
