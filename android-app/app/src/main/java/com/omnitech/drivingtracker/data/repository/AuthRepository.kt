@@ -64,13 +64,15 @@ class AuthRepository @Inject constructor(
 
             Result.success(Unit)
 
-        }catch(e: HttpException){
-           val error = ApiErrorParser.parse(e)
+        }
+        catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message?: "An error occurred"))
-        }catch(e: Exception){
+        }
+        catch(e: Exception){
             e.printStackTrace()
-        Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
-    }
+            Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
+        }
     }
 
     suspend fun login(identifier: String, password: String):Result<Unit>{
