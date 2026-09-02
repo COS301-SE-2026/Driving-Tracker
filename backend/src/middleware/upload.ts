@@ -1,10 +1,15 @@
 import multer, { type FileFilterCallback } from "multer";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_MIMETYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ALLOWED_MIMETYPES = new Set([
+    "image/jpeg", 
+    "image/jpg", 
+    "image/png", 
+    "image/webp"
+]);
 
 function file_filter(req: unknown, file: Express.Multer.File, callback: FileFilterCallback){
-    if(!ALLOWED_MIMETYPES.includes(file.mimetype)){
+    if(!ALLOWED_MIMETYPES.has(file.mimetype)){
         callback(new Error("INVALID_FILE_TYPE"));
         return;
     }

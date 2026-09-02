@@ -1,5 +1,5 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { ExtendedError } from "../utils/errors";
 
 const CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;

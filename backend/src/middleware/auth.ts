@@ -1,6 +1,5 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
-import { UrlObject } from "url";
 
 const ACCESS_SECRET=process.env.JWT_SECRET!;
 const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;

@@ -16,7 +16,7 @@ import okhttp3.OkHttpClient
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface ImageLoaderEntryPoint{
+fun interface ImageLoaderEntryPoint{
     fun okHttpClient(): OkHttpClient
 }
 

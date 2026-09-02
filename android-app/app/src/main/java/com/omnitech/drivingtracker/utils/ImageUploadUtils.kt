@@ -16,8 +16,8 @@ object ImageUploadUtils{
        val bytes = contentResolver.openInputStream(uri)?.use{ it.readBytes() }
            ?: throw IllegalArgumentException("Unable to read the selected image")
 
-        if(bytes.size > MAX_FILE_SIZE_BYTES){
-            throw IllegalArgumentException("Image must be 10 MB or smaller")
+        require(bytes.size <= MAX_FILE_SIZE_BYTES){
+            "Image must be 10 MB or smaller"
         }
 
         val extension = when (mimeType){
