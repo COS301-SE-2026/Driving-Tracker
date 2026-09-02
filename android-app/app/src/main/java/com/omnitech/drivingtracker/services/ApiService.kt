@@ -184,4 +184,10 @@ interface ApiService{
     @GET("vehicle/fuel_analytics")
     suspend fun getFuelAnalytics(): FuelAnalyticsDto
 
+    @POST("trips/{trip_id}/unusual_duration_event")
+    suspend fun logUnusualDurationEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: UnusualDurationRequest
+    ): UnusualDurationResponse
+
 }

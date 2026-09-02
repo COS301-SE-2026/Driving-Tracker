@@ -316,3 +316,13 @@ data class StopEventResolveData(
     val resolved: Boolean
 )
 
+data class UnusualDurationRequest(
+    @SerializedName("expected_seconds")
+    val expectedSeconds: Int,
+    @SerializedName("moving_seconds")
+    val movingSeconds: Int,
+)
+
+data class UnusualDurationResponse(
+    val message: String,
+)
