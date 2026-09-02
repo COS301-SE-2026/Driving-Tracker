@@ -35,12 +35,12 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
             res.status(403).json({ error: 'UNAUTHORIZED', message: 'Unauthorized' });
             return;
         }
-        const { name, registration, make, model, year, fuel_type,fuel_tank } = req.body;
+        const { name, registration, make, model, year, engine_type, fuel_type, fuel_tank } = req.body;
 
         //Validate required fields
-        if( !make || !model || !year || !fuel_type || !fuel_tank){
+        if( !make || !model || !year || !engine_type || !fuel_type || !fuel_tank){
             res.status(400).json({
-                error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, fuel_type"
+                error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, engine_type, fuel_type, fuel_tank",
             });
             return;
         }
@@ -51,6 +51,7 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
 			make,
             model,
             year,
+            engine_type,
             fuel_type,
             fuel_tank
         });

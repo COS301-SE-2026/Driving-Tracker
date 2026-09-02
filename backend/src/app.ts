@@ -58,6 +58,7 @@ app.use("/contacts", contacts_router);
 app.use("/trips", trip_router);
 app.use("/badges",badges_leaderBoard_router);
 app.use('/leaderboard', leaderboard_router);
+app.use('/api/leaderboard', leaderboard_router)
 app.use('/vehicle',vehicle_router);
 app.use('/devices', user_devices_router);
 app.use('/map', map_router);

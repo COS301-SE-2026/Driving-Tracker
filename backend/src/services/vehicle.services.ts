@@ -36,6 +36,7 @@ export interface assign_vehicle{
 	make: string,
     model: string,
     year: number,
+    engine_type: string,
     fuel_type: string,
     fuel_tank:number
 }
@@ -166,9 +167,10 @@ export const vehicle_services={
                     data: {
                         name: data.name,
                         registration: data.registration,
-                        make: data.make,
-                        model: data.model,
+                        make: data.make.trim(),
+                        model: data.model.trim(),
                         year: data.year,
+                        engine_type: data.engine_type.trim(),
                         fuel_type: data.fuel_type,
                         fuel_efficiency: benchmark_lper100km,
                         fuel_tank:data.fuel_tank
