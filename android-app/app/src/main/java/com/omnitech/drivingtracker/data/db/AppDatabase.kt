@@ -12,7 +12,7 @@ import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.db.entities.TripReadingEntity
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 
-@Database(entities = [UserEntity::class, TripEntity::class, TripReadingEntity::class, TripEventEntity::class], version = 2, exportSchema = false)
+@Database(entities = [UserEntity::class, TripEntity::class, TripReadingEntity::class, TripEventEntity::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun userDao(): UserDao

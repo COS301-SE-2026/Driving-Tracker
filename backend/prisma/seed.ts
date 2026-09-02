@@ -1,7 +1,11 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
 import { faker } from '@faker-js/faker';
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt';
+import {
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 
 //SA coordinates (coordinates for SA only)
 const SACords = {
@@ -67,6 +71,7 @@ async function main() {
                 model: 'M3',
                 year: 2024,
                 fuel_type: 'PETROL',
+                fuel_tank: 50
             }
         });
         await prisma.users_vehicles.create({
@@ -207,31 +212,134 @@ async function main() {
         console.log(`Seeded ${usersNeeded} users`);
     }
 
-    //Creating 5 badges with criteria
-    let badgeCount =  await prisma.badges.count();
-    if (badgeCount < 5) {
-        const badgesNeeded = 5 - badgeCount;
-        const badgeCategories = ['MILESTONE', 'STREAK', 'SOCIAL', 'VARIETY'];
-        for (let i = 0; i < badgesNeeded; i++){
-            await prisma.badges.create({
-                data: {
-                    name: `${faker.word.adjective()} Driver ${faker.number.int({ min: 1, max: 1_000_000 })}`,
-                    description: faker.lorem.sentence(),
-                    category: faker.helpers.arrayElement(badgeCategories),
-                    icon_url: faker.image.url(),
-                    badge_criteria: {
-                        create: {
-                            metric: 'safety_score',
-                            operator: '>',
-                            threshold: faker.number.float({ min: 80, max: 95, fractionDigits: 2 }),
-                            target: faker.number.int({ min: 5, max: 50 })
-                        }
-                    }
-                }
-            });
-        } 
-        console.log(`Seeded ${badgesNeeded} badges`);   
+    //Weekly challenges
+    const challengeStart = new Date();
+    const challengeEnd = new Date(challengeStart);
+    challengeEnd.setDate(challengeEnd.getDate() + 7);
+
+    const weeklyChallengesSeed = [
+        {
+            name: 'Safety Officer',
+            description: 'Complete 4 trips without bad driving habits',
+            target_trips: 4,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+        {
+            name: 'Speed Angel',
+            description: 'Complete 3 trips with an average speed below 80km/h',
+            target_trips: 3,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+        {
+            name: 'Throttle Goat',
+            description: 'Complete 5 trips without a hard acceleration event',
+            target_trips: 5,
+            active: true,
+            start_date: challengeStart,
+            end_date: challengeEnd,
+        },
+    ];
+
+    const weeklyChallengeIdByName = new Map<string, string>();
+    for (const challenge of weeklyChallengesSeed) {
+        const saved = await prisma.weekly_challenges.upsert({
+            where: { name: challenge.name },
+            update: {
+                description: challenge.description,
+                target_trips: challenge.target_trips,
+                active: challenge.active,
+                start_date: challenge.start_date,
+                end_date: challenge.end_date,
+            },
+            create: challenge,
+        });
+        weeklyChallengeIdByName.set(challenge.name, saved.challenge_id);
     }
+    console.log(`Seeded/updated 3 weekly challenges`);
+
+    //Badge assets
+    const badgeSeeds = [
+        {
+            name: 'First Drive',
+            description: 'Complete your very first trip',
+            category: 'MILESTONE',
+            icon_url: 'badge_first_drive',
+            weeklyChallengeName: null,
+            criterion: { metric: 'completed_trip_count', operator: '>=', threshold: 1, target: 1 },
+        },
+        {
+            name: 'On Board',
+            description: 'Connect to the OBD device for the first time',
+            category: 'MILESTONE',
+            icon_url: 'badge_on_board',
+            weeklyChallengeName: null,
+            criterion: { metric: 'obd_connection_count', operator: '>=', threshold: 1, target: 1 },
+        },
+        {
+            name: 'Safety Officer',
+            description: 'No harsh driving events for 4 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_safety_officer',
+            weeklyChallengeName: 'Safety Officer',
+            criterion: { metric: 'safe_trips_count', operator: '>=', threshold: 4, target: 4 },
+        },
+        {
+            name: 'Speed Angel',
+            description: 'Keep an average speed below 80km/h for 3 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_speed_angel',
+            weeklyChallengeName: 'Speed Angel',
+            criterion: { metric: 'low_speed_trips_count', operator: '>=', threshold: 3, target: 3 },
+        },
+         {
+            name: 'Throttle Goat',
+            description: 'No hard acceleration events for 5 trips',
+            category: 'SAFETY',
+            icon_url: 'badge_throttle_goat',
+            weeklyChallengeName: 'Throttle Goat',
+            criterion: { metric: 'smooth_accel_trips_count', operator: '>=', threshold: 5, target: 5 },
+        },
+    ];
+
+    for (const badgeSeed of badgeSeeds) {
+        const weekly_challenge_id = badgeSeed.weeklyChallengeName
+            ? weeklyChallengeIdByName.get(badgeSeed.weeklyChallengeName) ?? null
+            : null;
+        
+        const badge = await prisma.badges.upsert({
+            where: { name: badgeSeed.name },
+            update: {
+                description: badgeSeed.description,
+                category: badgeSeed.category,
+                icon_url: badgeSeed.icon_url,
+                weekly_challenge_id,
+            },
+            create: {
+                name: badgeSeed.name,
+                description: badgeSeed.description,
+                category: badgeSeed.category,
+                icon_url: badgeSeed.icon_url,
+                weekly_challenge_id,
+            },
+        });
+
+        //Keeping criteria idempotent by deleting existing criteria and recreating them
+        await prisma.badge_criteria.deleteMany({ where: { badge_id: badge.badge_id } });
+        await prisma.badge_criteria.create({
+            data: {
+                badge_id: badge.badge_id,
+                metric: badgeSeed.criterion.metric,
+                operator: badgeSeed.criterion.operator,
+                threshold: badgeSeed.criterion.threshold,
+                target: badgeSeed.criterion.target,
+            },
+        });
+    }
+    console.log(`Seeded/updated ${badgeSeeds.length} badges from drawable assets`)
     
     const badges = await prisma.badges.findMany();
     const users = await prisma.users.findMany();
@@ -242,12 +350,19 @@ async function main() {
             //Checking if user already has a leaderboard to avoid unique constraint crashes
             const existingBoard = await prisma.leaderboard.findFirst({ where: { user_id: user.user_id }});
             if (!existingBoard) {
+
+                const scope = faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']);
+
+                const period_start = 
+                    scope === 'ALL_TIME'? new Date('1970-01-01T00:00:00.000Z')
+                    :scope === 'WEEKLY'? startOfWeek(new Date()): startOfMonth(new Date());
                 await prisma.leaderboard.create({
                     data: {
                         user_id: user.user_id,
                         category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
-                        scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
-                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 })
+                        scope,
+                        score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
+                        period_start
                     }
                 });
 
@@ -341,6 +456,7 @@ async function main() {
                     model: faker.vehicle.model(),
                     year: faker.date.past({ years: 15 }).getFullYear(),
                     fuel_type: faker.helpers.arrayElement(['PETROL', 'DIESEL', 'ELECTRIC']),
+                    fuel_tank: 50
                 }
             });
 
