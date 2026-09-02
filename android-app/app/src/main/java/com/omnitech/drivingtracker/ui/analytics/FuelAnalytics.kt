@@ -40,6 +40,7 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import androidx.compose.runtime.*
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.FuelHistoryPointDto
+import com.omnitech.drivingtracker.ui.components.AnalyticsChart
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
@@ -398,24 +399,9 @@ fun FuelGraph(history: List<FuelHistoryPointDto>){
                 Spacer(modifier = Modifier.height(10.dp))
 
                 CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberLineCartesianLayer(
-                            rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = 100.0)
-                        ),
-                        startAxis = VerticalAxis.rememberStart(
-                            label = rememberAxisLabelComponent(),
-                            titleComponent = rememberTextComponent(),
-                            title = {"L/100km"}
-                        ),
-                        bottomAxis = HorizontalAxis.rememberBottom(
-                            label = rememberAxisLabelComponent(),
-                            titleComponent = rememberTextComponent(),
-                            title = {"Date"},
-                            valueFormatter = CartesianValueFormatter{
-                                _,value,_-> //get the fuel efficiency hist and take only the day & month
-                                history.getOrNull(value.toInt())?.date?.takeLast(5) ?:""
-                            }
-                        ),
+                    chart = AnalyticsChart(
+                        yAxisTitle = "L/100 Km",
+                        dates = history.map{it.date}
                     ),
                     modelProducer = modelProducer,
                     modifier = Modifier.fillMaxWidth().height(280.dp)

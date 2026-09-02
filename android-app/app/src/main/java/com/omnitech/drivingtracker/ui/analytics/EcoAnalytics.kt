@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.ui.components.AnalyticsChart
 import com.omnitech.drivingtracker.ui.components.AnalyticsHeader
 import com.omnitech.drivingtracker.ui.components.ScoreRing
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
@@ -149,24 +150,9 @@ fun ScoreChart(title: String, scores: List<Float>, history: List<TripDataPoint>)
             Spacer(modifier = Modifier.height(12.dp))
 
             CartesianChartHost(
-                chart = rememberCartesianChart(
-                    rememberLineCartesianLayer(
-                        rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = 100.0)
-                    ),
-                    startAxis = VerticalAxis.rememberStart(
-                        label = rememberAxisLabelComponent(),
-                        titleComponent = rememberTextComponent(),
-                        title = {"Score"}
-                    ),
-                    bottomAxis = HorizontalAxis.rememberBottom(
-                        label = rememberAxisLabelComponent(),
-                        titleComponent = rememberTextComponent(),
-                        title = {"Date"},
-                        valueFormatter = CartesianValueFormatter{
-                            _, value, _ ->
-                            history.getOrNull(value.toInt())?.date?.takeLast(5) ?: ""
-                        }
-                    ),
+                chart = AnalyticsChart(
+                    yAxisTitle = "Score",
+                    dates = history.map{it.date}
                 ),
                 modelProducer = modelProducer
             )
