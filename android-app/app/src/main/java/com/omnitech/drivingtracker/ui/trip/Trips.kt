@@ -431,7 +431,7 @@ private fun StartTripDialog(
 ){
     var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }
     var expanded by remember { mutableStateOf(false) }
-    var dataSource by rememberSaveable { mutableStateOf("PHONE") }
+    //var dataSource by rememberSaveable { mutableStateOf("PHONE") }
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }
@@ -530,13 +530,13 @@ private fun StartTripDialog(
                     )
                 }
 
-                OutlinedTextField(
-                    value = dataSource,
-                    onValueChange = { dataSource = it },
-                    label = { Text("Data source") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+//                OutlinedTextField(
+//                    value = dataSource,
+//                    onValueChange = { dataSource = it },
+//                    label = { Text("Data source") },
+//                    singleLine = true,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
                 OutlinedTextField(
                     value = destinationQuery,
                     onValueChange = {
@@ -646,7 +646,7 @@ private fun StartTripDialog(
                 if (vehicleId != null && lat != null && lng != null) {
                     onStartTrip(
                         vehicleId,
-                        dataSource.trim(),
+                        "PHONE",
                         lat,
                         lng,
                         selectedDestination?.latitude,

@@ -102,6 +102,43 @@ export const badges_leaderboard_services = {
         },
         });
 
+        const safe_trips_count = await prisma.trips.count({
+            where: {
+                user_id: data.user_id,
+                status: "COMPLETED",
+                trip_events: {
+                    none: {
+                        type: { in: ["HARSH_BRAKE", "HARSH_ACCELERATION", "SHARP_CORNER"] }
+                    }
+                }
+            }
+        });
+
+        const smooth_accel_trips_count = await prisma.trips.count({
+            where: {
+                user_id: data.user_id,
+                status: "COMPLETED",
+                trip_events: {
+                    none: { type: "HARSH_ACCELERATION" }
+                }
+            }
+        });
+
+        const all_completed_trips = await prisma.trips.findMany({
+            where: {
+                user_id: data.user_id,
+                status: "COMPLETED",
+                distance_km: { not: null },
+                duration_minutes: {gt: 0}
+            },
+            select: {distance_km: true, duration_minutes: true}
+        });
+
+        const low_speed_trips_count = all_completed_trips.filter(trip => {
+            const avg_speed = (Number(trip.distance_km) / (trip.duration_minutes || 1)) * 60;
+            return avg_speed < 80;
+        }).length;
+
         const metrics: MetricMap = {
             distance_km: Number(trip.distance_km ?? 0),
             duration_minutes: Number(trip.duration_minutes ?? 0),
@@ -116,6 +153,10 @@ export const badges_leaderboard_services = {
             crash_count: event_counts.crash_count,
             shared_trip_count: trip.trip_location_shares.length,
             completed_trip_count: user_trip_count,
+            safe_trips_count: safe_trips_count,
+            smooth_accel_trips_count: smooth_accel_trips_count,
+            low_speed_trips_count: low_speed_trips_count,
+            obd_connection_count: trip.data_source === "OBD" ? 1 : 0,
         };
 
         const badges = await prisma.badges.findMany({

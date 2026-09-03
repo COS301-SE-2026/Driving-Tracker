@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.contacts
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
@@ -25,6 +26,24 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState  // Read-only, UI observes this
 
+    private val _activeShares = MutableStateFlow<List<ContactDto>>(emptyList())
+    val activeShares: StateFlow<List<ContactDto>> = _activeShares
+
+    fun loadActiveShares(tripId: String) {
+        viewModelScope.launch {
+            repository.getTripShares(tripId).onSuccess {
+                _activeShares.value = it
+            }
+        }
+    }
+
+    fun revokeTripShare(tripId: String, contactId: String) {
+        viewModelScope.launch {
+            repository.revokeTripShare(tripId, contactId).onSuccess {
+                loadActiveShares(tripId) // Refresh list
+            }
+        }
+    }
     //load data function
     fun loadContacts(){
         viewModelScope.launch{
@@ -109,6 +128,7 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
             repository.shareLocation(tripId, contactIds).fold(
                 onSuccess = {
                     loadContacts()
+                    loadActiveShares(tripId)
                 },
                 onFailure = { exception ->
                     when{

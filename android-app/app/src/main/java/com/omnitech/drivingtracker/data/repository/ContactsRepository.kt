@@ -99,4 +99,29 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
         }
     }
+    suspend fun getTripShares(tripId: String): Result<List<ContactDto>>{
+        return try{
+            val response = api.getTripShares(tripId)
+            val contacts = response.data.map{ share ->
+                ContactDto(
+                    contactId = share.contact.contactId,
+                    name = share.contact.name,
+                    email = share.contact.email,
+                    consentStatus = ConsentStatus.APPROVED,
+                    username = share.contact.name,
+                )
+            }
+            Result.success(contacts)
+        }catch(e: Exception){
+            Result.failure(e)
+        }
+    }
+    suspend fun revokeTripShare(tripId: String, contactId: String): Result<Unit> {
+        return try {
+            api.revokeTripShare(tripId, contactId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

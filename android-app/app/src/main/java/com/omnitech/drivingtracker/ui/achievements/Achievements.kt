@@ -53,6 +53,21 @@ fun AchievementsScreen(
             viewModel.getLeaderboard(category, scope)
         }
     )
+
+    if (showGallery) {
+        BadgeGalleryDialog(
+            badges = state.badges,
+            completedChallenges = state.badges.count { it.isEarned },
+            onDismiss = { showGallery = false },
+            onBadgeClick = {
+                selectedBadge = it
+                showGallery = false
+            }
+        )
+    }
+    selectedBadge?.let { badge ->
+        BadgeDescriptionDialog(badge = badge, onDismiss = { selectedBadge = null })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,6 +75,9 @@ fun AchievementsScreen(
 fun AchievementsContent(
     state: AchievementsUiState,
     navController: NavController? = null,
+    onViewMore: () -> Unit = {},
+    onBadgeClick: (BadgeUiModel) -> Unit = {},
+    onChallengesClick: () -> Unit = {},
     onFilterChanged: (category: String, scope: String) -> Unit = {_, _ -> }
 ) {
     var expandedCategory by remember { mutableStateOf(false) }
@@ -95,7 +113,7 @@ fun AchievementsContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp, vertical = 24.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
@@ -105,7 +123,22 @@ fun AchievementsContent(
 
             item {
                 // Badges Gallery (LazyRow)
-                BadgeSection()
+                BadgeSection(
+                    badges = state.badges,
+                    onViewMore = onViewMore,
+                    onBadgeClick = onBadgeClick
+                )
+            }
+
+            item {//Navigation to Weekly Challenges
+                Button(
+                    onClick = onChallengesClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                    shape = RoundedCornerShape(12.dp)
+                ){
+                    Text("View Weekly Challenges")
+                }
             }
 
             item {
@@ -217,6 +250,27 @@ fun AchievementsContent(
                             isUser = entry.rank == leaderboard.myRank
                         )
                         HorizontalDivider()
+                    }
+
+                    val isUserInList = leaderboard.entries.any { it.rank == leaderboard.myRank }
+
+                    if(!isUserInList && leaderboard.myRank != null) {
+                        item{
+                            Column(horizontalAlignment = Alignment.CenterHorizontally){
+                                Text(
+                                    text ="•\n•\n•",
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    color = Color.Black
+                                )
+
+                                RankCard(
+                                    name = "You",
+                                    score = leaderboard.myScore,
+                                    isUser = true
+                                )
+                                HorizontalDivider()
+                            }
+                        }
                     }
                 }
             }

@@ -25,6 +25,7 @@ coil = "2.7.0"
 uiautomator = "2.4.0"
 playServicesBase = "18.5.0"
 coreSplashScreen =  "1.0.1"
+vico = "3.2.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -65,6 +66,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 play-services-base = { group = "com.google.android.gms", name = "play-services-base", version.ref = "playServicesBase"}
 androidx-core-splashscreen  = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen"}
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

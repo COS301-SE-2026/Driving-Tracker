@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.data.models
 
+import android.R
 import com.google.gson.annotations.SerializedName
 
 @Suppress("unused")
@@ -17,10 +18,6 @@ data class LocationDto(
 data class LatestLocationResponse(
     val message: String,
     val data: LatestLocationData
-)
-data class GeoJsonLineString(
-    val type: String = "LineString",
-    val coordinates: List<List<Double>>
 )
 data class LatestLocationData(
     @SerializedName("last_latitude")
@@ -167,7 +164,20 @@ data class TripScoreDto(
 data class TripSummaryResponse(
     val data: TripSummaryDto
 )
-
+data class TripSharesResponse(
+    val data: List<TripShareDto>
+)
+data class TripShareDto(
+    @SerializedName("share_id")
+    val shareId: String,
+    val contact: ContactDetailDto
+)
+data class ContactDetailDto(
+    @SerializedName("contact_id")
+    val contactId: String,
+    val name: String,
+    val email: String?,
+)
 data class TripSummaryDto(
     @SerializedName("trip_id")
     val tripId: String,
@@ -188,6 +198,13 @@ data class TripSummaryDto(
     val durationMinutes: Int?,
     @SerializedName("fuel_estimate")
     val fuelEstimate: Double?,
+
+    @SerializedName("start_address")
+    val startAddress: String? = null,
+
+    @SerializedName("end_address")
+    val endAddress: String? = null,
+
     @SerializedName("destination_latitude")
     val destinationLatitude: Double? = null,
     @SerializedName("destination_longitude")
@@ -212,7 +229,10 @@ data class TripEventDto(
     @SerializedName("time_stamp")
     val timestamp: String
 )
-
+data class GeoJsonLineString(
+    val type: String = "LineString",
+    val coordinates: List<List<Double>>
+)
 // End Trip Request
 data class EndTripRequest(
     @SerializedName("end_time")

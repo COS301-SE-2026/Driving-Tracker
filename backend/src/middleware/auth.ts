@@ -9,9 +9,20 @@ export interface AppJwtPayload extends JwtPayload{
   role: "admin" | "user";
 }
 
+type UploadedFile = {
+  buffer: Buffer;
+  mimetype: string;
+  originalname?: string;
+  fieldname?: string;
+  encoding?: string;
+  size?: number;
+}
+
 //Interface that extends Request to add user which holds custom JwtPayload
-export interface AuthRequest extends Request{
-  user?: AppJwtPayload
+export type AuthRequest = Request &{
+  user?: AppJwtPayload;
+  file?: UploadedFile;
+  files?: UploadedFile[] | Record<string, UploadedFile[]>;
 }
 
 //Generates a new access token

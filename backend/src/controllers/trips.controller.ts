@@ -73,6 +73,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             });
             return;
         }
+        
         const end_trip_results = await trips_services.end_trip({
             trip_id,
             user_id,
@@ -106,7 +107,42 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
         }
     }
 };
-
+export const get_all_active_shares = async (req: AuthRequest, res:Response)=>{
+    try{
+        const user_id = req.user?.sub;
+        const {trip_id} = req.params;
+        if(!user_id){
+            return res.status(401).json({ error:"UNAUTHORIZED"});
+        }
+        const shares = await trips_services.get_trip_shares(user_id,trip_id);
+        res.status(200).json({ data: shares});
+    }catch(error: any ){
+        if(error.message.includes("trip not found or You do not own this trip")){
+            res.status(403).json({error: "UNAUTHORIZED"});
+        }else{
+            res.status(500).json({error: "INTERNAL SERVER ERROR"});
+        }
+    }
+};
+export const revoke_trip_shares = async(req: AuthRequest, res: Response)=>{
+    try{
+        const user_id = req.user?.sub;
+        const { trip_id,contact_id } = req.params;
+        if(!user_id){
+            return res.status(403).json({error: "UNAUTHORIZED"});
+        }
+        await trips_services.revoke_share(user_id,contact_id,trip_id);
+        return res.status(200).json({ message: "SUCCESSFUL"});
+    }catch(error: any){
+        if(error.message ==="trip not found or You do not own this trip" ){
+            return res.status(403).json({
+                error:"UNAUTHORIZED"
+            });
+        }else{
+            return res.status(500).json({error: "INTERNAL SEVER ERROR"});
+        }
+    }
+};
 export const record_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const user_id = req.user?.sub;
@@ -158,8 +194,9 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
         if(error.message === "Missing required fields"){
 			/* istanbul ignore next -- unreachable via HTTP: trip_id is guaranteed by thr route, 
 			user_id is checked earlier in the controller */
-			res.status(401).json({
-                error: "Fill all valid fields"
+			res.status(400).json({
+                error:"MISSING_REQUIRED_FIELDS",
+                message: "Fill all valid fields"
             });
         }else if(error.message === "Trip not found"){
             res.status(404).json({
@@ -167,7 +204,7 @@ export const record_trip = async (req:AuthRequest, res:Response) =>{
 				message:"Trip not found"
             });
         }else if(error.message === "You do not own this trip"){
-            res.status(400).json({error:"UNAUTHORIZED"});
+            res.status(401).json({error:"UNAUTHORIZED"});
         }else{
 			res.status(500).json({error: 'INTERNAL_SERVER_ERROR', message: error.message });
 		}

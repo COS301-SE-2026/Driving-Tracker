@@ -18,8 +18,8 @@ describe('Leaderboard Controller', () => {
         it('Returns 200 and leaderboard data on success', async () => {
             const mock_leaderboard = {
                 data: {
-                category: 'safety_score',
-                scope: 'global',
+                category: 'SAFETY',
+                scope: 'ALL_TIME',
                 entries: [
                     { rank: 1, user_id: 'user-2', display_name: 'John Doe', score: 98 },
                     { rank: 2, user_id: 'user-1', display_name: 'Jane Smith', score: 95 },
@@ -33,7 +33,7 @@ describe('Leaderboard Controller', () => {
 
             const req: any = {
                 user: { sub: 'user-1' },
-                query: { category: 'safety_score', scope: 'global' },
+                query: { category: 'SAFETY', scope: 'ALL_TIME' },
             };
             const res: any = make_res();
 
@@ -44,7 +44,7 @@ describe('Leaderboard Controller', () => {
         });
 
         it('Returns 400 when category query parameter is missing', async () => {
-            const req: any = { user: { sub: 'user-1' }, query: { scope: 'global' } };
+            const req: any = { user: { sub: 'user-1' }, query: { scope: 'ALL_TIME' } };
             const res: any = make_res();
 
             await get_leaderboard(req, res);
@@ -58,7 +58,7 @@ describe('Leaderboard Controller', () => {
         });
 
         it('Returns 400 when scope query parameter is missing', async () => {
-            const req: any = { user: { sub: 'user-1' }, query: { category: 'safety_score' } };
+            const req: any = { user: { sub: 'user-1' }, query: { category: 'SAFETY' } };
             const res: any = make_res();
 
             await get_leaderboard(req, res);
@@ -70,7 +70,7 @@ describe('Leaderboard Controller', () => {
         it('Returns 400 when category is not a string', async () => {
             const req: any = {
                 user: { sub: 'user-1' },
-                query: { category: { nested: 'object' }, scope: 'global' },
+                query: { category: { nested: 'object' }, scope: 'WEEKLY' },
             };
             const res: any = make_res();
 
@@ -83,8 +83,8 @@ describe('Leaderboard Controller', () => {
         it('Returns 200 and leaderboard with user not ranked when user not in leaderboard', async () => {
             const mockLeaderboard = {
                 data: {
-                category: 'safety_score',
-                scope: 'global',
+                category: 'SAFETY',
+                scope: 'MONTHLY',
                 entries: [
                     { rank: 1, user_id: 'user-2', display_name: 'John Doe', score: 98 },
                     { rank: 2, user_id: 'user-3', display_name: 'Bob Johnson', score: 92 },
@@ -97,7 +97,7 @@ describe('Leaderboard Controller', () => {
 
             const req: any = {
                 user: { sub: 'user-1' },
-                query: { category: 'safety_score', scope: 'global' },
+                query: { category: 'SAFETY', scope: 'MONTHLY' },
             };
             const res: any = make_res();
 
@@ -112,8 +112,8 @@ describe('Leaderboard Controller', () => {
         it('Returns 200 with category eco_score and scope friends', async () => {
             const mock_leaderboard = {
                 data: {
-                    category: 'eco_score',
-                    scope: 'friends',
+                    category: 'ECO',
+                    scope: 'ALL_TIME',
                     entries: [
                         { rank: 1, user_id: 'user-1', display_name: 'Jane Smith', score: 88 },
                     ],
@@ -124,14 +124,14 @@ describe('Leaderboard Controller', () => {
             jest.spyOn(leaderboard_services, 'get_leaderboard').mockResolvedValueOnce(mock_leaderboard as any);
             const req: any = {
                 user: { sub: 'user-1' },
-                query: { category: 'eco_score', scope: 'friends' },
+                query: { category: 'ECO', scope: 'ALL_TIME' },
             };
             const res: any = make_res();
 
                 await get_leaderboard(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(leaderboard_services.get_leaderboard).toHaveBeenCalledWith(expect.objectContaining({ category: 'eco_score', scope: 'friends' }));
+            expect(leaderboard_services.get_leaderboard).toHaveBeenCalledWith(expect.objectContaining({ category: 'ECO', scope: 'ALL_TIME' }));
         });
     });
 
@@ -140,7 +140,7 @@ describe('Leaderboard Controller', () => {
         it('Returns 200 and categories list on success', async () => {
             const mock_categories = {
                 data: {
-                    categories: ['safety','eco','overall']
+                    categories: ['OVERALL','ECO','SAFETY']
                 }
             };
 
@@ -198,7 +198,7 @@ describe('Leaderboard Controller', () => {
         it('Returns 200 and scopes list on success', async () => {
             const mock_scopes = {
                 data: {
-                    scopes: ['weekly','monthly','all_time']
+                    scopes: ['ALL_TIME','MONTHLY','WEEKLY']
                 }
             };
 

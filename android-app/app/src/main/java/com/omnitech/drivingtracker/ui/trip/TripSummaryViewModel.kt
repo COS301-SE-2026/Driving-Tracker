@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.GeoJsonLineString
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.obd.ObdManager
@@ -153,6 +154,7 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
+<<<<<<< HEAD
     fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
@@ -161,6 +163,21 @@ class TripSummaryViewModel @Inject constructor(
                     if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
+=======
+    fun endTrip(tripId: String,latitude: Double?,
+                longitude: Double?,distance: Double?,
+                durationMinutes: Int?,fuelEstimate: Double?,
+                path : List<LocationDto>,fuelLevelEnd:Float?
+    ) {
+        viewModelScope.launch {
+            _endTripState.value = UiState.Loading
+            val geoJson = GeoJsonLineString(
+                coordinates = path.mapNotNull {loc ->
+                    if(loc.lat != null && loc.lng != null) listOf(loc.lng,loc.lat) else null
+                }
+            )
+            
+>>>>>>> f31a254180446755c339039e38254fba2f7dc425
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
             var currentFuel = obdManager.metrics.value.fuelLevel;
@@ -198,9 +215,11 @@ class TripSummaryViewModel @Inject constructor(
                             durationMinutes = durationMinutes,
                             fuelEstimate = fuelEstimate,
                             scores = null,
-                            events = emptyList()
+                            events = emptyList(),
+                            startAddress = null,
+                            endAddress = null
                         ),
-                        isFirstTrip = data.isFirstTrip ?: false
+                        isFirstTrip = data.isFirstTrip == true
                     )
                 },
                 onFailure = { exception ->

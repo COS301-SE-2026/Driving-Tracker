@@ -15,6 +15,7 @@ describe('Auth get_profile endpoint', () => {
             email: 'test@example.com',
             phone_number: '+27123456789',
             dob: new Date('2000-01-01'),
+            profile_picture_url: null,
             trip_count: 5,
             badge_count: 2,
             vehicle_count: 1

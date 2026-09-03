@@ -10,7 +10,9 @@ import { contact_services } from './contacts_services';
 import { driver_profile } from '../utils/auto_ai';
 import { calculate_trip_scores } from '../utils/trip_scores_cal';
 import { format, addHours } from 'date-fns';
+import { badges_leaderboard_services } from './badges_leaderboard_services';
 import { update_vehicle_efficiency } from '../utils/trip_counter';
+import leaderboard_services from './leaderboard_services';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -79,10 +81,11 @@ export interface trip_summary_filter {
     user_id: string;
 };
 export interface end_trip {
+
     trip_id: string;
-    user_id: string; 
+    user_id: string;
     end_time: Date;
-    route_polyline: string;
+    route_polyline: any;
     distance_km: number;
     duration_minutes: number;
     fuel_estimate: number;
@@ -523,6 +526,13 @@ export const trips_services ={
                     }
                 });
             }
+
+            setImmediate(() => {
+                void leaderboard_services
+                    .update_user_leaderboards(data.user_id)
+                    .catch((err) => { console.error('Leaderboard update failed', err)});
+            });
+
             console.log("scores computed and ready to return");
             //getting the user info
              const user = await prisma.users.findUnique({
@@ -544,6 +554,16 @@ export const trips_services ={
                 }
             }
             console.log("eval completed ");
+
+            try {
+                await badges_leaderboard_services.evaluate({
+                    user_id: data.user_id,
+                    trip_id: data.trip_id,
+                });
+            } catch (badgeError){
+                console.error("Badge evaluation failed", badgeError)
+            }
+
             console.log(driverProfile);
             return {
                 trip_id: updatedTrip.trip_id,
@@ -560,6 +580,67 @@ export const trips_services ={
         }catch(error){
             throw error;
         }
+    },
+    async get_trip_shares(user_id: string, trip_id: string){
+        //gets current active shares for a trip 
+        const trip =await prisma.trips.findUnique({
+            where :{ trip_id,
+                user_id:user_id
+            },
+            select:{ user_id:true}
+        });
+        if(!trip) throw new Error("trip not found or You do not own this trip");
+
+        return await prisma.trip_location_shares.findMany({
+            where:{ trip_id,revoked_at:null},
+            include:{
+                contact:{
+                    select:{
+                        contact_id:true,
+                        name:true,
+                        email:true
+                    }
+                }
+            }
+        })
+    },
+    async revoke_share(user_id: string, contact_id:string, trip_id: string){
+        const share = await prisma.trip_location_shares.findFirst({
+            where:{ trip_id, contact_id, owner_user_id:user_id},
+            include:{
+                owner:{select:{
+                    username: true, name:true,
+                    surname: true
+                }},
+                contact:{select:{contact_user_id:true}}
+            }
+        });
+        if (!share) {
+            throw new Error("Share record not found or you do not own this trip");
+        }
+        const contact_user_id = share?.contact.contact_user_id;
+        const owner_name = `${share?.owner.name ?? ""} ${share?.owner.surname ?? ""}`.trim() || share?.owner.username;
+        await prisma.trip_location_shares.delete({
+            where: { share_id: share?.share_id }
+        });
+
+        //Add In-App Notification for the contact
+        await add_notification({
+            user_ids: [contact_user_id],
+            type: "GENERAL",
+            title: "Trip Access Revoked",
+            body: `${owner_name} has stopped sharing their trip with you.`,
+            reference_ids: [trip_id],
+            reference_type: "trips"
+        });
+
+        // Send Push Notification
+        const tokens = await user_devices_services.get_multiple_users_fcm_tokens([contact_user_id]);
+        await notification_services.send_trip_revoked_notification(tokens, owner_name, trip_id);
+
+        return { success: true };
+
+
     },
 
     async record(data:record_data){//consistent trip update endpoint 
@@ -744,6 +825,37 @@ export const trips_services ={
                 throw new Error("You do not own this trip");
             }
 
+			let startAddr = trip.start_address;
+			let endAddr = trip.end_address;
+			let dbUpdateNeeded = false;
+
+			if(!startAddr && trip.start_latitude && trip.start_longitude){
+				try{
+					const geo = await map_services.reverse_geocode(Number(trip.start_latitude), Number(trip.start_longitude));
+					startAddr = geo.address;
+					dbUpdateNeeded = true;
+				}catch(e){
+					console.error("Start address geocode failed", e);
+				}
+			}
+
+			if(!endAddr && trip.end_latitude && trip.end_longitude){
+				try{
+					const geo = await map_services.reverse_geocode(Number(trip.end_latitude), Number(trip.end_longitude));
+					endAddr = geo.address;
+					dbUpdateNeeded = true;
+				}catch(e){
+					console.error("End address geocode failed", e);
+				}
+			}
+
+			if(dbUpdateNeeded){
+				void prisma.trips.update({
+					where: { trip_id: trip.trip_id },
+					data: { start_address: startAddr, end_address: endAddr }
+				}).catch(err => console.error("Failed to cache trip addresses", err));
+			}
+
             // Determine data source (MIXED if both OBD and PHONE exist)
             const readings = await prisma.trip_readings.findMany({
                 where: { trip_id: data.trip_id },
@@ -768,7 +880,9 @@ export const trips_services ={
                     distance_km: to_number(trip.distance_km),
                     duration_minutes: trip.duration_minutes,
                     fuel_estimate: to_number(trip.fuel_estimate),
-                    scores: trip.trip_scores?.[0] ? {
+                    start_address: startAddr,
+					end_address: endAddr,
+					scores: trip.trip_scores?.[0] ? {
                         safety_score: to_number(trip.trip_scores[0].safety_score),
                         eco_score: to_number(trip.trip_scores[0].eco_score),
                         overall_score: to_number(trip.trip_scores[0].overall_score)
