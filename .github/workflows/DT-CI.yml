@@ -123,6 +123,7 @@ jobs:
       POSTGRES_USER: ci_user
       POSTGRES_PASSWORD: ci_pass
       POSTGRES_DB: driving_tracker_ci
+      SEED_USER_PASSWORD: ci-seed-password
 
       DATABASE_URL: postgresql://ci_user:ci_pass@db:5432/driving_tracker_ci?schema=public
 
@@ -152,7 +153,7 @@ jobs:
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
           AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
           FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
-          SEED_USER_PASSWORD=ci-seed-password
+          SEED_USER_PASSWORD=${{ env.SEED_USER_PASSWORD }}
           EOF
 
           mkdir -p backend

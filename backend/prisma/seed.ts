@@ -1,6 +1,6 @@
 //import { PrismaClient } from '@prisma/client';
 import prisma from '../src/db/prisma';
-import { faker,fakerEN_AU_ocker } from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import bcrypt from 'bcrypt';
 import {
   startOfMonth,

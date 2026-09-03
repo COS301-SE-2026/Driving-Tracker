@@ -13,7 +13,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
-//import androidx.preference.isNotEmpty
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import junit.framework.TestCase.assertTrue
@@ -80,8 +79,6 @@ class ResponsivenessNfrTest{
                 systemAllowButton.click()
                 device.waitForIdle()
             }
-//            composeTestRule.waitUntil(10000) { composeTestRule.onAllNodesWithContentDescription("home").fetchSemanticsNodes().isNotEmpty()
-//            }
         }
     }
 }

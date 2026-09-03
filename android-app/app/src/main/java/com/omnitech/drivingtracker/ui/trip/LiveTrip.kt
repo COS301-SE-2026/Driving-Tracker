@@ -238,14 +238,11 @@ fun LiveTrip(
         } else {
             // If not first trip, navigate away immediately
             LaunchedEffect(currentEndTripState) {
-//                TripTrackingService.stopTrip(context)
-
-                if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
-                    TripTrackingService.stopTrip(context)
-                    navController?.navigate(Screen.Trips.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
-                    }
+                TripTrackingService.stopTrip(context)
+                navController?.navigate(Screen.Trips.route) {
+                    popUpTo(Screen.Dashboard.route) { inclusive = true }
                 }
+                
             }
         }
     } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
