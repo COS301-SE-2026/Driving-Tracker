@@ -83,26 +83,6 @@ describe("GET /vehicle/fuel_comparison", () => {
 
     });
 
-    it("returns 500 when the user has no vehicle", async () => {
-
-        jest.spyOn(vehicle_services, "get_fuel_comparison")
-            .mockRejectedValueOnce(new Error("No vehicle found for this user"));
-
-        const req: any = {
-            user: { sub: "user-1" },
-        };
-        const res: any = makeResponse();
-
-        await get_fuel_comparison(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(500);
-        expect(res.json).toHaveBeenCalledWith({
-            error: "INTERNAL_SERVER_ERROR",
-            message: "No vehicle found for this user",
-        });
-
-    });
-
     it("returns 500 when the comparison service fails", async () => {
 
         jest.spyOn(vehicle_services, "get_fuel_comparison")

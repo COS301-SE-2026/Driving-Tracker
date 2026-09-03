@@ -9,6 +9,7 @@ jest.mock('../../../src/db/prisma', () => {
         update: jest.fn(),
         delete: jest.fn(),
         count: jest.fn(),
+        aggregate: jest.fn(),
     };
     const users_vehicles = {
         findUnique: jest.fn(),
@@ -464,6 +465,13 @@ describe("additional vehicle service tests", ()=>{
         mock_prisma.users.findUnique.mockResolvedValue({
             user_id: "u1"
         });
+
+        mock_prisma.vehicles.aggregate.mockResolvedValue({
+            _avg: {
+                fuel_efficiency: null,
+            },
+        });
+
          mock_fetch.mockResolvedValueOnce(
                 make_response({
                     ok: true,
@@ -492,6 +500,12 @@ describe("additional vehicle service tests", ()=>{
 
             mock_prisma.vehicles.create.mockResolvedValue(responseShape);
 
+            mock_prisma.vehicles.aggregate.mockResolvedValue({
+                _avg: {
+                    fuel_efficiency: null,
+                },
+            });
+
         const result = await vehicle_services.assign_user_to_vehicle({
              user_id: "u1",
             name: "My Car",
@@ -505,7 +519,7 @@ describe("additional vehicle service tests", ()=>{
 
         expect(result).toEqual({
             data: responseShape,
-            warning: "Your vehicle is not fully supported. You will only get fuel estimates after 5 trips"
+            warning: "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
         });
         
         expect(mock_prisma.$transaction).toHaveBeenCalled();
@@ -557,7 +571,7 @@ describe("additional vehicle service tests", ()=>{
             model: "M3",
             year: 2010,
             fuel_tank: 60,
-            fuel_efficiency: null,
+            fuel_efficiency: 8.0,
             fuel_type: "PETROL",
         });
 
@@ -586,7 +600,7 @@ describe("additional vehicle service tests", ()=>{
                 model: "M3",
                 year: 2010,
                 fuel_tank: 60,
-                fuel_efficiency: null,
+                fuel_efficiency: 8.0,
                 fuel_type: "PETROL",
             }
         });
@@ -600,10 +614,10 @@ describe("additional vehicle service tests", ()=>{
                 model: "M3",
                 year: 2010,
                 fuel_tank: 60,
-                fuel_efficiency: null,
+                fuel_efficiency: 8.0,
                 fuel_type: "PETROL",
             },
-            warning: "Your vehicle is not fully supported. You will only get fuel estimates after 5 trips",
+            warning: "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed.",
         });
     });
 
@@ -615,10 +629,16 @@ describe("additional vehicle service tests", ()=>{
             mock_prisma.vehicles.create.mockResolvedValue({
                 vehicle_id: "v-unsupported",
                 year,
-                fuel_efficiency: null,
+                fuel_efficiency: 8.0,
             });
 
             mock_prisma.users_vehicles.create.mockResolvedValue({});
+
+            mock_prisma.vehicles.aggregate.mockResolvedValue({
+                _avg: {
+                    fuel_efficiency: null,
+                },
+            });
 
             const result = await vehicle_services.assign_user_to_vehicle({
                 user_id: "u1",

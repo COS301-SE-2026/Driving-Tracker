@@ -184,24 +184,25 @@ export const vehicle_services={
             }
             
             let benchmark_lper100km: number | null = null;
+            let warning: string | null = null;
 
             try {
+                if(data.year >= 2015 && data.year <= 2020){
+                    const benchmarks = await fetch_vehicle_benchmark(
+                        data.make,
+                        data.model,
+                        data.year
+                    );    
 
-                const benchmarks = await fetch_vehicle_benchmark(
-                    data.make,
-                    data.model,
-                    data.year
-                );
+                    const validMpgValues = benchmarks
+                        .map((benchmark) => Number(benchmark.combined_mpg))
+                        .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
 
-                const validMpgValues = benchmarks
-                    .map((benchmark) => Number(benchmark.combined_mpg))
-                    .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
-
-                if (validMpgValues.length > 0) {
-                    const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
-                    benchmark_lper100km = mpg_to_lper100km(averageMpg);
+                    if (validMpgValues.length > 0) {
+                        const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
+                        benchmark_lper100km = mpg_to_lper100km(averageMpg);
+                    }
                 }
-
             } catch  {
                 // CAR API failure is handled by the database fallback below
                 console.error("CAR API lookup failed, using database fallback.");
@@ -230,9 +231,15 @@ export const vehicle_services={
 
                 const average = databaseAverage._avg.fuel_efficiency;
 
-                benchmark_lper100km = average === null
-                    ? 8.0 // only if all other sources are unavailable
-                    : Number(average);
+                if(average === null){
+                    benchmark_lper100km = 8.0;
+                    warning = "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
+                }else{
+                    benchmark_lper100km = Number(average);
+                }
+                // benchmark_lper100km = average === null
+                //     ? 8.0 // only if all other sources are unavailable
+                //     : Number(average);
             }
             
                 
@@ -276,6 +283,7 @@ export const vehicle_services={
                     fuel_efficiency: result.fuel_efficiency,
                     fuel_type: result.fuel_type
                 },
+                warning
                 
             };
             
