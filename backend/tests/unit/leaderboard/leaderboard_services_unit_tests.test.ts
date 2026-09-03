@@ -17,6 +17,7 @@ jest.mock('../../../src/db/prisma', () => ({
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { leaderboard_services } from '../../../src/services/leaderboard_services';
+import { profile } from 'console';
 
 const mock_prisma = prisma as any ;
 
@@ -146,6 +147,27 @@ describe('Leaderboard servies', () => {
             expect(result.data.entries.length).toBe(0);
             expect(result.data.my_rank).toBeNull();
             expect(result.data.my_score).toBe(0);
+        });
+
+        it('returns leaderboard with profile picture paths', async () => {
+            mock_prisma.leaderboard.findMany.mockResolvedValue([{
+                user_id: 'u1',
+                score: new MockDecimal(95.5),
+                users: {
+                    user_id: 'u1',
+                    name: 'John',
+                    surname: 'Doe',
+                    username: 'johndoe',
+                    profile_picture_url: 'blob-abc.png'
+                },
+            }]);
+
+            const result = await leaderboard_services.get_leaderboard({
+                user_id: 'u1',
+                category: 'SAFETY',
+                scope: 'ALL_TIME'
+            });
+            expect(result.data.entries[0].profile_picture_url).toBe('upload/profile-picture/u1');
         });
     });
 
