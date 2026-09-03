@@ -121,7 +121,7 @@ private fun FuelComparisonContent(state: FuelComparisonUiState.Success) {
 
                 //Manufacturer Standard
                 ComparisonCard(
-                    label = "Manufacturer",
+                    label = "Benchmark",
                     value = data.manufacturerStandard,
                     modifier = Modifier.weight(1f)
                 )
