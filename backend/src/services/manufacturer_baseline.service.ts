@@ -43,7 +43,7 @@ export const manufacturer_baseline_service = {
                     mpgToLitresPer100Km(averageMpg).toFixed(4)
                 );
             }
-        } catch (error) {
+        } catch {
             // CAR API failure is expected and handled byt the dtatbase fallback below
             console.error("CAR API lookup failed, using database fallback.");
         }

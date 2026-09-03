@@ -633,7 +633,7 @@ describe("additional vehicle service tests", ()=>{
 
             expect(mock_fetch).not.toHaveBeenCalled();
             expect(mock_prisma.$transaction).toHaveBeenCalled();
-            expect(result?.warning).toContain("Your vehicle is not fully supported.");
+            expect(result.data.fuel_efficiency).toBe(8.0);
         }
     );
 })

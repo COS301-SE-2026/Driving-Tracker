@@ -202,7 +202,7 @@ export const vehicle_services={
                     benchmark_lper100km = mpg_to_lper100km(averageMpg);
                 }
 
-            } catch (error) {
+            } catch  {
                 // CAR API failure is handled by the database fallback below
                 console.error("CAR API lookup failed, using database fallback.");
             }
