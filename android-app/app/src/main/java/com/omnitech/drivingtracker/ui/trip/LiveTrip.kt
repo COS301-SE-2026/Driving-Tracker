@@ -175,6 +175,7 @@ fun LiveTrip(
 
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
+            viewModel.resetEndTripState()
             viewModel.loadTripSummary(tripId)
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
@@ -236,11 +237,12 @@ fun LiveTrip(
             )
         } else {
             // If not first trip, navigate away immediately
-            LaunchedEffect(Unit) {
+            LaunchedEffect(currentEndTripState) {
                 TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {
-                    popUpTo(Screen.Dashboard.route)
+                    popUpTo(Screen.Dashboard.route) { inclusive = true }
                 }
+                
             }
         }
     } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
@@ -384,7 +386,8 @@ fun LiveTripContent(
 ) {
     Column(modifier = Modifier.fillMaxSize()){
         //alert banner for E2E test
-        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+//        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+        val latestEvent = localEvents.lastOrNull()
         var showAlert by remember { mutableStateOf(false) }
 
         LaunchedEffect(latestEvent) {
@@ -405,7 +408,7 @@ fun LiveTripContent(
                 shape = RoundedCornerShape(8.dp)
             ){
                 Text(
-                    text = "${latestEvent.eventType} DETECTED",
+                    text = "${latestEvent.type} DETECTED",
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )

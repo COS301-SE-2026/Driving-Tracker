@@ -26,7 +26,9 @@ services:
     restart: "no"
 
   seed:
-    build: ./backend
+    build: 
+      context: ./backend
+      target: builder
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
@@ -59,7 +61,6 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       NODE_ENV: development
       FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
-
     depends_on:
       db:
         condition: service_healthy
@@ -138,6 +139,91 @@ services:
       prisma-migrate:
         condition: service_completed_successfully
     command: sh -lc "yarn jest --config /app/jest.config.cjs --runInBand --detectOpenHandles"
+
+  # db-test:
+    # image: postgres:15-alpine
+    # environment:
+    #   POSTGRES_USER: ${POSTGRES_TEST_USER:-postgres}
+    #   POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-password}
+    #   POSTGRES_DB: ${POSTGRES_TEST_DB:-driving_tracker_test}
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-driving_tracker_test}"]
+    #   interval: 3s
+    #   timeout: 3s
+    #   retries: 10
+
+  prisma-migrate-test:
+    build:
+      context: ./backend
+      target: builder
+    env_file:
+      - ./backend/.env.test
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -lc "yarn prisma:migrate:deploy && yarn prisma:generate"
+    restart: "no"
+
+  seed-test:
+    build: 
+      context: ./backend
+      target: builder
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    env_file:
+      - ./backend/.env.test
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+      prisma-migrate-test:
+        condition: service_completed_successfully
+    command: sh -c "npx tsx prisma/seed.ts"
+    restart: "no"
+
+  api-nfr:
+    build: ./backend
+    command: yarn start
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    env_file:
+      - ./backend/.env.test
+    environment:
+      NODE_ENV: test
+      DISABLE_RATE_LIMIT: "true"
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET:-testsecret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-testrefreshsecret}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/auth/register', (r) => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    depends_on:
+      db:
+        condition: service_healthy
+      prisma-migrate-test:
+        condition: service_completed_successfully
+      seed-test:
+        condition: service_completed_successfully
+
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./load-tests:/app
+    environment:
+      - API_URL=http://api-nfr:3000
+    depends_on:
+      api-nfr:
+        condition: service_healthy
+    command: run /app/trips.k6.ts
 
 volumes:
   postgres_data:
