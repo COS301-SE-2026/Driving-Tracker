@@ -43,7 +43,7 @@ function registerUser(runId: number, i: number) {
     const email = `loadtest_${runId}_${i}@omnitech.com`;
     const username = `user_${runId}_${i}`;
     const password = "MySecretPassword123!";
-    const phoneNumber = `0${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const phoneNumber = `0${String(runId).slice(-6)}${String(i).padStart(3, '0')}`;
 
     //REGISTER
     const regRes = http.post(`${BASE_URL}/api/auth/register`, JSON.stringify({
