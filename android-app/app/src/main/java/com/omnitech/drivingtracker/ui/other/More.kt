@@ -156,6 +156,14 @@ fun More(navController: NavController){
                         navController.navigate(Screen.Help.route)
                     }
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                ContentCard {
+                    CRow(label = "Fuel Comp",
+                        icon = Icons.Default.QuestionMark)
+                    {
+                        navController.navigate(Screen.FuelComparison.route)
+                    }
+                }
             }
 
     }

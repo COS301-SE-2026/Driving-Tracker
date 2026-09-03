@@ -35,12 +35,12 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
             res.status(403).json({ error: 'UNAUTHORIZED', message: 'Unauthorized' });
             return;
         }
-        const { name, registration, make, model, year, fuel_type,fuel_tank } = req.body;
+        const { name, registration, make, model, year, fuel_type, fuel_tank } = req.body;
 
         //Validate required fields
         if( !make || !model || !year || !fuel_type || !fuel_tank){
             res.status(400).json({
-                error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, fuel_type"
+                error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, fuel_type, fuel_tank",
             });
             return;
         }
@@ -139,3 +139,20 @@ export const get_fuel_analytics = async (req: AuthRequest, res: Response) => {
         );
     }
 }
+
+export const get_fuel_comparison = async (req: AuthRequest, res: Response) => {
+    try {
+        const user_id = req.user?.sub;
+        if (!user_id) {
+            return res.status(401).json({ error: "UNAUTHORIZED" });
+        }
+
+        const result = await vehicle_services.get_fuel_comparison({ user_id });
+        res.status(200).json({ data: result });
+    } catch (error: any) {
+        res.status(500).json({
+            error: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Could not retrieve fuel comparison"
+        });
+    }
+};
