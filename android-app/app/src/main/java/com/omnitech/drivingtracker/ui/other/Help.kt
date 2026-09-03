@@ -38,25 +38,46 @@ data class ContactItem(
 fun Help(navController: NavController?=null){
 
     val faqItems = listOf(
-        FaqItem("General","How do I share my trips with my friends and family?",
+        FaqItem("General","Is my data safe and private?",
+            "Yes, all trip data is encrypted and never sold to third parties."),
+        FaqItem("Trips","How do I share my trips with my friends and family?",
             "Go to the contacts page and add a contact. Then when starting a trip, " +
                     "select a contact to share your trip with. " +
                     "In the case that you forget to choose a contact," +
                     "press 'Share Trip' and select your trusted contacts. "),
-        FaqItem("General","Is my data safe and private?",
-            "Yes, all trip data is encrypted and never sold to third parties."),
-        FaqItem("Connections", "How do I connect my OBD device?",
+        FaqItem("General", "How do I connect my OBD device?",
             "Open the More page from the navbar, press OBD, and then press OBD Adapters. " +
                     "After this press the 'Add device' button and then follow the steps."),
+        FaqItem("General","Do I need an OBD device to use the app?","No "+
+                ", you can track trips using just your smartphone's sensors (GPS and accelerometer). However, using an "+
+                "OBD device provides more accurate data like RPM, engine temperature, and speed"),
         FaqItem("General", "What are driver profiles","Driver profiles are the classification of how a "+
                 "drives. This classification is based on the events that occur from all their past trips and will classify drivers into these categories: "+
                 "Safe driver , Aggressive accelerator and good driver "),
-        FaqItem("Connections","Do I need OBD device to use the app ?","No "+
-                ", you can track trips using just your smartphone's sensors (GPS and accelerometer). However, using an "+
-                "OBD device provides more accurate data like RPM, engine temperature, and speed"),
-        FaqItem("General","How is my Safety score calculated ?","We monitor "+
+        FaqItem("General","How is my Safety score calculated?","We monitor "+
                 "events that occur during a trip, events are characterized like Harsh brake , harsh acceleration etc, "+
-                "Smoother trip with less events results in a higher score.")
+                "Smoother trip with less events results in a higher score."),
+        FaqItem("Gamification","How often are leaderboards updated?","Your position "+
+                "on a leaderboard is evaluated every time you go on and end a trip using your new metrics. "),
+        FaqItem("Gamification","How do i earn badges?","Navigate to "+
+                "the Achievements page in the bottom navbar where you will find a banner titled 'Your Badges'. "+
+                "Simply click any of the badges where a short description will explain the requirements for earning that badge. "+
+                "You may also view the weekly challenges page to track your progress. "),
+        FaqItem("General","How do i reset my password?","Navigate to the sign in page, "+
+                "click on Forgot Password, enter your email correctly and press the send reset link button. Ensure to "+
+                "check your spam folder if you don't receive the email. "),
+        FaqItem("Trips","Why is my fuel estimate not being applied?","Due to how we "+
+                "acquire our car data, if your car's year falls outside the range of 2015-2020 we do not have fuel estimates. "+
+                "Your fuel will start being estimated after you have taken 5 trips and we have gathered your car's consumption."),
+        FaqItem("Trips","Why did my trip not record correctly?","GPS requires a clear view above you "+
+                "so high-rise buildings or tunnels may interfere with our services. "),
+        FaqItem("Trips","Tracking my analytics and metrics","Navigating to the Analytics page via more "+
+                "allows you to view your data over time as trends where you can identify your driving habits. You may notice " +
+                "correlations such as higher harsh acceleration leads to higher fuel consumption"),
+        FaqItem("General","Account Deletion","If you wish to delete your account, "+
+                "you may navigate to the settings page and proceed with deletion. All data related to you will be removed. "),
+        FaqItem("Trips","How is my location data shared?","Your location is only shared with trusted "+
+                "contacts who you share a trip with, never with third parties. You have the option to revoke that sharing on the live trip page. ")
     )
 
     val contactItems = listOf(

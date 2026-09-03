@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
@@ -31,9 +32,13 @@ import androidx.compose.material3.Switch
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.auth.AuthViewModel.UiState
+import androidx.compose.runtime.*
+import com.omnitech.drivingtracker.ui.components.DeleteAccountDialog
 
 
 @Composable
@@ -41,7 +46,9 @@ fun Settings(
     navController: NavController? = null,
     darkMode: Boolean = false,
     onDarkModeChange: (Boolean) -> Unit,
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    viewModel: SettingsViewModel = hiltViewModel(),
+    onAccountDeleted: () -> Unit
 ){
 
     val authState by authViewModel.uiState.collectAsState()
@@ -50,6 +57,16 @@ fun Settings(
         if(authState is UiState.SuccessLogout){
 
             navController?.navigate(Screen.Welcome.route){ popUpTo(0) {inclusive = true} }
+        }
+    }
+
+    var showDeleteDialog by remember { mutableStateOf (false) }
+    val deleteState by viewModel.deleteAccountState.collectAsState()
+
+    LaunchedEffect(deleteState) {
+        if (deleteState is DeleteAccountState.Success){
+            showDeleteDialog = false
+            onAccountDeleted()
         }
     }
 
@@ -76,6 +93,28 @@ fun Settings(
             icon = Icons.AutoMirrored.Filled.Logout,
             label = "Logout",
             onClick = { authViewModel.logout() }
+        )
+
+        HLine()
+        Spacer(modifier = Modifier.height(18.dp))
+
+
+        SettingOption(
+            icon = Icons.Filled.Delete,
+            label = "Delete Account",
+            onClick = { showDeleteDialog = true }
+        )
+    }
+
+    if (showDeleteDialog){
+        DeleteAccountDialog(
+            isLoading = deleteState is DeleteAccountState.Loading,
+            errorMessage = (deleteState as? DeleteAccountState.Error)?.message,
+            onConfirm = {password -> viewModel.deleteAccount(password)},
+            onDismiss = {
+                showDeleteDialog = false
+                viewModel.resetDeleteAccountState()
+            }
         )
     }
 }
@@ -119,6 +158,7 @@ fun LeftSide( //Inner Row (icon + label)
 @Composable
 fun SettingsPreview(){
     DrivingTrackerTheme {
-        Settings(navController = rememberNavController(), darkMode = false, onDarkModeChange = {})
+        Settings(navController = rememberNavController(), darkMode = false, onDarkModeChange = {},
+            onAccountDeleted = {})
     }
 }

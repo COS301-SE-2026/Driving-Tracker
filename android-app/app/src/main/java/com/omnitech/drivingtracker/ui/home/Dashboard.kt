@@ -34,6 +34,8 @@ import com.omnitech.drivingtracker.ui.components.StatCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.theme.*
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.Notifications
 
 @Composable
 fun Dashboard(navController: NavController? = null,
@@ -49,16 +51,16 @@ fun Dashboard(navController: NavController? = null,
         Scaffold(
             topBar = {
                 TopBar(
-                    leftIcon = Icons.Default.Menu,
+                    leftIcon = Icons.Default.Notifications,
                     rightIcon = Icons.Default.Settings,
-                    onLeftClick = {navController?.navigate(Screen.More.route)},
+                    onLeftClick = {navController?.navigate(Screen.Notifications.route)},
                     onRightClick = {navController?.navigate(Screen.Settings.route)}
                 )
             },
             bottomBar = {
                 BottomNavBar(navController = navController, color = "home")
             },
-            //containerColor = Color.Transparent 
+
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -72,10 +74,13 @@ fun Dashboard(navController: NavController? = null,
                 Box(
                     modifier = Modifier
                         .weight(1.3f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .clickable{
+                            navController?.navigate(Screen.Analytics.route)
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    ScoreCard(score = uiState.overallScore)
+                    ScoreCard(score = uiState.overallScore, heading = "Overall Driving Score")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

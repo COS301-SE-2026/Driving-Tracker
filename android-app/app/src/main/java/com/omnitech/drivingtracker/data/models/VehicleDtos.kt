@@ -12,6 +12,8 @@ data class VehicleDto(
     val year: Int? = null,
     @SerializedName("fuel_type")
     val fuelType: String? = null,
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
     val mileage: Int? = null,
     @SerializedName("trip_count")
     val tripCount: Int? = null,
@@ -26,11 +28,13 @@ data class AssignVehicleRequest(
 	val make: String,
 	val model: String,
 	val year: Int,
-	@SerializedName("fuel_type") val fuelType: String
+	@SerializedName("fuel_type") val fuelType: String,
+    @SerializedName("fuel_tank") val fuelTank: Float,
 )
 
 data class AddVehicleResponse(
-    val data: VehicleDto
+    val data: VehicleDto,
+    val warning: String?
 )
 
 data class FuelAnalyticsDto(

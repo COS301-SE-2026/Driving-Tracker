@@ -368,6 +368,7 @@ export const auth_services = {
                 email: true,
                 phone_number: true,
                 dob: true,
+                profile_picture_url: true,
                 _count: {
                     select: {
                         trips: true,
@@ -388,10 +389,43 @@ export const auth_services = {
             email: user.email,
             phone_number: user.phone_number,
             dob: user.dob,
+            profile_picture_url: user.profile_picture_url ? `upload/profile-picture/${user.user_id}` : null,
             trip_count: user._count.trips,
             badge_count: user._count.user_badges,
             vehicle_count: user._count.users_vehicles,
         }
+    },
+
+    async update_profile_picture(user_id: string, blob_name: string){
+        const existing = await prisma.users.findUnique({
+            where: { user_id },
+            select: { profile_picture_url: true }
+        });
+
+        if(!existing) throw new ExtendedError("User not found", "USER_NOT_FOUND");
+
+        const updatedUser = await prisma.users.update({
+            where: { user_id },
+            data: { profile_picture_url: blob_name, },
+            select: {profile_picture_url: true ,}
+        });
+
+        return {
+            display_url: `upload/profile-picture/${user_id}`,
+            previous_blob_name: existing.profile_picture_url,
+            updated_blob_name: updatedUser.profile_picture_url,
+        };
+    },
+
+    async get_profile_picture_blob_name(user_id: string): Promise<string | null> {
+        const user = await prisma.users.findUnique({
+            where: { user_id },
+            select: { profile_picture_url: true }
+        });
+
+        if(!user) throw new ExtendedError("User not found", "USER_NOT_FOUND");
+
+        return user.profile_picture_url;
     }
 };
 

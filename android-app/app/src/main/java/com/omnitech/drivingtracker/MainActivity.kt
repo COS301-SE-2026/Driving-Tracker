@@ -68,7 +68,10 @@ import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
 import com.omnitech.drivingtracker.ui.analytics.DriverAnalytics
+import com.omnitech.drivingtracker.ui.analytics.EcoAnalytics
+import com.omnitech.drivingtracker.ui.analytics.EventsAnalytics
 import com.omnitech.drivingtracker.ui.analytics.FuelAnalytics
+import com.omnitech.drivingtracker.ui.analytics.SafetyAnalytics
 import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
@@ -120,6 +123,12 @@ sealed class Screen(val route: String){
     data object Analytics : Screen("analytics")
 
     data object FuelAnalytics : Screen("fuel_analytics")
+
+    data object EcoAnalytics : Screen("eco_analytics")
+
+    data object SafetyAnalytics : Screen("safety_analytics")
+
+    data object EventsAnalytics : Screen("events_analytics")
 
     data object ForgotPassword : Screen("forgot_password")
 }
@@ -322,7 +331,9 @@ class MainActivity : ComponentActivity() {
                         Settings(
                             navController = navController,
                             darkMode = darkMode,
-                            onDarkModeChange = onDarkModeChange
+                            onDarkModeChange = onDarkModeChange,
+                            onAccountDeleted = {navController.navigate(Screen.Welcome.route)
+                            {popUpTo(0){inclusive = true} } }
                         )
                     }
                     composable(Screen.OBDMain.route){
@@ -344,6 +355,15 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.FuelAnalytics.route){
                         FuelAnalytics(navController = navController)
+                    }
+                    composable(Screen.EcoAnalytics.route){
+                        EcoAnalytics(navController = navController)
+                    }
+                    composable(Screen.SafetyAnalytics.route){
+                        SafetyAnalytics(navController = navController)
+                    }
+                    composable(Screen.EventsAnalytics.route){
+                        EventsAnalytics(navController = navController)
                     }
                     composable(
                         route = Screen.LiveTripContacts.route,

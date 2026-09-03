@@ -73,6 +73,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             });
             return;
         }
+        
         const end_trip_results = await trips_services.end_trip({
             trip_id,
             user_id,
@@ -106,7 +107,42 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
         }
     }
 };
-
+export const get_all_active_shares = async (req: AuthRequest, res:Response)=>{
+    try{
+        const user_id = req.user?.sub;
+        const {trip_id} = req.params;
+        if(!user_id){
+            return res.status(401).json({ error:"UNAUTHORIZED"});
+        }
+        const shares = await trips_services.get_trip_shares(user_id,trip_id);
+        res.status(200).json({ data: shares});
+    }catch(error: any ){
+        if(error.message.includes("trip not found or You do not own this trip")){
+            res.status(403).json({error: "UNAUTHORIZED"});
+        }else{
+            res.status(500).json({error: "INTERNAL SERVER ERROR"});
+        }
+    }
+};
+export const revoke_trip_shares = async(req: AuthRequest, res: Response)=>{
+    try{
+        const user_id = req.user?.sub;
+        const { trip_id,contact_id } = req.params;
+        if(!user_id){
+            return res.status(403).json({error: "UNAUTHORIZED"});
+        }
+        await trips_services.revoke_share(user_id,contact_id,trip_id);
+        return res.status(200).json({ message: "SUCCESSFUL"});
+    }catch(error: any){
+        if(error.message ==="trip not found or You do not own this trip" ){
+            return res.status(403).json({
+                error:"UNAUTHORIZED"
+            });
+        }else{
+            return res.status(500).json({error: "INTERNAL SEVER ERROR"});
+        }
+    }
+};
 export const record_trip = async (req:AuthRequest, res:Response) =>{
     try{
         const user_id = req.user?.sub;
@@ -565,6 +601,67 @@ export const resolve_stop_event = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ 
             error: "INTERNAL_SERVER_ERROR",
             message: "Could not successfully resolve stop"
+        });
+    }
+}
+
+export const alert_unusual_trip_duration = async (req: AuthRequest, res: Response) => {
+
+    const user_id = req.user?.sub;
+
+    if(!user_id) {
+            res.status(401).json({ 
+                error: "UNAUTHORIZED", 
+                message: "Unauthorized to log unusual duration event" 
+            });
+            return;
+        }
+
+    const { trip_id } = req.params;
+
+    const { expected_seconds, moving_seconds} = req.body;
+
+    try{
+
+        const result = await trips_services.alert_unusual_trip_duration(user_id, trip_id, expected_seconds, moving_seconds);
+
+        return res.status(200).json({ 
+            message: result,
+        });
+
+    } catch(error: any){
+
+        if (error.message.includes("user not found")){
+            return res.status(403).json({ 
+                error: "USER_NOT_FOUND", 
+                message: "User not found" 
+            });
+        }
+
+        if (error.message.includes("Expected greater than moving")){
+            return res.status(422).json({ 
+                error: "INVALID_PARAMETERS", 
+                message: "Moving seconds cannot be greater than expected" 
+            });
+        }
+
+        if (error.message.includes("expected_seconds invalid")){
+            return res.status(422).json({ 
+                error: "INVALID_EXPECTED_SECONDS", 
+                message: "Expected_seconds missing or invalid" 
+            });
+        }
+
+        if (error.message.includes("moving_seconds invalid")){
+            return res.status(422).json({ 
+                error: "INVALID_MOVING_SECONDS", 
+                message: "Moving_seconds missing or invalid" 
+            });
+        }
+
+        return res.status(500).json({ 
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Could not successfully log unusual duration"
         });
     }
 }

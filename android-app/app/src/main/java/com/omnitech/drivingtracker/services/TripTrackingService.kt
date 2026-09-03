@@ -106,6 +106,8 @@ class TripTrackingService: Service() {
 
     }
 
+    private var tripDurationMonitor: TripDurationMonitor? = null
+
     //supervisor job - a failed reading post does not cancel event posting
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -156,11 +158,22 @@ class TripTrackingService: Service() {
                     startLocationUpdates()
                     startSensorFusion()
                     startSyncLoop()
+
+                    serviceScope.launch {
+                        tripStateManager.totalExpectedTravelTime.collect{ totalSeconds ->
+
+                            if(totalSeconds <= 0) return@collect
+                            handleTripDuration(totalSeconds)
+                        }
+                    }
+
                     serviceScope.launch {
                         if (isObdConnected()) {
                             obdManager.fetchFuelLevel()
                         }
                     }
+
+                    isTrackingStarted = true
                 } else {
                     Log.d("Tracking", "Service already tracking")
                 }
@@ -232,7 +245,32 @@ class TripTrackingService: Service() {
             locationCallback,
             Looper.getMainLooper()
         )
-        Log.d(TAG, "GPS updates started")
+    }
+
+    private fun handleTripDuration(seconds: Int?){
+
+        if(seconds == null) return
+
+        val currentProgress = tripDurationMonitor?.accumulatedMovingMillis?:0
+
+        if(tripDurationMonitor?.expectedTravelTimeSeconds  == seconds) return
+
+        tripDurationMonitor = TripDurationMonitor(
+            expectedTravelTimeSeconds = seconds,
+            onUnusualDuration = { moving, expected ->
+                notificationHelper.showTripAlert(
+                    "Unusual Trip Duration",
+                    "You've been traveling longer than expected. Please stay safe!",
+                    currentTripId?:""
+                )
+
+                serviceScope.launch{
+                    tripRepository.logUnusualDuration(currentTripId?:"",expected,moving)
+                }
+            }
+        ).apply{
+            this.accumulatedMovingMillis = currentProgress
+        }
     }
 
     private fun stopLocationUpdates(){
@@ -281,9 +319,11 @@ class TripTrackingService: Service() {
 
         fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
 
-        val stoppedAt = Instant.parse(reading.timestamp)
+        val timestamp = Instant.parse(reading.timestamp)
 
-        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, stoppedAt)
+        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, timestamp)
+
+        tripDurationMonitor?.onLocationUpdate(currentSpeed, timestamp)
 
         lastKnownSpeed = currentSpeed
 

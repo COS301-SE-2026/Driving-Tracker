@@ -141,11 +141,16 @@ class TripViewModel @Inject constructor(
         longitude: Double,
         destLat: Double? = null,
         destLng: Double? = null,
+        fuelLevelStart: Float?,
         selectedContactIds: List<String>?
     ){
         viewModelScope.launch {
             _tripStartState.value = UiState.Loading
-            val currentFuel = obdManager.metrics.value.fuelLevel
+            var currentFuel = obdManager.metrics.value.fuelLevel;
+            if(currentFuel == null || currentFuel == 0f){
+                currentFuel = fuelLevelStart
+            }
+
             tripRepository.startTrip(
                 vehicleId = vehicleId,
                 dataSource = dataSource,

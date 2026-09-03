@@ -98,11 +98,14 @@ fun TripSummary(
                 LocationDto(it[1], it[0]) // GeoJSON is [lng, lat], convert to [lat, lng]
             } ?: emptyList()
 
+            val start = trip.startAddress ?: "Unknown Start"
+            val end = trip.endAddress ?: "Unknown End Address"
+
             val displayPath = if (tripPath.isEmpty()) dbPath else tripPath
 
             val mappedData = TripSummaryData(
                 date = formattedDate,
-                route = "Trip ${trip.tripId}",
+                route = "Trip from $start to $end",
                 score = trip.scores?.overallScore?.toInt() ?: 0,
                 rating = when {
                     (trip.scores?.overallScore ?: 0.0) >= 80 -> "Great"
@@ -184,7 +187,7 @@ fun TripSummaryContent(
                 AzureMapContainer(
                     subscriptionKey = mapToken!!,
                     actualRoute = tripPath,
-                    isInteractive = false, // DISABLES SCROLL  here,
+                    isInteractive = true, // DISABLES SCROLL  here,
                     zoom = 13,
                     modifier = Modifier.fillMaxSize()
                 )
