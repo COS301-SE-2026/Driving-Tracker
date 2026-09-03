@@ -1,6 +1,7 @@
 import { register } from "module";
 import prisma from "../db/prisma";
 import { parse } from "path";
+import { manufacturer_baseline_service } from "./manufacturer_baseline.service";
 
 
 // what do you need to process ?
@@ -381,24 +382,16 @@ export const vehicle_services={
         const userAvg = totalDist > 0 ? (totalFuel / totalDist) * 100 : 0;
 
         //fetching actual manufacturer standard
-        let manufacturerStandard = Number(vehicle.fuel_efficiency || 0);
+        const manufacturerStandard = 
+            vehicle.make && vehicle.model && vehicle.year
+                ? await manufacturer_baseline_service.get_efficiency({
+                    make: vehicle.make,
+                    model: vehicle.model,
+                    year: vehicle.year
+                  })
+                : null;
 
-        //if not in DB, we search CAR API
-        if (manufacturerStandard === 0 && vehicle.make && vehicle.model && vehicle.year) {
-            try {
-                const benchmarks = await fetch_vehicle_benchmark(vehicle.make, vehicle.model, vehicle.year);
-                if (benchmarks.length > 0) {
-                    const avgMpg = benchmarks.reduce((sum, b) => sum + b.combined_mpg, 0) / benchmarks.length;
-                    const l100 = mpg_to_lper100km(avgMpg);
-                    if (l100) manufacturerStandard = l100;
-                }
-            } catch (e) {
-                console.error("CarAPI lookup failed, using fallback standard.");
-            }
-        }
-
-        if (manufacturerStandard === 0) manufacturerStandard = 8.0; //Default fallback
-
+        const finalManufacturerStandard = manufacturerStandard ?? 8.0;
         //getting peer leaderboard
         const peers = await prisma.users.findMany({
             where: {
@@ -440,7 +433,7 @@ export const vehicle_services={
                 fuel_type: vehicle.fuel_type,
                 registration: vehicle.registration
             },
-            manufacturer_standard: parseFloat(manufacturerStandard.toFixed(1)),
+            manufacturer_standard: parseFloat(finalManufacturerStandard.toFixed(1)),
             user_average: parseFloat(userAvg.toFixed(1)),
             peer_leaderboard: peerLeaderboard
         };
