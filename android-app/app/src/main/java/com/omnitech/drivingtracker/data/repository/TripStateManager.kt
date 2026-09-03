@@ -1,9 +1,15 @@
 package com.omnitech.drivingtracker.data.repository
 
 import com.omnitech.drivingtracker.data.models.MapPoiItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,8 +28,41 @@ class TripStateManager @Inject constructor(){
     private val _safetyCheck = MutableStateFlow(SafetyCheckState())
     val safetyCheck:  StateFlow<SafetyCheckState> = _safetyCheck.asStateFlow()
 
+    private val _baseTravelTimeSeconds = MutableStateFlow<Int?>(null);
+
+    val baseTravelTimeSeconds = _baseTravelTimeSeconds.asStateFlow()
+
+    private val _detourTravelTimeSeconds = MutableStateFlow<Int?>(null);
+
+    val detourTravelTimeSeconds = _detourTravelTimeSeconds.asStateFlow()
+
+    fun setExpectedTravelTime(seconds: Int){
+        _baseTravelTimeSeconds.value = seconds
+    }
+
+    fun setDetourTime(seconds: Int){
+        _detourTravelTimeSeconds.value = seconds
+    }
+
+    fun clearDetour(){ _detourTravelTimeSeconds.value = null }
+
+    val totalExpectedTravelTime = combine(
+        _baseTravelTimeSeconds,
+        _detourTravelTimeSeconds
+    ){ base, detour ->
+        val b = base?: 0
+        val d = detour?:0
+        val adjustedDetour = (d * 1.5).toInt()
+        b + adjustedDetour
+    }.stateIn(
+        scope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
+        started = SharingStarted.Eagerly,
+        initialValue = 0
+    )
+
     fun updateSafetyCheck(state: SafetyCheckState){
         _safetyCheck.value = state
+        _baseTravelTimeSeconds.value = null
     }
 
     fun clearSafetyCheck(){
@@ -36,5 +75,7 @@ class TripStateManager @Inject constructor(){
 
     fun clearTripState() {
         _nearbyPois.value = emptyList()
+        _baseTravelTimeSeconds.value = null
+        _detourTravelTimeSeconds.value = null
     }
 }

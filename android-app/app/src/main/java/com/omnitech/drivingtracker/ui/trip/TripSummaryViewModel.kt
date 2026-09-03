@@ -21,6 +21,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
+
 @HiltViewModel
 class TripSummaryViewModel @Inject constructor(
     private val repository: TripRepository,
@@ -59,6 +60,11 @@ class TripSummaryViewModel @Inject constructor(
 
     fun clearSafetyCheck() = tripStateManager.clearSafetyCheck()
 
+    fun clearDetour() {
+        _detourRoute.value = null
+        tripStateManager.clearDetour()
+    }
+
     fun loadTripPath(tripId: String) {
         viewModelScope.launch {
             val readings = repository.getTripReadings(tripId)
@@ -84,11 +90,15 @@ class TripSummaryViewModel @Inject constructor(
         viewModelScope.launch {
             try {
 
-                val response = repository.getSuggestedRoute(
+                repository.getSuggestedRoute(
                     LocationDto(startLat, startLng),
                     LocationDto(destLat, destLng)
-                )
-                _plannedRoute.value = response.getOrNull()?.points
+                ).onSuccess { data ->
+                    _plannedRoute.value = data.points
+
+                    tripStateManager.setExpectedTravelTime(data.travelTimeSeconds)
+                }
+
             } catch (e: Exception) {
                 Log.e("TripSummaryVM", "Route fetch failed: ${e.message}")
             }
@@ -103,11 +113,14 @@ class TripSummaryViewModel @Inject constructor(
 
                 _detourRoute.value = null
 
-                val response = repository.getSuggestedRoute(
+                repository.getSuggestedRoute(
                     LocationDto(startLat, startLng),
                     LocationDto(destLat, destLng)
-                )
-                _detourRoute.value = response.getOrNull()?.points
+                ).onSuccess { data ->
+                    _detourRoute.value = data.points
+                    tripStateManager.setDetourTime(data.travelTimeSeconds)
+                }
+
             } catch (e: Exception) {
                 Log.e("TripSummaryVM", "Detour Route fetch failed: ${e.message}")
                 _detourRoute.value = null
@@ -153,22 +166,22 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
-    fun endTrip(tripId: String,latitude: Double?,
-                longitude: Double?,distance: Double?,
-                durationMinutes: Int?,fuelEstimate: Double?,
-                path : List<LocationDto>
-    ) {
+
+    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
             val geoJson = GeoJsonLineString(
-                coordinates = path.mapNotNull {loc ->
-                    if(loc.lat != null && loc.lng != null) listOf(loc.lng,loc.lat) else null
+                coordinates = path.mapNotNull { loc ->
+                    if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
-            
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
-            val fuelLevelFinal = obdManager.metrics.value.fuelLevel
+            var currentFuel = obdManager.metrics.value.fuelLevel;
+            if(currentFuel == null || currentFuel == 0f){
+                currentFuel = fuelLevelEnd
+            }
+
 
 
             repository.endTrip(
@@ -178,7 +191,7 @@ class TripSummaryViewModel @Inject constructor(
                 distanceKm = distance,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
-                fuelLevelEnd = fuelLevelFinal,
+                fuelLevelEnd = currentFuel,
                 routePolyline = geoJson,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)
@@ -199,7 +212,9 @@ class TripSummaryViewModel @Inject constructor(
                             durationMinutes = durationMinutes,
                             fuelEstimate = fuelEstimate,
                             scores = null,
-                            events = emptyList()
+                            events = emptyList(),
+                            startAddress = null,
+                            endAddress = null
                         ),
                         isFirstTrip = data.isFirstTrip == true
                     )

@@ -85,11 +85,13 @@ model leaderboard {
   user_id        String    @db.Uuid
   category       String?   @db.VarChar(20)
   scope          String?   @db.VarChar(20)
+  period_start   DateTime  @db.Date
   score          Decimal?  @default(0) @db.Decimal(10, 2)
   updated_at     DateTime? @default(now()) @db.Timestamptz(6)
   users          users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@unique([user_id, category, scope])
+  @@unique([user_id, category, scope, period_start])
+  @@index([category, scope, period_start, score])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -103,6 +105,8 @@ model trip_events {
   sensor_source String?  @db.VarChar(20)
   recorded_at   DateTime @db.Timestamptz(6)
   trips         trips    @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([trip_id, recorded_at])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -148,6 +152,8 @@ model trips {
   end_longitude    Decimal?        @db.Decimal(9, 6)
   end_latitude     Decimal?        @db.Decimal(9, 6)
   route_polyline   Json?           @db.JsonB
+  start_address	   String?
+  end_address	   String?		   
   distance_km      Decimal?        @db.Decimal(9, 6)
   fuel_consumed    Decimal?        @db.Decimal(10, 4)
   duration_minutes Int?
@@ -167,11 +173,14 @@ model trips {
   trip_readings    trip_readings[]
   trip_scores      trip_scores[]
   trip_location_shares  trip_location_shares[]
+  unusual_duration_events  unusual_duration_events[]
   unexpected_stop_events  unexpected_stop_events[]
   users            users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   vehicles         vehicles?       @relation(fields: [vehicle_id], references: [vehicle_id], onUpdate: NoAction)
 
   @@index([status, end_time, vehicle_id, user_id])
+  @@index([user_id, created_at])
+  @@index([user_id, status])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -192,6 +201,7 @@ model trusted_contacts {
   trip_location_shares  trip_location_shares[] 
 
   @@unique([user_id, contact_user_id])
+  @@index([user_id, consent_status])
 }
 
 model user_badges {
@@ -258,6 +268,7 @@ model users {
   leaderboard       leaderboard[]
   trips             trips[]
   email_verified    Boolean            @default(false)
+  profile_picture_url String?          @db.VarChar(500)
   verification_token  String?          @db.VarChar(255)
   password_reset_token  String?        @db.VarChar(255)
   reset_token_exp   DateTime?          @db.Timestamptz(6)
@@ -284,6 +295,7 @@ model trip_location_shares {
   contact       trusted_contacts    @relation(fields: [contact_id], references: [contact_id], onDelete: Cascade)
 
   @@unique([trip_id, contact_id])
+  @@index([trip_id, revoked_at])
 }
 model users_vehicles {
   assignment_id String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -307,6 +319,8 @@ model vehicles {
   engine_type  String? @db.VarChar(100)
   fuel_type    String? @db.VarChar(20)
   created_at   DateTime @default(now()) @db.Timestamptz(6)
+  image_url    String? @db.VarChar(500)
+
   trips        trips[]
   fuel_tank    Decimal       @db.Decimal(9, 6)
   fuel_efficiency Decimal?    @db.Decimal(9, 6)
@@ -371,4 +385,16 @@ model unexpected_stop_events{
   trips               trips                 @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([status, check_after])
+}
+
+model unusual_duration_events{
+  event_id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trip_id         String      @db.Uuid
+  expected_seconds  Int
+  moving_seconds_at_flag  Int
+  detected_at     DateTime    @default(now()) @db.Timestamptz(6)
+
+  trips               trips                 @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade, onUpdate: NoAction) 
+
+  @@index([trip_id])  
 }

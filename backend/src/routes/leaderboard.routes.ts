@@ -3,6 +3,7 @@ import leaderboard_controller from '../controllers/leaderboard.controller';
 import { verify_token } from '../middleware/auth';
 import { user_based_limiter } from '../middleware/rate_limit';
 import { get_fuel_leaderboard } from "../controllers/fuel_leaderboard.controller";
+import { create_user_based_limiter } from '../middleware/rate_limit';
 
 const leaderboard_router = Router();
 
@@ -75,7 +76,7 @@ const leaderboard_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not retrieve leaderboard
  */
-leaderboard_router.get('/', verify_token, user_based_limiter, leaderboard_controller.get_leaderboard);
+leaderboard_router.get('/', verify_token, create_user_based_limiter(), leaderboard_controller.get_leaderboard);
 
 /**
  * @openapi
@@ -121,7 +122,7 @@ leaderboard_router.get('/', verify_token, user_based_limiter, leaderboard_contro
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not retrieve categories
  */
-leaderboard_router.get('/categories', verify_token, user_based_limiter, leaderboard_controller.get_categories);
+leaderboard_router.get('/categories', verify_token, create_user_based_limiter(), leaderboard_controller.get_categories);
 
 /**
  * @openapi
@@ -166,7 +167,7 @@ leaderboard_router.get('/categories', verify_token, user_based_limiter, leaderbo
  *               error: INTERNAL_SERVER_ERROR
  *               message: Could not retrieve scopes
  */
-leaderboard_router.get('/scopes', verify_token, user_based_limiter, leaderboard_controller.get_scopes);
+leaderboard_router.get('/scopes', verify_token, create_user_based_limiter(), leaderboard_controller.get_scopes);
 
 /**
  * @openapi

@@ -1,7 +1,7 @@
 import {Router, request, response } from "express";
 import * as vehicle from "../controllers/vehicle.controller";
 import {verify_token} from '../middleware/auth';
-import { user_based_limiter } from "../middleware/rate_limit";
+import { create_user_based_limiter } from "../middleware/rate_limit";
 
 const vehicle_router = Router();
 //the way the route is called in the front end for example rout.__(what ever it is post,patch...)("/trips/...", ...)look at mp for reference
@@ -104,7 +104,7 @@ const vehicle_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Internal server error
  */
- vehicle_router.post("/assign_vehicle",verify_token, user_based_limiter, vehicle.assign_vehicle);
+ vehicle_router.post("/assign_vehicle",verify_token, create_user_based_limiter(), vehicle.assign_vehicle);
 //read basically get 
 /**
  * @openapi
@@ -150,7 +150,7 @@ const vehicle_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Internal server error
  */
-vehicle_router.get("/get_all_vehicles", verify_token, user_based_limiter, vehicle.get_all_vehicles);
+vehicle_router.get("/get_all_vehicles", verify_token, create_user_based_limiter(), vehicle.get_all_vehicles);
 
 
 /**

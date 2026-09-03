@@ -83,7 +83,8 @@ data class LeaderboardEntry(
     val rank: Int,
     @SerializedName("user_id") val userId: String,
     @SerializedName("display_name") val displayName: String,
-    val score: Double
+    val score: Double,
+    @SerializedName("profile_picture_url") val profilePictureUrl: String ? = null
 )
 
 //Leaderboard categories & scopes

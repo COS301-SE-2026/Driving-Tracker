@@ -108,11 +108,12 @@ export const contact_services ={
             },
             select: {
                 contact_id: true,
+                contact_user_id: true,
                 name: true,
                 email: true,
                 consent_status: true,
                 contact_user: {
-                    select: { username: true},
+                    select: { username: true, profile_picture_url: true, },
                 },
             },
             orderBy: {created_at: "desc"},
@@ -124,6 +125,7 @@ export const contact_services ={
             username: c.contact_user.username,
             name: c.name,
             email: c.email,
+            profile_picture_url: c.contact_user.profile_picture_url ? `upload/profile-picture/${c.contact_user_id}` : null,
         }));
     },
 
@@ -340,6 +342,7 @@ export const contact_services ={
                 owner_user: {
                     select:  {
                         username: true,
+                        profile_picture_url: true,
                     }
                 },
             }
@@ -348,7 +351,8 @@ export const contact_services ={
         const requestsArr = requests? requests.map(r => ({
             contact_id: r.contact_id,
             created_at: r.created_at,
-            username: r.owner_user.username
+            username: r.owner_user.username,
+            profile_picture_url: r.owner_user.profile_picture_url ? `upload/profile-picture/${r.user_id}` : null,
         })):[];
 
         return requestsArr;   
