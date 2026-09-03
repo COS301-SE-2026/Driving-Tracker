@@ -431,7 +431,7 @@ private fun StartTripDialog(
 ){
     var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }
     var expanded by remember { mutableStateOf(false) }
-    //var dataSource by rememberSaveable { mutableStateOf("PHONE") }
+    var dataSource by rememberSaveable { mutableStateOf("PHONE") }
     var latitude by rememberSaveable { mutableStateOf("") }
     var longitude by rememberSaveable { mutableStateOf("") }
     var selectedContactIds by remember { mutableStateOf(setOf<String>()) }

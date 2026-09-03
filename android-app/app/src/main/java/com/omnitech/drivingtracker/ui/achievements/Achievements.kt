@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,9 +48,14 @@ fun AchievementsScreen(
     viewModel: AchievementsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var showGallery by remember { mutableStateOf(false) }
+    var selectedBadge by remember { mutableStateOf<BadgeUiModel?>(null) }
+
     AchievementsContent(
         state = state,
         navController = navController,
+        onViewMore = { showGallery = true },
+        onBadgeClick = { selectedBadge = it },
         onFilterChanged = {category, scope ->
             viewModel.getLeaderboard(category, scope)
         }

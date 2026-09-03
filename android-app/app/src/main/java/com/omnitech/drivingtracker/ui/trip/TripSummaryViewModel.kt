@@ -20,7 +20,7 @@ import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import com.omnitech.drivingtracker.data.models.GeoJsonLineString
+
 
 @HiltViewModel
 class TripSummaryViewModel @Inject constructor(
@@ -154,7 +154,7 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
-<<<<<<< HEAD
+
     fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
@@ -163,21 +163,6 @@ class TripSummaryViewModel @Inject constructor(
                     if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
-=======
-    fun endTrip(tripId: String,latitude: Double?,
-                longitude: Double?,distance: Double?,
-                durationMinutes: Int?,fuelEstimate: Double?,
-                path : List<LocationDto>,fuelLevelEnd:Float?
-    ) {
-        viewModelScope.launch {
-            _endTripState.value = UiState.Loading
-            val geoJson = GeoJsonLineString(
-                coordinates = path.mapNotNull {loc ->
-                    if(loc.lat != null && loc.lng != null) listOf(loc.lng,loc.lat) else null
-                }
-            )
-            
->>>>>>> f31a254180446755c339039e38254fba2f7dc425
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
             var currentFuel = obdManager.metrics.value.fuelLevel;
