@@ -337,7 +337,12 @@ export const vehicle_services={
         //getting user's primary vehicle
         const vehicle = await prisma.vehicles.findFirst({
             where: { users_vehicles: { some: { user_id } } },
-            include: { trips: { where: { status: "COMPLETED" } } }
+            include: {
+                trips: {
+                    where: { status: "COMPLETED" }
+                    select: { distance_km: true, fuel_estimate: true }
+                }
+            }
         });
 
         if (!vehicle) throw new Error("No vehicle found for this user");
@@ -347,29 +352,69 @@ export const vehicle_services={
         const totalFuel = vehicle.trips.reduce((sum, t) => sum + Number(t.fuel_estimate || 0), 0);
         const userAvg = totalDist > 0 ? (totalFuel / totalDist) * 100 : 0;
 
+        //fetching actual manufacturer standard
+        let manufacturerStandard = Number(vehicle.fuel_estimate || 0);
+
+        //if not in DB, we search CAR API
+        if (manufacturerStandard === 0 && vehicle.make && vehicle.model && vehicle.year) {
+            try {
+                const benchmarks = await fetch_vehicle_benchmark(vehicle.make, vehicle.model, vehicle.year);
+                if (benchmarks,length > 0) {
+                    const avgMpg = benchmarks.reduce((sum, b) => sum + b.combined_mpg, 0) / benchmarks.length;
+                    const l100 = mpg_to_lper100km(avgMpg);
+                    if (l100) manufacturerStandard = l100;
+                }
+            } catch (e) {
+                console.error("CarAPI lookup failed, using fallback standard.");
+            }
+        }
+
+        if (manufacturerStandard === 0) manufacturerStandard = 8.0; //Default fallback
+
         //getting peer leaderboard
         const peers = await prisma.users.findMany({
             where: {
-                users_vehicles: { some: { vehicles: { is : {make: vehicle.make, model: vehicle.model} } } },
+                users_vehicles: {
+                    some: { vehicles: { is : {make: vehicle.make, model: vehicle.model} } }
+                },
+            user_id: { not: user_id }
             },
-        take: 5
+            include: {
+                trips: {
+                    where: { status: "COMPLETED" },
+                    select: { distance_km: true, fuel_estimate: true }
+                }
+            },
+            take: 10
         });
+
+        const peerLeaderboard = peers.map(p => {
+            const pDist = p.trips.reduce((s, t) => s + Number(t.distance_km || 0), 0);
+            const pFuel = p.trips.reduce((s, t) => s + Number(t.fuel_estimate || 0), 0);
+            const pEff = pDist > 0 ? (pFuel / pDist) * 100 : 7.5;
+
+            return {
+                user_id: p.user_id,
+                display_name: p.name || p.username,
+                efficiency: parseFloat(pEff.toFixed(1))
+            };
+        })
+        .sort((a, b) => a.efficiency - b.efficiency)
+        .slice(0, 5)
+        .map((p, index) => ({ ...p, rank: index + 1}));
 
         return {
             vehicle: {
                 vehicle_id: vehicle.vehicle_id,
                 make: vehicle.make,
                 model: vehicle.model,
+                year: vehicle.year
+                fuel_type: vehicle.fuel_type
                 registration: vehicle.registration
             },
-            manufacturer_standard: Number(vehicle.fuel_efficiency || 8.0),
-            user_average: parseFloat(userAvg.toFixed(2)),
-            peer_leaderboard: peers.map((p, index) => ({
-                rank: index + 1,
-                user_id: p.user_id,
-                display_name: p.name,
-                efficiency: 7.5 //placehoder for peer logic
-            }))
+            manufacturer_standard: parseFloat(manufacturerStandard.toFixed(1)),
+            user_average: parseFloat(userAvg.toFixed(1)),
+            peer_leaderboard
         };
     }
 };
