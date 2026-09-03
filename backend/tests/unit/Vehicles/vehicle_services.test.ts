@@ -1,9 +1,11 @@
 jest.mock('../../../src/db/prisma', () => {
     const users = {
         findUnique: jest.fn(),
+        findMany: jest.fn(),
     };
     const vehicles = {
         findMany: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
@@ -40,7 +42,7 @@ import { describe, it, expect, jest, beforeEach,afterAll,afterEach } from '@jest
 import prisma from '../../../src/db/prisma';
 import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
 import { get_fuel_analytics } from '../../../src/controllers/vehicle.controller';
-
+import { manufacturer_baseline_service } from '../../../src/services/manufacturer_baseline.service';
 
 
 const mock_prisma = prisma as any ;
@@ -806,5 +808,129 @@ describe('vehicle services get fuel analytics', ()=>{
 				.rejects.toThrow('You do not own this vehicle');
 		});
 	});
+});
+
+describe('vehicle services get fuel comparison', () => {
+
+    const make_vehicle = (overrides: any = {}) => ({
+        vehicle_id: 'v1',
+        make: 'BMW',
+        model: 'M3',
+        year: 2018,
+        fuel_type: 'PETROL',
+        registration: 'ABC123',
+        trips: [
+            {distance_km: 100, fuel_estimate: 8},
+        ],
+        ...overrides,
+    });
+
+    const make_peer = (
+        user_id: string,
+        name: string,
+        distance_km: number,
+        fuel_estimate: number
+    ) => ({
+        user_id,
+        name,
+        username: `${name.toLowerCase()}123`,
+        trips: [{distance_km, fuel_estimate }],
+    });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        jest
+            .spyOn(manufacturer_baseline_service, 'get_efficiency')
+            .mockResolvedValue(7.5);
+    });
+
+    afterEach(() =>{
+        jest.restoreAllMocks();
+    });
+
+    it('throw when the user has no vehicle', async () => {
+        mock_prisma.vehicles.findFirst.mockResolvedValue(null);
+
+        await expect(
+            vehicle_services.get_fuel_comparison({ user_id: 'u1'})
+        ).rejects.toThrow('No vehicle found for this user');
+
+        expect(mock_prisma.users.findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns vehicle, manufacturer, and peer comparison data', async () => {
+        mock_prisma.vehicles.findFirst.mockResolvedValue(make_vehicle());
+
+        mock_prisma.users.findMany.mockResolvedValue([
+            make_peer('u2', 'Alice', 100, 5),
+            make_peer('u3', 'Bob', 100, 10),
+            make_peer('u4', 'Carol', 0, 0),
+        ]);
+
+        const result = await vehicle_services.get_fuel_comparison({
+            user_id: 'u1',
+        });
+
+        expect(manufacturer_baseline_service.get_efficiency).toHaveBeenCalledWith({
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
+        });
+
+        expect(result).toEqual({
+            vehicle: {
+                vehicle_id: 'v1',
+                make: 'BMW',
+                model: 'M3',
+                year: 2018,
+                fuel_type: 'PETROL',
+                registration: 'ABC123',
+            },
+            manufacturer_standard: 7.5,
+            user_average: 8,
+            peer_leaderboard: [
+                {
+                    user_id: 'u2',
+                    display_name: 'Alice',
+                    efficiency: 5,
+                    rank: 1,
+                },
+                {
+                    user_id: 'u4',
+                    display_name: 'Carol',
+                    efficiency: 7.5,
+                    rank: 2,
+                },
+                {
+                    user_id: 'u3',
+                    display_name: 'Bob',
+                    efficiency: 10,
+                    rank: 3,
+                },
+            ],
+        });
+
+    });
+
+    it('uses 8.0 when no manufacturer standard is available', async () =>{
+
+        jest.spyOn(manufacturer_baseline_service, 'get_efficiency').mockResolvedValue(null);
+
+        mock_prisma.vehicles.findFirst.mockResolvedValue(
+            make_vehicle({make: null, model: null, year: null})
+        );
+
+        mock_prisma.users.findMany.mockResolvedValue([]);
+
+        const result = await vehicle_services.get_fuel_comparison({
+            user_id: 'u1',
+        });
+
+        expect(result.manufacturer_standard).toBe(8);
+        expect(manufacturer_baseline_service.get_efficiency).not.toHaveBeenCalled();
+
+    });
+
 });
  
