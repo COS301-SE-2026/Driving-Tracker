@@ -66,6 +66,13 @@ class MessagingService: FirebaseMessagingService() {
                         message.notification?.body ?: "Unexpected stop detected on trip shared with you"
                     )
                 }
+                "GAMIFICATION" -> {
+
+                    notificationHelper.showGamificationNotification(
+                        message.notification?.title ?: "Gamification Alert",
+                        message.notification?.body ?: "You have a new gamification alert"
+                    )
+                }
                 else -> {
                     val title = message.notification?.title ?: "Driving Tracker"
                     val body = message.notification?.body ?: "You have a new update"

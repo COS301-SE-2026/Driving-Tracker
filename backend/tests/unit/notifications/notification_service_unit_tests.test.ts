@@ -173,7 +173,7 @@ describe('notification_services', () => {
                 't1'
             );
             expect(mockSendEachForMulticast).toHaveBeenCalledWith({
-                tokens:['token-1'],
+                fids:['token-1'],
                 notification:{
                     title: 'Trip access revoked',
                     body: 'John Doe is no longer sharing their live trip location with you ',
