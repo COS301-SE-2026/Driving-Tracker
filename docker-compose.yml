@@ -189,6 +189,9 @@ services:
   api-nfr:
     build: ./backend
     command: yarn start
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
     env_file:
       - ./backend/.env.test
     environment:
