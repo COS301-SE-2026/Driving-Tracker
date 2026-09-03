@@ -10,11 +10,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import com.omnitech.drivingtracker.data.models.ContactDto
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
@@ -35,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +67,9 @@ import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.omnitech.drivingtracker.data.models.MapPoiItem
+import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
+import com.omnitech.drivingtracker.ui.theme.Warning
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -77,9 +86,17 @@ fun LiveTrip(
     val mapToken by viewModel.mapTokenState.collectAsState()
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
+    val nearbyPois by viewModel.nearbyPois.collectAsState()
+    val safetyState by viewModel.safetyCheck.collectAsState()
+    var showManualEndFuelDialog by remember { mutableStateOf(false) }
+    var manualEndFuel by remember { mutableStateOf("") }
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
+    val detourRoute by viewModel.detourRoute.collectAsState()
     var destinationLoc by remember { mutableStateOf<com.omnitech.drivingtracker.data.models.LocationDto?>(null) }
+
+    val activeShares by contactsViewModel.activeShares.collectAsState()
+    var showActiveViewersDialog by remember { mutableStateOf(false) }
 
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
         listOf(
@@ -123,35 +140,7 @@ fun LiveTrip(
             kotlinx.coroutines.delay(30000) // Update every 30 seconds
         }
     }
-    //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
-    //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
-//    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
-//        if (locationPermissionState.allPermissionsGranted) {
-//            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-//                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
-//            ).build()
-//
-//            val callback = object : com.google.android.gms.location.LocationCallback() {
-//                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-//                    liveLocation = result.lastLocation
-//                }
-//            }
-//
-//            try {
-//                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
-//            } catch (e: SecurityException) {
-//                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
-//            }
-//        }
-//    }
-
-//    LaunchedEffect(liveLocation, uiState) {
-//        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
-//        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
-//        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
-//        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
-//    }
     LaunchedEffect(uiState, mapToken, liveMetrics) {
         val state = uiState
         if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
@@ -190,9 +179,35 @@ fun LiveTrip(
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
             viewModel.observeTripEvents(tripId)
+            contactsViewModel.loadActiveShares(tripId)
         }
     }
 
+    if(safetyState.shouldPrompt){
+        SafetyPromptDialog(
+            address = safetyState.address?:"Unknown Location",
+            onConfirm = {
+                viewModel.resolveStopEvent(safetyState.stopEventId!!,  "ok")
+
+            },
+            onHelp = {
+                viewModel.confirmStopEvent(safetyState.stopEventId!!)
+            }
+        )
+    }
+    val triggerEndTrip: (Float?) -> Unit = { finalFuel ->
+        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+        viewModel.endTrip(
+            tripId=tripId,
+            latitude = liveMetrics.latitude,
+            longitude = liveMetrics.longitude,
+            distance = liveDistance,
+            durationMinutes = liveDurationMinutes,
+            fuelEstimate = currentTrip?.fuelEstimate ?: 0.0,
+            fuelLevelEnd = finalFuel ,// PASS TO VM
+            path = tripPath
+        )
+    }
     var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
@@ -257,6 +272,10 @@ fun LiveTrip(
         actualRoute = tripPath,
         contactsState = contactsState,
         localEvents = localEvents,
+        activeShares = activeShares,
+        showActiveViewersDialog = showActiveViewersDialog,
+        onToggleActiveViewersDialog = {showActiveViewersDialog = it},
+        onRevokeShare = { contactId -> contactsViewModel.revokeTripShare(tripId, contactId) },
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -267,6 +286,14 @@ fun LiveTrip(
                     java.time.Duration.between(startTime, now).toMinutes().toInt()
                 } catch (e: Exception) { 0 }
             } ?: 0
+            //check the obd fuel level metrics if they are there
+            val obdFuel = metrics.fuelLevel
+            // If OBD data is missing, show the manual entry dialog
+            if (metrics.isDataLive && (obdFuel == null || obdFuel == 0f)) {
+                showManualEndFuelDialog = true
+            } else {
+                triggerEndTrip(obdFuel)
+            }
             // Pass the actual totals to the ViewModel
             viewModel.endTrip(
                 tripId = tripId,
@@ -274,19 +301,58 @@ fun LiveTrip(
                 longitude = liveMetrics.longitude,
                 distance = liveDistance,
                 durationMinutes = liveDurationMinutes,
-                fuelEstimate = currentTrip?.fuelEstimate?:0.0
+                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
+                fuelLevelEnd = obdFuel,
+                path = tripPath
             )
         },
         navController = navController,
         destination = destinationLoc,
         plannedRoute = plannedRoute,
+        detourRoute = detourRoute,
         onShareTrip = { contactIds -> contactsViewModel.shareLocation(tripId, contactIds) },
+        onPoiClick = { _, lat, lng ->
+            viewModel.fetchDetourRoute(
+                startLat = liveMetrics.latitude,
+                startLng = liveMetrics.longitude,
+                destLat = lat,
+                destLng = lng
+            )
+
+            //Show popup for rerouting
+        },
         isMinimized = isMinimized,
         onMinimizeClick = {navController?.navigate(Screen.Dashboard.route){
             popUpTo(Screen.Dashboard.route){inclusive = true}
         } },
-        vehicleMetrics = metrics
+        vehicleMetrics = metrics,
+        nearbyPois = nearbyPois,
+
     )
+    if (showManualEndFuelDialog) {
+        AlertDialog(
+            onDismissRequest = { showManualEndFuelDialog = false },
+            title = { Text("Trip Finished") },
+            text = {
+                Column {
+                    Text("We couldn't read your final fuel level from the car. Please enter the current percentage shown on your dashboard:")
+                    OutlinedTextField(
+                        value = manualEndFuel,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) manualEndFuel = it },
+                        label = { Text("Final Fuel Level (%)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    triggerEndTrip(manualEndFuel.toFloatOrNull())
+                    showManualEndFuelDialog = false
+                }) { Text("Confirm & Finish") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -296,16 +362,23 @@ fun LiveTripContent(
     mapToken: String? = null,
     liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState = ContactsViewModel.UiState.Idle,
+    activeShares: List<ContactDto> = emptyList(),
+    showActiveViewersDialog: Boolean = false,
+    onToggleActiveViewersDialog: (Boolean) -> Unit = {},
+    onRevokeShare: (String) -> Unit = {},
     onEndTrip: () -> Unit = {},
     navController: NavController? = null,
     destination: LocationDto? = null,
     actualRoute: List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
+    detourRoute: List<LocationDto>? = null,
     onShareTrip: (List<String>) -> Unit = {},
+    onPoiClick: (String, Double, Double) -> Unit = { _, _, _ -> },
     isMinimized: Boolean = false,
     onMinimizeClick: () -> Unit = {},
     localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
+    nearbyPois: List<MapPoiItem>? = null,
     liveDistance: Double =0.0,
     liveDuration: Int= 0
 ) {
@@ -324,7 +397,10 @@ fun LiveTripContent(
 
         if(showAlert && latestEvent != null){
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(16.dp).testTag("LiveTripAlertBanner"),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .testTag("LiveTripAlertBanner"),
                 color = MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(8.dp)
             ){
@@ -417,13 +493,20 @@ fun LiveTripContent(
                             navController = navController,
                             contactsState = contactsState,
                             onShareTrip = onShareTrip,
+                            onPoiClick = onPoiClick,
                             destination = destination,
                             plannedRoute = plannedRoute,
+                            detourRoute = detourRoute,
                             actualRoute = actualRoute,
                             liveDistance = liveDistance,
                             liveDuration = liveDuration,
                             localEvents = localEvents,
-                            vehicleMetrics = vehicleMetrics
+                            vehicleMetrics = vehicleMetrics,
+                            nearbyPois = nearbyPois,
+                            activeShares = activeShares,
+                            showActiveViewersDialog = showActiveViewersDialog,
+                            onToggleActiveViewersDialog = onToggleActiveViewersDialog,
+                            onRevokeShare = onRevokeShare,
                         )
                     }
 
@@ -446,11 +529,18 @@ private fun TripDetails(
     destination: LocationDto? = null,
     actualRoute: List<LocationDto>?=null,
     plannedRoute: List<LocationDto>? = null,
+    detourRoute: List<LocationDto>?=null,
     onShareTrip: (List<String>) -> Unit,
+    onPoiClick: (String, Double, Double) -> Unit = { _, _, _ -> },
     liveDistance: Double = 0.0,
     liveDuration: Int = 0,
     localEvents: List<TripEventEntity>,
-    vehicleMetrics: VehicleMetrics
+    vehicleMetrics: VehicleMetrics,
+    nearbyPois: List<MapPoiItem>? = null,
+    activeShares: List<ContactDto> = emptyList(),
+    showActiveViewersDialog: Boolean = false,
+    onToggleActiveViewersDialog: (Boolean) -> Unit = {},
+    onRevokeShare: (String) -> Unit = {}
 ) {
     var recenterCount by remember { mutableStateOf(0) }
     var showShareDialog by remember {mutableStateOf(false)}
@@ -486,7 +576,10 @@ private fun TripDetails(
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    nearbyPois = nearbyPois,
+                    detourRoute = detourRoute,
+                    onPoiClick = onPoiClick,
                 )
                 IconButton(
                     onClick = { recenterCount++ },
@@ -635,6 +728,19 @@ private fun TripDetails(
                 Text("Share Trip", color = Color.White)
             }
         }
+        if (activeShares.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { onToggleActiveViewersDialog(true) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            ) {
+                Icon(Icons.Default.PersonRemove, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Manage Viewers (${activeShares.size})")
+            }
+        }
 
         Spacer(modifier = Modifier.height(25.dp))
 
@@ -708,8 +814,33 @@ private fun TripDetails(
             }
         }
     }
+    if (showActiveViewersDialog) {
+        ActiveViewersDialog(
+            activeShares = activeShares,
+            onRevoke = onRevokeShare,
+            onDismiss = { onToggleActiveViewersDialog(false) }
+        )
+    }
 }
 
+@Composable
+fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Active Viewers", fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(activeShares) { contact ->
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                        Column { Text(contact.name, fontWeight = FontWeight.Medium); Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall) }
+                        IconButton(onClick = { onRevoke(contact.contactId) }) { Icon(Icons.Default.PersonRemove, "Revoke", tint = MaterialTheme.colorScheme.error) }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
 @Composable
 fun SummaryItem(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -766,7 +897,9 @@ fun LiveTripPreview() {
         durationMinutes = 20,
         fuelEstimate = 8.5,
         scores = null,
-        events = emptyList()
+        events = emptyList(),
+        startAddress = "",
+        endAddress = ""
     )
 
     DrivingTrackerTheme {

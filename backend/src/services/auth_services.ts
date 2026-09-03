@@ -1,9 +1,10 @@
 import prisma from '../db/prisma';
 import bcrypt from 'bcrypt';
-import { generate_refresh_token, generate_token } from '../middleware/auth';
+import crypto from 'node:crypto';
+import { sendAuthEmail } from '../utils/email';
+import { generate_refresh_token, AppJwtPayload } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
-import { AppJwtPayload } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 
@@ -20,7 +21,7 @@ const username_schema=z.string().min(3, "Username must have atleast 3 characters
 
 const name_schema=z.string().min(1, "Name/Surname must have atleast 1 character").max(50, "Name/Surname can have atmost 50 characters");
 
-const phone_schema=z.string().regex(/^\+[1-9]\d{1,14}$/, "Invalid phone number. Should be +27123456789 format");
+const phone_schema=z.string().regex(/^0\d{9}$/, "Invalid phone number. Should be 0603456789 format");
 
 const dob_schema = z.preprocess(val => {
   if (typeof val !== 'string') return val;
@@ -61,7 +62,7 @@ async function generate_unique_username(name: string, surname: string) {
 export const auth_services = {
 
     async register (email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean)
-    :Promise<{user: any, refresh_token: string}>{
+    :Promise<{user: any}>{
         //validating all parameters
         if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
 
@@ -89,7 +90,9 @@ export const auth_services = {
             throw new ValidationError(phone_result.error.issues.at(0)?.message!,"phone")
         }
 
-        const email_result=validate_email(email);
+        const normalized_email = email.trim().toLowerCase();
+
+        const email_result=validate_email(normalized_email);
         
         if(!email_result.success){
             throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
@@ -103,14 +106,14 @@ export const auth_services = {
 
         const dob_date=dob_result.data;
 
-        //Checking if user with email or username already exists
+        //Checking if user with email already exists
         const existing_user=await prisma.users.findFirst({
-            where: { email }
+            where: { email: normalized_email }
         });
 
         if(existing_user){
 
-            if(existing_user.email===email){
+            if(existing_user.email === normalized_email){
 
                 throw new ConflictError("You already have an account with this email address","email");
             }
@@ -126,12 +129,14 @@ export const auth_services = {
 
         let usernameLocal = username;
 
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const maxAttempts = 3;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
                 const user = await prisma.users.create({
                 data: {
-                    email,
+                    email: normalized_email,
                     username: usernameLocal,
                     name,
                     surname,
@@ -139,22 +144,34 @@ export const auth_services = {
                     phone_number,
                     password_hash: hashedPassword,
                     consent_status: consent_status,
+                    email_verified: false,
+                    verification_token: verificationToken
                     }
                 });
 
 
                 //generating refresh token
-                const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+                // const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
 
-                await prisma.users.update({
-                    where: {user_id: user.user_id}, 
-                    data: {
-                        refresh_token, 
-                        refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
-                    },
-                });
+                // await prisma.users.update({
+                //     where: {user_id: user.user_id}, 
+                //     data: {
+                //         refresh_token, 
+                //         refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
+                //     },
+                // });
 
-                return {user, refresh_token};
+                const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
+                await sendAuthEmail(
+                    normalized_email,
+                    "Verify your Driving Tracker Account",
+                    `<h1>Welcome to Driving Tracker!</h1>
+                    <p>Please click the link below to verify your email address and activate your account:</p>
+                    <a href="${verificationUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+                    <p>If you did not create this account, you may safely ignore this email.</p>`
+                );
+
+                return {user};
             
             } catch (err: any) {
                 if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -172,16 +189,115 @@ export const auth_services = {
         
     },
 
+    async verify_email(token: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Verification token is required", "token");
+        }
+        const user = await prisma.users.findFirst({
+            where: {
+                verification_token: token
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        await prisma.users.update({
+            where: {user_id: user.user_id },
+            data: {
+                email_verified: true,
+                verification_token: null
+            }
+        });
+    },
+
+    async request_password_reset(email: string){
+        const normalized_email = (email ?? "").trim().toLowerCase();
+
+        const email_result = validate_email(normalized_email);
+        if(!email_result.success){
+            return;
+        }
+
+        const user = await prisma.users.findUnique({
+            where:  { email: normalized_email }
+        });
+
+        if(!user) return;
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 3600000);
+
+        await prisma.users.update({
+            where: { email: normalized_email },
+            data: {
+                password_reset_token: resetToken,
+                reset_token_exp: expiry
+            }
+        });
+
+        const resetUrl = `${process.env.APP_URL}/api/auth/reset_password_link?token=${encodeURIComponent(resetToken)}`;
+
+        await sendAuthEmail(
+            email,
+            "Reset your Driving Tracker Password",
+            `<h1>Password Reset Request</h1>
+            <p>We received a request to reset your password. Click the button to reset your password:</p>
+            <a href="${resetUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>This link will expire in 1 hour.</p>`
+
+        );
+    },
+
+    async reset_password(token: string, newPassword: string){
+        if(!token || typeof token !== "string"){
+            throw new ValidationError("Reset token is required", "token");
+        }
+
+        const password_result = validate_password(newPassword);
+        if(!password_result.success){
+            throw new ValidationError(password_result.error.issues.at(0)?.message!, "password");
+        }
+
+        const user = await prisma.users.findFirst({
+            where: {
+                password_reset_token: token,
+                reset_token_exp: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if(!user) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.users.update({
+            where: { user_id: user.user_id },
+            data: {
+                password_hash: hashedPassword,
+                password_reset_token: null,
+                reset_token_exp: null,
+                refresh_token: null,
+                refresh_token_exp: null
+            }
+        })
+    },
+
     async login(identifier: string, password: string){
+
+        const normalized = identifier.trim().toLowerCase();
 
         const user= await prisma.users.findFirst({where: {
             OR:[
-                {email: identifier},
+                {email: normalized},
                 {username: identifier}
             ]
         }});
 
         if(!user) throw new ValidationError("Incorrect username/email", "credentials");
+
+		if(!user.email_verified){
+			throw new ExtendedError("Please verify your email address before logging in.", "EMAIL_NOT_VERIFIED");
+		}
 
         const valid=await bcrypt.compare(password, user.password_hash);
 
@@ -252,6 +368,7 @@ export const auth_services = {
                 email: true,
                 phone_number: true,
                 dob: true,
+                profile_picture_url: true,
                 _count: {
                     select: {
                         trips: true,
@@ -272,10 +389,43 @@ export const auth_services = {
             email: user.email,
             phone_number: user.phone_number,
             dob: user.dob,
+            profile_picture_url: user.profile_picture_url ? `upload/profile-picture/${user.user_id}` : null,
             trip_count: user._count.trips,
             badge_count: user._count.user_badges,
             vehicle_count: user._count.users_vehicles,
         }
+    },
+
+    async update_profile_picture(user_id: string, blob_name: string){
+        const existing = await prisma.users.findUnique({
+            where: { user_id },
+            select: { profile_picture_url: true }
+        });
+
+        if(!existing) throw new ExtendedError("User not found", "USER_NOT_FOUND");
+
+        const updatedUser = await prisma.users.update({
+            where: { user_id },
+            data: { profile_picture_url: blob_name, },
+            select: {profile_picture_url: true ,}
+        });
+
+        return {
+            display_url: `upload/profile-picture/${user_id}`,
+            previous_blob_name: existing.profile_picture_url,
+            updated_blob_name: updatedUser.profile_picture_url,
+        };
+    },
+
+    async get_profile_picture_blob_name(user_id: string): Promise<string | null> {
+        const user = await prisma.users.findUnique({
+            where: { user_id },
+            select: { profile_picture_url: true }
+        });
+
+        if(!user) throw new ExtendedError("User not found", "USER_NOT_FOUND");
+
+        return user.profile_picture_url;
     }
 };
 

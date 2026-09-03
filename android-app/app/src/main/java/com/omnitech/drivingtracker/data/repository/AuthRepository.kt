@@ -7,12 +7,17 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.db.daos.UserDao
 import com.omnitech.drivingtracker.data.db.entities.UserEntity
 import com.omnitech.drivingtracker.data.local.SessionManager
+import com.omnitech.drivingtracker.data.models.ForgotPasswordRequest
 import com.omnitech.drivingtracker.data.models.LoginRequest
+import com.omnitech.drivingtracker.data.models.LogoutResponse
 import com.omnitech.drivingtracker.data.models.RegisterFcmRequest
 import com.omnitech.drivingtracker.data.models.RegisterRequest
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.ProfileData
+import com.omnitech.drivingtracker.data.models.ResetPasswordRequest
+import okhttp3.MultipartBody
+import com.omnitech.drivingtracker.data.models.DeleteAccountRequest
 
 class AuthRepository @Inject constructor(
     private val api: ApiService,
@@ -21,6 +26,8 @@ class AuthRepository @Inject constructor(
 ) {
 
     suspend fun insertUser(userEntity: UserEntity) = userDao.insertUser(userEntity)
+
+    fun getRefreshToken(): String?  = session_manager.getRefreshToken()
     suspend fun register(
         username: String,
         name: String,
@@ -35,38 +42,18 @@ class AuthRepository @Inject constructor(
             val response = api.register(
                 RegisterRequest(username,name,surname,email,password,phoneNumber,dob,consent_status)
             )
-            session_manager.saveTokens(response.token,response.refresh_token)
-
-            session_manager.getFcmToken()?.let{
-                api.registerFcmToken(RegisterFcmRequest(it))
-            }
-
-            val userId = session_manager.getUserIdFromToken()
-
-            if(!userId.isNullOrEmpty()){
-
-                val entity = UserEntity(
-                    userId = userId,
-                    username = username,
-                    name = name,
-                    surname = surname,
-                    email = email
-                )
-
-                session_manager.saveUserId(userId)
-
-                insertUser(entity)
-            }
 
             Result.success(Unit)
 
-        }catch(e: HttpException){
-           val error = ApiErrorParser.parse(e)
+        }
+        catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message?: "An error occurred"))
-        }catch(e: Exception){
+        }
+        catch(e: Exception){
             e.printStackTrace()
-        Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
-    }
+            Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again"))
+        }
     }
 
     suspend fun login(identifier: String, password: String):Result<Unit>{
@@ -118,6 +105,69 @@ class AuthRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message?: "Failed to fetch profile"))
         }catch (e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", "Network error"))
+        }
+    }
+
+    suspend fun logout(): Result<Unit>{
+        return try{
+
+            api.logout()
+
+            Result.success(Unit)
+
+        } catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message?: "Failed to logout"))
+        } catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error"))
+        } finally{
+            session_manager.clearTokens()
+        }
+
+    }
+
+    suspend fun forgotPassword(email : String) : Result<Unit> = try{
+        api.forgotPassword(ForgotPasswordRequest(email))
+        Result.success(Unit)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to send reset email"))
+    }catch(e: Exception){
+        Result.failure(e)
+    }
+
+    suspend fun resetPassword(token : String, newPassword: String) : Result<Unit> = try{
+        api.resetPassword(ResetPasswordRequest(token, newPassword))
+        Result.success(Unit)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to reset password"))
+    }catch(e: Exception){
+        Result.failure(e)
+    }
+
+    suspend fun uploadProfilePicture(imagePart : MultipartBody.Part) : Result<String> = try{
+        val response = api.uploadProfilePicture(imagePart)
+        Result.success(response.data.profilePictureUrl)
+    }catch(e: HttpException){
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message?: "Failed to upload profile picture"))
+    }catch(e: Exception){
+        Result.failure(e)
+    }
+    
+    suspend fun deleteAccount(password: String): Result<Unit>{
+        return try{
+            api.deleteAccount(DeleteAccountRequest(password))
+            session_manager.clearTokens()
+            Result.success(Unit)
+        }
+        catch (e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to delete account"))
+        }
+        catch (e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", "Network error, please try again."))
         }
     }
 

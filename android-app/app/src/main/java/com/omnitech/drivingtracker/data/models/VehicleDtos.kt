@@ -12,6 +12,8 @@ data class VehicleDto(
     val year: Int? = null,
     @SerializedName("fuel_type")
     val fuelType: String? = null,
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
     val mileage: Int? = null,
     @SerializedName("trip_count")
     val tripCount: Int? = null,
@@ -26,9 +28,31 @@ data class AssignVehicleRequest(
 	val make: String,
 	val model: String,
 	val year: Int,
-	@SerializedName("fuel_type") val fuelType: String
+	@SerializedName("fuel_type") val fuelType: String,
+    @SerializedName("fuel_tank") val fuelTank: Float,
 )
 
 data class AddVehicleResponse(
-    val data: VehicleDto
+    val data: VehicleDto,
+    val warning: String?
+)
+
+data class FuelAnalyticsDto(
+    @SerializedName("average_fuel_efficiency")
+    val averageFuelEfficiency: Double? = null,
+    @SerializedName("best_fuel_efficiency")
+    val bestFuelEfficiency: Double?= null,
+    @SerializedName("worst_fuel_efficiency")
+    val worstFuelEfficiency: Double?= null,
+    val history: List<FuelHistoryPointDto> = emptyList()
+)
+
+data class FuelHistoryPointDto(
+    val date: String,
+    @SerializedName("distance_km")
+    val distanceKm: Double?= null,
+    @SerializedName("fuel_used_liters")
+    val fuelUsedLiters: Double?= null,
+    @SerializedName("efficiency_l_per_100km")
+    val efficiencyLPer100Km: Double?= null,
 )

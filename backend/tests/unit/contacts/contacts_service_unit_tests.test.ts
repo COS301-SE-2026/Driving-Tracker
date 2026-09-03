@@ -141,6 +141,20 @@ describe('contact services.list_trusted_contacts',()=>{
         expect(result[0].contact_id).toBe('c1');
         expect(result[0].username).toBe('johndoe');
     });
+
+    it('returns contact with profile picture paths', async () => {
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([{
+            contact_id: 'c1',
+            contact_user_id: 'u2',
+            contact_user: {
+                username: 'johndoe',
+                profile_picture_url: 'pic.jpg'
+            },
+        }]);
+        const result = await contact_services.list_trusted_contacts('u1');
+
+        expect(result[0].profile_picture_url).toBe('upload/profile-picture/u2');
+    });
 });
 
 describe('alert contacts for event',()=>{

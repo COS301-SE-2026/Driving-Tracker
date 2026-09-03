@@ -99,6 +99,25 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }
+
+    suspend fun getNearbyPois(
+        lat: Double,
+        lng: Double,
+        type: PoiType?,
+        radius: Int?,
+        limit: Int?
+    ): Result<MapPoiData> {
+        return try{
+            val response = api.getNearbyPois(lat, lng, type.toString(), radius, limit)
+            Result.success(response.data)
+        }catch(e: HttpException){
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
+        }
+        catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,
@@ -106,6 +125,7 @@ class TripRepository @Inject constructor(
         longitude: Double,
         destLat: Double? = null,
         destLng: Double? = null,
+        fuelLevelStart: Float? = null,
         selectedContactIds: List<String>?
     ) : Result<String>{
         return try{
@@ -117,7 +137,8 @@ class TripRepository @Inject constructor(
                 dataSource = dataSource,
                 startLocation = LocationDto(lat = latitude, lng = longitude),
                 endLocation = if (destLat != null && destLng != null) LocationDto(lat = destLat, lng = destLng) else null,
-                shareWithContacts = selectedContactIds
+                shareWithContacts = selectedContactIds,
+                fuelLevelStart = fuelLevelStart
             )
 
             val response = api.startTrip(request)
@@ -222,6 +243,8 @@ class TripRepository @Inject constructor(
         fuelEstimate: Double? = null,
         overallScore: Double? = null,
         endLocation: LocationDto? = null,
+        fuelLevelEnd: Float? = null,
+        routePolyline: GeoJsonLineString? = null
     ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(
@@ -231,7 +254,9 @@ class TripRepository @Inject constructor(
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
                 overallScore = overallScore,
-                endLocation = endLocation
+                endLocation = endLocation,
+                routePolyline = routePolyline,
+                fuelLevelEnd = fuelLevelEnd
             )
             val response = api.endTrip(tripId, request)
             Result.success(response.data)
@@ -258,6 +283,65 @@ class TripRepository @Inject constructor(
             val response = api.getSuggestedRoute(start.lat, start.lng, dest.lat, dest.lng)
             Result.success(response.data)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun checkStopEvent(tripId: String, lat: Double, lng: Double, stoppedAt: Long): Result<StopEventCheckData> {
+        return try {
+            val response = api.checkStopEvent(tripId,
+                StopEventCheckRequest(LocationDto(lat,lng), stoppedAt)
+                )
+            Log.d("StopMonitor", "Check stop address: ${response.data.locationContext.address}")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Check stop address failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to check stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Check stop address failed android")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun confirmStopEvent(eventId: String): Result<StopEventConfirmData> {
+        return try {
+            val response = api.confirmStopEvent(eventId)
+            Log.d("StopMonitor", "Confirm stop event")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Confirm stop event failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to confirm stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Confirm stop event failed android")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resolveStopEvent(eventId: String, reason: String): Result<StopEventResolveData> {
+        return try {
+            val response = api.resolveStopEvent(eventId, StopEventResolveRequest(reason))
+
+            Log.d("StopMonitor", "Resolve stop event")
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            Log.d("StopMonitor", "Resolve stop event failed http")
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to resolve stop event"))
+        } catch (e: Exception) {
+            Log.d("StopMonitor", "Resolve stop event failed android")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun logUnusualDuration(tripId: String, expectedSeconds: Int, movingSeconds: Int ): Result<String> {
+        return try {
+            val response = api.logUnusualDurationEvent(tripId, UnusualDurationRequest(expectedSeconds, movingSeconds))
+            Result.success(response.message)
+
+        } catch (e: Exception) {
+            Log.d("UnusualDuration", "Failed to log unusual duration")
             Result.failure(e)
         }
     }

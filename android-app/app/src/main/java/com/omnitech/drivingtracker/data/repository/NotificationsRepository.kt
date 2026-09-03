@@ -4,6 +4,7 @@ import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.data.models.ContactDto
+import com.omnitech.drivingtracker.data.models.DeleteNotificationsData
 import com.omnitech.drivingtracker.data.models.NotificationDto
 import com.omnitech.drivingtracker.data.models.RespondContactRequest
 import com.omnitech.drivingtracker.data.models.RespondContactResponse
@@ -45,6 +46,18 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch notifications")) //wrap in failure
         } catch(e: Exception){
             Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+        }
+    }
+
+    suspend fun deleteNotifications() : Result<Int>{
+        return try{
+            val response = api.deleteNotifications()
+            Result.success(response.data.deletedCount)
+        } catch(e: HttpException){
+            val error = ApiErrorParser.parse(e) //parse HTTP error
+            Result.failure(ApiException(error.error, error.message ?: "Failed to delete notifications"))
+        } catch(e: Exception){
+            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
         }
     }
 

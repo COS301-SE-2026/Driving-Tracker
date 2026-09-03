@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.util.Base64
+import android.util.Log
 
 @Singleton
 class SessionManager @Inject constructor(@ApplicationContext context: Context) {
@@ -33,7 +34,7 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
     fun getRefreshToken(): String? = prefs.getString("refresh_token", null)
 
     fun clearTokens(){
-        prefs.edit { clear() }
+        prefs.edit { remove("token").remove("refresh_token") }
     }
 
     fun saveLastObdAddress(address: String){

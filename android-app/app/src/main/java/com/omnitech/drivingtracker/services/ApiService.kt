@@ -2,6 +2,8 @@ package com.omnitech.drivingtracker.services
 
 import com.omnitech.drivingtracker.data.models.*
 import retrofit2.http.*
+import okhttp3.MultipartBody
+
 
 interface ApiService{
     //returns trusted contacts for authenticated user
@@ -41,17 +43,34 @@ interface ApiService{
     @DELETE("vehicle/{vehicle_id}")
     suspend fun removeVehicle(@Path("vehicle_id") vehicleId: String) : GenericResponse
 
+    @Multipart
+    @POST("upload/vehicle/{vehicle_id}")
+    suspend fun uploadVehicleImage(
+        @Path("vehicle_id") vehicleId: String,
+        @Part image: MultipartBody.Part
+    ): UploadVehicleImageResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
     @POST("api/auth/register")
-    suspend fun register(@Body body: RegisterRequest): AuthResponse
+    suspend fun register(@Body body: RegisterRequest): RegisterResponse
+
+    @POST("api/auth/forgot_password")
+    suspend fun forgotPassword(@Body body : ForgotPasswordRequest) : GenericResponse
+
+    @POST("api/auth/reset_password")
+    suspend fun resetPassword(@Body body : ResetPasswordRequest) : GenericResponse
 
     @POST("api/auth/logout")
-    suspend fun logout()
+    suspend fun logout(): LogoutResponse
 
     @GET("api/auth/profile")
     suspend fun getProfile(): ProfileResponse
+
+    @Multipart
+    @POST("upload/profile")
+    suspend fun uploadProfilePicture(@Part image: MultipartBody.Part): UploadProfilePictureResponse
 
     @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
@@ -95,7 +114,7 @@ interface ApiService{
     @GET("leaderboard/scopes")
     suspend fun getLeaderboardScopes(): LeaderboardScopesResponse
 
-    //Notifications
+    //Maps
     @POST("devices/fcm_token")
     suspend fun registerFcmToken(@Body body: RegisterFcmRequest): RegisterFcmResponse
   
@@ -105,6 +124,15 @@ interface ApiService{
     @GET("map/search")
     suspend fun searchAddress(@Query("address")address: String): AddressSearchResponse
 
+    @GET("map/nearby/pois")
+    suspend fun getNearbyPois(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("type") type: String?,
+        @Query("radius") radius: Int?,
+        @Query("limit") limit: Int?
+    ): MapPoiResponse
+
     @GET("map/route")
     suspend fun getSuggestedRoute(
         @Query("start_lat") startLat: Double?,
@@ -113,9 +141,15 @@ interface ApiService{
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
 
+    //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
-  
+
+    @DELETE("notifications/delete")
+    suspend fun deleteNotifications(): DeleteNotificationsResponse
+
+
+    //Live Trips
     @POST("trips/{trip_id}/readings/record")
     suspend fun recordReading(
         @Path("trip_id") tripId: String,
@@ -142,4 +176,45 @@ interface ApiService{
 
     @GET("trips/shared_with_me")
     suspend fun getTripsSharedWithMe(): SharedWithMeResponse
+
+    @POST("trips/{trip_id}/stop_event/check")
+    suspend fun checkStopEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: StopEventCheckRequest
+    ): StopEventCheckResponse
+
+    @POST("trips/{event_id}/stop_event/confirm")
+    suspend fun confirmStopEvent(
+        @Path("event_id") eventId: String
+    ): StopEventConfirmResponse
+
+    @POST("trips/{event_id}/stop_event/resolve")
+    suspend fun resolveStopEvent(
+        @Path("event_id") eventId: String,
+        @Body body: StopEventResolveRequest
+    ): StopEventResolveResponse
+
+    @GET("vehicle/fuel_analytics")
+    suspend fun getFuelAnalytics(): FuelAnalyticsDto
+
+    @POST("trips/{trip_id}/unusual_duration_event")
+    suspend fun logUnusualDurationEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: UnusualDurationRequest
+    ): UnusualDurationResponse
+
+    @GET("trips/{trip_id}/shares")
+    suspend fun getTripShares(@Path("trip_id") tripId: String): TripSharesResponse
+
+    @DELETE("trips/{trip_id}/shares/{contact_id}")
+    suspend fun revokeTripShare(
+        @Path("trip_id") tripId: String,
+        @Path("contact_id") contactId: String
+    ): GenericResponse
+
+
+    @POST("users/me/delete")
+    suspend fun deleteAccount(
+        @Body request: DeleteAccountRequest
+    )
 }

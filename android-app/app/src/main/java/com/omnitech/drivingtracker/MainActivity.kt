@@ -22,7 +22,7 @@ import com.omnitech.drivingtracker.ui.auth.SignUpScreen
 import com.omnitech.drivingtracker.ui.auth.WelcomePage
 import com.omnitech.drivingtracker.ui.contacts.Contacts
 import com.omnitech.drivingtracker.ui.home.Dashboard
-//import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
+import com.omnitech.drivingtracker.ui.challenges.WeeklyChallenges
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.trip.LiveTrip
 import com.omnitech.drivingtracker.ui.trip.Trips
@@ -51,7 +51,28 @@ import com.omnitech.drivingtracker.ui.notification.NotificationsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import androidx.activity.compose.LocalActivity
+import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.navDeepLink
+import com.omnitech.drivingtracker.ui.auth.AuthViewModel
+import com.omnitech.drivingtracker.ui.auth.ForgotPasswordScreen
 import com.omnitech.drivingtracker.ui.trip.LiveTripContacts
+import com.omnitech.drivingtracker.ui.analytics.DriverAnalytics
+import com.omnitech.drivingtracker.ui.analytics.EcoAnalytics
+import com.omnitech.drivingtracker.ui.analytics.EventsAnalytics
+import com.omnitech.drivingtracker.ui.analytics.FuelAnalytics
+import com.omnitech.drivingtracker.ui.analytics.SafetyAnalytics
+import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -98,6 +119,18 @@ sealed class Screen(val route: String){
     data object Profile : Screen("profile")
 
     data object More : Screen("more")
+
+    data object Analytics : Screen("analytics")
+
+    data object FuelAnalytics : Screen("fuel_analytics")
+
+    data object EcoAnalytics : Screen("eco_analytics")
+
+    data object SafetyAnalytics : Screen("safety_analytics")
+
+    data object EventsAnalytics : Screen("events_analytics")
+
+    data object ForgotPassword : Screen("forgot_password")
 }
 
 @AndroidEntryPoint
@@ -121,10 +154,49 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
+    private fun determineStartRoute(authState: AuthViewModel.UiState): String {
+        return if (authState is AuthViewModel.UiState.Authenticated) getPostAuthDestination()
+        else Screen.Welcome.route
+    }
+
+    //navigate from a notification
+    fun handleNotificationNavigation(navController: NavController) {
+        val destination = intent.getStringExtra("navigate_to")?: return
+
+        navController.navigate(destination)
+        intent.removeExtra("navigate_to")
+    }
+
+    //Navigate to destination post auth
+    fun navigatePostAuth(navController: NavController) {
+        navController.navigate(getPostAuthDestination()) {
+            popUpTo(Screen.Welcome.route) { inclusive = true }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        //For checking if user can skip log in
+        val authViewModel: AuthViewModel by viewModels()
+
+        splashScreen.setKeepOnScreenCondition {
+            authViewModel.uiState.value is AuthViewModel.UiState.Loading ||
+                    authViewModel.uiState.value is AuthViewModel.UiState.Idle
+        }
+
         enableEdgeToEdge()
         setContent {
+
+            val authState by authViewModel.uiState.collectAsState()
+
+            //Check if user session is still valid
+            LaunchedEffect(Unit) {
+                authViewModel.checkSession()
+            }
 
             var darkMode by rememberSaveable {mutableStateOf(false)}
             val onDarkModeChange: (Boolean) -> Unit = {darkMode = it}
@@ -134,27 +206,12 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val lifecycleOwner = LocalLifecycleOwner.current
 
-                //Navigate to destination post auth
-                fun navigatePostAuth() {
-                    navController.navigate(getPostAuthDestination()) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
-                    }
-                }
-
-                //navigate from a notification
-                fun handleNotificationNavigation() {
-                    val destination = intent.getStringExtra("navigate_to")?: return
-
-                    navController.navigate(destination)
-                    intent.removeExtra("navigate_to")
-                }
-
                 //Navigation through notifications
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
 
-                        if(event == Lifecycle.Event.ON_RESUME){
-                           handleNotificationNavigation()
+                        if((event == Lifecycle.Event.ON_RESUME) && authState is AuthViewModel.UiState.Authenticated){
+                           handleNotificationNavigation(navController)
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
@@ -163,7 +220,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavHost(navController = navController, startDestination = Screen.Welcome.route){
+                if(authState is AuthViewModel.UiState.Loading ||
+                    authState is AuthViewModel.UiState.Idle){
+                    return@DrivingTrackerTheme
+                }
+
+                val startRoute = determineStartRoute(authState)
+                val isAuthenticated = authState is AuthViewModel.UiState.Authenticated
+
+                LaunchedEffect(isAuthenticated) {
+                    if (isAuthenticated) handleNotificationNavigation(navController)
+                }
+
+                NavHost(navController = navController, startDestination = startRoute){
                     composable(Screen.Welcome.route){
                         WelcomePage(
                             onLoginClick = { navController.navigate(Screen.Login.route) },
@@ -173,16 +242,27 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Login.route){
 
                         LoginScreen(
-                            onLoginSuccess = { navigatePostAuth() },
+                            navController = navController,
+                            onLoginSuccess = { navigatePostAuth(navController) },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
                     composable(Screen.SignUp.route){
                         SignUpScreen(
-                            onSignUpSuccess = { navigatePostAuth() },
+                            onSignUpSuccess = {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.Welcome.route) {
+                                        inclusive = false
+                                    }
+                                }
+                            },
                             onBackClick = { navController.popBackStack() }
                         )
                     }
+                    composable(Screen.ForgotPassword.route){
+                        ForgotPasswordScreen(onBackClick =  { navController.popBackStack() })
+                    }
+
                     composable(Screen.Dashboard.route){
                         Dashboard(navController = navController)
                     }
@@ -190,9 +270,9 @@ class MainActivity : ComponentActivity() {
                         Trips(navController = navController)
                     }
 
-//                    composable(Screen.WeeklyChallenges.route){
-//                        WeeklyChallenges(navController = navController)
-//                    }
+                   composable(Screen.WeeklyChallenges.route){
+                       WeeklyChallenges(navController = navController)
+                    }
 
                     composable(Screen.Contacts.route){
                         Contacts(navController = navController)
@@ -251,7 +331,9 @@ class MainActivity : ComponentActivity() {
                         Settings(
                             navController = navController,
                             darkMode = darkMode,
-                            onDarkModeChange = onDarkModeChange
+                            onDarkModeChange = onDarkModeChange,
+                            onAccountDeleted = {navController.navigate(Screen.Welcome.route)
+                            {popUpTo(0){inclusive = true} } }
                         )
                     }
                     composable(Screen.OBDMain.route){
@@ -268,6 +350,21 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Profile.route){
                         Profile(navController = navController)
                     }
+                    composable(Screen.Analytics.route){
+                        DriverAnalytics(navController = navController)
+                    }
+                    composable(Screen.FuelAnalytics.route){
+                        FuelAnalytics(navController = navController)
+                    }
+                    composable(Screen.EcoAnalytics.route){
+                        EcoAnalytics(navController = navController)
+                    }
+                    composable(Screen.SafetyAnalytics.route){
+                        SafetyAnalytics(navController = navController)
+                    }
+                    composable(Screen.EventsAnalytics.route){
+                        EventsAnalytics(navController = navController)
+                    }
                     composable(
                         route = Screen.LiveTripContacts.route,
                         arguments = listOf(navArgument("trip_id") { type=NavType.StringType })
@@ -277,7 +374,46 @@ class MainActivity : ComponentActivity() {
 
                         LiveTripContacts(driverName = name, navController = navController, tripId = tripId )
                     }
+
+                    composable(
+                        route = "verify-success",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://verify-success" }
+                        )
+                    ){
+                        LoginScreen(
+                            onLoginSuccess = { navigatePostAuth(navController) },
+                            onBackClick = { navController.popBackStack() },
+                            //verificationSuccess = true
+                        )
+                    }
+
+                    composable(
+                        route = "reset-password?token={token}",
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "driving-tracker://reset-password?token={token}" }
+                        ),
+                        arguments = listOf(
+                            navArgument("token"){
+                                type = NavType.StringType
+                            }
+                        )
+                    ){ backStackEntry ->
+                        val token = backStackEntry.arguments?.getString("token") ?: ""
+
+                        ResetPasswordScreen(
+                            token = token,
+                            onResetSuccess = {
+                                navController.navigate(Screen.Login.route){
+                                    popUpTo(Screen.Welcome.route){
+                                        inclusive = false
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
+
             }
         }
     }

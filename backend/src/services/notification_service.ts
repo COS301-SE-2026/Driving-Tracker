@@ -10,7 +10,7 @@ export const notification_services= {
     async send_trusted_contact_request_notification(fcm_tokens: string[], sent_by: string, contact_id: string) {
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         await getMessaging().sendEachForMulticast({
@@ -34,7 +34,7 @@ export const notification_services= {
     async send_trusted_contact_response_notification(fcm_tokens: string[], sent_by: string, status: ConsentStatus) {
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         const statusStr = (status === "APPROVED")? "accepted" : "declined";
@@ -59,7 +59,7 @@ export const notification_services= {
     async send_trip_shared_notification(fcm_tokens: string[], shared_by: string, trip_id: string){
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         await getMessaging().sendEachForMulticast({
@@ -80,11 +80,30 @@ export const notification_services= {
         })
 
     },
+    //sends notification for revoked access 
+    async send_trip_revoked_notification(fcm_tokens: string[],shared_by: string, trip_id: string){
+        if(fcm_tokens.length == 0 )return;
+
+        await getMessaging().sendEachForMulticast({
+            tokens: fcm_tokens,
+            notification:{
+                title:"Trip access revoked",
+                body: `${shared_by} is no longer sharing their live trip location with you `
+            },
+            data:{
+                type: "TRIP_REVOKED",
+                trip_id,
+                shared_by
+            }
+        }).catch((err: any)=>{
+            console.error("Failed to send trip revoked notification: ",err.message);
+        })
+    },
     //sends push notification for trip related alerts
     async send_trip_alert_notification(fcm_tokens: string[], trip_id: string, alert_type: string, message: string){
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         await getMessaging().sendEachForMulticast({
@@ -108,7 +127,7 @@ export const notification_services= {
     async send_general_notification(fcm_tokens: string[], title: string, message: string){
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         await getMessaging().sendEachForMulticast({
@@ -131,7 +150,7 @@ export const notification_services= {
     async send_badge_notification(fcm_tokens: string[], title: string, message: string, badge_id: string, icon_url: string){
 
         if(fcm_tokens.length === 0){
-            throw new ExtendedError("No tokens provided","NO_TOKENS_PROVIDED");
+            return;
         }
 
         if(title.trim().length === 0){
@@ -156,6 +175,30 @@ export const notification_services= {
         })
 
     },
+    //send unexpected stop notifications
+    async send_unexpected_stop_notification(fcm_tokens: string[], trip_id: string, event_id: string, message: string){
+
+        if(fcm_tokens.length === 0){
+            return;
+        }
+
+        await getMessaging().sendEachForMulticast({
+            fids: fcm_tokens,
+            notification: {
+                title: "Unexpected Stop",
+                body: message
+            },
+            data: {
+                type: "UNEXPECTED_STOP",
+                event_id,
+                trip_id
+            }
+        }).catch( (err: any) => {
+            const errorMessage = err instanceof Error? err.message: String(err);
+            console.error("Failed to send stop alert: ", errorMessage)
+            throw new ExtendedError("Could not send unexpected stop notification","COULD_NOT_SEND_NOTIFICATION"); 
+        });
+    },
     //Fetch users notifications
     async fetch_notifications(user_id: string){
 
@@ -175,6 +218,24 @@ export const notification_services= {
         }));
 
         return notification_arr;
+    },
+
+    //Delete notifications for a user
+    async delete_notifications(user_id: string){
+
+        const deleted = await prisma.$transaction(async (tx) => {
+               
+            const result = await tx.notifications.deleteMany({
+                where: {
+                    user_id
+                }
+            });
+
+            return result;
+        });
+
+        return deleted.count;
+
     }
 
 }

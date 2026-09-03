@@ -4,6 +4,7 @@ const { login } = auth_controller;
 import { auth_services } from '../../../src/services/auth_services';
 import {  ValidationError } from '../../../src/utils/errors';
 import { resetIdentifierLimiter } from '../../../src/middleware/rate_limit';
+import { createMockUser } from './mock_user';
 
 
 
@@ -30,7 +31,7 @@ describe('Auth login endpoint',()=>{
     
     it('Returns 201 and tokens on successful login',async ()=>{
         jest.spyOn(auth_services,'login').mockResolvedValueOnce({
-            user: { user_id: 'user-1', username: 'tester', name: 'Test', surname: 'User', email: 'test@example.com', password_hash: 'hash', role: 'USER', refresh_token: null, refresh_token_exp: null, consent_status: true, created_at: null, status: 'ACTIVE', deleted_at: null,dob: new Date('2000-01-15'), phone_number: '+27781234567', phone_verified: false,},
+            user: createMockUser(),
             refresh_token: 'refresh-1',
         });
 

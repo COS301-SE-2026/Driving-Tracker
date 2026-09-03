@@ -7,4 +7,8 @@ object NotificationChannels {
     const val GAMIFICATION = "gamification"
 
     const val FCM_DEFAULT = "driving_tracker_channel"
+
+    const val REST_ALERTS  = "rest_alerts"
+
+    const val CONTACT_ALERTS_HIGH = "contact_alerts_high"
 }

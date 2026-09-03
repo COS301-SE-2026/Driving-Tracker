@@ -117,4 +117,10 @@ dependencies {
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
     implementation(libs.play.services.base)
+
+    //Splashscreen
+    implementation(libs.androidx.core.splashscreen)
+
+    //Graphs
+    implementation(libs.vico.compose.m3)
 }

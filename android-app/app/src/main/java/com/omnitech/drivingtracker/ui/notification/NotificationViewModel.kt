@@ -34,6 +34,7 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
         val requests: List<RequestDto> = emptyList(),
         val groupedNotifications: Map<String, List<NotificationDto>> = emptyMap(),
         val trips: List<SharedWithMeDto> = emptyList(),
+        val deleted: Int? = null,
         val isLoading: Boolean = false,
         val error: String? = null
     )
@@ -56,25 +57,32 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
         repository.markAsRequested()
     }
 
+    fun resetDeleteStatus(){
+        _uiState.update { it.copy(deleted = null) }
+    }
+
     //Respond to a trusted contact request with Status "ACCEPTED" or "DENIED"
     fun respondTrustedContactRequest(contactId: String, status: String) {
         viewModelScope.launch{
-            _uiState.update  { it.copy(isLoading = true) }
+            _uiState.update  { current ->
+                current.copy(
+                    requests = current.requests.filter { it.contactId != contactId }
+                )
+            }
 
             repository.respondTrustedContactRequest(contactId, status).fold(
-                onSuccess = { _ ->
-                    _uiState.update  { it.copy(isLoading = false) }
+                onSuccess = {
                     getContactRequests()
+                    getNotifications()
                 },
                 onFailure = {exception ->
-                    when{
-                        exception is ApiException -> {
-                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
-                        }
-                        else -> {
-                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
-                        }
+                    getContactRequests()
+
+                    val errorMessage = when (exception) {
+                        is ApiException ->  exception.errorMessage?: somethingWentWrongError
+                        else -> exception.message ?: somethingWentWrongError
                     }
+                    _uiState.update { it.copy( error = errorMessage, isLoading = false) }
                 }
             )
         }
@@ -111,6 +119,31 @@ class NotificationViewModel @Inject constructor(private val repository: Notifica
                 onSuccess = { notifications ->
                     val groupedNotifications = groupNotifications(notifications)
                     _uiState.update { it.copy(groupedNotifications = groupedNotifications, isLoading = false) }
+                },
+                onFailure = {exception ->
+                    when{
+                        exception is ApiException -> {
+                            _uiState.update { it.copy( error = exception.errorMessage?: somethingWentWrongError, isLoading = false) }
+                        }
+                        else -> {
+                            _uiState.update { it.copy( error = exception.message?: somethingWentWrongError, isLoading = false) }
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun deleteNotifications() {
+        viewModelScope.launch{
+
+            if(_uiState.value.groupedNotifications.isEmpty()) return@launch
+
+            _uiState.update { it.copy(isLoading = true) }
+
+            repository.deleteNotifications().fold(
+                onSuccess = { count ->
+                    _uiState.update { it.copy(groupedNotifications = emptyMap(), deleted = count, isLoading = false) }
                 },
                 onFailure = {exception ->
                     when{
