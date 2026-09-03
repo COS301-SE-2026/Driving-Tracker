@@ -257,8 +257,8 @@ fun Vehicles(
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             },
-            onConfirm = { name, registration, make, model, year, fuelType ->
-                viewModel.addVehicle( name, registration, make, model, year, fuelType)
+            onConfirm = { name, registration, make, model, year, fuelType, fuelTank ->
+                viewModel.addVehicle( name, registration, make, model, year, fuelType, fuelTank)
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             }

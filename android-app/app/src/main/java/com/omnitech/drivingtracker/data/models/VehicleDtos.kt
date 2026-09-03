@@ -27,6 +27,7 @@ data class AssignVehicleRequest(
 	val model: String,
 	val year: Int,
 	@SerializedName("fuel_type") val fuelType: String
+    @SerializedName("fuel_tank") val fuelTank: Double
 )
 
 data class AddVehicleResponse(

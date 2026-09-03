@@ -41,7 +41,7 @@ fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
 @Composable
 fun AddVehicleDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String?, String, String, Int, String) -> Unit,
+    onConfirm: (String, String?, String, String, Int, String, Double) -> Unit,
     onPickImage: () -> Unit,
     selectedImageUri: String?
 ) {
@@ -52,6 +52,7 @@ fun AddVehicleDialog(
     var model by remember { mutableStateOf("") }
 	var year by remember { mutableStateOf("") }
 	var fuelType by remember { mutableStateOf("PETROL") }
+    var fuelTank by remember { mutableStateOf("") }
 
     AlertDialog(
 
@@ -78,6 +79,7 @@ fun AddVehicleDialog(
                 OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") }, modifier = Modifier.testTag("addVehicleMake"))
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.testTag("addVehicleModel"))
 				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") }, modifier = Modifier.testTag("addVehicleYear"))
+                OutlinedTextField(value = fuelTank, onValueChange = { fuelTank = it }, label = { Text("Fuel Tank Capacity (litres)") }, modifier = Modifier.testTag("addVehicleFuelTank"))
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Fuel Type", style = MaterialTheme.typography.labelLarge)
@@ -102,8 +104,8 @@ fun AddVehicleDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType) },
-                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank(),
+                onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType, fuelTank.toDoubleOrNull() ?: 0.0) },
+                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank() && fuelTank.toDoubleOrNull()?.let { it > 0 } == true,
                 modifier = Modifier.testTag("addVehicleConfirmButton")
             ) {
                 Text("Add")

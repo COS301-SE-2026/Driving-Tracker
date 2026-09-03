@@ -32,9 +32,17 @@ class VehiclesViewModel @Inject constructor(
         }
     }
 
-    fun addVehicle(name: String, reg: String?, make: String, model: String, year: Int, fuel: String){
+    fun addVehicle(name: String, reg: String?, make: String, model: String, year: Int, fuel: String, fuelTank: Double){
         viewModelScope.launch{
-            val req = AssignVehicleRequest(name, reg, make, model, year, fuel)
+            val req = AssignVehicleRequest(
+                name = name, 
+                registration = reg, 
+                make = make,
+                model = model,
+                year = year,
+                fuelType = fuel,
+                fuelTank = fuelTank
+            )
             repository.addVehicle(req).onSuccess {
                 loadVehicles()
             }
