@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 data class DashboardUiState(
     val overallScore: Int = 0,
@@ -76,7 +77,7 @@ class DashboardViewModel @Inject constructor(private val repository: TripReposit
 
         //Calculating average score from trip scores
         val avgScore = thisWeek.flatMap { it.trip_scores ?: emptyList() }
-            .mapNotNull { it.overallScore }.average().takeIf { !it.isNaN() }?.toInt() ?: 0
+            .mapNotNull { it.overallScore }.average().takeIf { !it.isNaN() }?.roundToInt() ?: 0
 
         //Calculating distance
         val thisDist = thisWeek.sumOf { it.distanceKm ?: 0.0 }
