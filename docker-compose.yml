@@ -183,7 +183,7 @@ services:
         condition: service_healthy
       prisma-migrate-test:
         condition: service_completed_successfully
-    command: sh -lc "/app/node_modules/.bin/tsx prisma/seed.ts"
+    command: sh -c "npx tsx prisma/seed.ts"
     restart: "no"
 
   api-nfr:
