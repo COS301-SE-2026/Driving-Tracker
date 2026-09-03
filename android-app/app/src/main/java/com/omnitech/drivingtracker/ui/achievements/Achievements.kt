@@ -37,7 +37,8 @@ import com.omnitech.drivingtracker.ui.components.RankCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.home.Dashboard
-
+import com.omnitech.drivingtracker.ui.components.BadgeDescriptionDialog
+import com.omnitech.drivingtracker.ui.components.BadgeGalleryDialog
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
