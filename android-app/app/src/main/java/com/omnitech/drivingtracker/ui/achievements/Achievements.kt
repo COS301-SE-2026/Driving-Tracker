@@ -57,6 +57,7 @@ fun AchievementsScreen(
         navController = navController,
         onViewMore = { showGallery = true },
         onBadgeClick = { selectedBadge = it },
+        onChallengesClick = { navController?.navigate(Screen.WeeklyChallenges.route) },
         onFilterChanged = {category, scope ->
             viewModel.getLeaderboard(category, scope)
         }
