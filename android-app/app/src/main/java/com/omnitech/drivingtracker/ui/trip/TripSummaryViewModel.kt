@@ -34,8 +34,7 @@ class TripSummaryViewModel @Inject constructor(
         object Idle : UiState()
         object Loading : UiState()
         data class Success(
-            val trip: TripSummaryDto,
-            val isFirstTrip: Boolean = false
+            val trip: TripSummaryDto
         ) : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
@@ -182,8 +181,6 @@ class TripSummaryViewModel @Inject constructor(
                 currentFuel = fuelLevelEnd
             }
 
-
-
             repository.endTrip(
                 tripId = tripId,
                 endTime = endTime,
@@ -198,7 +195,7 @@ class TripSummaryViewModel @Inject constructor(
                 } else null,
 
             ).fold(
-                onSuccess = { data ->
+                onSuccess = {
                     _endTripState.value = UiState.Success(
                         trip = TripSummaryDto(
                             tripId = tripId,
@@ -215,8 +212,7 @@ class TripSummaryViewModel @Inject constructor(
                             events = emptyList(),
                             startAddress = null,
                             endAddress = null
-                        ),
-                        isFirstTrip = data.isFirstTrip == true
+                        )
                     )
                 },
                 onFailure = { exception ->

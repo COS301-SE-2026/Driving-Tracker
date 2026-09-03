@@ -213,36 +213,14 @@ fun LiveTrip(
     val currentEndTripState = endTripState
     
     if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
-        if (currentEndTripState.isFirstTrip) {
-            AlertDialog(
-                onDismissRequest = { },
-                title = { Text("Badge Awarded!", fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        Text("Congratulations! You've earned the \"First Trip\" badge.", textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("You completed your very first drive with Driving Tracker!", style = MaterialTheme.typography.bodySmall)
-                    }
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        navController?.navigate(Screen.Trips.route) {
-                            popUpTo(Screen.Dashboard.route)
-                        }
-                    }) {
-                        Text("Awesome!")
-                    }
-                }
-            )
-        } else {
-            // If not first trip, navigate away immediately
-            LaunchedEffect(Unit) {
-                TripTrackingService.stopTrip(context)
-                navController?.navigate(Screen.Trips.route) {
-                    popUpTo(Screen.Dashboard.route)
-                }
+
+        LaunchedEffect(Unit) {
+            TripTrackingService.stopTrip(context)
+            navController?.navigate(Screen.Trips.route) {
+                popUpTo(Screen.Dashboard.route)
             }
         }
+
     } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
         AlertDialog(
             onDismissRequest = { },
