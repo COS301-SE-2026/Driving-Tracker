@@ -21,7 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,6 +39,8 @@ import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import com.omnitech.drivingtracker.ui.theme.Green
 
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.omnitech.drivingtracker.BuildConfig
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 
 @Composable
@@ -190,6 +196,7 @@ fun Contacts(
 @Composable
 fun ContactCard(contact: ContactDto) {
     val isSharing = contact.consentStatus == ConsentStatus.APPROVED
+    val fullImageUrl = contact.profilePictureUrl?.let { BuildConfig.BASE_URL + it }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -199,13 +206,26 @@ fun ContactCard(contact: ContactDto) {
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Name and Avatar
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Avatar",
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
+                if(!fullImageUrl.isNullOrBlank()){
+                    val placeholder = rememberVectorPainter(Icons.Default.AccountCircle)
+                    AsyncImage(
+                        model = fullImageUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        error = placeholder,
+                        placeholder = placeholder
+                    )
+                }else{
+                    // Name and Avatar
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = "Avatar",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(

@@ -254,7 +254,8 @@ fun AchievementsContent(
                         RankCard(
                             name = entry.displayName,
                             score = entry.score,
-                            isUser = entry.rank == leaderboard.myRank
+                            isUser = entry.rank == leaderboard.myRank,
+                            profilePictureUrl = entry.profilePictureUrl
                         )
                         HorizontalDivider()
                     }
@@ -273,7 +274,8 @@ fun AchievementsContent(
                                 RankCard(
                                     name = "You",
                                     score = leaderboard.myScore,
-                                    isUser = true
+                                    isUser = true,
+                                    profilePictureUrl = state.myProfilePictureUrl
                                 )
                                 HorizontalDivider()
                             }
