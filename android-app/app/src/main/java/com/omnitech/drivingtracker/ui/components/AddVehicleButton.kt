@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -41,9 +43,10 @@ fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
 @Composable
 fun AddVehicleDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String?, String, String, Int, String) -> Unit,
+    onConfirm: (String, String?, String, String, Int, String, Float?) -> Unit,
     onPickImage: () -> Unit,
-    selectedImageUri: String?
+    selectedImageUri: String?,
+    errorMessage: String? = null,
 ) {
 
     var name by remember { mutableStateOf("") }
@@ -52,6 +55,7 @@ fun AddVehicleDialog(
     var model by remember { mutableStateOf("") }
 	var year by remember { mutableStateOf("") }
 	var fuelType by remember { mutableStateOf("PETROL") }
+    var fuelTank by remember { mutableStateOf("") }
 
     AlertDialog(
 
@@ -78,6 +82,9 @@ fun AddVehicleDialog(
                 OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") }, modifier = Modifier.testTag("addVehicleMake"))
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.testTag("addVehicleModel"))
 				OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") }, modifier = Modifier.testTag("addVehicleYear"))
+                OutlinedTextField(value = fuelTank, onValueChange = { fuelTank = it }, label = { Text("Tank Size (litres)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.testTag("addFuelTank"))
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Fuel Type", style = MaterialTheme.typography.labelLarge)
@@ -98,12 +105,22 @@ fun AddVehicleDialog(
                         )
                     }
                 }
+
+                if(errorMessage != null){
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType) },
-                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank(),
+                onClick = { onConfirm(name, registration.ifBlank{null}, make, model, year.toIntOrNull() ?: 0, fuelType,
+                    fuelTank.toFloatOrNull()) },
+                enabled = name.isNotBlank() && make.isNotBlank() && model.isNotBlank() && year.isNotBlank() && fuelTank.isNotBlank(),
                 modifier = Modifier.testTag("addVehicleConfirmButton")
             ) {
                 Text("Add")

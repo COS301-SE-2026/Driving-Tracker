@@ -53,7 +53,9 @@ import java.util.UUID
 import com.omnitech.drivingtracker.Screen
 import android.net.Uri
 import com.omnitech.drivingtracker.BuildConfig
+import com.omnitech.drivingtracker.ui.components.NotificationFeedbackPill
 import com.omnitech.drivingtracker.ui.components.YourTopBar
+import kotlinx.coroutines.delay
 
 
 //Data model for vehicle UI
@@ -70,7 +72,7 @@ data class Vehicle(
     val imageUri: String? = null,
     val registration: String? = null,
     val year: Int? = null,
-    val fuelType: String? = null
+    val fuelType: String? = null,
 )
 
 @Composable
@@ -80,6 +82,7 @@ fun Vehicles(
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
+    val warningState by viewModel.warningState.collectAsState()
 
     var selectedVehicleForStats by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleToEditName by remember { mutableStateOf<Vehicle?>(null) }
@@ -88,6 +91,13 @@ fun Vehicles(
     var showImagePicker by remember { mutableStateOf(false) }
     var tempNewVehicleImage by remember { mutableStateOf<String?>(null) }
     var vehicleToRemove by remember { mutableStateOf<Vehicle?>(null) }
+
+    LaunchedEffect(warningState) {
+        if(warningState.isNotEmpty()){
+            delay(6000)
+            viewModel.resetWarning()
+        }
+    }
 
     //sample data
 //    val vehicleList = remember {
@@ -179,6 +189,11 @@ fun Vehicles(
                     }
                 }
             }
+
+            NotificationFeedbackPill(
+                message = warningState,
+                isVisible = warningState.isNotEmpty()
+            )
         }
     }
 
@@ -257,9 +272,9 @@ fun Vehicles(
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             },
-            onConfirm = { name, registration, make, model, year, fuelType ->
+            onConfirm = { name, registration, make, model, year, fuelType, fuelTank ->
                 val imageUri = tempNewVehicleImage?.let{ Uri.parse(it) }
-                viewModel.addVehicle( name, registration, make, model, year, fuelType, imageUri)
+                viewModel.addVehicle( name, registration, make, model, year, fuelType, fuelTank ,imageUri)
                 showAddVehicleDialog = false
                 tempNewVehicleImage = null
             }
