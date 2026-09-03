@@ -808,11 +808,36 @@ fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Un
         onDismissRequest = onDismiss,
         title = { Text("Active Viewers", fontWeight = FontWeight.Bold) },
         text = {
+            Column{
+                Text(
+                    text = "Click the icon next to a contact to stop sharing your live location with them.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
             LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(activeShares) { contact ->
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        Column { Text(contact.name, fontWeight = FontWeight.Medium); Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall) }
-                        IconButton(onClick = { onRevoke(contact.contactId) }) { Icon(Icons.Default.PersonRemove, "Revoke", tint = MaterialTheme.colorScheme.error) }
+                        Column {
+                            Text(contact.name, fontWeight = FontWeight.Medium)
+                            Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable{onRevoke(contact.contactId) }
+                                .padding(8.dp)
+                        ){
+                            Icon(Icons.Default.PersonRemove,
+                                "Remove",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = "Remove",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
