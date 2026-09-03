@@ -29,6 +29,9 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
     private val _activeShares = MutableStateFlow<List<ContactDto>>(emptyList())
     val activeShares: StateFlow<List<ContactDto>> = _activeShares
 
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage
+
     fun loadActiveShares(tripId: String) {
         viewModelScope.launch {
             repository.getTripShares(tripId).onSuccess {
@@ -77,6 +80,7 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
             _uiState.value = UiState.Loading
             repository.createContact(identifier).fold(
                 onSuccess = {
+                    _successMessage.value = "Request sent to $identifier"
                     loadContacts()
                 },
                 onFailure = { exception ->
@@ -96,6 +100,10 @@ class ContactsViewModel @Inject constructor(private val repository: ContactsRepo
                 }
             )
         }
+    }
+
+    fun clearSuccessMessage(){
+        _successMessage.value = null
     }
 
     fun alertContacts(eventType: String, eventId: String?, message: String?, contactIds: List<String>){

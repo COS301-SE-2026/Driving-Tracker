@@ -26,6 +26,7 @@ fun StandardScreen(
     description: String = "",
     showBottomBar: Boolean = true,
     bottomBarColor: String = "",
+    snackbarHost: @Composable () -> Unit = {},
     onLeftClick: ()-> Unit = {navController?.popBackStack()},
     onRightClick: ()-> Unit = {navController?.navigate(Screen.Settings.route)},
     content : @Composable ColumnScope.() -> Unit
@@ -43,7 +44,8 @@ fun StandardScreen(
             if (showBottomBar) {
                 BottomNavBar(navController = navController, color = bottomBarColor)
             }
-        }
+        },
+        snackbarHost = snackbarHost
     ){
         innerPadding -> Column(
             modifier = Modifier.fillMaxSize().padding(innerPadding).verticalScroll(

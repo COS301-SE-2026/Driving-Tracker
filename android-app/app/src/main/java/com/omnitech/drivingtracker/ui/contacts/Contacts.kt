@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,13 +51,23 @@ fun Contacts(
 ) {
 
     val state by viewModel.uiState.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(successMessage) {
+        successMessage?.let{
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccessMessage()
+        }
+    }
     var showAddContactDialog by remember { mutableStateOf(false) }
     var contactIdentifier by remember { mutableStateOf("") }
 
     StandardScreen(
         navController = navController,
         title = "Contacts",
-        bottomBarColor = "more"
+        bottomBarColor = "more",
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
     ) {
 
         Box(modifier = Modifier.weight(1f)) {

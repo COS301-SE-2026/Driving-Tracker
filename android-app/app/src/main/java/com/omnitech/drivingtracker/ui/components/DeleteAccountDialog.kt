@@ -36,6 +36,7 @@ fun DeleteAccountDialog(
     onDismiss: () -> Unit
 ){
     var password by remember { mutableStateOf("") }
+    var showLocalError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -70,12 +71,19 @@ fun DeleteAccountDialog(
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = password,
-                    onValueChange = {password = it},
+                    onValueChange = {password = it
+                        if(it.isNotBlank()) showLocalError = false },
                     placeholder = {Text("Password")},
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
-                    isError = errorMessage != null,
-                    supportingText = errorMessage?.let {{Text(it)}},
+                    isError = errorMessage != null || showLocalError,
+                    supportingText = {
+                        if(showLocalError){
+                            Text("Password is required to delete your account")
+                        }else if(errorMessage != null ){
+                            Text(errorMessage)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -91,8 +99,14 @@ fun DeleteAccountDialog(
         },
         dismissButton = {
             TextButton(
-                onClick = { onConfirm(password)},
-                enabled = password.isNotBlank() && !isLoading
+                onClick = {
+                    if(password.isNotBlank()){
+                        showLocalError = true
+                    }else{
+                        onConfirm(password)
+                    }
+                },
+                enabled = !isLoading
             ) {
             if (isLoading){
                 CircularProgressIndicator(modifier = Modifier.size(16.dp),
