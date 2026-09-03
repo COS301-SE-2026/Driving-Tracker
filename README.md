@@ -61,12 +61,12 @@ The system operates across three layers:
 ---
 
 ## Documentation
-[Software Requirement Specification](docs/Documentation-Demo2/DEMO_2_SRS.pdf)\
-[Software Architecture Specification](docs/Documentation-Demo2/DEMO_2_SAS.pdf)\
-[Coding Standards](docs/Documentation-Demo2/Coding-Standards.md)\
+[Software Requirement Specification](docs/Documentation-Demo3/DEMO_3_SRS.pdf)\
+[Software Architecture Specification](docs/Documentation-Demo3/DEMO_3_SAS.pdf)\
+[Coding Standards](docs/Documentation-Demo3/Coding-Standards.md)\
 [Testing Policy](docs/Documentation-Demo2/testing-policy.md)\
-[User Manual](docs/Documentation-Demo2/User%20Manual.pdf)\
-[Brand style guide](docs/Documentation-Demo2/brand_style_guide.pdf)\
+[User Manual](docs/Documentation-Demo3/User%20Manual.pdf)\
+[Brand style guide](docs/Documentation-Demo3/brand_style_guide.pdf)\
 [Wireframes](docs/Documentation-Demo2/wireframes.pdf)\
 [Wireframes Figma Link](https://www.figma.com/design/JEv1W9Jh1mvtZmtRENtL85/Wireframes?node-id=0-1&t=x2XNBSR5ZJ1KePqF-1)
 
@@ -75,11 +75,12 @@ The system operates across three layers:
 ## Demos & Project Management
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
-[Demo2 video](docs/Documentation-Demo2/Demo2.mp4)
+[Demo2 video](docs/Documentation-Demo2/Demo2.mp4)\
+[Demo3 video](docs/Documentation-Demo3/Demo3.mp4)
 
 ---
 ## Deployed Pages
-[Landing Page](Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
+[Landing Page (Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
 
 ---
 
