@@ -103,6 +103,7 @@ export const leaderboard_services = {
             name: true,
             surname: true,
             username: true,
+            profile_picture_url: true,
           },
         },
       },
@@ -116,6 +117,7 @@ export const leaderboard_services = {
       user_id: row.user_id,
       display_name: `${row.users.name ?? row.users.username ?? ''} ${row.users.surname ?? ''}`.trim(),
       score: to_number(row.score ?? 0),
+      profile_picture_url: row.users.profile_picture_url? `upload/profile-picture/${row.user_id}` : null,
     }));
 
     const entries = allEntries.slice(0, 25);
