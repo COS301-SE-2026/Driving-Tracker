@@ -217,6 +217,7 @@ describe('vehicle services assign user to vehicle', ()=>{
                 fuel_efficiency: 235.215 / 25,
                 fuel_type: 'PETROL'
             },
+            warning: null
         });
     });
 });
@@ -459,7 +460,7 @@ describe("additional vehicle service tests", ()=>{
         expect(mock_prisma.vehicles.findMany).toHaveBeenCalled();
     });
 
-    it("returns null when the benchmark API returns no vehicles", async ()=>{
+    it("returns warning when the benchmark API returns no vehicles", async ()=>{
         mock_prisma.users.findUnique.mockResolvedValue({
             user_id: "u1"
         });
@@ -476,18 +477,38 @@ describe("additional vehicle service tests", ()=>{
                     }),
                 })
             );
+
+            const responseShape = {
+                vehicle_id: 'v-new-uuid',
+                name:'My Car',
+                make: 'Dodge',
+                model: 'RAM',
+                registration: 'ABC123GP',
+                year: 2026,
+                fuel_type: 'PETROL',
+                fuel_tank: 60,
+                fuel_efficiency: 235.215 / 25,
+            }
+
+            mock_prisma.vehicles.create.mockResolvedValue(responseShape);
+
         const result = await vehicle_services.assign_user_to_vehicle({
              user_id: "u1",
             name: "My Car",
             registration: "ABC123GP",
-            make: "BMW",
-            model: "M3",
-            year: 2018,
+            make: "Dodge",
+            model: "RAM",
+            year: 2026,
             fuel_type: "PETROL",
             fuel_tank: 60,
         });
-        expect(result).toBeNull();
-        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+
+        expect(result).toEqual({
+            data: responseShape,
+            warning: "Your vehicle is not fully supported. You will only get fuel estimates after 5 trips"
+        });
+        
+        expect(mock_prisma.$transaction).toHaveBeenCalled();
     });
      it("rejects when the fuel tank is missing", async () => {
         await expect(
@@ -523,10 +544,24 @@ describe("additional vehicle service tests", ()=>{
             })
         ).rejects.toThrow("Database update failed");
     });
-    it("returns null for vehicles outside the supported benchmark years", async () => {
+    it("adds unsupported vehicles without fuel efficiency", async () => {
         mock_prisma.users.findUnique.mockResolvedValue({
             user_id: "u1",
         });
+
+        mock_prisma.vehicles.create.mockResolvedValue({
+            vehicle_id: "v-old",
+            name: "Old Car",
+            registration: "OLD123",
+            make: "BMW",
+            model: "M3",
+            year: 2010,
+            fuel_tank: 60,
+            fuel_efficiency: null,
+            fuel_type: "PETROL",
+        });
+
+        mock_prisma.users_vehicles.create.mockResolvedValue({});
 
         const result = await vehicle_services.assign_user_to_vehicle({
             user_id: "u1",
@@ -535,63 +570,72 @@ describe("additional vehicle service tests", ()=>{
             make: "BMW",
             model: "M3",
             year: 2010,
-            fuel_type: "PETROL",
             fuel_tank: 60,
+            fuel_type: "PETROL",
+            
         });
 
-        expect(result).toBeNull();
         expect(mock_fetch).not.toHaveBeenCalled();
-        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
-    });
-    it("returns null when CarAPI returns no benchmark vehicles", async () => {
-        mock_prisma.users.findUnique.mockResolvedValue({ user_id: "u1" });
+        expect(mock_prisma.$transaction).toHaveBeenCalled();
 
-        mock_fetch.mockResolvedValueOnce(
-                make_response({
-                    ok: true,
-                    text: async () => "jwt-token",
-                })
-            ).mockResolvedValueOnce(
-                make_response({
-                    ok: true,
-                    json: async () => ({ data: [] }),
-                })
-            );
-
-        const result = await vehicle_services.assign_user_to_vehicle({
-            user_id: "u1",
-            name: "My Car",
-            registration: "ABC123GP",
-            make: "BMW",
-            model: "M3",
-            year: 2018,
-            fuel_type: "PETROL",
-            fuel_tank: 60,
+        expect(mock_prisma.vehicles.create).toHaveBeenCalledWith({
+            data: {
+                name: "Old Car",
+                registration: "OLD123",
+                make: "BMW",
+                model: "M3",
+                year: 2010,
+                fuel_tank: 60,
+                fuel_efficiency: null,
+                fuel_type: "PETROL",
+            }
         });
 
-        expect(result).toBeNull();
-        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
-    });
-    it("returns null when the benchmark lookup fails", async () => {
-        mock_prisma.users.findUnique.mockResolvedValue({ user_id: "u1" });
-
-        delete process.env.CARAPI_TOKEN;
-        delete process.env.CARAPI_SECRET;
-
-        const result = await vehicle_services.assign_user_to_vehicle({
-            user_id: "u1",
-            name: "My Car",
-            registration: "ABC123GP",
-            make: "BMW",
-            model: "M3",
-            year: 2018,
-            fuel_type: "PETROL",
-            fuel_tank: 60,
+        expect(result).toEqual({
+            data: {
+                vehicle_id: "v-old",
+                name: "Old Car",
+                registration: "OLD123",
+                make: "BMW",
+                model: "M3",
+                year: 2010,
+                fuel_tank: 60,
+                fuel_efficiency: null,
+                fuel_type: "PETROL",
+            },
+            warning: "Your vehicle is not fully supported. You will only get fuel estimates after 5 trips",
         });
-
-        expect(result).toBeNull();
-        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
     });
+
+    it.each([2014,2021])(
+        "adds vehicles outside the supported year range: %s",
+        async(year) => {
+            mock_prisma.users.findUnique.mockResolvedValue({user_id: "u1"});
+
+            mock_prisma.vehicles.create.mockResolvedValue({
+                vehicle_id: "v-unsupported",
+                year,
+                fuel_efficiency: null,
+            });
+
+            mock_prisma.users_vehicles.create.mockResolvedValue({});
+
+            const result = await vehicle_services.assign_user_to_vehicle({
+                user_id: "u1",
+                name: "Unsupported Car",
+                registration: "TEST123",
+                make: "BMW",
+                model: "M3",
+                year,
+                fuel_type: "PETROL",
+                fuel_tank: 60,
+            });
+
+            expect(mock_fetch).not.toHaveBeenCalled();
+            expect(mock_prisma.$transaction).toHaveBeenCalled();
+            expect(result?.warning).toContain("Your vehicle is not fully supported.");
+        }
+    );
 })
 
 describe('vehicle services get fuel analytics', ()=>{

@@ -186,22 +186,26 @@ export const vehicle_services={
             //send the vehicle data to car api and populate the fuel efficiency 
             //update to add the tank capacity
             let benchmark_lper100km: number| null =null;
+            let warning: string | null = null;
+
                 if(data.year >= 2015 && data.year <= 2020){
                     try{
                         const ben_trim = await fetch_vehicle_benchmark(data.make,data.model,data.year);
-                        if(ben_trim.length === 0){
-                            return null ;
-                        }
             
                         const  avg_mpg = ben_trim.reduce((sum, ben_trim) => sum + ben_trim.combined_mpg, 0) / ben_trim.length;
                         benchmark_lper100km = mpg_to_lper100km(avg_mpg)
                     }catch(error){
                         console.error(`Benchmark lookup failed  `, error);
-                        return null;
                     }
                 }
+                    
+                
+                if(!benchmark_lper100km){ 
+                    warning = "Your vehicle is not fully supported. You will only get fuel estimates after 5 trips"; 
+                }
+                
                 //if it comes back as null then the first trip will be used as the fuel efficiency of the car until the first 5 trips are reached 
-                if (benchmark_lper100km == null) return null;
+                //if (benchmark_lper100km == null && data.year>=2015 && data.year<=2020) return null;
             
              
             const result = await prisma.$transaction(async (tx) => {
@@ -239,7 +243,8 @@ export const vehicle_services={
                     fuel_tank: result.fuel_tank,
                     fuel_efficiency: result.fuel_efficiency,
                     fuel_type: result.fuel_type
-                }
+                },
+                warning
             };
             
        }catch(error){

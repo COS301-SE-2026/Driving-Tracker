@@ -24,6 +24,13 @@ class VehiclesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
 
+    private val _warningState = MutableStateFlow("")
+    val warningState = _warningState.asStateFlow()
+
+    fun resetWarning(){
+        _warningState.value = ""
+    }
+
     init{
         loadVehicles()
     }
@@ -38,13 +45,21 @@ class VehiclesViewModel @Inject constructor(
         }
     }
 
-    fun addVehicle(name: String, reg: String?, make: String, model: String, year: Int, fuel: String, imageUri: Uri? = null){
+    fun addVehicle(name: String, reg: String?, make: String, model: String, year: Int, fuel: String, fuelTank: Float?, imageUri: Uri? = null){
         viewModelScope.launch{
-            val req = AssignVehicleRequest(name, reg, make, model, year, fuel)
+            if(fuelTank == null){
+                _uiState.value = UiState.Error("Your vehicle tank size is invalid")
+                return@launch
+            }
+
+            val req = AssignVehicleRequest(name, reg, make, model, year, fuel, fuelTank)
             repository.addVehicle(req).fold(
-                onSuccess = { vehicleDto ->
+                onSuccess = { vehicleResponse ->
+
+                    vehicleResponse.warning?.let{ _warningState.value = it }
+
                     if(imageUri != null){
-                        uploadVehicleImage(vehicleDto.vehicleId, imageUri)
+                        uploadVehicleImage(vehicleResponse.data.vehicleId, imageUri)
                     }else{
                         loadVehicles()
                     }
