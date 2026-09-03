@@ -453,7 +453,12 @@ export const vehicle_services={
         const peers = await prisma.users.findMany({
             where: {
                 users_vehicles: {
-                    some: { vehicles: { is : {make: vehicle.make, model: vehicle.model} } }
+                    some: { 
+						vehicles: {
+							make: vehicle.make, 
+							model: vehicle.model
+						} 
+					}
                 },
             user_id: { not: user_id }
             },
