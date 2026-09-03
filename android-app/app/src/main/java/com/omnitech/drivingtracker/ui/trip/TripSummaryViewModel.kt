@@ -126,7 +126,9 @@ class TripSummaryViewModel @Inject constructor(
             }
         }
     }
-
+    fun resetEndTripState() {
+        _endTripState.value = UiState.Idle
+    }
     fun loadTripSummary(tripId: String) {
         viewModelScope.launch {
             _uiState.value = UiState.Loading

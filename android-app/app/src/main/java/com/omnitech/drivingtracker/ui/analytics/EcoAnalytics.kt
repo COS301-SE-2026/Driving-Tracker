@@ -78,7 +78,7 @@ fun EcoAnalytics(navController: NavController ?= null,
         navController = navController
     ) {
         item{
-            ScoreCard(score = uiState.ecoScore ?: 0)
+            ScoreCard(score = uiState.ecoScore ?: 0, heading = "Overall Eco Score")
             Spacer(modifier = Modifier.height(8.dp))
         }
 

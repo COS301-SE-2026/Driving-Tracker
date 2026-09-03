@@ -114,7 +114,9 @@ export const identifier_limiter = new RateLimiterMemory({
 
 export async function login_limiter_sliding(req: AuthRequest, res: Response, next: NextFunction) {
 
-    
+    if (isTestEnv) {
+        return next();
+    }
     const identifier = req.body?.identifier ?? 'unknown';
     const ip = req.ip ?? 'unknown';
     const combined_key = `${identifier}_${ip}`;

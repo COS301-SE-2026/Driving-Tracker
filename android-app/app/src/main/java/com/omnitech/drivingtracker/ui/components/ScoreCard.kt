@@ -23,16 +23,14 @@ import com.omnitech.drivingtracker.ui.theme.*
 import org.checkerframework.common.value.qual.StringVal
 
 @Composable
-//This function displays the Overal driving score with progress bar
-fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
-
-    var driverClassification: String
+//This function displays the Overall driving score with progress bar
+fun ScoreCard(score: Int, modifier: Modifier = Modifier, heading: String) {
 
     fun driverClassificationFun(score: Int) : String{
-        return if (score < 20){
+        return if (score < 40){
             "Poor Driver"
         }
-        else if (score < 70){
+        else if (score < 60){
             "Average Driver"
         }
         else if (score < 80){
@@ -54,7 +52,7 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
         ) {
 
             Text(
-                text = "Overall Driving Score",
+                text = heading,
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyLarge
             )

@@ -265,4 +265,6 @@ vehicle_router.delete("/:vehicle_id", verify_token, vehicle.remove_vehicle);
 vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
 //read fuel analytics
 vehicle_router.get("/fuel_analytics", verify_token, create_user_based_limiter(), vehicle.get_fuel_analytics);
+
+vehicle_router.get("/fuel_comparison", verify_token, create_user_based_limiter(), vehicle.get_fuel_comparison);
 export default vehicle_router;

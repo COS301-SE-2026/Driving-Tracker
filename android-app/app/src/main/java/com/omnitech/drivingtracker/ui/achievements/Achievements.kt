@@ -93,16 +93,6 @@ fun AchievementsContent(
     var expandedScope by remember { mutableStateOf(false) }
     var selectedCategory by remember {mutableStateOf("OVERALL")}
     var selectedScope by remember {mutableStateOf("WEEKLY")}
-//    var categories by remember {mutableStateOf(emptyList<String>())}
-//    var scopes by remember {mutableStateOf(emptyList<String>())}
-
-//    LaunchedEffect(state){
-//
-//        if (state is AchievementsViewModel.UiState.Success) {
-//            categories = state.categories
-//            scopes = state.scopes
-//        }
-//    }
 
     Scaffold(
         topBar = {
@@ -126,8 +116,8 @@ fun AchievementsContent(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                //Overal Driving score
-                ScoreCard(score = state.overallScore)
+
+                ScoreCard(score = state.overallScore, heading = "Overall Driving Score")
             }
 
             item {
