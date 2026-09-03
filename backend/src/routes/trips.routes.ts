@@ -1254,4 +1254,95 @@ trips_router.get("/shared_with_me", verify_token, create_user_based_limiter(), t
 trips_router.get("/:trip_id/shares", verify_token, create_user_based_limiter(), trips_controller.get_all_active_shares);
 trips_router.delete("/:trip_id/shares/:contact_id", verify_token, create_user_based_limiter(), trips_controller.revoke_trip_shares);
 trips_router.patch("/:trip_id/end_trip",verify_token, create_user_based_limiter(), trips_controller.end_trip);
+
+/**
+ * @openapi
+ * /api/trips/{trip_id}/unusual_duration_event:
+ *   post:
+ *     tags:
+ *       - Trips
+ *     summary: Log and alert contacts for unusual duration event
+ *     parameters:
+ *       - in: path
+ *         name: trip_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - expected_seconds
+ *               - moving_seconds
+ *             properties:
+ *               expected_seconds:
+ *                 type: integer
+ *                 example: 3400
+ *               moving_seconds:
+ *                 type: integer
+ *                 example: 4000
+ *     responses:
+ *       200:
+ *         description: Unusual trip duration event logged and notification sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - message
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unusual trip duration notifications successfully sent
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *               message: Unauthorized to log unusual duration event
+ *       422:
+ *         description: Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               movingLessThanExpected:
+ *                 value:
+ *                   error: INVALID_PARAMETERS
+ *                   message: Moving seconds cannot be greater than expected
+ *               invalidExpectedSeconds:
+ *                 value:
+ *                   error: INVALID_EXPECTED_SECONDS
+ *                   message: moving_seconds missing or invalid
+ *               invalidMovingSeconds:
+ *                 value:
+ *                   error: INVALID_MOVING_SECONDS
+ *                   message: moving_seconds missing or invalid
+ *       429:
+ *         description: Rate limit triggered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: INTERNAL_SERVER_ERROR
+ *               message: Could not successfully log unusual duration
+ */
+trips_router.post("/:trip_id/unusual_duration_event", verify_token, create_user_based_limiter(), trips_controller.alert_unusual_trip_duration);
+
+
 export default trips_router;

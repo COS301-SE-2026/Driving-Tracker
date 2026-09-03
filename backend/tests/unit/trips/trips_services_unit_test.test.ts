@@ -62,7 +62,10 @@ jest.mock('../../../src/db/prisma', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         findUnique: jest.fn(),
-    }
+    };
+    const unusual_duration_events = {
+        create: jest.fn(),
+    };
 
     return {
         __esModule: true,
@@ -76,6 +79,7 @@ jest.mock('../../../src/db/prisma', () => {
             users,
             trusted_contacts,
             unexpected_stop_events,
+            unusual_duration_events,
         })),
         users,
         trips,
@@ -86,6 +90,7 @@ jest.mock('../../../src/db/prisma', () => {
         trip_location_shares,
         trusted_contacts,
         unexpected_stop_events,
+        unusual_duration_events,
         },
     };
 });
@@ -1650,4 +1655,110 @@ describe('Trips services.has_trip_resumed_movement', () => {
     });
 
     
+});
+
+describe('Trips services.unusual_duration', () => {
+    beforeEach(async() => jest.clearAllMocks());
+
+    it('logs a long duration event and alerts contacts', async () => {
+
+        jest.spyOn(user_devices_services, 'get_multiple_users_fcm_tokens').mockResolvedValue(['token-1','token-2']);
+
+        jest.spyOn(notification_services, 'send_trip_alert_notification').mockResolvedValue(undefined);
+
+        mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+        mock_prisma.unusual_duration_events.create.mockResolvedValue({
+            event_id: 'event-1',
+        });
+
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValueOnce([
+            {
+                contact_id: "c1",
+                contact: {
+                    contact_user_id: "u2"
+                }
+            },
+            {
+                contact_id: "c2",
+                contact: {
+                    contact_user_id: "u3"
+                }
+            }
+        ]);
+
+        mock_add_notification.mockResolvedValue(undefined);
+
+        const result = await trips_services.alert_unusual_trip_duration('u1', 'trip-1',1000,1500);
+        
+        expect(mock_prisma.users.findUnique).toHaveBeenCalledWith({
+            where: { user_id: 'u1' },
+        });
+
+        expect(mock_prisma.unusual_duration_events.create).toHaveBeenCalledWith({
+            data: {
+                trip_id: 'trip-1',
+                expected_seconds: 1000,
+                moving_seconds_at_flag: 1500,
+            },
+        });
+
+        expect(result).toEqual("Unusual trip duration notifications successfully sent");
+    });
+
+    it('throws when the user is not found', async () => {
+        mock_prisma.users.findUnique.mockResolvedValue(null);
+
+        await expect(
+            trips_services.alert_unusual_trip_duration('u1','trip-1',1000,1500)
+        ).rejects.toThrow('user not found');
+
+        expect(mock_prisma.unusual_duration_events.create).not.toHaveBeenCalled();
+    });
+
+    it('throws when expected_seconds is negative', async () => {
+         mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([]);
+
+        await expect(
+            trips_services.alert_unusual_trip_duration('u1','trip-1',-50,150)
+        ).rejects.toThrow('expected_seconds invalid');
+
+    });
+
+    it('throws when moving_seconds is negative', async () => {
+         mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([]);
+
+        await expect(
+            trips_services.alert_unusual_trip_duration('u1','trip-1',50,-50)
+        ).rejects.toThrow('moving_seconds invalid');
+
+    });
+
+    it('throws when expected_seconds is greater than moving_seconds is negative', async () => {
+         mock_prisma.users.findUnique.mockResolvedValue({
+            user_id: 'u1',
+        });
+
+
+        mock_prisma.trip_location_shares.findMany.mockResolvedValue([]);
+
+        await expect(
+            trips_services.alert_unusual_trip_duration('u1','trip-1',1000,500)
+        ).rejects.toThrow('Expected greater than moving');
+
+    });
+
 });

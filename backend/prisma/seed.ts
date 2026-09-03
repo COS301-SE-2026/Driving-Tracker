@@ -52,6 +52,24 @@ async function main() {
         }
     });
 
+    const myLoginUser2 = await prisma.users.upsert({
+        where: { email: 'dan.harbor@gmail.com' },
+        update: { email_verified: true },
+        create: {
+            username: 'DanHarbor',
+            name: 'Dan',
+            surname: 'Harbor',
+            email : 'dan.harbor@gmail.com',
+            password_hash : hashedPassword,
+            role: 'USER',
+            dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
+            phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+            consent_status: true,
+            status: 'ACTIVE',
+            email_verified: true,
+        }
+    });
+
     console.log(`Seeded our login user: ${myLoginUser.email} (Password: ${plainTextPassword})`);
 
     //making sure our user has a vehicle

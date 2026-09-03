@@ -5,6 +5,25 @@ import * as trips_controller from '../../../src/controllers/trips.controller';
 import { trips_services } from '../../../src/services/trips_services';
 import { ExtendedError } from '../../../src/utils/errors';
 
+function getReadingItem(){
+
+    return {
+            recorded_at: new Date().toISOString(),
+            data_source: 'gps',
+            location: { lat: 0, lon: 0 },
+            speed_kmh: 76,
+            accelerometer: 2.2,
+            gyroscope_x: 0,
+            gyroscope_y: 0,
+            gyroscope_z: 0,
+            rpm: 1500,
+            coolant_temp: 80,
+            fuel_trim_percent: 7,
+            throttle_position: 80,
+            dtc_codes: [],
+        }
+}
+
 describe('Trips endpoints unit tests', ()=>{
     beforeEach(async () => jest.resetAllMocks());
 
@@ -376,36 +395,8 @@ describe('Trips endpoints unit tests', ()=>{
 				params: { trip_id: 't1' },
                 body: {
                     readings: [
-                        {
-                            recorded_at: new Date().toISOString(),
-                            data_source: 'gps',
-                            location: { lat: 0, lon: 0 },
-                            speed_kmh: 60,
-                            accelerometer: 1.2,
-                            gyroscope_x: 0,
-                            gyroscope_y: 0,
-                            gyroscope_z: 0,
-                            rpm: 3000,
-                            coolant_temp: 90,
-                            fuel_trim_percent: 5,
-                            throttle_position: 50,
-                            dtc_codes: [],
-                        },
-                        {
-                            recorded_at: new Date().toISOString(),
-                            data_source: 'OBD',
-                            location: { lat: 0, lon: 0 },
-                            speed_kmh: 60,
-                            accelerometer: 1.2,
-                            gyroscope_x: 0,
-                            gyroscope_y: 0,
-                            gyroscope_z: 0,
-                            rpm: 3000,
-                            coolant_temp: 90,
-                            fuel_trim_percent: 5,
-                            throttle_position: 50,
-                            dtc_codes: [],
-                        },
+                        getReadingItem(),
+                        getReadingItem(),
                     ]
                     
                 },
@@ -425,36 +416,8 @@ describe('Trips endpoints unit tests', ()=>{
             jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('Trip not found'));
             const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
                 readings: [
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'gps',
-                        location: { lat: 0, lon: 0 },
-                        speed_kmh: 60,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 0,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'OBD',
-                        location: { lat: 0, lon: 0 },
-                        speed_kmh: 60,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 0,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
+                    getReadingItem(),
+                    getReadingItem(),
                 ]} };
 
             const res: any = make_res();
@@ -490,36 +453,8 @@ describe('Trips endpoints unit tests', ()=>{
             jest.spyOn(trips_services,'record_batch_trip_readings').mockRejectedValueOnce(new Error('You do not own this trip'));
             const req: any = { user: { sub: 'user-1' }, params: { trip_id: 'nope' }, body: { 
                 readings: [
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'gps',
-                        location: { lat: 0, lon: 0 },
-                        speed_kmh: 60,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 0,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
-                    {
-                        recorded_at: new Date().toISOString(),
-                        data_source: 'OBD',
-                        location: { lat: 0, lon: 0 },
-                        speed_kmh: 60,
-                        accelerometer: 1.2,
-                        gyroscope_x: 0,
-                        gyroscope_y: 0,
-                        gyroscope_z: 0,
-                        rpm: 3000,
-                        coolant_temp: 90,
-                        fuel_trim_percent: 5,
-                        throttle_position: 50,
-                        dtc_codes: [],
-                    },
+                    getReadingItem(),
+                    getReadingItem(),
                 ]} };
 
             const res: any = make_res();
@@ -533,36 +468,8 @@ describe('Trips endpoints unit tests', ()=>{
 			//mocking error that doesnt match any if/else block
 			jest.spyOn(trips_services, 'record').mockRejectedValueOnce(new Error('Unexpected DB crash'));
 			const req: any = { user: { sub: 'user-1' }, params: { trip_id: 't1' }, body: { readings: [
-                {
-                    recorded_at: new Date().toISOString(),
-                    data_source: 'gps',
-                    location: { lat: 0, lon: 0 },
-                    speed_kmh: 60,
-                    accelerometer: 1.2,
-                    gyroscope_x: 0,
-                    gyroscope_y: 0,
-                    gyroscope_z: 0,
-                    rpm: 3000,
-                    coolant_temp: 90,
-                    fuel_trim_percent: 5,
-                    throttle_position: 50,
-                    dtc_codes: [],
-                },
-                {
-                    recorded_at: new Date().toISOString(),
-                    data_source: 'OBD',
-                    location: { lat: 0, lon: 0 },
-                    speed_kmh: 60,
-                    accelerometer: 1.2,
-                    gyroscope_x: 0,
-                    gyroscope_y: 0,
-                    gyroscope_z: 0,
-                    rpm: 3000,
-                    coolant_temp: 90,
-                    fuel_trim_percent: 5,
-                    throttle_position: 50,
-                    dtc_codes: [],
-                },
+                getReadingItem(),
+                getReadingItem(),
             ]}};
 			const res: any = make_res();
 
@@ -1098,6 +1005,39 @@ describe('Trips endpoints unit tests', ()=>{
     });
 
     describe('Resolve stop event endpoint', ()=>{
+
+        const baseReqResolve = (overrides: any = {}) =>({
+            user: { sub: 'user-1' },  
+                params: { event_id: 'event-1'},
+                body: { reason: 'moved' },
+                ...overrides,
+        });
+
+        const expectErrorResolve = async (
+            req: any,
+            mockError: Error,
+            expectedStatus: number,
+            expectedError: string,
+            expectedMessage?: string
+        )=>{
+            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(mockError);
+
+            const res: any = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+            };
+
+            await trips_controller.resolve_stop_event(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(expectedStatus);
+            expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ...(expectedError ? { error: expectedError } : {}),
+                ...(expectedMessage ? { message: expectedMessage } : {}),
+                })
+            );
+        };
+
         it('returns 200 when stop is resolved successfully', async()=>{
             const mock_result = {
                 resolved: true,
@@ -1105,11 +1045,7 @@ describe('Trips endpoints unit tests', ()=>{
 
             jest.spyOn(trips_services,'resolve_stop').mockResolvedValueOnce(mock_result as any);
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { event_id: 'event-1'},
-                body: { reason: 'moved' },
-            };
+            const req: any = baseReqResolve()
             const res: any = make_res();
 
             await trips_controller.resolve_stop_event(req, res);
@@ -1127,50 +1063,52 @@ describe('Trips endpoints unit tests', ()=>{
             const req: any = {
                 user: { sub: null },  
                 params: { event_id: 'event-1'},
-                body: { reason: 'moved'},
-            };
+                body: { reason: 'ok'}
+            }
 
             const res: any = make_res();
 
-            await trips_controller.resolve_stop_event(req, res);            
-            expect(res.status).toHaveBeenCalledWith(401);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to resolve unexpected stop event"}));
+            await expectErrorResolve(
+                req,
+                new Error('Unauthorized'),
+                401,
+                'UNAUTHORIZED',
+                'Unauthorized to resolve unexpected stop event'
+            );
         });
 
         it('Returns 400 when the stop event is not found', async () => {
-            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('event not found'));
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { event_id: 'event-1'},
-                body: { reason: 'moved'}
-            };
+            const req: any = baseReqResolve();
             const res: any = make_res();
 
-            await trips_controller.resolve_stop_event(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'EVENT_NOT_FOUND', message: 'Unexpected stop event not found'}));
+            await expectErrorResolve(
+                req,
+                new Error('event not found'),
+                400,
+                'EVENT_NOT_FOUND',
+                'Unexpected stop event not found'
+            );
         });
 
         it('Returns 422 when the reason is missing', async () => {
-            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('reason missing'));
 
-            const req: any = {
+            const req: any = baseReqResolve({
                 user: { sub: 'user-1' },  
                 params: { event_id: 'event-1'},
                 body: {}
-            };
-            const res: any = make_res();
+            });
 
-            await trips_controller.resolve_stop_event(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(422);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'REASON_MISSING', message: 'Reason parameter needed'}));
+            await expectErrorResolve(
+                req,
+                new Error('reason missing'),
+                422,
+                'REASON_MISSING',
+                'Reason parameter needed'
+            );
         });
 
         it('Returns 403 when user does not own the event or trip', async () => {
-            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('cannot access event'));
 
             const req: any = {
                 user: { sub: 'user-1' },  
@@ -1179,45 +1117,158 @@ describe('Trips endpoints unit tests', ()=>{
             };
             const res: any = make_res();
 
-            await trips_controller.resolve_stop_event(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(403);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message: 'Cannot access this event'}));
+            await expectErrorResolve(
+                req,
+                new Error('cannot access event'),
+                403,
+                'UNAUTHORIZED',
+                'Cannot access this event'
+            );
         });
 
          it('Returns 403 when the user is not found', async () => {
-            jest.spyOn(trips_services, 'resolve_stop').mockRejectedValueOnce(new Error('user not found'));
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { event_id: 'event-1'},
-                body: { reason: 'moved'},
-            };
+            const req: any = baseReqResolve();
             const res: any = make_res();
 
-            await trips_controller.resolve_stop_event(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(403);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'USER_NOT_FOUND', message: 'User not found'}));
+            await expectErrorResolve(
+                req,
+                new Error('user not found'),
+                403,
+                'USER_NOT_FOUND',
+                'User not found'
+            );
         });
 
         it('Returns 500 on unexpected error', async () => {
-            jest.spyOn(trips_services, 'confirm_stop').mockRejectedValueOnce(new Error('Db crash'));
 
-            const req: any = {
-                user: { sub: 'user-1' },  
-                params: { event_id: 'event-1'},
-                body: { reason: 'moved'},
-            };
+            const req: any = baseReqResolve();
             const res: any = make_res();
 
-            await trips_controller.confirm_stop_event(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'INTERNAL_SERVER_ERROR', message: 'Could not successfully confirm stop'}));
+            await expectErrorResolve(
+                req,
+                new Error('Database crashed'),
+                500,
+                'INTERNAL_SERVER_ERROR',
+                'Could not successfully resolve stop'
+            );
+            
         });
     });
 
+     describe('Unusual duration event endpoint', ()=>{
+        const baseReq = (overrides: any = {}) =>({
+            user: { sub: 'user-1' },  
+                params: { trip_id: 'trip-1'},
+                body: { expected_seconds: 1000, moving_seconds: 1500},
+                ...overrides,
+        });
 
+        const expectError = async (
+            req: any,
+            mockError: Error,
+            expectedStatus: number,
+            expectedError: string,
+            expectedMessage?: string
+        ) => {
+            jest.spyOn(trips_services, 'alert_unusual_trip_duration').mockRejectedValueOnce(mockError);
+
+            const res: any = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+            };
+
+            await trips_controller.alert_unusual_trip_duration(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(expectedStatus);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    error: expectedError,
+                    ...(expectedMessage ? { message: expectedMessage }: {}),
+                })
+            );
+        };
+
+        it('returns 200 when duration event is logged and notifications sent successfully', async()=>{
+            const mock_result ='Unusual trip duration notifications successfully sent';
+
+            jest.spyOn(trips_services,'alert_unusual_trip_duration').mockResolvedValueOnce(mock_result as any);
+
+            const req: any = baseReq();
+            const res: any = make_res();
+
+            await trips_controller.alert_unusual_trip_duration(req, res);
+
+            expect(trips_services.alert_unusual_trip_duration).toHaveBeenCalledWith(
+                'user-1',
+                'trip-1',
+                1000,
+                1500
+            );
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: mock_result}));
+        });
+
+         it('Returns 401 when user unauthenticated', async()=>{
+            const req: any = baseReq({ user: { sub: null}});
+
+            const res: any = make_res();
+
+            await trips_controller.alert_unusual_trip_duration(req, res);            
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'UNAUTHORIZED', message:  "Unauthorized to log unusual duration event"}));
+        });
+
+        it.each([
+            [
+                'expected_seconds greater than moving_seconds',
+                { expected_seconds: 1500, moving_seconds: 1000 },
+                422,
+                'INVALID_PARAMETERS',
+                'Moving seconds cannot be greater than expected',
+            ],
+            [
+                'expected_seconds invalid',
+                { expected_seconds: -1000, moving_seconds: 1000 },
+                422,
+                'INVALID_EXPECTED_SECONDS',
+                'Expected_seconds missing or invalid',
+            ],
+            [
+                'moving_seconds invalid',
+                { expected_seconds: 1000, moving_seconds: -1000 },
+                422,
+                'INVALID_MOVING_SECONDS',
+                'Moving_seconds missing or invalid',
+            ],
+            [
+                'user not found',
+                { user: { sub: 'user-1' } },
+                403,
+                'USER_NOT_FOUND',
+                'User not found',
+            ],
+        ])('returns the correct response for %s', async (_, body, status, error, message)=>{
+            const req: any = baseReq({
+                ...(typeof body === 'object' && body && 'user' in body ? body : { body }),
+            });
+
+            await expectError(
+                req,
+                new Error(
+                    message === 'User not found'
+                        ? 'user not found'
+                        : message === 'Moving seconds cannot be greater than expected'
+                        ? 'Expected greater than moving'
+                        : message === 'Expected_seconds missing or invalid'
+                        ? 'expected_seconds invalid'
+                        : 'moving_seconds invalid'
+                ),
+                status,
+                error,
+                message
+            );
+        });
+    });
 
 });

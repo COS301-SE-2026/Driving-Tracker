@@ -1308,6 +1308,71 @@ export const trips_services ={
         });
 
         return Boolean(trip?.last_recorded_at && trip.last_recorded_at > stopped_at);
-    }
+    },
+	//confirms a stop event
+    async alert_unusual_trip_duration(user_id: string, trip_id: string,
+		 expected_seconds: number, moving_seconds: number){
+
+        const user = await prisma.users.findUnique({
+                where: {user_id: user_id}
+            });
+
+        if(!user){
+            throw new Error("user not found");
+        }
+
+		if(!Number.isFinite(expected_seconds) || expected_seconds < 0){
+			throw new Error('expected_seconds invalid');
+		}
+
+		if(!Number.isFinite(moving_seconds) || moving_seconds < 0){
+			throw new Error('moving_seconds invalid');
+		}
+
+		if(expected_seconds > moving_seconds ){
+			throw new Error('Expected greater than moving');
+		}
+
+    	const new_event = await prisma.unusual_duration_events.create({
+			data:{
+				trip_id,
+				expected_seconds,
+				moving_seconds_at_flag: moving_seconds
+			},
+		});
+
+        if(!new_event){
+            throw new Error('failed to create event');
+        }
+
+        const { contact_user_ids } = await get_trip_shared_contacts(trip_id);
+
+        if (contact_user_ids.length > 0){
+            
+            const full_name = `${user.name ?? ""} ${user.surname ?? ""}`.trim() || user.username;
+
+            const message = `${full_name}'s trip is taking longer than expected`;
+
+
+            const event_ids = new Array(contact_user_ids.length).fill(new_event.event_id);
+            
+            await add_notification({
+                user_ids: contact_user_ids,
+                type: "TRIP_ALERT",
+                title: "Unusual Duration",
+                body: message,
+                reference_ids: event_ids,
+                reference_type: "unusual_duration_events",
+            });
+
+            
+            const fcm_tokens = await user_devices_services.get_multiple_users_fcm_tokens(contact_user_ids);
+
+            await notification_services.send_trip_alert_notification(fcm_tokens, trip_id, "UNUSUAL_DURATION", message);
+
+		}
+        
+        return "Unusual trip duration notifications successfully sent";
+    },
     
 };
