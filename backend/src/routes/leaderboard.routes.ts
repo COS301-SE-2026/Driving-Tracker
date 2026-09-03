@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import leaderboard_controller from '../controllers/leaderboard.controller';
 import { verify_token } from '../middleware/auth';
-import { user_based_limiter } from '../middleware/rate_limit';
 import { get_fuel_leaderboard } from "../controllers/fuel_leaderboard.controller";
 import { create_user_based_limiter } from '../middleware/rate_limit';
 
@@ -252,6 +251,6 @@ leaderboard_router.get('/scopes', verify_token, create_user_based_limiter(), lea
  *      500:
  *        description: Internal server error
  */
-leaderboard_router.get("/fuel", verify_token, user_based_limiter, get_fuel_leaderboard,);
+leaderboard_router.get("/fuel", verify_token, create_user_based_limiter, get_fuel_leaderboard,);
 
 export default leaderboard_router;
