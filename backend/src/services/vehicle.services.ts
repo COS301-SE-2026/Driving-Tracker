@@ -339,7 +339,7 @@ export const vehicle_services={
             where: { users_vehicles: { some: { user_id } } },
             include: {
                 trips: {
-                    where: { status: "COMPLETED" }
+                    where: { status: "COMPLETED" },
                     select: { distance_km: true, fuel_estimate: true }
                 }
             }
@@ -353,13 +353,13 @@ export const vehicle_services={
         const userAvg = totalDist > 0 ? (totalFuel / totalDist) * 100 : 0;
 
         //fetching actual manufacturer standard
-        let manufacturerStandard = Number(vehicle.fuel_estimate || 0);
+        let manufacturerStandard = Number(vehicle.fuel_efficiency || 0);
 
         //if not in DB, we search CAR API
         if (manufacturerStandard === 0 && vehicle.make && vehicle.model && vehicle.year) {
             try {
                 const benchmarks = await fetch_vehicle_benchmark(vehicle.make, vehicle.model, vehicle.year);
-                if (benchmarks,length > 0) {
+                if (benchmarks.length > 0) {
                     const avgMpg = benchmarks.reduce((sum, b) => sum + b.combined_mpg, 0) / benchmarks.length;
                     const l100 = mpg_to_lper100km(avgMpg);
                     if (l100) manufacturerStandard = l100;
@@ -408,13 +408,13 @@ export const vehicle_services={
                 vehicle_id: vehicle.vehicle_id,
                 make: vehicle.make,
                 model: vehicle.model,
-                year: vehicle.year
-                fuel_type: vehicle.fuel_type
+                year: vehicle.year,
+                fuel_type: vehicle.fuel_type,
                 registration: vehicle.registration
             },
             manufacturer_standard: parseFloat(manufacturerStandard.toFixed(1)),
             user_average: parseFloat(userAvg.toFixed(1)),
-            peer_leaderboard
+            peer_leaderboard: peerLeaderboard
         };
     }
 };
