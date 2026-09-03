@@ -378,9 +378,9 @@ async function main() {
                     data: {
                         user_id: user.user_id,
                         category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
-                        scope,
+                        scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
                         score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
-                        period_start
+                        period_start,
                     }
                 });
 

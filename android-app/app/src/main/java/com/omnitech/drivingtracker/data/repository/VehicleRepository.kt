@@ -5,6 +5,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.AddVehicleResponse
 import com.omnitech.drivingtracker.data.models.AssignVehicleRequest
 import com.omnitech.drivingtracker.data.models.UpdateVehicleNameRequest
+import com.omnitech.drivingtracker.data.models.FuelComparisonData
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.VehicleDto
@@ -67,6 +68,16 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         Result.failure(ApiException(error.error, error.message ?: "Failed to fetch fuel analytics."))
     }
     catch( e: Exception){
+        Result.failure(e)
+    }
+
+    suspend fun getFuelComparison(): Result<FuelComparisonData> = try {
+        val response = apiService.getFuelComparison()
+        Result.success(response.data)
+    } catch (e: HttpException) {
+        val error = ApiErrorParser.parse(e)
+        Result.failure(ApiException(error.error, error.message ?: "Failed to fetch fuel comparison."))
+    } catch (e: Exception) {
         Result.failure(e)
     }
 

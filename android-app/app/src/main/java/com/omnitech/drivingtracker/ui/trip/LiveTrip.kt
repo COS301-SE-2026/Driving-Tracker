@@ -175,6 +175,7 @@ fun LiveTrip(
 
     LaunchedEffect(tripId) {
         if (tripId.isNotEmpty()) {
+            viewModel.resetEndTripState()
             viewModel.loadTripSummary(tripId)
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
@@ -236,11 +237,12 @@ fun LiveTrip(
             )
         } else {
             // If not first trip, navigate away immediately
-            LaunchedEffect(Unit) {
+            LaunchedEffect(currentEndTripState) {
                 TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {
-                    popUpTo(Screen.Dashboard.route)
+                    popUpTo(Screen.Dashboard.route) { inclusive = true }
                 }
+                
             }
         }
     } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
@@ -384,7 +386,8 @@ fun LiveTripContent(
 ) {
     Column(modifier = Modifier.fillMaxSize()){
         //alert banner for E2E test
-        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+//        val latestEvent = (uiState as? TripSummaryViewModel.UiState.Success)?.trip?.events?.lastOrNull()
+        val latestEvent = localEvents.lastOrNull()
         var showAlert by remember { mutableStateOf(false) }
 
         LaunchedEffect(latestEvent) {
@@ -405,7 +408,7 @@ fun LiveTripContent(
                 shape = RoundedCornerShape(8.dp)
             ){
                 Text(
-                    text = "${latestEvent.eventType} DETECTED",
+                    text = "${latestEvent.type} DETECTED",
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -829,11 +832,36 @@ fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Un
         onDismissRequest = onDismiss,
         title = { Text("Active Viewers", fontWeight = FontWeight.Bold) },
         text = {
+            Column{
+                Text(
+                    text = "Click the icon next to a contact to stop sharing your live location with them.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
             LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(activeShares) { contact ->
                     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        Column { Text(contact.name, fontWeight = FontWeight.Medium); Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall) }
-                        IconButton(onClick = { onRevoke(contact.contactId) }) { Icon(Icons.Default.PersonRemove, "Revoke", tint = MaterialTheme.colorScheme.error) }
+                        Column {
+                            Text(contact.name, fontWeight = FontWeight.Medium)
+                            Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable{onRevoke(contact.contactId) }
+                                .padding(8.dp)
+                        ){
+                            Icon(Icons.Default.PersonRemove,
+                                "Remove",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = "Remove",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }

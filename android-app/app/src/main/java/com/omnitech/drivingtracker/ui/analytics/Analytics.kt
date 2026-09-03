@@ -136,7 +136,7 @@ fun DriverAnalytics(navController: NavController ?= null,
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        ScoreCard(score = uiState.drivingScore ?: 0)
+                        ScoreCard(score = uiState.drivingScore ?: 0, heading = "Overall Driving Score")
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }

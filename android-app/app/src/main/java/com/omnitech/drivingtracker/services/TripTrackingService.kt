@@ -153,6 +153,7 @@ class TripTrackingService: Service() {
         when(intent?.action){
             ACTION_START_TRIP -> {
                 if(!isTrackingStarted){
+                    isTrackingStarted = true
                     startForegroundWithPermissionCheck()
                     startLocationUpdates()
                     startSensorFusion()
