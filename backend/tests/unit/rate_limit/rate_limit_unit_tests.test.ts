@@ -119,6 +119,30 @@ describe('rate limiting', () =>{
 
 
     });
+    it('bypasses rate limiting when in test environment (isTestEnv is true)', async () => {
+        // Switch environment to 'test' and reset Jest module cache
+        process.env.NODE_ENV = 'test';
+        jest.resetModules();
+        
+        //Import the module with NODE_ENV = 'test'
+        const testModule = await import('../../../src/middleware/rate_limit');
+        
+        const req: any = { 
+            body: { identifier: 'test@test.com', password: 'test' }, 
+            ip: '1.1.1.1' 
+        };
+        const res: any = make_res();
+        const next = jest.fn();
+
+    
+        await testModule.login_limiter_sliding(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+
+        //Restore environment and module cache for safety
+        process.env.NODE_ENV = 'development';
+        jest.resetModules();
+    });
 
     describe('user based rate limiting', ()=> {
 
