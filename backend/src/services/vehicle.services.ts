@@ -158,7 +158,9 @@ export const vehicle_services={
                     }
                 }
                 //if it comes back as null then the first trip will be used as the fuel efficiency of the car until the first 5 trips are reached 
-                if (benchmark_lper100km == null) return null;
+                if (benchmark_lper100km == null) {
+                    benchmark_lper100km = 8.0;
+                }
             
              
             const result = await prisma.$transaction(async (tx) => {
