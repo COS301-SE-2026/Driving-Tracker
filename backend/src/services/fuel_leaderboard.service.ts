@@ -61,8 +61,7 @@ export const fuel_leaderboard_service = {
         if (
             !vehicle.make ||
             !vehicle.model ||
-            !vehicle.year ||
-            !vehicle.engine_type
+            !vehicle.year
         ) {
             throw new Error("Vehicle is missing manufacturer specification fields");
         }
@@ -89,7 +88,6 @@ export const fuel_leaderboard_service = {
                 AND LOWER(v.make) = LOWER(${vehicle.make})
                 AND LOWER(v.model) = LOWER(${vehicle.model})
                 AND v.year = ${vehicle.year}
-                AND LOWER(v.engine_type) = LOWER(${vehicle.engine_type})
                 AND u.status = 'ACTIVE'
             GROUP BY t.user_id, u.name, u.surname
             HAVING SUM(t.distance_km) > 0
@@ -133,7 +131,6 @@ export const fuel_leaderboard_service = {
                 make: vehicle.make,
                 model: vehicle.model,
                 year: vehicle.year,
-                engine_type: vehicle.engine_type,
             });
 
 
@@ -153,7 +150,6 @@ export const fuel_leaderboard_service = {
                 make: vehicle.make,
                 model: vehicle.model,
                 year: vehicle.year,
-                engineType: vehicle.engine_type,
             },
             manufacturerStandardL100km: manufacturerStandard,
             userEfficiencyL100km: currentUser ? Number(currentUser.efficiency.toFixed(2)) : null,
