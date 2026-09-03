@@ -44,6 +44,7 @@ export const manufacturer_baseline_service = {
                 );
             }
         } catch (error) {
+            // CAR API failure is expected and handled byt the dtatbase fallback below
             console.error("CAR API lookup failed, using database fallback.");
         }
 
