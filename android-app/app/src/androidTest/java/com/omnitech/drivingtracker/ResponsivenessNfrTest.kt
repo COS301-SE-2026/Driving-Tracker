@@ -35,7 +35,7 @@ class ResponsivenessNfrTest{
         ensureLoggedIn()
     }
     @Test
-    fun testNavigationResponsiveness_Target200ms(){
+    fun testNavigationResponsiveness(){
         //once a user is logged in start on dashboard
         composeTestRule.waitUntil(2000){
             composeTestRule.onAllNodesWithTag("topBarLeftButton").fetchSemanticsNodes().isNotEmpty()

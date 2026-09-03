@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { getScenario } from './load-scenarios.ts';
 
-const BASE_URL = __ENV.API_URL || 'http://api-nfr:3000';
+const BASE_URL = __ENV.API_URL || 'https://api-nfr:3000';
 const SCENARIO = __ENV.SCENARIO || 'smoke';
 const config = getScenario(SCENARIO);
 

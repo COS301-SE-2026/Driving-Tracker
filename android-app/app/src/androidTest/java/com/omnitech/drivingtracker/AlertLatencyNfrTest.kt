@@ -51,7 +51,7 @@ class AlertLatencyNfrTest {
     }
 
     @Test
-    fun testAlertVisibilityLatency_Target3000ms() {
+    fun testAlertVisibilityLatency() {
         // Wait for the "Recording" badge to be stable
         composeTestRule.waitUntil(60000) {
             isTextVisible(RECORDING_LABEL)

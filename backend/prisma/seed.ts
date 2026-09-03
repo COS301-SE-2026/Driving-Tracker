@@ -380,7 +380,7 @@ async function main() {
                         category: faker.helpers.arrayElement(['SAFETY', 'ECO', 'OVERALL']),
                         scope: faker.helpers.arrayElement(['WEEKLY', 'MONTHLY', 'ALL_TIME']),
                         score: faker.number.float({ min: 50, max: 100, fractionDigits: 2 }),
-                        updated_at: new Date(),
+                        period_start,
                     }
                 });
 

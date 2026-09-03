@@ -159,7 +159,7 @@ jobs:
           mkdir -p backend
           cat > backend/.env <<EOF
           DATABASE_URL=${{ env.DATABASE_URL }}
-          SEED_USER_PASSWORD=ci-seed-password
+          SEED_USER_PASSWORD=${{env.SEED_USER_PASSWORD }}
           AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
           FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
           AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=ciaccount;AccountKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=;EndpointSuffix=core.windows.net
