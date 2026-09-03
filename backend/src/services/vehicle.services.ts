@@ -417,7 +417,7 @@ export const vehicle_services={
             return {
                 user_id: p.user_id,
                 display_name: p.name || p.username,
-                efficiency: parseFloat(pEff.toFixed(1))
+                efficiency: Number.parseFloat(pEff.toFixed(1))
             };
         })
         .sort((a, b) => a.efficiency - b.efficiency)
@@ -433,8 +433,8 @@ export const vehicle_services={
                 fuel_type: vehicle.fuel_type,
                 registration: vehicle.registration
             },
-            manufacturer_standard: parseFloat(finalManufacturerStandard.toFixed(1)),
-            user_average: parseFloat(userAvg.toFixed(1)),
+            manufacturer_standard: Number.parseFloat(finalManufacturerStandard.toFixed(1)),
+            user_average: Number.parseFloat(userAvg.toFixed(1)),
             peer_leaderboard: peerLeaderboard
         };
     }

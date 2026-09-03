@@ -21,13 +21,11 @@ interface RankedUser extends AggregatedUser {
     rank: number;
 }
 
-function toDisplayName(name: string | null, surname: string | null): string {
-    return `${name ?? ""} ${surname ?? ""}`.trim() || "Driver";
-}
+
 
 export const fuel_leaderboard_service = {
     async get_leaderboard(params: FuelLeaderboardParams) {
-        if (params.user_id || !params.vehicle_id) {
+        if (!params.user_id || !params.vehicle_id) {
             throw new Error("Missing user_id or vehicle_id");
         }
 
@@ -137,11 +135,11 @@ export const fuel_leaderboard_service = {
         //calculating percentile
         const totalPeers = ranked.length; //how many drivers have the same car
 
-        const userPercentile = currentUser
-            ? totalPeers === 1
-                ? 100
-                : ((totalPeers - currentUser.rank) / (totalPeers - 1)) * 100
-            : null;
+        let userPercentile: number | null = null;
+
+        if (currentUser) {
+            userPercentile = totalPeers === 1 ? 100 : ((totalPeers - currentUser.rank) / (totalPeers - 1)) * 100;
+        }
 
         
         //final response to send back to the app
