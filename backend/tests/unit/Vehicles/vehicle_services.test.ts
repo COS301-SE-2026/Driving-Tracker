@@ -523,10 +523,24 @@ describe("additional vehicle service tests", ()=>{
             })
         ).rejects.toThrow("Database update failed");
     });
-    it("returns null for vehicles outside the supported benchmark years", async () => {
+    it("adds unsupported vehicles without fuel efficiency", async () => {
         mock_prisma.users.findUnique.mockResolvedValue({
             user_id: "u1",
         });
+
+        mock_prisma.vehicles.create.mockResolvedValue({
+            vehicle_id: "v-old",
+            name: "Old Car",
+            registration: "OLD123",
+            make: "BMW",
+            model: "M3",
+            year: 2010,
+            fuel_tank: 60,
+            fuel_efficiency: null,
+            fuel_type: "PETROL",
+        });
+
+        mock_prisma.users_vehicles.create.mockResolvedValue({});
 
         const result = await vehicle_services.assign_user_to_vehicle({
             user_id: "u1",
@@ -535,14 +549,74 @@ describe("additional vehicle service tests", ()=>{
             make: "BMW",
             model: "M3",
             year: 2010,
-            fuel_type: "PETROL",
             fuel_tank: 60,
+            fuel_type: "PETROL",
+            
         });
 
-        expect(result).toBeNull();
         expect(mock_fetch).not.toHaveBeenCalled();
-        expect(mock_prisma.$transaction).not.toHaveBeenCalled();
+        expect(mock_prisma.$transaction).toHaveBeenCalled();
+
+        expect(mock_prisma.vehicles.create).toHaveBeenCalledWith({
+            data: {
+                name: "Old Car",
+                registration: "OLD123",
+                make: "BMW",
+                model: "M3",
+                year: 2010,
+                fuel_tank: 60,
+                fuel_efficiency: null,
+                fuel_type: "PETROL",
+            }
+        });
+
+        expect(result).toEqual({
+            data: {
+                vehicle_id: "v-old",
+                name: "Old Car",
+                registration: "OLD123",
+                make: "BMW",
+                model: "M3",
+                year: 2010,
+                fuel_tank: 60,
+                fuel_efficiency: null,
+                fuel_type: "PETROL",
+            },
+            warning:
+                "Your vehicle is not supported by CarAPI, so fuel estimates will not be available.",
+        });
     });
+
+    it.each([2014,2021])(
+        "adds vehicles outside the supported year range: %s",
+        async(year) => {
+            mock_prisma.users.findUnique.mockResolvedValue({user_id: "u1"});
+
+            mock_prisma.vehicles.create.mockResolvedValue({
+                vehicle_id: "v-unsupported",
+                year,
+                fuel_efficiency: null,
+            });
+
+            mock_prisma.users_vehicles.create.mockResolvedValue({});
+
+            const result = await vehicle_services.assign_user_to_vehicle({
+                user_id: "u1",
+                name: "Unsupported Car",
+                registration: "TEST123",
+                make: "BMW",
+                model: "M3",
+                year,
+                fuel_type: "PETROL",
+                fuel_tank: 60,
+            });
+
+            expect(mock_fetch).not.toHaveBeenCalled();
+            expect(mock_prisma.$transaction).toHaveBeenCalled();
+            expect(result?.warning).toContain("not supported by CarAPI");
+        }
+    );
+
     it("returns null when CarAPI returns no benchmark vehicles", async () => {
         mock_prisma.users.findUnique.mockResolvedValue({ user_id: "u1" });
 
