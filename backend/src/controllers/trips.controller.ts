@@ -639,27 +639,27 @@ export const alert_unusual_trip_duration = async (req: AuthRequest, res: Respons
         }
 
         if (error.message.includes("Expected greater than moving")){
-            res.status(422).json({ 
+            return res.status(422).json({ 
                 error: "INVALID_PARAMETERS", 
                 message: "Moving seconds cannot be greater than expected" 
             });
         }
 
         if (error.message.includes("expected_seconds invalid")){
-            res.status(422).json({ 
+            return res.status(422).json({ 
                 error: "INVALID_EXPECTED_SECONDS", 
                 message: "Expected_seconds missing or invalid" 
             });
         }
 
         if (error.message.includes("moving_seconds invalid")){
-            res.status(422).json({ 
+            return res.status(422).json({ 
                 error: "INVALID_MOVING_SECONDS", 
                 message: "Moving_seconds missing or invalid" 
             });
         }
 
-        res.status(500).json({ 
+        return res.status(500).json({ 
             error: "INTERNAL_SERVER_ERROR",
             message: "Could not successfully log unusual duration"
         });
