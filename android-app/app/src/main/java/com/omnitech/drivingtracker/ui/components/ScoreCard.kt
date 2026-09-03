@@ -20,10 +20,24 @@ import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.Alignment
 import com.omnitech.drivingtracker.ui.theme.*
+import org.checkerframework.common.value.qual.StringVal
 
 @Composable
-//This function displays the Overal driving score with progress bar
-fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
+//This function displays the Overall driving score with progress bar
+fun ScoreCard(score: Int, modifier: Modifier = Modifier, heading: String) {
+
+    fun driverClassificationFun(score: Int) : String{
+        return if (score < 40){
+            "Poor Driver"
+        }
+        else if (score < 60){
+            "Average Driver"
+        }
+        else if (score < 80){
+            "Good Driver"
+        }
+        else "Pro driver!"
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -38,7 +52,7 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
         ) {
 
             Text(
-                text = "Overall Driving Score",
+                text = heading,
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -68,7 +82,7 @@ fun ScoreCard(score: Int, modifier: Modifier = Modifier) {
                     )
 
                     Text(
-                        text = "Great Driver!",
+                        text = driverClassificationFun(score),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

@@ -243,8 +243,8 @@ class TripRepository @Inject constructor(
         fuelEstimate: Double? = null,
         overallScore: Double? = null,
         endLocation: LocationDto? = null,
-        routePolyline: GeoJsonLineString? = null,
-        fuelLevelEnd: Float? = null
+        fuelLevelEnd: Float? = null,
+        routePolyline: GeoJsonLineString? = null
     ): Result<EndTripData>{
         return try{
             val request = EndTripRequest(
@@ -331,6 +331,17 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to resolve stop event"))
         } catch (e: Exception) {
             Log.d("StopMonitor", "Resolve stop event failed android")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun logUnusualDuration(tripId: String, expectedSeconds: Int, movingSeconds: Int ): Result<String> {
+        return try {
+            val response = api.logUnusualDurationEvent(tripId, UnusualDurationRequest(expectedSeconds, movingSeconds))
+            Result.success(response.message)
+
+        } catch (e: Exception) {
+            Log.d("UnusualDuration", "Failed to log unusual duration")
             Result.failure(e)
         }
     }

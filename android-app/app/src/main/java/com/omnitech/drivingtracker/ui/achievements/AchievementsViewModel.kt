@@ -8,6 +8,7 @@ import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.BadgeDefinition
 import com.omnitech.drivingtracker.data.models.LeaderboardData
 import com.omnitech.drivingtracker.data.repository.AchievementsRepository
+import com.omnitech.drivingtracker.data.repository.AuthRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.services.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,13 +48,15 @@ data class AchievementsUiState(
     val isLoadingLeaderboard: Boolean = false,
     val isLoadingFilters: Boolean = false,
     val isLoadingBadges: Boolean = false,
+    val myProfilePictureUrl: String? = null,
     val error: String? = null
 )
 
 @HiltViewModel
 class AchievementsViewModel @Inject constructor(
     private val repository: AchievementsRepository,
-    private val tripRepository: TripRepository
+    private val tripRepository: TripRepository,
+    private val authRepository: com.omnitech.drivingtracker.data.repository.AuthRepository
 ) : ViewModel() {
 
     val leaderboardFail = "Failed to load leaderboard"
@@ -77,7 +80,17 @@ class AchievementsViewModel @Inject constructor(
     }
 
     private fun loadInitialData() {
-        getCategories(); getScopes(); getLeaderboard(); fetchOverallScore(); fetchBadges()
+        getCategories(); getScopes(); getLeaderboard(); fetchOverallScore(); fetchBadges(); fetchMyProfilePicture()
+    }
+
+    private fun fetchMyProfilePicture(){
+        viewModelScope.launch{
+            authRepository.getProfile().onSuccess { profile ->
+                _uiState.value = _uiState.value.copy(
+                    myProfilePictureUrl = profile.profilePictureUrl
+                )
+            }
+        }
     }
 
     private fun fetchBadges() {

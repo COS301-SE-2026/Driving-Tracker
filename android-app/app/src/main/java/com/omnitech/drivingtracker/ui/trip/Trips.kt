@@ -81,13 +81,16 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.services.TripTrackingService
+import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
 
@@ -133,7 +136,7 @@ fun Trips(
         approvedContacts = approvedContacts,
         vehicles = vehicles,
         onRetryTrips = { tripsViewModel.loadTripsHistory() },
-        onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng, contactIds ->
+        onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng, contactIds ,fuelLevelStart ->
             tripViewModel.startTrip(
                 vehicleId = vehicleId,
                 dataSource = dataSource,
@@ -141,7 +144,8 @@ fun Trips(
                 longitude = longitude,
                 destLat = destLat,
                 destLng = destLng,
-                selectedContactIds = contactIds.ifEmpty { null }
+                selectedContactIds = contactIds.ifEmpty { null },
+                fuelLevelStart = fuelLevelStart
             )
         },
         onRefreshContacts = {
@@ -162,7 +166,7 @@ fun TripsContent(
     approvedContacts: List<ContactDto>,
     vehicles: List<VehicleDto>,
     onRetryTrips: () -> Unit,
-    onStartTrip: (String, String, Double, Double, Double?, Double?, List<String>) -> Unit,
+    onStartTrip: (String, String, Double, Double, Double?, Double?, List<String>,Float?) -> Unit,
     onRefreshContacts: () -> Unit,
     onApplyFilters: (String?, String?, String?) -> Unit,
     navController: NavController? = null
@@ -178,7 +182,9 @@ fun TripsContent(
 
         //Start new trip
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))
         ){
             Column(modifier = Modifier.padding(16.dp)){
@@ -226,7 +232,9 @@ fun TripsContent(
         }
         //past trips heading and trips filtering
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -240,7 +248,9 @@ fun TripsContent(
         when (tripsState) {
             is TripsViewModel.UiState.Loading, is TripsViewModel.UiState.Idle -> {
                 Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -248,7 +258,9 @@ fun TripsContent(
             }
             is TripsViewModel.UiState.Error -> {
                 Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -267,7 +279,9 @@ fun TripsContent(
                 val trips = tripsState.trips
                 if (trips.isEmpty()) {
                     Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -277,7 +291,8 @@ fun TripsContent(
                     }
                 } else {
                     Column(
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -303,8 +318,8 @@ fun TripsContent(
             approvedContacts = approvedContacts,
             vehicles = vehicles,
             onDismiss = { showStartTripDialog = false },
-            onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds ->
-                onStartTrip(vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds)
+            onStartTrip = { vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds,fuelLevelStart ->
+                onStartTrip(vehicleId, dataSource, latitude, longitude, destLat, destLng,contactIds,fuelLevelStart)
                 showStartTripDialog = false
             }
         )
@@ -349,7 +364,9 @@ private fun FilterDialog(
                         label = { Text("Status") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -408,8 +425,9 @@ private fun StartTripDialog(
     vehicles: List<VehicleDto>,
     onDismiss: () -> Unit,
     onStartTrip: (vehicleId: String, dataSource: String, latitude: Double, longitude: Double, destLat: Double?, destLng: Double?,
-                  contactIds: List<String>) -> Unit,
-    tripViewModel: TripViewModel = hiltViewModel()
+                  contactIds: List<String>,fuelLevelStart: Float?) -> Unit,
+    tripViewModel: TripViewModel = hiltViewModel(),
+    obdViewModel: ObdViewModel = hiltViewModel()
 ){
     var selectedVehicle by remember { mutableStateOf<VehicleDto?>(null) }
     var expanded by remember { mutableStateOf(false) }
@@ -422,6 +440,11 @@ private fun StartTripDialog(
     val suggestions = (suggestionsState as? TripViewModel.UiState.SuccessSuggestions)?.suggestions ?: emptyList()
 
     var selectedDestination by remember { mutableStateOf<AddressSearchResult?>(null) }
+
+    var manualFuelLevel by remember { mutableStateOf("") }
+    val obdMetrics by obdViewModel.vehicleMetrics.collectAsState()
+
+    val needsManualFuel = dataSource == "OBD" && (obdMetrics.fuelLevel == null || obdMetrics.fuelLevel == 0f)
 
     val context = LocalContext.current
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -472,7 +495,9 @@ private fun StartTripDialog(
                         label = { Text("Vehicle") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -489,14 +514,29 @@ private fun StartTripDialog(
                         }
                     }
                 }
+                if (needsManualFuel) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Fuel level could not be read from OBD. Please enter it manually:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    OutlinedTextField(
+                        value = manualFuelLevel,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) manualFuelLevel = it },
+                        label = { Text("Current Fuel Level (%)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
-                OutlinedTextField(
-                    value = dataSource,
-                    onValueChange = { dataSource = it },
-                    label = { Text("Data source") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+//                OutlinedTextField(
+//                    value = dataSource,
+//                    onValueChange = { dataSource = it },
+//                    label = { Text("Data source") },
+//                    singleLine = true,
+//                    modifier = Modifier.fillMaxWidth()
+//                )
                 OutlinedTextField(
                     value = destinationQuery,
                     onValueChange = {
@@ -508,7 +548,9 @@ private fun StartTripDialog(
                 )
                 if (suggestions.isNotEmpty() && selectedDestination == null) {
                     Card(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
@@ -541,7 +583,9 @@ private fun StartTripDialog(
                     )
                 } else {
                     Column(
-                        modifier = Modifier.height(180.dp).verticalScroll(rememberScrollState()),
+                        modifier = Modifier
+                            .height(180.dp)
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         approvedContacts.forEach { contact ->
@@ -593,17 +637,22 @@ private fun StartTripDialog(
                 val lng = longitude.toDoubleOrNull()
                 val vehicleId = selectedVehicle?.vehicleId
 
+                val fuelValue = if (dataSource == "OBD") {
+                    obdMetrics.fuelLevel ?: manualFuelLevel.toFloatOrNull()
+                } else null
+
                 val destLat = if (selectedDestination?.latitude != 0.0) selectedDestination?.latitude else null
                 val destLng = if (selectedDestination?.longitude != 0.0) selectedDestination?.longitude else null
                 if (vehicleId != null && lat != null && lng != null) {
                     onStartTrip(
                         vehicleId,
-                        dataSource.trim(),
+                        "PHONE",
                         lat,
                         lng,
                         selectedDestination?.latitude,
                         selectedDestination?.longitude,
-                        selectedContactIds.toList()
+                        selectedContactIds.toList(),
+                        fuelValue,
                     )
                 }
             },
@@ -676,14 +725,18 @@ fun TripCard(trip: TripItemDto, isLatest: Boolean = false, vehicles: List<Vehicl
                     painter = painterResource(id = R.drawable.map),
                     contentDescription = "Trip map",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().height(160.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
                 )
             }
         }
 
         //Trip details row
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             //route icon placeholder
@@ -784,7 +837,7 @@ fun TripsPreview() {
             approvedContacts = emptyList(),
             vehicles = emptyList(),
             onRetryTrips = {},
-            onStartTrip = { _, _, _, _, _,_,_-> },
+            onStartTrip = { _, _, _, _, _,_,_,_-> },
             onRefreshContacts = {},
             onApplyFilters = { _, _, _ -> }
         )

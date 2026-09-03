@@ -2,6 +2,8 @@ package com.omnitech.drivingtracker.services
 
 import com.omnitech.drivingtracker.data.models.*
 import retrofit2.http.*
+import okhttp3.MultipartBody
+
 
 interface ApiService{
     //returns trusted contacts for authenticated user
@@ -41,6 +43,13 @@ interface ApiService{
     @DELETE("vehicle/{vehicle_id}")
     suspend fun removeVehicle(@Path("vehicle_id") vehicleId: String) : GenericResponse
 
+    @Multipart
+    @POST("upload/vehicle/{vehicle_id}")
+    suspend fun uploadVehicleImage(
+        @Path("vehicle_id") vehicleId: String,
+        @Part image: MultipartBody.Part
+    ): UploadVehicleImageResponse
+
     @POST("api/auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
@@ -58,6 +67,10 @@ interface ApiService{
 
     @GET("api/auth/profile")
     suspend fun getProfile(): ProfileResponse
+
+    @Multipart
+    @POST("upload/profile")
+    suspend fun uploadProfilePicture(@Part image: MultipartBody.Part): UploadProfilePictureResponse
 
     @POST("trips/start_trip")
     suspend fun startTrip(@Body body: StartTripRequest): StartTripResponse
@@ -186,4 +199,24 @@ interface ApiService{
 
     @GET("vehicle/fuel_comparison")
     suspend fun getFuelComparison(): FuelComparisonResponse
+    @POST("trips/{trip_id}/unusual_duration_event")
+    suspend fun logUnusualDurationEvent(
+        @Path("trip_id") tripId: String,
+        @Body body: UnusualDurationRequest
+    ): UnusualDurationResponse
+
+    @GET("trips/{trip_id}/shares")
+    suspend fun getTripShares(@Path("trip_id") tripId: String): TripSharesResponse
+
+    @DELETE("trips/{trip_id}/shares/{contact_id}")
+    suspend fun revokeTripShare(
+        @Path("trip_id") tripId: String,
+        @Path("contact_id") contactId: String
+    ): GenericResponse
+
+
+    @POST("users/me/delete")
+    suspend fun deleteAccount(
+        @Body request: DeleteAccountRequest
+    )
 }

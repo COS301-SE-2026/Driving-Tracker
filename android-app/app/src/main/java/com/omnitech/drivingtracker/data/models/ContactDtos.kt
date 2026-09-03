@@ -43,7 +43,8 @@ data class ContactDto(
     val name: String,
     val email: String? = null,
     @SerializedName("consent_status")
-    val consentStatus: ConsentStatus? = null
+    val consentStatus: ConsentStatus? = null,
+    @SerializedName("profile_picture_url") val profilePictureUrl: String? = null
 )
 
 data class CreateContactRequest(
