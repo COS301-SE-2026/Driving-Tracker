@@ -37,18 +37,24 @@ class AlertLatencyNfrTest {
     @Inject
     lateinit var sensorManager: ISensorFusionManager
 
+    companion object {
+        private const val SELECT_VEHICLE = "Select Vehicle"
+        private const val TRIPS_LABEL = "Trips"
+        private const val ALLOW_LABEL = "Allow"
+        private const val RECORDING_LABEL = "Recording"
+    }
+
     @Before
     fun init() {
         hiltRule.inject()
         ensureInLiveTrip()
     }
+
     @Test
     fun testAlertVisibilityLatency_Target3000ms() {
         // Wait for the "Recording" badge to be stable
         composeTestRule.waitUntil(60000) {
-            try {
-                composeTestRule.onAllNodesWithText("Recording").fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isTextVisible(RECORDING_LABEL)
         }
 
         // Brief sleep to ensure the LiveTrip LaunchedEffects have started
@@ -79,104 +85,113 @@ class AlertLatencyNfrTest {
         val startTime = System.currentTimeMillis()
 
         while (System.currentTimeMillis() - startTime < maxWaitMs) {
-            // 1. Handle Android 12+ "Precise" location toggle if it exists
-            val preciseSelector = UiSelector().resourceIdMatches(".*:id/precise_location_selection.*")
-            val preciseButton = device.findObject(preciseSelector)
-            if (preciseButton.exists()) {
-                preciseButton.click()
-            }
+            handleAndroid12PreciseLocation(device)
 
-            // 2. Try various selectors for the "Allow" / "While using the app" button
-            val selectors = listOf(
-                UiSelector().resourceIdMatches(".*:id/permission_allow_foreground_only_button"),
-                UiSelector().resourceIdMatches(".*:id/permission_allow_button"),
-                UiSelector().textMatches("(?i).*While using the app.*"),
-                UiSelector().textMatches("(?i).*Allow.*"),
-                UiSelector().textMatches("(?i).*Only this time.*")
-            )
-
-            var found = false
-            for (selector in selectors) {
-                val button = device.findObject(selector)
-                if (button.exists()) {
-                    button.click()
-                    device.waitForIdle()
-                    found = true
-                    break
-                }
-            }
-
-            // If we clicked a button, wait a moment to see if another permission (like Notifications) follows
-            if (found) {
+            if (tryClickPermissionButton(device)) {
+                // If we clicked a button, wait a moment to see if another permission (like Notifications) follows
                 Thread.sleep(1500)
             } else {
                 // If no button found, wait a bit and retry until timeout
                 Thread.sleep(500)
                 // If we've waited a while and nothing is found, we might be back in the app
-                if (System.currentTimeMillis() - startTime > 3000) {
-                    // Try to see if we can reach the app again by catching the exception
-                    try {
-                        if (composeTestRule.onAllNodesWithText("Select Vehicle").fetchSemanticsNodes().isNotEmpty()) {
-                            return // Exit early if app UI is visible
-                        }
-                    } catch (e: Exception) { /* Keep waiting for system dialog */ }
+                if (System.currentTimeMillis() - startTime > 3000 && isTextVisible(SELECT_VEHICLE)) {
+                    return // Exit early if app UI is visible
                 }
             }
         }
+    }
+
+    private fun handleAndroid12PreciseLocation(device: UiDevice) {
+        // 1. Handle Android 12+ "Precise" location toggle if it exists
+        val preciseSelector = UiSelector().resourceIdMatches(".*:id/precise_location_selection.*")
+        val preciseButton = device.findObject(preciseSelector)
+        if (preciseButton.exists()) {
+            preciseButton.click()
+        }
+    }
+
+    private fun tryClickPermissionButton(device: UiDevice): Boolean {
+        // 2. Try various selectors for the "Allow" / "While using the app" button
+        val selectors = listOf(
+            UiSelector().resourceIdMatches(".*:id/permission_allow_foreground_only_button"),
+            UiSelector().resourceIdMatches(".*:id/permission_allow_button"),
+            UiSelector().textMatches("(?i).*While using the app.*"),
+            UiSelector().textMatches("(?i).*Allow.*"),
+            UiSelector().textMatches("(?i).*Only this time.*")
+        )
+
+        for (selector in selectors) {
+            val button = device.findObject(selector)
+            if (button.exists()) {
+                button.click()
+                device.waitForIdle()
+                return true
+            }
+        }
+        return false
     }
 
     private fun ensureInLiveTrip() {
         composeTestRule.waitForIdle()
 
         // 1. Wait for Welcome or Dashboard
+        waitForAppReady()
+
+        if (isTagVisible("welcomeLoginButton")) {
+            performLogin()
+            handleInitialRationale()
+        }
+
+        navigateToTrips()
+        triggerStartTripFlow()
+        selectVehicleAndConfirmStart()
+
+        // 7. Wait for Live Trip "Recording"
+        composeTestRule.waitUntil(60000) {
+            isTextVisible(RECORDING_LABEL)
+        }
+    }
+
+    private fun waitForAppReady() {
         composeTestRule.waitUntil(40000) {
-            try {
-                composeTestRule.onAllNodesWithTag("welcomeLoginButton").fetchSemanticsNodes().isNotEmpty() ||
-                        composeTestRule.onAllNodesWithContentDescription("Trips", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isTagVisible("welcomeLoginButton") || isContentDescriptionVisible(TRIPS_LABEL)
+        }
+    }
+
+    private fun performLogin() {
+        composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
+        composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("omnitech@gmail.com")
+        composeTestRule.onNodeWithTag("loginPassword").performTextInput("MySecretPassword123!")
+        composeTestRule.onNodeWithTag("loginButton").performClick()
+    }
+
+    private fun handleInitialRationale() {
+        // 2. Handle Rationale Screen
+        composeTestRule.waitUntil(30000) {
+            isTextVisible(ALLOW_LABEL) || isContentDescriptionVisible(TRIPS_LABEL)
         }
 
-        val isWelcomeVisible = try {
-            composeTestRule.onAllNodesWithTag("welcomeLoginButton").fetchSemanticsNodes().isNotEmpty()
-        } catch (e: Exception) { false }
-
-        if (isWelcomeVisible) {
-            composeTestRule.onNodeWithTag("welcomeLoginButton").performClick()
-            composeTestRule.onNodeWithTag("loginIdentifier").performTextInput("omnitech@gmail.com")
-            composeTestRule.onNodeWithTag("loginPassword").performTextInput("MySecretPassword123!")
-            composeTestRule.onNodeWithTag("loginButton").performClick()
-
-            // 2. Handle Rationale Screen
-            composeTestRule.waitUntil(30000) {
-                try {
-                    composeTestRule.onAllNodesWithText("Allow").fetchSemanticsNodes().isNotEmpty() ||
-                            composeTestRule.onAllNodesWithContentDescription("Trips", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-                } catch (e: Exception) { false }
-            }
-
-            val inAppAllow = try { composeTestRule.onAllNodesWithText("Allow").fetchSemanticsNodes() } catch (e: Exception) { emptyList() }
-            if (inAppAllow.isNotEmpty()) {
-                composeTestRule.onNodeWithText("Allow").performClick()
-                handleSystemPermissions(maxWaitMs = 10000)
-                Thread.sleep(2000)
-            }
+        if (isTextVisible(ALLOW_LABEL)) {
+            composeTestRule.onNodeWithText(ALLOW_LABEL).performClick()
+            handleSystemPermissions(maxWaitMs = 10000)
+            Thread.sleep(2000)
         }
+    }
 
+    private fun navigateToTrips() {
         // 3. Navigate to Trips
         composeTestRule.waitUntil(30000) {
-            try {
-                composeTestRule.onAllNodesWithContentDescription("Trips", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isContentDescriptionVisible(TRIPS_LABEL)
         }
 
         // Target the nav bar item specifically if multiple "Trips" labels exist
-        composeTestRule.onAllNodesWithContentDescription("Trips", useUnmergedTree = true).onFirst().performClick()
+        composeTestRule.onAllNodesWithContentDescription(TRIPS_LABEL, useUnmergedTree = true).onFirst().performClick()
+    }
 
+    private fun triggerStartTripFlow() {
         // 4. Start Trip Flow
         composeTestRule.waitUntil(30000) {
-            try {
-                composeTestRule.onAllNodesWithText("Start new trip").fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isTextVisible("Start new trip")
         }
         composeTestRule.onNodeWithText("Start new trip").performClick()
 
@@ -186,15 +201,15 @@ class AlertLatencyNfrTest {
         // Critical: Sleep to allow Activity to resume after system dialog closes
         Thread.sleep(3000)
         composeTestRule.waitForIdle()
+    }
 
+    private fun selectVehicleAndConfirmStart() {
         // 5. Select Vehicle in Dialog
         composeTestRule.waitUntil(40000) {
-            try {
-                composeTestRule.onAllNodesWithText("Select Vehicle", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isTextVisible(SELECT_VEHICLE)
         }
 
-        composeTestRule.onNodeWithText("Select Vehicle", useUnmergedTree = true).performClick()
+        composeTestRule.onNodeWithText(SELECT_VEHICLE, useUnmergedTree = true).performClick()
         composeTestRule.waitForIdle()
 
         // Pick the last vehicle in the dropdown
@@ -203,26 +218,29 @@ class AlertLatencyNfrTest {
 
         // 6. Confirm Start
         composeTestRule.waitUntil(20000) {
-            try {
-                composeTestRule.onAllNodesWithText("Start").fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
+            isTextVisible("Start")
         }
 
-            // IMPORTANT: The app fetches location in the background of this dialog.
-            // We wait 2 seconds to ensure the 'lat' and 'lng' variables are populated
-            // before we click, otherwise the app's onClick logic will do nothing.
+        // IMPORTANT: The app fetches location in the background of this dialog.
+        // We wait 2 seconds to ensure the 'lat' and 'lng' variables are populated
+        // before we click, otherwise the app's onClick logic will do nothing.
         Thread.sleep(2000)
 
-            // Perform the click using the text as requested
+        // Perform the click using the text as requested
         composeTestRule.onNodeWithText("Start").performClick()
         handleSystemPermissions(maxWaitMs = 10000)
         Thread.sleep(2000)
-
-        // 7. Wait for Live Trip "Recording"
-        composeTestRule.waitUntil(60000) {
-            try {
-                composeTestRule.onAllNodesWithText("Recording").fetchSemanticsNodes().isNotEmpty()
-            } catch (e: Exception) { false }
-        }
     }
+
+    private fun isTextVisible(text: String): Boolean = try {
+        composeTestRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+    } catch (e: Exception) { false }
+
+    private fun isTagVisible(tag: String): Boolean = try {
+        composeTestRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+    } catch (e: Exception) { false }
+
+    private fun isContentDescriptionVisible(description: String): Boolean = try {
+        composeTestRule.onAllNodesWithContentDescription(description, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+    } catch (e: Exception) { false }
 }
