@@ -19,7 +19,6 @@ data class LatestLocationResponse(
     val message: String,
     val data: LatestLocationData
 )
-
 data class LatestLocationData(
     @SerializedName("last_latitude")
     val lastLatitude: Double,

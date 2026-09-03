@@ -21,6 +21,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
+
 @HiltViewModel
 class TripSummaryViewModel @Inject constructor(
     private val repository: TripRepository,
@@ -165,22 +166,22 @@ class TripSummaryViewModel @Inject constructor(
         _observedTripId.value = tripId
     }
 
-    fun endTrip(tripId: String,latitude: Double?,
-                longitude: Double?,distance: Double?,
-                durationMinutes: Int?,fuelEstimate: Double?,
-                path : List<LocationDto>
-    ) {
+
+    fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
             val geoJson = GeoJsonLineString(
-                coordinates = path.mapNotNull {loc ->
-                    if(loc.lat != null && loc.lng != null) listOf(loc.lng,loc.lat) else null
+                coordinates = path.mapNotNull { loc ->
+                    if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
-            
             val endTime = Instant.now().toString()
             val status = "COMPLETED"
-            val fuelLevelFinal = obdManager.metrics.value.fuelLevel
+            var currentFuel = obdManager.metrics.value.fuelLevel;
+            if(currentFuel == null || currentFuel == 0f){
+                currentFuel = fuelLevelEnd
+            }
+
 
 
             repository.endTrip(
@@ -190,7 +191,7 @@ class TripSummaryViewModel @Inject constructor(
                 distanceKm = distance,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
-                fuelLevelEnd = fuelLevelFinal,
+                fuelLevelEnd = currentFuel,
                 routePolyline = geoJson,
                 endLocation = if (latitude != null && longitude != null) {
                     LocationDto(lat = latitude, lng = longitude)

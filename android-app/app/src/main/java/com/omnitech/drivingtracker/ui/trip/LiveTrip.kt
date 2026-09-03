@@ -15,6 +15,7 @@ import com.omnitech.drivingtracker.data.models.ContactDto
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.MyLocation
@@ -39,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,6 +88,8 @@ fun LiveTrip(
     val liveMetrics by viewModel.liveMetrics.collectAsState()
     val nearbyPois by viewModel.nearbyPois.collectAsState()
     val safetyState by viewModel.safetyCheck.collectAsState()
+    var showManualEndFuelDialog by remember { mutableStateOf(false) }
+    var manualEndFuel by remember { mutableStateOf("") }
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     val detourRoute by viewModel.detourRoute.collectAsState()
@@ -136,35 +140,7 @@ fun LiveTrip(
             kotlinx.coroutines.delay(30000) // Update every 30 seconds
         }
     }
-    //val fusedLocationClient = remember { com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context) }
-    //var liveLocation by remember { mutableStateOf<android.location.Location?>(null) }
 
-//    LaunchedEffect(locationPermissionState.allPermissionsGranted) {
-//        if (locationPermissionState.allPermissionsGranted) {
-//            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-//                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
-//            ).build()
-//
-//            val callback = object : com.google.android.gms.location.LocationCallback() {
-//                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-//                    liveLocation = result.lastLocation
-//                }
-//            }
-//
-//            try {
-//                fusedLocationClient.requestLocationUpdates(locationRequest, callback, android.os.Looper.getMainLooper())
-//            } catch (e: SecurityException) {
-//                android.util.Log.e("LiveTrip", "Location permission missing: ${e.message}")
-//            }
-//        }
-//    }
-
-//    LaunchedEffect(liveLocation, uiState) {
-//        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
-//        val lat = liveLocation?.latitude ?: currentTrip?.events?.lastOrNull()?.latitude ?: -25.7479
-//        val lng = liveLocation?.longitude ?: currentTrip?.events?.lastOrNull()?.longitude ?: 28.2293
-//        android.util.Log.d("LiveTrip", "Location Update -> Lat: $lat, Lng: $lng (Source: ${if (liveLocation != null) "GPS" else "Event/Fallback"})")
-//    }
     LaunchedEffect(uiState, mapToken, liveMetrics) {
         val state = uiState
         if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
@@ -219,7 +195,19 @@ fun LiveTrip(
             }
         )
     }
-
+    val triggerEndTrip: (Float?) -> Unit = { finalFuel ->
+        val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
+        viewModel.endTrip(
+            tripId=tripId,
+            latitude = liveMetrics.latitude,
+            longitude = liveMetrics.longitude,
+            distance = liveDistance,
+            durationMinutes = liveDurationMinutes,
+            fuelEstimate = currentTrip?.fuelEstimate ?: 0.0,
+            fuelLevelEnd = finalFuel ,// PASS TO VM
+            path = tripPath
+        )
+    }
     var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
@@ -298,6 +286,14 @@ fun LiveTrip(
                     java.time.Duration.between(startTime, now).toMinutes().toInt()
                 } catch (e: Exception) { 0 }
             } ?: 0
+            //check the obd fuel level metrics if they are there
+            val obdFuel = metrics.fuelLevel
+            // If OBD data is missing, show the manual entry dialog
+            if (metrics.isDataLive && (obdFuel == null || obdFuel == 0f)) {
+                showManualEndFuelDialog = true
+            } else {
+                triggerEndTrip(obdFuel)
+            }
             // Pass the actual totals to the ViewModel
             viewModel.endTrip(
                 tripId = tripId,
@@ -306,6 +302,7 @@ fun LiveTrip(
                 distance = liveDistance,
                 durationMinutes = liveDurationMinutes,
                 fuelEstimate = currentTrip?.fuelEstimate?:0.0,
+                fuelLevelEnd = obdFuel,
                 path = tripPath
             )
         },
@@ -332,6 +329,30 @@ fun LiveTrip(
         nearbyPois = nearbyPois,
 
     )
+    if (showManualEndFuelDialog) {
+        AlertDialog(
+            onDismissRequest = { showManualEndFuelDialog = false },
+            title = { Text("Trip Finished") },
+            text = {
+                Column {
+                    Text("We couldn't read your final fuel level from the car. Please enter the current percentage shown on your dashboard:")
+                    OutlinedTextField(
+                        value = manualEndFuel,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) manualEndFuel = it },
+                        label = { Text("Final Fuel Level (%)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    triggerEndTrip(manualEndFuel.toFloatOrNull())
+                    showManualEndFuelDialog = false
+                }) { Text("Confirm & Finish") }
+            }
+        )
+    }
 }
 
 @Composable

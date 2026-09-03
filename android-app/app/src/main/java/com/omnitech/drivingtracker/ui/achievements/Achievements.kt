@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,12 +37,11 @@ import com.omnitech.drivingtracker.ui.components.RankCard
 import com.omnitech.drivingtracker.ui.components.ScoreCard
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.home.Dashboard
-
+import com.omnitech.drivingtracker.ui.components.BadgeDescriptionDialog
+import com.omnitech.drivingtracker.ui.components.BadgeGalleryDialog
 
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
-import com.omnitech.drivingtracker.ui.components.BadgeDescriptionDialog
-import com.omnitech.drivingtracker.ui.components.BadgeGalleryDialog
 
 @Composable
 fun AchievementsScreen(
@@ -50,6 +51,7 @@ fun AchievementsScreen(
     val state by viewModel.uiState.collectAsState()
     var showGallery by remember { mutableStateOf(false) }
     var selectedBadge by remember { mutableStateOf<BadgeUiModel?>(null) }
+
     AchievementsContent(
         state = state,
         navController = navController,
