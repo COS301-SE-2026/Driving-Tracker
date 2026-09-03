@@ -191,9 +191,6 @@ export const vehicle_services={
                 if(data.year >= 2015 && data.year <= 2020){
                     try{
                         const ben_trim = await fetch_vehicle_benchmark(data.make,data.model,data.year);
-                        if(ben_trim.length === 0){
-                            throw new Error();
-                        }
             
                         const  avg_mpg = ben_trim.reduce((sum, ben_trim) => sum + ben_trim.combined_mpg, 0) / ben_trim.length;
                         benchmark_lper100km = mpg_to_lper100km(avg_mpg)
