@@ -39,76 +39,90 @@ function safeJson(res: any) {
     }
 }
 
-export function setup(): AuthedUser[] {
-    const authed: AuthedUser[] = [];
-    const vusNeeded = config.vus;
-    const runId = Date.now();
+function registerUser(runId: number, i: number) {
+    const email = `loadtest_${runId}_${i}@omnitech.com`;
+    const username = `user_${runId}_${i}`;
+    const password = "MySecretPassword123!";
+    const phoneNumber = `0${Math.floor(100000000 + Math.random() * 900000000)}`;
 
-    for (let i = 1; i <= vusNeeded; i++) {
-        const email = `loadtest_${runId}_${i}@omnitech.com`;
-        const username = `user_${runId}_${i}`;
-        const password = "MySecretPassword123!";
-        const phoneNumber = `0${Math.floor(100000000 + Math.random() * 900000000)}`;
+    //REGISTER
+    const regRes = http.post(`${BASE_URL}/api/auth/register`, JSON.stringify({
+        email, username, password, name: "Load", surname: "Test",
+        phone_number: phoneNumber, dob: "1995-01-01", consent_status: true
+    }), { headers: { 'Content-Type': 'application/json' } });
 
-        //REGISTER
-        const regRes = http.post(`${BASE_URL}/api/auth/register`, JSON.stringify({
-            email, username, password, name: "Load", surname: "Test",
-            phone_number: phoneNumber, dob: "1995-01-01", consent_status: true
-        }), { headers: { 'Content-Type': 'application/json' } });
+    if (regRes.status >= 400) {
+        console.log(`[User ${i}] Register Failed (${regRes.status}): ${regRes.body}`);
+        return null;
+    }
+    return { email, password };
+}
 
-        if (regRes.status >= 400) {
-            console.log(`[User ${i}] Register Failed (${regRes.status}): ${regRes.body}`);
-            continue;
-        }
+function loginUser(email: string, password: string, i: number) {
+    //LOGIN
+    const loginRes = http.post(`${BASE_URL}/api/auth/login`, JSON.stringify({
+        identifier: email, password
+    }), { headers: { 'Content-Type': 'application/json' } });
 
-        //LOGIN
-        const loginRes = http.post(`${BASE_URL}/api/auth/login`, JSON.stringify({
-            identifier: email, password
-        }), { headers: { 'Content-Type': 'application/json' } });
+    const loginBody = safeJson(loginRes);
+    const token = loginBody?.token || loginBody?.data?.token || loginBody?.accessToken || '';
 
-        const loginBody = safeJson(loginRes);
-        const token = loginBody?.token || loginBody?.data?.token || loginBody?.accessToken || '';
+    if (!token) {
+        console.log(`[User ${i}] Login Failed (${loginRes.status}): ${loginRes.body}`);
+        return null;
+    }
+    return token;
+}
 
-        if (!token) {
-            console.log(`[User ${i}] Login Failed (${loginRes.status}): ${loginRes.body}`);
-            continue;
-        }
+function provisionVehicle(token: string, runId: number, i: number) {
+    const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-        const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    //ASSIGN VEHICLE (Added required 'name' field)
+    const assignRes = http.post(`${BASE_URL}/vehicle/assign_vehicle`, JSON.stringify({
+        name: `Test Car ${i}`,
+        registration: `K6-${runId.toString().slice(-4)}-${i}`,
+        make: "Toyota",
+        model: "Corolla",
+        year: 2017,
+        fuel_type: "Petrol",
+        fuel_tank: 50,
+        fuel_efficiency: 50
+    }), { headers: authHeaders });
 
-        //ASSIGN VEHICLE (Added required 'name' field)
-        const assignRes = http.post(`${BASE_URL}/vehicle/assign_vehicle`, JSON.stringify({
-            name: `Test Car ${i}`,
-            registration: `K6-${runId.toString().slice(-4)}-${i}`,
-            make: "Toyota",
-            model: "Corolla",
-            year: 2017,
-            fuel_type: "Petrol",
-            fuel_tank: 50,
-            fuel_efficiency: 50
-        }), { headers: authHeaders });
+    console.log(`[User ${i}] ASSIGN RES (${assignRes.status}): ${assignRes.body}`);
 
-        console.log(`[User ${i}] ASSIGN RES (${assignRes.status}): ${assignRes.body}`);
+    const assignBody = safeJson(assignRes);
+    let vehicleId = assignBody?.vehicle_id || assignBody?.data?.vehicle_id || assignBody?.id || assignBody?.data?.id || '';
 
-        const assignBody = safeJson(assignRes);
-        let vehicleId = assignBody?.vehicle_id || assignBody?.data?.vehicle_id || assignBody?.id || assignBody?.data?.id || '';
-
-        //FETCH ALL VEHICLES IF NOT IN ASSIGN RESPONSE
+    //FETCH ALL VEHICLES IF NOT IN ASSIGN RESPONSE
+    if (!vehicleId) {
         const vRes = http.get(`${BASE_URL}/vehicle/get_all_vehicles`, { headers: authHeaders });
         console.log(`[User ${i}] GET VEHICLES RES (${vRes.status}): ${vRes.body}`);
-
-        if (!vehicleId) {
-            const vBody = safeJson(vRes);
-            const vehicleList = Array.isArray(vBody) ? vBody : (vBody?.data || vBody?.vehicles || []);
-            if (Array.isArray(vehicleList) && vehicleList.length > 0) {
-                vehicleId = vehicleList[0]?.vehicle_id || vehicleList[0]?.id || '';
-            }
+        const vBody = safeJson(vRes);
+        const vehicleList = Array.isArray(vBody) ? vBody : (vBody?.data || vBody?.vehicles || []);
+        if (Array.isArray(vehicleList) && vehicleList.length > 0) {
+            vehicleId = vehicleList[0]?.vehicle_id || vehicleList[0]?.id || '';
         }
+    }
+    return vehicleId;
+}
 
+export function setup(): AuthedUser[] {
+    const authed: AuthedUser[] = [];
+    const runId = Date.now();
+
+    for (let i = 1; i <= config.vus; i++) {
+        const creds = registerUser(runId, i);
+        if (!creds) continue;
+
+        const token = loginUser(creds.email, creds.password, i);
+        if (!token) continue;
+
+        const vehicleId = provisionVehicle(token, runId, i);
         console.log(`[User ${i}] Resolved Vehicle ID: '${vehicleId}'`);
 
-        if (token && vehicleId) {
-            authed.push({ email, token, vehicle_id: vehicleId });
+        if (vehicleId) {
+            authed.push({ email: creds.email, token, vehicle_id: vehicleId });
         }
     }
 

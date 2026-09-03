@@ -152,6 +152,7 @@ jobs:
           NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
           AZURE_MAPS_SUBSCRIPTION_KEY=${{ env.AZURE_MAPS_SUBSCRIPTION_KEY}}
           FIREBASE_SERVICE_ACCOUNT_B64=${{ env.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          SEED_USER_PASSWORD=ci-seed-password
           EOF
 
           mkdir -p backend

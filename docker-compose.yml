@@ -26,7 +26,9 @@ services:
     restart: "no"
 
   seed:
-    build: ./backend
+    build: 
+      context: ./backend
+      target: builder
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
@@ -165,7 +167,9 @@ services:
     restart: "no"
 
   seed-test:
-    build: ./backend
+    build: 
+      context: ./backend
+      target: builder
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
