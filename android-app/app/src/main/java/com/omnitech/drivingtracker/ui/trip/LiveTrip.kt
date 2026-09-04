@@ -676,25 +676,25 @@ private fun TripDetails(
                         }
                     }
                 }
-                Card(shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(4.dp)) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("♻️", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Column {
-                            Text(
-                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} L",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold, color = Color.Black
-                            )
-                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.Black)
-                        }
-                    }
-                }
+//                Card(shape = RoundedCornerShape(8.dp),
+//                    colors = CardDefaults.cardColors(containerColor = Color.White),
+//                    elevation = CardDefaults.cardElevation(4.dp)) {
+//                    Row(
+//                        modifier = Modifier.padding(8.dp),
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Text("♻️", fontSize = 16.sp)
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Column {
+//                            Text(
+//                                "${String.format(Locale.getDefault(), "%.1f", trip.fuelEstimate ?: 0.0)} L",
+//                                style = MaterialTheme.typography.bodyMedium,
+//                                fontWeight = FontWeight.Bold, color = Color.Black
+//                            )
+//                            Text("Fuel Efficiency", style = MaterialTheme.typography.labelSmall, color = Color.Black)
+//                        }
+//                    }
+//                }
             }
         }
 
@@ -832,35 +832,46 @@ fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Un
         onDismissRequest = onDismiss,
         title = { Text("Active Viewers", fontWeight = FontWeight.Bold) },
         text = {
-            Column{
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Click the icon next to a contact to stop sharing your live location with them.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
-            }
-            LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(activeShares) { contact ->
-                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        Column {
-                            Text(contact.name, fontWeight = FontWeight.Medium)
-                            Text(contact.email ?: "", style = MaterialTheme.typography.bodySmall)
-                        }
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .clickable{onRevoke(contact.contactId) }
-                                .padding(8.dp)
-                        ){
-                            Icon(Icons.Default.PersonRemove,
-                                "Remove",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                text = "Remove",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
+                LazyColumn(
+                    Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(activeShares) { contact ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            Arrangement.SpaceBetween,
+                            Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(contact.name, fontWeight = FontWeight.Medium)
+                                Text(
+                                    contact.email ?: "",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clickable { onRevoke(contact.contactId) }
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.PersonRemove,
+                                    "Remove",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = "Remove",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }

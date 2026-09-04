@@ -126,6 +126,14 @@ fun More(navController: NavController){
                         navController.navigate(Screen.Analytics.route)
                     }
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                ContentCard {
+                    CRow(label = "Fuel Comparison",
+                        icon = Icons.Default.AutoGraph)
+                    {
+                        navController.navigate(Screen.FuelComparison.route)
+                    }
+                }
                 Spacer(modifier = Modifier.height(10.dp))
                 ContentCard {
                     CRow(label = "Weekly Challenges",
@@ -154,14 +162,6 @@ fun More(navController: NavController){
                         icon = Icons.Default.QuestionMark)
                     {
                         navController.navigate(Screen.Help.route)
-                    }
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                ContentCard {
-                    CRow(label = "Fuel Comp",
-                        icon = Icons.Default.QuestionMark)
-                    {
-                        navController.navigate(Screen.FuelComparison.route)
                     }
                 }
             }
