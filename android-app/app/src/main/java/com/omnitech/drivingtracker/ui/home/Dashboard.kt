@@ -80,7 +80,7 @@ fun Dashboard(navController: NavController? = null,
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    ScoreCard(score = uiState.overallScore)
+                    ScoreCard(score = uiState.overallScore, heading = "Overall Driving Score")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

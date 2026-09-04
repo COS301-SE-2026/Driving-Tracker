@@ -47,7 +47,7 @@ fun SafetyAnalytics(navController: NavController ?= null,
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                ScoreCard(score = uiState.safetyScore ?: 0)
+                ScoreCard(score = uiState.safetyScore ?: 0, heading = "Overall Safety Score")
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
