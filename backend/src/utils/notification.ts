@@ -15,7 +15,6 @@ export async function add_notification(input: {
         reference_ids: string[];
         reference_type: string | null;
     }){
-
         if(!Object.values(NotificationType).includes(input.type as NotificationType)){
             throw coded_error("INVALID_NOTIFICATION_TYPE");
         }

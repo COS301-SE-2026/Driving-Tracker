@@ -361,7 +361,7 @@ export const trips_services ={
                 });
                 planned_distance_km = route.distance_km;
                 
-                fuel_est = (to_number(vehicle_info?.fuel_efficiency)??0 / 100) * planned_distance_km;
+                fuel_est = ((to_number(vehicle_info?.fuel_efficiency) ??0) / 100) * planned_distance_km;
             }
             //create trip and shares atomically
             const createdTrip =  await prisma.$transaction(async (tx) => {

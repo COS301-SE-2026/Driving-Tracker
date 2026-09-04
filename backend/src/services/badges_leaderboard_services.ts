@@ -1,4 +1,7 @@
 import prisma from '../db/prisma';
+import { add_notification } from '../utils/notification';
+import { user_devices_services } from './user_devices_services';
+import { notification_services } from './notification_service';
 
 
 export interface evaluate_badge{
@@ -166,6 +169,8 @@ export const badges_leaderboard_services = {
         });
         const newly_earned_badges = [];
 
+        console.log("Evaluating badges endpoint reached...")
+
         for (const badge of badges) {
         const criteria = badge.badge_criteria;
 
@@ -219,6 +224,33 @@ export const badges_leaderboard_services = {
             icon_url: earned.badges.icon_url,
         });
         }
+
+        if(newly_earned_badges.length > 0){
+
+            console.log("Badges earned...");
+
+            const message = newly_earned_badges.length === 1? `You've earned the ${newly_earned_badges[0].name} badge!`: `You've earned ${newly_earned_badges.length} new badges!`
+
+            const badge_id = newly_earned_badges[0].badge_id
+
+            const title = "New Badge Unlocked"
+            
+            await add_notification({
+                user_ids: [data.user_id],
+                type: "BADGE_UNLOCKED",
+                title: title,
+                body: message,
+                reference_ids: [badge_id],
+                reference_type: "badges",
+            });
+
+            //Get tokens for sending push notifications to contacts
+            const fcm_tokens = await user_devices_services.get_user_fcm_tokens(data.user_id);
+
+            await notification_services.send_badge_notification(fcm_tokens, title, message, badge_id, "");
+        }
+
+
         return{
             data:{
                 evaluated: true,

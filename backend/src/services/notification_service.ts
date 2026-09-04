@@ -85,7 +85,7 @@ export const notification_services= {
         if(fcm_tokens.length == 0 )return;
 
         await getMessaging().sendEachForMulticast({
-            tokens: fcm_tokens,
+            fids: fcm_tokens,
             notification:{
                 title:"Trip access revoked",
                 body: `${shared_by} is no longer sharing their live trip location with you `
