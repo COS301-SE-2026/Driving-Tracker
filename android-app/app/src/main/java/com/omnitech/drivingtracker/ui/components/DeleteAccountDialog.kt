@@ -100,7 +100,7 @@ fun DeleteAccountDialog(
         dismissButton = {
             TextButton(
                 onClick = {
-                    if(password.isNotBlank()){
+                    if(password.isBlank()){
                         showLocalError = true
                     }else{
                         onConfirm(password)
