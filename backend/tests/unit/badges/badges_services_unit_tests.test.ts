@@ -20,9 +20,28 @@ jest.mock('../../../src/db/prisma', () => ({
     },
 }));
 
+jest.mock('../../../src/utils/notification', () => ({
+    add_notification: jest.fn(),
+}));
+
+jest.mock('../../../src/services/user_devices_services', () => ({
+    user_devices_services: {
+        get_user_fcm_tokens: jest.fn(),
+    },
+}));
+
+jest.mock('../../../src/services/notification_service', () => ({
+    notification_services: {
+        send_badge_notification: jest.fn(),
+    },
+}));
+
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
 import { badges_leaderboard_services } from '../../../src/services/badges_leaderboard_services';
+import { add_notification } from '../../../src/utils/notification';
+import { user_devices_services } from '../../../src/services/user_devices_services';
+import { notification_services } from '../../../src/services/notification_service';
 
 const mock_prisma = prisma as any;
 class MockDecimal{
@@ -34,15 +53,24 @@ class MockDecimal{
 
 describe('evaluate badges ',()=>{
     beforeEach(() => { 
-        jest.clearAllMocks
+        jest.clearAllMocks();
     });
     it('evaluates trip and awards badges', async () => {
+
+        jest.mocked(user_devices_services.get_user_fcm_tokens)
+            .mockResolvedValue(['test-fcm-token']);
+
+        jest.mocked(notification_services.send_badge_notification)
+            .mockResolvedValue(undefined);
+
+        jest.mocked(add_notification).mockResolvedValue(undefined);
+
         mock_prisma.trips.findUnique.mockResolvedValue({
             trip_id: 't1',
             user_id: 'u1',
-            distance_km: new MockDecimal(100),
+            distance_km: 100,
             duration_minutes: 90,
-            fuel_estimate: new MockDecimal(5.5),
+            fuel_estimate: 5.5,
             trip_scores: [
                 { safety_score: new MockDecimal(95), eco_score: new MockDecimal(88), overall_score: new MockDecimal(91) },
             ],
@@ -61,7 +89,10 @@ describe('evaluate badges ',()=>{
             {
                 badge_id: 'b1',
                 badge_criteria: [
-                { metric: 'distance_km', operator: '>=', threshold: new MockDecimal(50) },
+                { 
+                    metric: 'distance_km', 
+                    operator: '>=', 
+                    threshold: 50 },
                 ],
             },
         ]);
@@ -83,7 +114,30 @@ describe('evaluate badges ',()=>{
             user_id: 'u1',
             trip_id: 't1',
         });
+
         expect(result.data.evaluated).toBe(true);
+
+        expect(add_notification).toHaveBeenCalledWith({
+            user_ids: ['u1'],
+            type: 'BADGE_UNLOCKED',
+            title: 'New Badge Unlocked',
+            body: "You've earned the Long Distance badge!",
+            reference_ids: ['b1'],
+            reference_type: 'badges',
+        });
+
+    expect(user_devices_services.get_user_fcm_tokens)
+        .toHaveBeenCalledWith('u1');
+
+    expect(notification_services.send_badge_notification)
+        .toHaveBeenCalledWith(
+            ['test-fcm-token'],
+            'New Badge Unlocked',
+            "You've earned the Long Distance badge!",
+            'b1',
+            ''
+        );
+
         expect(Array.isArray(result.data.new_badges)).toBe(true);
     });
 

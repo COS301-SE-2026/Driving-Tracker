@@ -71,7 +71,7 @@ fun NotificationCard(
                 }
                 NotificationType.BADGE_UNLOCKED -> {
                     Text(
-                        text = "Congratulations! You just earned a ${notification.badgeName} badge 🎊",
+                        text = " ${notification.body}🎊",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )
