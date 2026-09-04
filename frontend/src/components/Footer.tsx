@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/download/v1.0.0/Driving-Tracker.apk";
-
+// Around line 3
+const APK_URL = "https://github.com/COS301-SE-2026/Driving-Tracker/releases/latest/download/Driving-Tracker.apk";
 export default function Footer() {
   return (
     <footer className = "reverseHero-gradient border-t border-[var(--color-border)] px-6 py-12">
