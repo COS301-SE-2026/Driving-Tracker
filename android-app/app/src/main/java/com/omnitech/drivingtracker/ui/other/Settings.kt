@@ -76,19 +76,6 @@ fun Settings(
         onLeftClick = {navController?.popBackStack()},
         onRightClick = {navController?.navigate(Screen.Settings.route)}
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
-
-        SettingOption(
-            icon = Icons.Default.Notifications,
-            label = "Notifications",
-            rightSide = {Switch(checked = true, onCheckedChange = {/*I dont know what should be done yet*/})}
-        )
-
-
-        HLine()
-        Spacer(modifier = Modifier.height(18.dp))
-
-
         SettingOption(
             icon = Icons.AutoMirrored.Filled.Logout,
             label = "Logout",
