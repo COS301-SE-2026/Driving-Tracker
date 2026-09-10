@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import android.net.Uri
 import com.omnitech.drivingtracker.data.api.ApiException
+import com.omnitech.drivingtracker.data.models.UpdateVehicleRequest
 import com.omnitech.drivingtracker.utils.ImageUploadUtils
 
 @HiltViewModel
@@ -95,9 +96,13 @@ class VehiclesViewModel @Inject constructor(
         }
     }
 
-    fun updateVehicleName(vehicleId: String, newName: String){
+    fun updateVehicle(vehicleId: String, name: String,
+                          reg: String?, make: String,
+                          model: String, year: Int,
+                          fuel: String){
         viewModelScope.launch{
-            repository.updateVehicleName(vehicleId, newName).fold(
+            val req = UpdateVehicleRequest(name, reg, make, model, year, fuel)
+            repository.updateVehicleName(vehicleId, req).fold(
                 onSuccess = {
                     loadVehicles()
                 },
