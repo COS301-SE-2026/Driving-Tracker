@@ -217,7 +217,14 @@ export const leaderboard_services = {
 
         const score = Number(Number(average_score.toFixed(2)));
 
-        if(Math.floor(score) === 0) continue;
+        if(Math.floor(score) === 0) {
+
+          await prisma.leaderboard.deleteMany({
+            where: { user_id, category, scope, period_start }
+          });
+
+          continue;
+        }
 
         await prisma.leaderboard.upsert({
           where: {

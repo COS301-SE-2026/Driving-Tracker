@@ -4,6 +4,7 @@ jest.mock('../../../src/db/prisma', () => ({
         leaderboard: {
             findMany: jest.fn(),
             upsert: jest.fn(),
+            deleteMany: jest.fn(),
         },
         users: {
             findUnique: jest.fn(),
