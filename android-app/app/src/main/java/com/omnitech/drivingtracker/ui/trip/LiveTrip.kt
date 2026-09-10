@@ -50,12 +50,10 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.LocationDto
-import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
@@ -63,13 +61,10 @@ import com.omnitech.drivingtracker.ui.components.ShareTripDialog
 import com.omnitech.drivingtracker.ui.contacts.*
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import com.omnitech.drivingtracker.data.obd.VehicleMetrics
-import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.data.models.MapPoiItem
 import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
-import com.omnitech.drivingtracker.ui.theme.Warning
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -212,31 +207,40 @@ fun LiveTrip(
     var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
-    
-    if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
 
-        LaunchedEffect(Unit) {
-            TripTrackingService.stopTrip(context)
-            navController?.navigate(Screen.Trips.route) {
-                popUpTo(Screen.Dashboard.route)
+    when (currentEndTripState) {
+        is TripSummaryViewModel.UiState.Success -> {
+            LaunchedEffect(Unit) {
+                TripTrackingService.stopTrip(context)
+                navController?.navigate(Screen.Trips.route) {
+                    popUpTo(Screen.Dashboard.route)
+                }
+                viewModel.resetEndTripState()
             }
         }
 
-    } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Error") },
-            text = { Text(currentEndTripState.message ?: "Failed to end trip") },
-            confirmButton = {
-                Button(onClick = {
-                    navController?.navigate(Screen.Trips.route) {
-                        popUpTo(Screen.Dashboard.route)
+        is TripSummaryViewModel.UiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.resetEndTripState() },
+                title = { Text("Error") },
+                text = { Text(currentEndTripState.message ?: "Failed to end trip") },
+                confirmButton = {
+                    Button(onClick = {
+                        viewModel.resetEndTripState()
+                        navController?.navigate(Screen.Trips.route) {
+                            popUpTo(Screen.Dashboard.route)
+                        }
+                    }) {
+                        Text("OK")
                     }
-                }) {
-                    Text("OK")
                 }
-            }
-        )
+            )
+        }
+
+        is TripSummaryViewModel.UiState.Loading -> {
+
+        }
+        else -> { }
     }
 
     val localEvents by viewModel.localEvents.collectAsState()
