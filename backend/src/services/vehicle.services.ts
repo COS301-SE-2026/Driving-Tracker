@@ -10,10 +10,16 @@ export interface get_vehicles{
     user_id:string;
 }
 
-export interface update_vehicle_name{
+export interface update_vehicle{
     user_id: string;
     vehicle_id: string;
-    name: string;
+    name?: string;
+    registration?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    fuel_type?: string;
+    fuel_tank?: number
 }
 
 /*
@@ -101,7 +107,7 @@ export const vehicle_services={
         }
     },
 
-    async update_vehicle_name(data: update_vehicle_name){
+    async update_vehicle(data: update_vehicle){
         const assignment = await prisma.users_vehicles.findUnique({
             where: {user_id_vehicle_id: {
                 user_id: data.user_id,
@@ -113,7 +119,14 @@ export const vehicle_services={
 
         return await prisma.vehicles.update({
             where: { vehicle_id: data.vehicle_id },
-            data: { name: data.name}
+            data: { name: data.name,
+                registration: data.registration,
+                make: data.make,
+                model: data.model,
+                year: data.year,
+                fuel_type: data.fuel_type,
+                fuel_tank: data.fuel_tank
+            }
         });
     },
 
