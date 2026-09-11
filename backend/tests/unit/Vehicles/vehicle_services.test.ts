@@ -232,7 +232,7 @@ describe ('vehicle services update vehicle name', () =>{
         mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
         mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', name: 'New Name' });
 
-        const result = await vehicle_services.update_vehicle_name({ 
+        const result = await vehicle_services.update_vehicle({ 
             user_id: 'u1',
             vehicle_id: 'v1',
             name: 'New Name'
@@ -248,13 +248,59 @@ describe ('vehicle services update vehicle name', () =>{
     it('Throws error if the user does not own the vehicle', async()=>{
         mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
         await expect(
-            vehicle_services.update_vehicle_name({
+            vehicle_services.update_vehicle({
                 user_id: 'u1',
                 vehicle_id: 'v1',
                 name: 'New Name'
             })
         ).rejects.toThrow('You do not own this vehicle');
     });
+
+    it('Updates multiple fields of the vehicle', async () =>{
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
+        mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', 
+            name:'My Car',
+            make: 'BMW',
+            model: 'M3',
+            registration: 'ABC123GP',
+            year: 2018,
+            fuel_type: 'PETROL' 
+        });
+
+        const result = await vehicle_services.update_vehicle({
+            vehicle_id: 'v1',
+            user_id: 'u1',
+            name: 'My Car',
+            make: 'BMW',
+            model: 'M3',
+            registration: 'ABC123GP',
+            year: 2018,
+            fuel_type: 'PETROL'
+        });
+        expect(mock_prisma.users_vehicles.findUnique).toHaveBeenCalledWith({
+            where: {
+                user_id_vehicle_id: {
+                    user_id: 'u1',
+                    vehicle_id: 'v1'
+                }
+            }
+        });
+        expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1' },
+            data: {
+                name: 'My Car',
+                make: 'BMW',
+                model: 'M3',
+                registration: 'ABC123GP',
+                year: 2018,
+                fuel_type: 'PETROL'
+            }
+        });
+
+        expect(result.name).toBe('My Car');
+        expect(result.make).toBe('BMW');
+        expect(result.registration).toBe('ABC123GP');
+    })
 });
 
 describe ('vehicle services remove vehicle', () =>{
@@ -553,7 +599,7 @@ describe("additional vehicle service tests", ()=>{
         );
 
         await expect(
-            vehicle_services.update_vehicle_name({
+            vehicle_services.update_vehicle({
                 user_id: "u1",
                 vehicle_id: "v1",
                 name: "New Name",
