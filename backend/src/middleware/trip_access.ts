@@ -10,13 +10,21 @@ export async function requireTripAccess(req: AuthRequest, res: Response ,next: N
     const { trip_id } = req.params;
     const user_id = req.user?.sub;
 
-    const trip = await prisma.trips.findUnique({ where: { trip_id } });
+   const has_access = await check_trip_access(user_id, trip_id);
 
-    if(trip?.user_id === user_id){
-        return next();
-    }
+   if(!has_access){
+    return res.status(403).json({error: 'UNAUTHORIZED', message: 'You are not authorized to view this trip' });
+   }
 
-    const share = await prisma.trip_location_shares.findFirst({
+    next();
+}
+
+export async function check_trip_access(user_id: string | undefined, trip_id: string): Promise<boolean> {
+     const trip = await prisma.trips.findUnique({ where: { trip_id } });
+
+     if(trip?.user_id === user_id) return true;
+
+     const share = await prisma.trip_location_shares.findFirst({
         where: {
             trip_id,
             revoked_at: null,
@@ -27,7 +35,5 @@ export async function requireTripAccess(req: AuthRequest, res: Response ,next: N
         },
     });
 
-    if(!share) return res.status(403).json({ error: "UNAUTHORIZED", message: "You are not authorized to view this trip"});
-
-    next();
-}
+    return !!share;
+} 
