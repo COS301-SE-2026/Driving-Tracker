@@ -345,3 +345,16 @@ data class UnusualDurationRequest(
 data class UnusualDurationResponse(
     val message: String,
 )
+
+data class SocketLocationPayload(
+    @SerializedName("trip_id")
+    val tripId: String,
+    @SerializedName("location")
+    val location: LocationDto,
+    @SerializedName("speed_kmh")
+    val speedKmh: Float? = null,
+    @SerializedName("heading")
+    val heading: Float? = null,
+    @SerializedName("recorded_at")
+    val recordedAt: String,
+)
