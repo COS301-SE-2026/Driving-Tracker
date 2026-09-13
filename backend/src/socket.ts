@@ -85,6 +85,8 @@ export function initSocket(httpServer: HttpServer){
             socket.data.trip_id = null;
             socket.data.org_id = null;
             socket.data.is_trip_owner = undefined;
+
+            console.log("leave_trip received: ", trip_id);
         });
 
         socket.on('join_fleet', async (org_id: string) => {
@@ -133,6 +135,8 @@ export function initSocket(httpServer: HttpServer){
             }
 
             io.to(rooms).emit('location:update', data);
+
+            console.log("location:update received: ",data.location.lat,":",data.location.lng);
 
             //TODO: store vehicle latest location without await
 

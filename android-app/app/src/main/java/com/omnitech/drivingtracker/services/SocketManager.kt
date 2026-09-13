@@ -62,6 +62,7 @@ class SocketManager @Inject constructor(private val sessionManager: SessionManag
         val jsonObject = JSONObject(jsonString)
 
         socket?.emit("location:update", jsonObject)
+        Log.d(TAG, "Location update sent: ${payload.location.lat} : ${payload.location.lng}")
     }
 
     fun onLocationUpdate(onUpdate: (SocketLocationPayload) -> Unit){
