@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { AppJwtPayload } from './middleware/auth';
 import { check_trip_access } from './middleware/trip_access';
+import { fleet_services } from './services/fleet_services';
 
 const ACCESS_SECRET = process.env.JWT_SECRET!;
 
@@ -10,7 +11,10 @@ interface AuthedSocket extends Socket {
     data: {
         user_id: string;
         role: 'admin' | 'user';
-        org_id?: string;
+        org_id?: string | null;
+        fleet_org_id?: string | null;
+        trip_id?: string | null;
+        is_trip_owner?: boolean;
     }
 }
 
@@ -55,28 +59,57 @@ export function initSocket(httpServer: HttpServer){
 
     io.on('connection', (socket: AuthedSocket)=> {
         socket.on('join_trip', async (trip_id: string)=> {
-            const has_access = await check_trip_access(socket.data.user_id, trip_id);
 
-            if(!has_access) return socket.emit('error', {code: 'FORBIDDEN', event: 'join_trip'});
+            if(socket.data.trip_id){
+                return socket.emit('error', {code: 'ALREADY_IN_TRIP', event: 'join_trip', message: 'Leave current trip before joining another'})
+            }
+
+            const access = await check_trip_access(socket.data.user_id, trip_id);
+
+            if(!access) return socket.emit('error', {code: 'FORBIDDEN', event: 'join_trip'});
+
+            const org_id = await fleet_services.get_org_id_for_trip(trip_id);
+            
+            socket.data.org_id = org_id;
+            socket.data.trip_id = trip_id;
+            socket.data.is_trip_owner = access === 'owner';
+
             socket.join(`trip:${trip_id}`);
         });
 
         socket.on('leave_trip', (trip_id: string) => {
 
+            if(socket.data.trip_id !== trip_id) return;
+
             socket.leave(`trip:${trip_id}`);
+            socket.data.trip_id = null;
+            socket.data.org_id = null;
+            socket.data.is_trip_owner = undefined;
         });
 
         socket.on('join_fleet', async (org_id: string) => {
-            if(socket.data.org_id !== org_id){
-                return socket.emit('error', {code: 'FORBIDDEN', event: 'join_fleet', org_id});
+
+            if(socket.data.fleet_org_id){
+                return socket.emit('error', {code: 'ALREADY_IN_FLEET', event: 'join_fleet', message: 'Leave current fleet view before joining another'});
             }
+
+            const permission = await fleet_services.get_view_permission(socket.data.user_id, org_id);
+
+            if(!permission){
+                return socket.emit('error', {code: 'FORBIDDEN', event: 'join_fleet', message: 'You do not have permission to view this fleet'});
+            }
+
+            socket.data.fleet_org_id = org_id;
 
             socket.join(`fleet:${org_id}`);
         });
 
         socket.on('leave_fleet', (org_id: string) => {
 
+            if(socket.data.fleet_org_id !== org_id) return;
+
             socket.leave(`fleet:${org_id}`);
+            socket.data.org_id = null;
         });
 
         socket.on('location:update', async (data: LocationUpdatePayload ) => {
@@ -85,11 +118,24 @@ export function initSocket(httpServer: HttpServer){
                 return socket.emit('error', {code: 'FORBIDDEN', event: 'location:update', trip_id: data.trip_id});
             }
 
+            if(!socket.data.is_trip_owner){
+                return socket.emit('error', {code: 'FORBIDDEN', event: 'location:update', message: 'Only the trip owner can send location updates'});
+            }
+
             if(typeof data.location.lat !== 'number' || typeof data.location.lng !== 'number'){
                 return socket.emit('error', {code: 'INVALID_PAYLOAD', event: 'location:update'});
             }
 
-            io.to(`trip:${data.trip_id}`).emit('location:update', data);
+            const rooms = [`trip:${data.trip_id}`];
+
+            if(socket.data.org_id){
+                rooms.push(`fleet:${socket.data.org_id}`);
+            }
+
+            io.to(rooms).emit('location:update', data);
+
+            //TODO: store vehicle latest location without await
+
         });
 
     });
