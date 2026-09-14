@@ -229,8 +229,10 @@ describe ('vehicle services update vehicle name', () =>{
     beforeEach(async () => jest.clearAllMocks());
 
     it('updates vehicle name successfully', async ()=> {
-        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
-        mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', name: 'New Name' });
+        const current_vehicle = { vehicle_id: 'v1', name: 'Old Name', fuel_efficiency: 10.0 };
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1' });
+        mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+        mock_prisma.vehicles.update.mockResolvedValue({ ...current_vehicle, name: 'New Name' });
 
         const result = await vehicle_services.update_vehicle({ 
             user_id: 'u1',
@@ -240,9 +242,9 @@ describe ('vehicle services update vehicle name', () =>{
 
         expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
             where: { vehicle_id: 'v1' },
-            data: { name: 'New Name' }
+            data: expect.objectContaining({ name: 'New Name' })
         });
-        expect(result.name).toBe('New Name');
+        expect(result.data.name).toBe('New Name');
     });
     
     it('Throws error if the user does not own the vehicle', async()=>{
@@ -255,52 +257,42 @@ describe ('vehicle services update vehicle name', () =>{
             })
         ).rejects.toThrow('You do not own this vehicle');
     });
+    it('Updates multiple fields and recalculates efficiency when year changes', async () => { const current_vehicle = { vehicle_id: 'v1', make: 'BMW', model: 'M3', year: 2010, fuel_efficiency: 12.0 };
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1' });
+        mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+        mock_fetch
+            .mockResolvedValueOnce(make_response({ ok: true, text: async () => "jwt-token" }))
+            .mockResolvedValueOnce(make_response({
+                ok: true,
+                json: async () => ({
+                    data: [{ combined_mpg: 25, trim_description: "Test trim" }],
+                }),
+            }));
 
-    it('Updates multiple fields of the vehicle', async () =>{
-        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
-        mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', 
-            name:'My Car',
-            make: 'BMW',
-            model: 'M3',
-            registration: 'ABC123GP',
-            year: 2018,
-            fuel_type: 'PETROL' 
+        const new_efficiency = 235.215 / 25;
+        mock_prisma.vehicles.update.mockResolvedValue({ 
+            ...current_vehicle, 
+            year: 2018, 
+            fuel_efficiency: new_efficiency 
         });
 
         const result = await vehicle_services.update_vehicle({
-            vehicle_id: 'v1',
             user_id: 'u1',
-            name: 'My Car',
-            make: 'BMW',
-            model: 'M3',
-            registration: 'ABC123GP',
+            vehicle_id: 'v1',
             year: 2018,
-            fuel_type: 'PETROL'
-        });
-        expect(mock_prisma.users_vehicles.findUnique).toHaveBeenCalledWith({
-            where: {
-                user_id_vehicle_id: {
-                    user_id: 'u1',
-                    vehicle_id: 'v1'
-                }
-            }
-        });
-        expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
-            where: { vehicle_id: 'v1' },
-            data: {
-                name: 'My Car',
-                make: 'BMW',
-                model: 'M3',
-                registration: 'ABC123GP',
-                year: 2018,
-                fuel_type: 'PETROL'
-            }
+            name: 'Updated BMW'
         });
 
-        expect(result.name).toBe('My Car');
-        expect(result.make).toBe('BMW');
-        expect(result.registration).toBe('ABC123GP');
-    })
+        expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1' },
+            data: expect.objectContaining({
+                year: 2018,
+                fuel_efficiency: new_efficiency 
+            })
+        });
+
+        expect(result.data.year).toBe(2018);
+    });
 });
 
 describe ('vehicle services remove vehicle', () =>{
