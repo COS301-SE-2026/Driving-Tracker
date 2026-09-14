@@ -18,6 +18,7 @@ import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.services.ApiService
+import com.omnitech.drivingtracker.services.SocketManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,7 +32,8 @@ import java.time.Duration
 class LiveTripContactViewModel @Inject constructor(
     private val api: ApiService,
     private val notificationRepository: NotificationsRepository,
-    private val repository: TripRepository
+    private val repository: TripRepository,
+    private val socketManager: SocketManager
 ) : ViewModel() {
 
     data class UiState(
@@ -121,6 +123,38 @@ class LiveTripContactViewModel @Inject constructor(
                 delay(5_000)
             }
         }
+    }
+
+    fun startWatching(tripId: String){
+        viewModelScope.launch{
+
+            socketManager.connect()
+            socketManager.joinTrip(tripId)
+
+            socketManager.onLocationUpdate { payload ->
+                if(payload.tripId == tripId && payload.location.lat != null && payload.location.lng != null) {
+                    _uiState.update { it.copy(
+                        location = LatestLocationData(
+                            lastLatitude = payload.location.lat,
+                            lastLongitude = payload.location.lng,
+                            lastSpeedKmh = payload.speedKmh?.toDouble()?: 0.0,
+                            lastRecordedAt = payload.recordedAt,
+                            status = "IN_PROGRESS"
+                        ),
+                        isLoading = false
+                    ) }
+
+                    val newPoint = payload.location
+                    _tripPath.update { path -> path + newPoint }
+                }
+            }
+        }
+    }
+
+    fun stopWatching(tripId: String){
+        socketManager.offLocationUpdate()
+        socketManager.leaveTrip(tripId)
+        socketManager.disconnect()
     }
 
     fun loadTripInfo(tripId: String) {

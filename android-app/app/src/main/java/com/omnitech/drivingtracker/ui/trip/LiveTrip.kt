@@ -209,7 +209,7 @@ fun LiveTrip(
     val currentEndTripState = endTripState
 
     when (currentEndTripState) {
-        is TripSummaryViewModel.UiState.Success -> {
+        is TripSummaryViewModel.UiState.EndTripSuccess -> {
             LaunchedEffect(Unit) {
                 TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {

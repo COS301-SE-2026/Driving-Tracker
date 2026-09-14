@@ -41,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -104,10 +105,9 @@ fun LiveTripContacts(
     var recenterCount by remember { mutableStateOf(0) }
 
 
-
     LaunchedEffect(tripId) {
         viewModel.loadTripInfo(tripId)
-        viewModel.startPolling(tripId)
+        //viewModel.startPolling(tripId)
     }
 
     LaunchedEffect(state.tripData) {
@@ -133,6 +133,14 @@ fun LiveTripContacts(
             delay(5000)
             showAccessRevokedDialog = false
             navController.popBackStack()
+        }
+    }
+
+    DisposableEffect(tripId){
+        viewModel.startWatching(tripId)
+
+        onDispose {
+            viewModel.stopWatching(tripId)
         }
     }
 
