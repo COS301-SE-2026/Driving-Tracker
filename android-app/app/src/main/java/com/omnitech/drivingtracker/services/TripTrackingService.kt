@@ -169,6 +169,10 @@ class TripTrackingService: Service() {
                     socketManager.connect()
                     currentTripId?.let{ socketManager.joinTrip(it) }
 
+                    socketManager.onReconnect {
+                        currentTripId?.let { socketManager.joinTrip(it) }
+                    }
+
                     serviceScope.launch {
                         tripStateManager.totalExpectedTravelTime.collect{ totalSeconds ->
 
@@ -387,8 +391,8 @@ class TripTrackingService: Service() {
                         coolantTemp = obdManager.metrics.value.coolantTemp
                         fuelTrim = obdManager.metrics.value.fuelTrim
                         dataSource = DataSource.OBD
-                    }
 
+                    }
 
                     val readingEntity = TripReadingEntity(
                         tripId = tripId,
@@ -570,6 +574,7 @@ class TripTrackingService: Service() {
             }
         }
         currentTripId?.let { socketManager.leaveTrip(it) }
+        socketManager.offReconnect()
         socketManager.disconnect()
         stopLocationUpdates()
         sensorFusion.stop()

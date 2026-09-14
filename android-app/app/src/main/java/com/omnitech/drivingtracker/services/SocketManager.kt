@@ -79,6 +79,25 @@ class SocketManager @Inject constructor(private val sessionManager: SessionManag
         }
     }
 
+    fun onAccessRevoked(onRevoked: (String) -> Unit){
+        socket?.on("access_revoked"){ args ->
+            val data = args[0] as JSONObject
+            val tripId = data.getString("trip_id")
+            onRevoked(tripId)
+        }
+    }
+
+    fun onReconnect(onReconnect: () -> Unit){
+        socket?.on("reconnect"){
+            Log.d(TAG, "Socket reconnected - re-joining rooms")
+            onReconnect()
+        }
+    }
+
+    fun offReconnect(){
+        socket?.off("reconnect")
+    }
+
     fun offLocationUpdate(){
         socket?.off("location:update")
     }

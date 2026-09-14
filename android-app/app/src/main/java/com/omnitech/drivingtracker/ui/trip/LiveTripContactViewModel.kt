@@ -148,6 +148,17 @@ class LiveTripContactViewModel @Inject constructor(
                     _tripPath.update { path -> path + newPoint }
                 }
             }
+
+            socketManager.onAccessRevoked { revokedTripId ->
+                if(revokedTripId == tripId){
+                    stopWatching(tripId)
+                    _uiState.update { it.copy(
+                            isAccessRevoked = true,
+                            isLoading = false
+                        ) }
+                }
+            }
+
         }
     }
 

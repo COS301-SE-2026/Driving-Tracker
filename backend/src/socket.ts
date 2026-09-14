@@ -7,6 +7,8 @@ import { fleet_services } from './services/fleet_services';
 
 const ACCESS_SECRET = process.env.JWT_SECRET!;
 
+let io: Server;
+
 interface AuthedSocket extends Socket {
     data: {
         user_id: string;
@@ -30,7 +32,7 @@ interface LocationUpdatePayload {
 }
 
 export function initSocket(httpServer: HttpServer){
-    const io = new Server(httpServer, {
+    io = new Server(httpServer, {
         cors: {
             origin: process.env.FRONTEND_URL || 'http://localhost:3000',
             credentials: true,
@@ -58,6 +60,9 @@ export function initSocket(httpServer: HttpServer){
     });
 
     io.on('connection', (socket: AuthedSocket)=> {
+
+        socket.join(`user:${socket.data.user_id}`);
+
         socket.on('join_trip', async (trip_id: string)=> {
 
             if(socket.data.trip_id){
@@ -116,9 +121,6 @@ export function initSocket(httpServer: HttpServer){
 
         socket.on('location:update', async (data: LocationUpdatePayload ) => {
 
-            if(!socket.rooms.has(`trip:${data.trip_id}`)) {
-                return socket.emit('error', {code: 'FORBIDDEN', event: 'location:update', trip_id: data.trip_id});
-            }
 
             if(!socket.data.is_trip_owner){
                 return socket.emit('error', {code: 'FORBIDDEN', event: 'location:update', message: 'Only the trip owner can send location updates'});
@@ -144,5 +146,25 @@ export function initSocket(httpServer: HttpServer){
 
     });
 
+    return io;
 
+}
+
+export async function force_revoke_trip_access(trip_id: string, contact_user_id: string){
+
+    if(!io){ console.log("Attempted to revoke access before Socket.io was initialized");
+         return; 
+        }
+
+    const user_room = `user:${contact_user_id}`;
+
+    const trip_room = `trip:${trip_id}`;
+
+    io.to(user_room).emit('access_revoked', { trip_id});
+
+    const sockets = await io.in(user_room).fetchSockets();
+
+    sockets.forEach((socket) => { socket.leave(trip_room); 
+        console.log("Contact forced to leave trip room");
+    });
 }
