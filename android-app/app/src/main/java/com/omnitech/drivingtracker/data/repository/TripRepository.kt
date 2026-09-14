@@ -23,6 +23,7 @@ class TripRepository @Inject constructor(
     private val tripDao: TripDao,
     private val sessionManager: SessionManager
     ){
+    private val roadEventBuffer = mutableListOf<RoadEvent>()
     suspend fun getTripReadings(tripId: String): List<TripReadingEntity>{
         return tripReadingDao.getTripReadings(tripId)
     }
@@ -39,9 +40,21 @@ class TripRepository @Inject constructor(
 
     suspend fun saveTripLocally(trip: TripEntity) = tripDao.insertTrip(trip)
 
+    fun bufferRoadEvent(event: RoadEvent){
+        synchronized(roadEventBuffer){
+            roadEventBuffer.add(event)
+        }
+    }
+
     //Sends unsynced readings in room db to backend
     suspend fun syncPendingReadings(tripId: String): Result<BatchReadingResponse?>{
         val unsynced = tripReadingDao.getUnsyncedTripReadings(tripId)
+
+        val eventsToSync = synchronized(roadEventBuffer){
+            val copy = roadEventBuffer.toList()
+            roadEventBuffer.clear()
+            copy
+        }
         if (unsynced.isEmpty()) return Result.success(null)
 
         try{
@@ -68,7 +81,9 @@ class TripRepository @Inject constructor(
                     throttle_position = null,
                     dtc_codes = entity.dtcCodes?: emptyList()
                 )
-            })
+            },
+                roadEvents = eventsToSync
+            )
             //Batch upload
             val response = api.recordBatchReadings(tripId, request)
 
@@ -82,6 +97,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             return Result.failure(ApiException(error.error, error.message ?: "Failed to start trip"))
         }catch(e: Exception){
+            synchronized(roadEventBuffer){ roadEventBuffer.addAll(eventsToSync)}
             throw e
         }
 

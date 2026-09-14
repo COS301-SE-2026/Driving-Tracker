@@ -19,10 +19,12 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.sqrt
 import kotlin.math.abs
 import java.time.Instant
+import com.omnitech.drivingtracker.data.models.RoadEvent
 
 @Singleton
 class SensorFusionManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val tripRepository: com.omnitech.drivingtracker.data.repository.TripRepository
 ): ISensorFusionManager, SensorEventListener {
 
     companion object{

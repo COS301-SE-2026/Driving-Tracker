@@ -21,7 +21,7 @@ data class RecordReadingRequest(
 
 data class BatchReadingRequest(
     val readings: List<RecordReadingRequest>,
-    val RoadEVents: List<RoadEvent> = emptyList()
+    val roadEvents: List<RoadEvent> = emptyList()
 )
 
 
