@@ -1,5 +1,6 @@
 //this will be where tokens and other things need for map processing 
 import {z} from "zod";
+import prisma from "../db/prisma";
 
 const azure_maps_config_schema = z.object({
     AZURE_MAPS_SUBSCRIPTION_KEY: z.string().min(1, "AZURE_MAPS_SUBSCRIPTION_KEY is required"),
@@ -237,6 +238,20 @@ export const map_services ={
             municipality: result?.address?.municipality ?? null,
             countryCode: result?.address?.countryCode ?? null,
         };
+    },
+
+    async get_validated_road_map(){
+        return await prisma.$queryRaw`
+            SELECT 
+                ROUND(latitude::numeric, 4) as lat,
+                ROUND(longitude::numeric, 4) as lng,
+                COUNT(DISTINCT user_id)::int as reports,
+                AVG(intensity)::float as avg_severity
+            FROM road_quality_events
+            WHERE event_type = 'IMPACT'
+            GROUP BY lat, lng
+            HAVING COUNT(DISTINCT user_id) >= 3
+        `;
     }
     
 }
