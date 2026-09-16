@@ -114,6 +114,25 @@
                 console.error("JS: Error parsing planned route: " + e.message);
             }
         };
+        //function to update the map with hot spots based on events 
+        var hotspotDatasource = null;
+        window.setHotspots = function(eventsJson) {
+            if (!map || !hotspotDatasource) return;
+            try {
+                var events = JSON.parse(eventsJson);
+                var features = events.map(function(e) {
+                    // Check if coordinates exist (some events might be non-spatial)
+                    if (e.longitude == null || e.latitude == null) return null;
+                    return new atlas.data.Feature(new atlas.data.Point([e.longitude, e.latitude]), {
+                        type: e.event_type
+                    });
+                }).filter(function(f) { return f != null; });
+                hotspotDatasource.setShapes(features);
+            } catch (e) {
+                console.error("JS: Error parsing hotspots: " + e.message);
+            }
+        };
+
 
         function updateRoute(lat, lng) {
             if (!datasource) return;
@@ -142,7 +161,8 @@
 
                     map.events.add("ready", function () {
                         map.resize();
-
+                        hotspotDatasource = new atlas.source.DataSource();
+                        map.sources.add(hotspotDatasource);
                      //Suggested Route (Lighter Blue)
                         plannedDatasource = new atlas.source.DataSource();
                         map.sources.add(plannedDatasource);
@@ -212,6 +232,20 @@
                             if (window.Android) { window.Android.onMapStable(); }
                         }
                     });
+                    map.layers.add(new atlas.layer.BubbleLayer(hotspotDatasource, null, {
+                        // High acceleration = Red, Harsh braking = Purple
+                        color: [
+                            'match',
+                            ['get', 'type'],
+                            'HARSH_ACCELERATION', 'Red',
+                            'HARSH_BRAKE', 'Purple',
+                            'Cyan' // Default color for other events
+                        ],
+                        radius: 12,
+                        opacity: 0.6,
+                        strokeColor: 'white',
+                        strokeWidth: 2
+                    }));
 
                     map.events.add('error', function (e) {
                         if (window.Android) { window.Android.onMapError(e.error ? e.error.message : 'Map error'); }
