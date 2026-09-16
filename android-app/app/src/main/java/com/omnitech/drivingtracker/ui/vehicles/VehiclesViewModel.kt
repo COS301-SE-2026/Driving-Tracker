@@ -102,7 +102,7 @@ class VehiclesViewModel @Inject constructor(
                           fuel: String){
         viewModelScope.launch{
             val req = UpdateVehicleRequest(name, reg, make, model, year, fuel)
-            repository.updateVehicleName(vehicleId, req).fold(
+            repository.updateVehicle(vehicleId, req).fold(
                 onSuccess = {
                     loadVehicles()
                 },

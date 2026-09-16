@@ -34,7 +34,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         Result.failure(e)
     }
 
-    suspend fun updateVehicleName(vehicleId: String, req: UpdateVehicleRequest): Result<Unit> = try {
+    suspend fun updateVehicle(vehicleId: String, req: UpdateVehicleRequest): Result<Unit> = try {
         apiService.updateVehicle(vehicleId, req)
         Result.success(Unit)
     }catch (e: HttpException){
