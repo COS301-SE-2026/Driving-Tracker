@@ -21,7 +21,15 @@ data class VehicleDto(
     val avgFuelEfficiency: Double? = null
 )
 
-data class UpdateVehicleNameRequest(val name: String)
+data class UpdateVehicleRequest(
+    val name: String? = null,
+    val registration: String? = null,
+    val make: String? = null,
+    val model: String? = null,
+    val year: Int? = null,
+    @SerializedName("fuel_type") val fuelType: String? = null,
+//    @SerializedName("fuel_tank") val fuelTank: Float? = null
+)
 data class AssignVehicleRequest(
 	val name: String?,
 	val registration: String?,
