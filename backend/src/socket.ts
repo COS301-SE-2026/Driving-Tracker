@@ -116,7 +116,7 @@ export function initSocket(httpServer: HttpServer){
             if(socket.data.fleet_org_id !== org_id) return;
 
             socket.leave(`fleet:${org_id}`);
-            socket.data.org_id = null;
+            socket.data.fleet_org_id = null;
         });
 
         socket.on('location:update', async (data: LocationUpdatePayload ) => {
