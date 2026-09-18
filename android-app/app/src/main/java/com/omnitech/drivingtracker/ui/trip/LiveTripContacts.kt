@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -111,13 +112,14 @@ fun LiveTripContacts(
     }
 
     LaunchedEffect(state.tripData) {
+        Log.d("LiveTripContacts", "Started at: ${state.tripData?.startedAt}")
         state.tripData?.startedAt?.let { startTime ->
             viewModel.startDurationTimer(startTime)
         }
     }
 
-    LaunchedEffect(state.location?.status) {
-        if(state.location?.status == "COMPLETED") {
+    LaunchedEffect(state.hasTripEnded) {
+        if(state.hasTripEnded) {
             showTripEndDialog = true
         }
     }
@@ -148,7 +150,7 @@ fun LiveTripContacts(
         AlertDialog(
             onDismissRequest = { /*User cant dismiss by tapping outside dialog */ },
             title = { Text("Trip Ended", fontWeight = FontWeight.Bold)},
-            text = { Text("$driverName has arrived at their destination") },
+            text = { Text("$driverName has ended their trip") },
             confirmButton = {
                 Button(onClick = {
                     showTripEndDialog = false
@@ -267,7 +269,7 @@ fun LiveTripContacts(
             distanceKm = liveDistance,
             durationMinutes = liveDuration.toInt(),
             fuelEstimate = state.tripData?.fuelEstimate,
-            avgSpeed = state.location?.lastSpeedKmh.toString(),
+            avgSpeed = state.location?.lastSpeedKmh?.toInt().toString(),
             isLive = true
         )
 

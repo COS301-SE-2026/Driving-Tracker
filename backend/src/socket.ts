@@ -168,3 +168,17 @@ export async function force_revoke_trip_access(trip_id: string, contact_user_id:
         console.log("Contact forced to leave trip room");
     });
 }
+
+export async function broadcast_trip_ended(trip_id: string){
+
+    if(!io){ console.log("Attempted to broadcast end trip before Socket.io was initialized");
+         return; 
+        }
+
+    const room = `trip:${trip_id}`;
+
+    io.to(room).emit('trip_ended', { trip_id });
+
+    io.in(room).socketsLeave(room);
+    
+}

@@ -42,7 +42,8 @@ class LiveTripContactViewModel @Inject constructor(
         val destination: LocationDto? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
-        val isAccessRevoked: Boolean = false
+        val isAccessRevoked: Boolean = false,
+        val hasTripEnded: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -159,6 +160,16 @@ class LiveTripContactViewModel @Inject constructor(
                 }
             }
 
+            socketManager.onTripEnded { endedTripId ->
+                if(endedTripId == tripId){
+                    _uiState.update { it.copy(
+                        hasTripEnded = true,
+                        isLoading = false
+                    )}
+                    stopWatching(tripId)
+                }
+            }
+
         }
     }
 
@@ -195,6 +206,8 @@ class LiveTripContactViewModel @Inject constructor(
                         if (dest?.lat != null && dest.lng != null) {
                             fetchSuggestedRoute(specificTrip?.startLatitude ?: 0.0, specificTrip?.startLongitude ?: 0.0, dest.lat, dest.lng)
                         }
+                    }.onFailure {
+                        _uiState.update { it.copy(tripData = specificTrip, isLoading = false) }
                     }
                     repository.getMapToken().onSuccess { data -> _mapToken.value = data.token }
                 },
@@ -213,7 +226,7 @@ class LiveTripContactViewModel @Inject constructor(
         viewModelScope.launch {
             while(isActive){
                 _durationMinutes.value = calculateDuration(startedAt)
-                delay(60_000)
+                delay(15_000)
             }
         }
     }

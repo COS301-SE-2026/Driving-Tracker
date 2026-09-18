@@ -79,6 +79,14 @@ class SocketManager @Inject constructor(private val sessionManager: SessionManag
         }
     }
 
+    fun onTripEnded(onEnded: (String) -> Unit){
+        socket?.on("trip_ended"){args ->
+            val data = args[0] as JSONObject
+            val tripId = data.getString("trip_id")
+            onEnded(tripId)
+        }
+    }
+
     fun onAccessRevoked(onRevoked: (String) -> Unit){
         socket?.on("access_revoked"){ args ->
             val data = args[0] as JSONObject

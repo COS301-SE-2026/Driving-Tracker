@@ -208,7 +208,9 @@ class TripSummaryViewModel @Inject constructor(
                         exception.message ?: "Unknown error"
                     }
 
-                    if(errorMessage == "TRIP_ALREADY_COMPLETED"){
+                    Log.e("LiveTripError", errorMessage)
+
+                    if((exception is ApiException) && exception.errorCode == "TRIP_ALREADY_COMPLETED"){
                         _endTripState.value = UiState.EndTripSuccess
                     }else {
                         _endTripState.value = UiState.Error(message = errorMessage)
