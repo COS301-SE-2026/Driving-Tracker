@@ -407,4 +407,6 @@ map_router.get('/nearby/pois', verify_token, create_trip_reading_limiter() ,map_
  *               message: Failed to fetch address
  */
 map_router.get('/address/reverse', verify_token, create_trip_reading_limiter() ,map_controller.get_address_reverse);
+
+map_router.get("/hotspots",verify_token,create_map_token_limiter(), map_controller.get_hotspots);
 export default map_router;

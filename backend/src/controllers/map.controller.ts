@@ -193,6 +193,14 @@ const map_controller = {
                 message: "Failed to fetch address"
             });
         }
+    },
+    async get_hotspots(req:AuthRequest, res: Response){
+        try {
+            const hotspots = await map_services.get_all_hotspots();
+            res.status(200).json({ data: hotspots });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
     }
     
 };

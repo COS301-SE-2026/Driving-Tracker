@@ -1,5 +1,6 @@
 //this will be where tokens and other things need for map processing 
 import {z} from "zod";
+import prisma from '../db/prisma';
 
 const azure_maps_config_schema = z.object({
     AZURE_MAPS_SUBSCRIPTION_KEY: z.string().min(1, "AZURE_MAPS_SUBSCRIPTION_KEY is required"),
@@ -237,6 +238,21 @@ export const map_services ={
             municipality: result?.address?.municipality ?? null,
             countryCode: result?.address?.countryCode ?? null,
         };
-    }
+    },
+    async get_all_hotspots(){
+        return await prisma.trip_events.findMany({
+            where: {
+                OR: [
+                    { type: 'HARSH_BRAKE' },
+                    { type: 'HARSH_ACCELERATION' }
+                ]
+            },
+            select:{
+                latitude: true,
+                longitude: true,
+                type: true
+            }
+        });
+    } 
     
 }
