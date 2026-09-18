@@ -22,10 +22,10 @@ export default function Sidebar(){
     return (
 
         <div className="flex h-screen">
-            <div className="flex w-16 flex-col items-center justify-between border-r border-gray-200 bg-white py-4">
-                <div className="flex flex-col items-center gap-6">
+            <div className="flex w-16 flex-col items-center justify-between border-r border-sky-100 bg-sky-50 py-4">
+                <div className="flex flex-col items-center gap-10">
 
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-white">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-white">
                         <Image
                                src = {`${BASE_PATH}/images/screen1.png`} 
                                alt = "Driving Tracker Logo" 
@@ -34,7 +34,7 @@ export default function Sidebar(){
                                className="h-14 w-14 rounded-full"/>
                     </div>
 
-                    <nav className="flex flex-col items-center gap-6">
+                    <nav className="flex flex-col items-center gap-8">
 
                         {navItems.map(({key, label, icon: Icon, path}) => {
 
@@ -43,8 +43,8 @@ export default function Sidebar(){
                             return (
                                 <Link key = {key} href = {path}
                                 className="flex flex-col items-center gap-1 group">
-                                    <Icon size = {20} className = {isActive ? "text-sky-500" : "text-gray-400 group-hover:text-sky-400"}/>
-                                    <span className={`text-[10px] font-medium ${ isActive ? "text-sky-500" : "text-gray-400"}`}>
+                                    <Icon size = {30} className = {isActive ? "text-sky-500" : "text-black group-hover:text-sky-400"}/>
+                                    <span className={`text-[10px] font-medium ${ isActive ? "text-sky-500" : "text-black"}`}>
                                     {label}
                                     </span>
                                 </Link>
@@ -54,14 +54,14 @@ export default function Sidebar(){
                     </nav>
                 </div>
 
-                <div className="flex flex-col items-center gap-5">
+                <div className="flex flex-col items-center gap-5 border-t border-sky-200 pt-5">
 
-                    <button className="text-gray-400 hover:text-sky-500">
-                        <Settings size = {20} />
+                    <button className="text-black hover:text-sky-500">
+                        <Settings size = {30} />
                     </button>
 
-                    <button className="text-gray-400 hover:text-red-500">
-                        <LogOut size = {20} />
+                    <button className="text-black hover:text-red-500">
+                        <LogOut size = {30} />
                     </button>
 
                 </div>
