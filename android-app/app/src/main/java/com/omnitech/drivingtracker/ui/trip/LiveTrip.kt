@@ -649,7 +649,11 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "${vehicleMetrics.speed} km/h",
+                                if(vehicleMetrics.isDataLive){
+                                    "${vehicleMetrics.speed} km/h"
+                                } else {
+                                    "${liveLocation?.speedKmh?.toInt()} km/h"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold, color = Color.Black
                             )

@@ -269,7 +269,7 @@ fun LiveTripContacts(
             distanceKm = liveDistance,
             durationMinutes = liveDuration.toInt(),
             fuelEstimate = state.tripData?.fuelEstimate,
-            avgSpeed = state.location?.lastSpeedKmh?.toInt().toString(),
+            avgSpeed = (state.location?.lastSpeedKmh?:0).toInt().toString(),
             isLive = true
         )
 
