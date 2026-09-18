@@ -140,7 +140,8 @@ interface ApiService{
         @Query("dest_lat") destLat: Double?,
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
-
+    @GET("map/hotspots")
+    suspend fun getHotspots(): HotspotsResponse
     //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse

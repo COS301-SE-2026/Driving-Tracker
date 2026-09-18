@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.GeoJsonLineString
 import com.omnitech.drivingtracker.data.models.LocationDto
+import com.omnitech.drivingtracker.data.models.TripEventDto
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
@@ -50,7 +51,9 @@ class TripSummaryViewModel @Inject constructor(
     private val _mapToken = MutableStateFlow<String?>(null)
     val mapTokenState: StateFlow<String?> = _mapToken
 
+    private val _globalHotspots = MutableStateFlow<List<TripEventDto>>(emptyList())
     private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
+
     val tripPath: StateFlow<List<LocationDto>> = _tripPath
 
     val nearbyPois = tripStateManager.nearbyPois
@@ -58,6 +61,16 @@ class TripSummaryViewModel @Inject constructor(
     val safetyCheck = tripStateManager.safetyCheck
 
     fun clearSafetyCheck() = tripStateManager.clearSafetyCheck()
+
+    val globalHotspots: StateFlow<List<TripEventDto>> = _globalHotspots
+
+    fun loadGlobalHotspots(){
+        viewModelScope.launch {
+            repository.getGlobalHotspots().onSuccess {
+                _globalHotspots.value = it
+            }
+        }
+    }
 
     fun clearDetour() {
         _detourRoute.value = null
