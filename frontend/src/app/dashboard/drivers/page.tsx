@@ -3,6 +3,7 @@
 import {useState} from "react";
 import { MoreVertical, Search, SlidersHorizontal } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
+import AddDriver from "@/components/drivers/AddDriver";
 
 //mocked for now
 type Driver = {
@@ -80,10 +81,24 @@ function DriverCard({driver} : {driver : Driver}){
 export default function ManageDrivers(){
 
     const [query, setQuery] = useState("");
-    const inActiveCount = drivers.filter((d) => d.status === "Inactive").length;
-    const onTripCount = drivers.filter((d) => d.status === "On Trip").length;
-    const filtered = drivers.filter((d) => 
+    const [driversList, setDriversList] = useState<Driver[]>(drivers);
+    const inActiveCount = driversList.filter((d) => d.status === "Inactive").length;
+    const onTripCount = driversList.filter((d) => d.status === "On Trip").length;
+    const filtered = driversList.filter((d) => 
     d.name.toLowerCase().includes(query.toLowerCase()));
+    const [addOpen, setAddOpen] = useState(false);
+
+    const handleAddDriver = (data: {name:string; surname:string;idNumber:string}) => {
+        const newDriver: Driver = {
+            id: crypto.randomUUID(),
+            name: `${data.name} ${data.surname}`,
+            trips: 0,
+            distanceKm: 0,
+            status: "Inactive",
+            score: 0,
+        };
+        setDriversList((prev) => [...prev, newDriver]);
+    };
 
     return(
         <div className="flex">
@@ -95,13 +110,14 @@ export default function ManageDrivers(){
                 Manage Drivers
             </h1>
             <div className="mt-4 border-t border-gray-200 pt-3 text-center text-sm text-black">
-                {drivers.length} drivers &nbsp;•&nbsp; {inActiveCount} inactive &nbsp; •&nbsp; {onTripCount} on trip
+                {driversList.length} drivers &nbsp;•&nbsp; {inActiveCount} inactive &nbsp; •&nbsp; {onTripCount} on trip
             </div>
 
             <div className="mt-6 flex items-center justify-between">
-                <button className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
+                <button onClick={()=> setAddOpen(true)} className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
                     + Add Driver
                 </button>
+                <AddDriver open = {addOpen} onClose={()=> setAddOpen(false)} onSubmit = {handleAddDriver} />
 
                 <div className="flex items-center gap-3">
                     <div className="relative">
