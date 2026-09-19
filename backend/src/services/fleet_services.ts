@@ -38,5 +38,42 @@ export const fleet_services = {
         return member.role == OrganizationRole.MANAGER || member.role == OrganizationRole.ADMIN;
     },
 
+    async add_organization(user_id: string, name: string){
+
+        if(name.trim.length <= 0){
+            throw new Error('Name cannot be empty');
+        }
+
+        const result = await prisma.$transaction(async (tx) => { 
+
+            const organization = await tx.organizations.create({
+                data: {
+                    name
+                },
+            });
+            
+            if(!organization){
+                throw new Error('Failed to create organization');
+            }
+
+            const member = await tx.organization_members.create({
+                data:{
+                    org_id: organization.org_id,
+                    user_id,
+                    role: OrganizationRole.ADMIN
+                },
+            });
+
+            if(!member){
+                throw new Error('Failed to add user to organization');
+            }
+
+            return organization;
+        
+        });
+
+        return { org_id: result.org_id }
+    }
+
 };
 

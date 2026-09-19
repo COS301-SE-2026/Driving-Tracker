@@ -67,5 +67,6 @@ app.use('/map', map_router);
 app.use('/notifications', notifications_router);
 app.use('/upload', upload_router);
 app.use('/users', user_router);
+app.use('/fleet', user_router);
 
 export default app;
