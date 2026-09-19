@@ -209,7 +209,7 @@ fun LiveTrip(
     val currentEndTripState = endTripState
 
     when (currentEndTripState) {
-        is TripSummaryViewModel.UiState.Success -> {
+        is TripSummaryViewModel.UiState.EndTripSuccess -> {
             LaunchedEffect(Unit) {
                 TripTrackingService.stopTrip(context)
                 navController?.navigate(Screen.Trips.route) {
@@ -649,7 +649,11 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "${vehicleMetrics.speed} km/h",
+                                if(vehicleMetrics.isDataLive){
+                                    "${vehicleMetrics.speed} km/h"
+                                } else {
+                                    "${liveLocation?.speedKmh?.toInt()} km/h"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold, color = Color.Black
                             )
@@ -716,7 +720,9 @@ private fun TripDetails(
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(
                 onClick = { onToggleActiveViewersDialog(true) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             ) {
@@ -732,7 +738,11 @@ private fun TripDetails(
             distanceKm = liveDistance,
             durationMinutes = liveDuration,
             fuelEstimate = trip.fuelEstimate,
-            avgSpeed = vehicleMetrics.speed.toString(),
+            avgSpeed = if(vehicleMetrics.isDataLive){
+                vehicleMetrics.speed.toString()
+            } else {
+                liveLocation?.speedKmh?.toInt().toString()
+            },
             isLive = true
         )
 
@@ -820,7 +830,9 @@ fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Un
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 LazyColumn(
-                    Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(activeShares) { contact ->

@@ -13,6 +13,7 @@ import { format, addHours } from 'date-fns';
 import { badges_leaderboard_services } from './badges_leaderboard_services';
 import { update_vehicle_efficiency } from '../utils/trip_counter';
 import leaderboard_services from './leaderboard_services';
+import { broadcast_trip_ended, force_revoke_trip_access } from '../socket';
 
 // Helper function to safely convert Decimal or number values to number
 function to_number(value: any): number | null {
@@ -483,6 +484,8 @@ export const trips_services ={
             });
             console.log("updated the trip status");
 
+            await broadcast_trip_ended(data.trip_id);
+
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
                 where: {trip_id :data.trip_id}
@@ -623,6 +626,8 @@ export const trips_services ={
         await prisma.trip_location_shares.delete({
             where: { share_id: share?.share_id }
         });
+
+        await force_revoke_trip_access(trip_id, contact_user_id);
 
         //Add In-App Notification for the contact
         await add_notification({

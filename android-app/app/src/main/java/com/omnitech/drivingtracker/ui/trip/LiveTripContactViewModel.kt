@@ -18,6 +18,7 @@ import com.omnitech.drivingtracker.data.models.SharedWithMeDto
 import com.omnitech.drivingtracker.data.repository.NotificationsRepository
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.services.ApiService
+import com.omnitech.drivingtracker.services.SocketManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,7 +32,8 @@ import java.time.Duration
 class LiveTripContactViewModel @Inject constructor(
     private val api: ApiService,
     private val notificationRepository: NotificationsRepository,
-    private val repository: TripRepository
+    private val repository: TripRepository,
+    private val socketManager: SocketManager
 ) : ViewModel() {
 
     data class UiState(
@@ -40,7 +42,8 @@ class LiveTripContactViewModel @Inject constructor(
         val destination: LocationDto? = null,
         val isLoading: Boolean = false,
         val error: String? = null,
-        val isAccessRevoked: Boolean = false
+        val isAccessRevoked: Boolean = false,
+        val hasTripEnded: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -123,6 +126,59 @@ class LiveTripContactViewModel @Inject constructor(
         }
     }
 
+    fun startWatching(tripId: String){
+        viewModelScope.launch{
+
+            socketManager.connect()
+            socketManager.joinTrip(tripId)
+
+            socketManager.onLocationUpdate { payload ->
+                if(payload.tripId == tripId && payload.location.lat != null && payload.location.lng != null) {
+                    _uiState.update { it.copy(
+                        location = LatestLocationData(
+                            lastLatitude = payload.location.lat,
+                            lastLongitude = payload.location.lng,
+                            lastSpeedKmh = payload.speedKmh?.toDouble()?: 0.0,
+                            lastRecordedAt = payload.recordedAt,
+                            status = "IN_PROGRESS"
+                        ),
+                        isLoading = false
+                    ) }
+
+                    val newPoint = payload.location
+                    _tripPath.update { path -> path + newPoint }
+                }
+            }
+
+            socketManager.onAccessRevoked { revokedTripId ->
+                if(revokedTripId == tripId){
+                    stopWatching(tripId)
+                    _uiState.update { it.copy(
+                            isAccessRevoked = true,
+                            isLoading = false
+                        ) }
+                }
+            }
+
+            socketManager.onTripEnded { endedTripId ->
+                if(endedTripId == tripId){
+                    _uiState.update { it.copy(
+                        hasTripEnded = true,
+                        isLoading = false
+                    )}
+                    stopWatching(tripId)
+                }
+            }
+
+        }
+    }
+
+    fun stopWatching(tripId: String){
+        socketManager.offLocationUpdate()
+        socketManager.leaveTrip(tripId)
+        socketManager.disconnect()
+    }
+
     fun loadTripInfo(tripId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -150,6 +206,8 @@ class LiveTripContactViewModel @Inject constructor(
                         if (dest?.lat != null && dest.lng != null) {
                             fetchSuggestedRoute(specificTrip?.startLatitude ?: 0.0, specificTrip?.startLongitude ?: 0.0, dest.lat, dest.lng)
                         }
+                    }.onFailure {
+                        _uiState.update { it.copy(tripData = specificTrip, isLoading = false) }
                     }
                     repository.getMapToken().onSuccess { data -> _mapToken.value = data.token }
                 },
@@ -168,7 +226,7 @@ class LiveTripContactViewModel @Inject constructor(
         viewModelScope.launch {
             while(isActive){
                 _durationMinutes.value = calculateDuration(startedAt)
-                delay(60_000)
+                delay(15_000)
             }
         }
     }
