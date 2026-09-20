@@ -240,7 +240,7 @@ export const map_services ={
         };
     },
     async get_all_hotspots(){
-        return await prisma.trip_events.findMany({
+        const hotspot= await prisma.trip_events.findMany({
             where: {
                 OR: [
                     { type: 'HARSH_BRAKE' },
@@ -248,11 +248,14 @@ export const map_services ={
                 ]
             },
             select:{
-                latitude: true,
+               latitude: true,
                 longitude: true,
-                type: true
+                type: true,     
+                event_id: true,
+                recorded_at: true
             }
         });
+        return hotspot;
     } 
     
 }
