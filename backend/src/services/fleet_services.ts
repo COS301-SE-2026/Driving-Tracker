@@ -1,5 +1,6 @@
 import { OrganizationRole } from "@prisma/client";
 import prisma from "../db/prisma";
+import { act } from "react";
 
 export const fleet_services = {
 
@@ -139,6 +140,64 @@ export const fleet_services = {
 
         return drivers_result;
     },
+
+    async list_fleet_vehicles(user_id: string, org_id: string){
+
+        const member = await prisma.organization_members.findUnique({
+            where: {
+                org_id_user_id: {
+                    org_id,
+                    user_id
+                }    
+            },
+            select: { role: true },
+        });
+
+        if(!member){
+            throw new Error('You do not have permission to list fleet vehicles');
+        }
+
+        const vehicles = await prisma.vehicles.findMany({
+            where: {
+                org_id,
+            },
+            include: {
+                trips:{
+                    where: {
+                        status: { in: ['IN_PROGRESS', 'SCHEDULED'] }
+                    },
+                    select: {
+                        status: true,
+                        scheduled_for: true,
+                    },
+                }
+            }
+        });
+
+        const vehicles_result = vehicles.map((v) => {
+
+            const { trips: active_trips, ...vehicle_data } = v;
+
+            let status = 'AVAILABLE'
+
+            if(active_trips.some(t => t.status === 'IN_PROGRESS')){
+                status = 'UNAVAILABLE';
+
+            }else if(active_trips.some(t => t.status === 'SCHEDULED')){
+                status = 'ASSIGNED'
+            }
+            
+
+            return {
+                ...vehicle_data,
+                status,    
+            };
+
+        });
+
+        return vehicles_result;
+    
+    }
 
 
 

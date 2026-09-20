@@ -73,7 +73,7 @@ const fleet_controller = {
         
         if((!org_role && !org_id) 
             || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a fleet vehicle' });
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list fleet drivers' });
             return;
         }
 
@@ -98,8 +98,51 @@ const fleet_controller = {
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve fleet drivers" });
 
         }
+    },
 
+    async list_fleet_vehicles(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
 
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return;
+        }
+        
+        if((!org_role && !org_id) 
+            || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list fleet vehicles' });
+            return;
+        }
+
+        try{
+            
+            const vehicles = await fleet_services.list_fleet_vehicles(user_id, org_id);
+
+            return res.status(200).json({
+                message: 'Fleet vehicles successfully retrieved',
+                data: { vehicles },
+            });
+
+        }catch(error: any){
+
+            if(error?.message?.includes("You do not have permission to list fleet vehicles")){
+
+                return res.status(403).json({
+                    error: "UNAUTHORIZED", message: error.message
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve fleet vehicles" });
+
+        }
     }
 };
 
