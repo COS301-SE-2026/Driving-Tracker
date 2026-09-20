@@ -4,11 +4,17 @@ import {useState} from "react";
 import { MoreVertical, Search, SlidersHorizontal } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AddDriver from "@/components/drivers/AddDriver";
+import DriverMenu from "@/components/drivers/DriverMenu";
+import ViewDriver from "@/components/drivers/ViewDriver";
 
 //mocked for now
 type Driver = {
     id: string;
     name: string;
+    email: string;
+    phoneNumber: string;
+    dob: string;
+    licenseNumber: string;
     trips: number;
     distanceKm: number;
     status: "Inactive" | "On Trip";
@@ -17,9 +23,9 @@ type Driver = {
 
 //mock drivers
 const drivers: Driver[] = [
-    {id: "1", name: "Joseph Sethoba", trips: 5, distanceKm: 80, status: "Inactive", score: 96},
-    {id: "2", name: "Marius Surname", trips: 3, distanceKm: 52, status: "Inactive", score: 52},
-    {id: "3", name: "Noah Beck", trips: 2, distanceKm: 48, status: "On Trip", score: 72}
+    {id: "1", name: "Joseph Sethoba",email: "employee1@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 5, distanceKm: 80, status: "Inactive", score: 96},
+    {id: "2", name: "Marius Surname",email: "employee2@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 3, distanceKm: 52, status: "Inactive", score: 52},
+    {id: "3", name: "Noah Beck",email: "employee1@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 2, distanceKm: 48, status: "On Trip", score: 72}
 ]
 
 function ScoreValue({score} : {score: number}){
@@ -27,7 +33,7 @@ function ScoreValue({score} : {score: number}){
     return <span className={`font-semibold ${color}`}> {score} </span>
 }
 
-function DriverCard({driver} : {driver : Driver}){
+function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> void;}){
     return (
         <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5">
 
@@ -39,9 +45,7 @@ function DriverCard({driver} : {driver : Driver}){
                     </h3>
                 </div>
 
-                <button className="text-gray-400 hover:text-gray-600">
-                    <MoreVertical size = {20} />
-                </button>
+                <DriverMenu driverName = {driver.name} onDelete = {onDelete} onViewDetails = {onView}/>
 
             </div>
 
@@ -87,11 +91,16 @@ export default function ManageDrivers(){
     const filtered = driversList.filter((d) => 
     d.name.toLowerCase().includes(query.toLowerCase()));
     const [addOpen, setAddOpen] = useState(false);
+    const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
-    const handleAddDriver = (data: {name:string; surname:string;idNumber:string}) => {
+    const handleAddDriver = (data: {name:string; surname:string;email: string, phoneNumber: string, dob: string, licenseNumber: string, idNumber:string}) => {
         const newDriver: Driver = {
             id: crypto.randomUUID(),
             name: `${data.name} ${data.surname}`,
+            email: data.email,
+            phoneNumber: data.phoneNumber,
+            dob: data.dob,
+            licenseNumber: data.licenseNumber,
             trips: 0,
             distanceKm: 0,
             status: "Inactive",
@@ -99,6 +108,10 @@ export default function ManageDrivers(){
         };
         setDriversList((prev) => [...prev, newDriver]);
     };
+
+    const handleDeleteDriver = (id: string) => {
+        setDriversList((prev) => prev.filter((d)=> d.id !== id));
+    }
 
     return(
         <div className="flex">
@@ -134,9 +147,17 @@ export default function ManageDrivers(){
 
             <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((driver) => (
-                    <DriverCard key = {driver.id} driver = {driver} />
+                    <DriverCard key = {driver.id} driver = {driver} 
+                    onView={()=> setViewingDriver(driver)}
+                    onDelete={() => handleDeleteDriver(driver.id)}/>
                 ))}
             </div>
+
+            <ViewDriver
+            open = {!!viewingDriver}
+            onClose = {() => setViewingDriver(null)}
+            driver = {viewingDriver}
+            />
 
         </div>
         </div>
