@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '../middleware/auth';
 import { vehicle_services } from '../services/vehicle.services';
+import { OrganizationRole } from '@prisma/client';
 
 
 export const get_all_vehicles = async(req: AuthRequest, res: Response)=>{
@@ -70,6 +71,82 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
             });
             return;
         }
+        res.status(500).json({
+            error: "INTERNAL_SERVER",
+            message: error.message ? error.message: "Internal server error"
+        });
+    }
+};
+
+export const add_fleet_vehicle = async(req: AuthRequest,res: Response)=>{
+    try{
+        const user_id = req.user?.sub;
+        if(!user_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'Unauthorized' });
+            return;
+        }
+
+        const org_role = req.user?.org_role;
+
+        const org_id = req.user?.org_id;
+
+        if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return;
+        }
+
+        if((!org_role && !org_id) 
+            || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a fleet vehicle' });
+            return;
+        }
+
+        const { name, registration, make, model, year, fuel_type, fuel_tank } = req.body;
+
+        if( !make || !model || !year || !fuel_type || !fuel_tank){
+            res.status(400).json({
+                error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, fuel_type, fuel_tank",
+            });
+            return;
+        }
+
+        const result = await vehicle_services.add_fleet_vehicle({
+            user_id,
+			name,
+            registration,
+			make,
+            model,
+            year,
+            fuel_type,
+            fuel_tank
+        }, org_id);
+
+        res.status(201).json(result);
+
+    }catch(error: any){
+        if(error.message.includes("User does not exist")){
+            res.status(404).json({
+                error: "USER_NOT_FOUND",
+                message: "User not found"
+            });
+            return;
+        }
+        if(error.message.includes("Missing field(s)")){
+            res.status(400).json({
+                error: "MISSING_REQUIRED_FIELDS",
+                message: "Missing required fields"
+            });
+            return;
+        }
+
+        if(error.message.includes("You do not have access to add fleet vehicles")){
+            res.status(403).json({
+                error: "UNAUTHORIZED",
+                message: "You do not have the permissions to add a fleet vehicle"
+            });
+            return;
+        }
+        
         res.status(500).json({
             error: "INTERNAL_SERVER",
             message: error.message ? error.message: "Internal server error"

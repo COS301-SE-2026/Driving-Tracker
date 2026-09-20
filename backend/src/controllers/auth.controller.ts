@@ -110,9 +110,10 @@ const auth_controller={
 
         try{
 
-            const {user, new_refresh_token}= await auth_services.refresh(refresh_token);
+            const {user, new_refresh_token, user_org}= await auth_services.refresh(refresh_token);
 
-            const access_token=generate_token({sub: user.user_id, role: user.role});
+            const access_token=generate_token({sub: user.user_id, role: user.role, 
+                org_id: user_org?.org_id ?? null, org_role: user_org?.role ?? null });
 
             res.status(200).json({
                 token: access_token,

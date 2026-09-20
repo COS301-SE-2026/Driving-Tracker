@@ -1,4 +1,5 @@
 
+import { OrganizationRole } from "@prisma/client";
 import prisma from "../db/prisma";
 import { manufacturer_baseline_service } from "./manufacturer_baseline.service";
 
@@ -37,7 +38,7 @@ export interface assign_vehicle{
     model: string,
     year: number,
     fuel_type: string,
-    fuel_tank:number
+    fuel_tank:number,
 }
 
 export interface get_fuel_analytics{
@@ -291,8 +292,112 @@ export const vehicle_services={
             throw error; 
        }
     },
+    async add_fleet_vehicle(data: assign_vehicle, org_id: string){
 
-    async remove_vehicle(user_id: string, vehicle_id: string){
+        if(!data.user_id || !data.make || !data.model|| !data.year || !data.fuel_type || !data.fuel_tank){
+                throw new Error("Missing field(s)");
+            }
+
+            const user = await prisma.organization_members.findUnique({
+                where: { org_id, user_id: data.user_id },
+            });
+
+            if(!user){
+                throw new Error("User does not exist");
+            }
+
+            if(user.role != OrganizationRole.ADMIN && user.role != OrganizationRole.MANAGER){
+                throw new Error("You do not have access to add fleet vehicles");
+            }
+            
+            let benchmark_lper100km: number | null = null;
+            let warning: string | null = null;
+
+            try {
+
+                if(data.year >= 2015 && data.year <= 2020){
+                    const benchmarks = await fetch_vehicle_benchmark(
+                        data.make,
+                        data.model,
+                        data.year
+                    );    
+
+                    const validMpgValues = benchmarks
+                        .map((benchmark) => Number(benchmark.combined_mpg))
+                        .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
+
+                    if (validMpgValues.length > 0) {
+                        const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
+                        benchmark_lper100km = mpg_to_lper100km(averageMpg);
+                    }
+                }
+            } catch  {
+                console.error("CAR API lookup failed, using database fallback.");
+            }
+
+            if(benchmark_lper100km === null) {
+                const databaseAverage = await prisma.vehicles.aggregate({
+                    where: {
+                        make: {
+                            equals: data.make.trim(),
+                            mode: "insensitive",
+                        },
+                        model: {
+                            equals: data.model.trim(),
+                            mode: "insensitive",
+                        },
+                        year: data.year,
+                        fuel_efficiency: {
+                            not: null,
+                        },
+                    },
+                    _avg: {
+                        fuel_efficiency: true,
+                    },
+                });
+
+                const average = databaseAverage._avg.fuel_efficiency;
+
+                if(average === null){
+                    benchmark_lper100km = 8.0;
+                    warning = "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
+                }else{
+                    benchmark_lper100km = Number(average);
+                }
+            }
+            
+
+        const vehicle = await prisma.vehicles.create({
+            data: {
+                name: data.name,
+                registration: data.registration,
+                make: data.make.trim(),
+                model: data.model.trim(),
+                year: data.year,
+                fuel_type: data.fuel_type,
+                fuel_efficiency: benchmark_lper100km,
+                fuel_tank:data.fuel_tank,
+                org_id
+            }
+        });
+
+        return {
+            data: {
+                vehicle_id: vehicle.vehicle_id,
+                name: vehicle.name,
+                registration: vehicle.registration,
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year,
+                fuel_tank: vehicle.fuel_tank,
+                fuel_efficiency: vehicle.fuel_efficiency,
+                fuel_type: vehicle.fuel_type,
+                org_id: vehicle.org_id,
+            },
+            warning  
+        };
+    }
+    ,async remove_vehicle(user_id: string, vehicle_id: string){
         const assignment = await prisma.users_vehicles.findUnique({
             where: { user_id_vehicle_id: { user_id, vehicle_id }}
         });

@@ -4,6 +4,7 @@ import { verify_token } from '../middleware/auth';
 import { get_fuel_leaderboard } from "../controllers/fuel_leaderboard.controller";
 import { create_user_based_limiter } from '../middleware/rate_limit';
 import fleet_controller from '../controllers/fleet.controller';
+import * as vehicle_router from "../controllers/vehicle.controller";
 
 const fleet_router = Router();
 
@@ -79,5 +80,8 @@ const fleet_router = Router();
  *               message: Failed to add organization
  */
 fleet_router.get('/add_organization', verify_token, create_user_based_limiter(), fleet_controller.add_organization);
+
+
+fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), vehicle_router.add_fleet_vehicle);
 
 export default fleet_router;

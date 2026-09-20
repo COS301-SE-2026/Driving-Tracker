@@ -349,8 +349,15 @@ export const auth_services = {
 
         if(!user) throw new ExtendedError("Invalid refresh token", "UNAUTHORIZED");
 
+         const user_org = await prisma.organization_members.findUnique({
+            where: {
+                user_id: user.user_id
+            },
+        });
+
         //generatte new refresh token
-        const new_refresh_token=generate_refresh_token({sub: user.user_id, role: user.role});
+        const new_refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role, 
+            org_id: user_org?.org_id ?? null, org_role: user_org?.role ?? null });
 
         //rotate refresh token
         await prisma.users.update({
@@ -361,7 +368,7 @@ export const auth_services = {
             },
         });
 
-        return {user, new_refresh_token};
+        return {user, new_refresh_token, user_org};
     },
 
     async get_profile(user_id: string){
