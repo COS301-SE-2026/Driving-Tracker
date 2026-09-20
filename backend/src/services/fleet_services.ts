@@ -73,6 +73,50 @@ export const fleet_services = {
         });
 
         return { org_id: result.org_id }
+    },
+
+    async list_fleet_drivers(user_id: string, org_id: string){
+
+        const permission = await this.get_view_permission(user_id, org_id);
+
+        if(!permission){
+            throw new Error('You do not have permission to list fleet drivers');
+        }
+
+        const drivers = await prisma.organization_members.findMany({
+            where: {
+                org_id,
+                role: OrganizationRole.DRIVER
+            },
+            select: {
+                joined_at: true,
+                users:{
+                    select: {
+                        user_id: true,
+                        username: true,
+                        email: true,
+                        name: true,
+                        surname: true,
+                        phone_number: true,
+                        profile_picture_url: true,
+                    }
+                }
+            }
+        });
+
+        const drivers_result = drivers.map((e) =>({
+            user_id: user_id,
+            name: e.users.name,
+            surname: e.users.surname,
+            email: e.users.email,
+            username: e.users.username,
+            profile_picture_url: e.users.profile_picture_url,
+            joined_at: e.joined_at
+        }));
+
+        return drivers_result;
+
+
     }
 
 };

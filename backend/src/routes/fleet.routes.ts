@@ -84,4 +84,6 @@ fleet_router.get('/add_organization', verify_token, create_user_based_limiter(),
 
 fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), vehicle_router.add_fleet_vehicle);
 
+fleet_router.get('/fleet_drivers', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_drivers);
+
 export default fleet_router;
