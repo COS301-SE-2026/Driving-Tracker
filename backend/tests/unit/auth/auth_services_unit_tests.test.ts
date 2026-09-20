@@ -7,6 +7,9 @@ jest.mock('../../../src/db/prisma', () => ({
         create: jest.fn(),
         update: jest.fn(),
         },
+        organization_members: {
+            findUnique: jest.fn(),
+        },
     },
 }));
 
@@ -138,6 +141,10 @@ describe('Auth services.login', () => {
             username: 'testuser',
             email_verified: true,
         });
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+
+
         mock_bcrypt.compare.mockResolvedValue(true);
 
         const result = await auth_services.login('test@example.com', 'Password123!');

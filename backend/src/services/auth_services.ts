@@ -303,7 +303,14 @@ export const auth_services = {
 
         if(!valid) throw new ValidationError("Password incorrect","password");
 
-        const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+        const user_org = await prisma.organization_members.findUnique({
+            where: {
+                user_id: user.user_id
+            },
+        });
+
+        const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role, 
+            org_id: user_org?.org_id ?? null, org_role: user_org?.role ?? null });
 
         await prisma.users.update({
             where: {user_id: user.user_id}, 
@@ -313,7 +320,7 @@ export const auth_services = {
             },
         });
 
-        return {user, refresh_token};
+        return {user, refresh_token, user_org};
     },
 
     async logout(user_id:string){
