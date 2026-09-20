@@ -114,6 +114,7 @@ const mockFleetServices = fleet_services as {
     get_org_id_for_trip: jest.MockedFunction<typeof fleet_services.get_org_id_for_trip>;
     get_view_permission: jest.MockedFunction<typeof fleet_services.get_view_permission>;
     add_organization: jest.MockedFunction<typeof fleet_services.add_organization>;
+    list_fleet_drivers: jest.MockedFunction<typeof fleet_services.list_fleet_drivers>;
 };
 
 function getMockIo(): MockIo {

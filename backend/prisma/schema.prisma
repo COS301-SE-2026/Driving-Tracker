@@ -161,9 +161,11 @@ model trips {
   data_source      DataSource?     @default(OBD)
   status           String?         @default("IN_PROGRESS") @db.VarChar(20)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
-  scheduled_at     DateTime?       @db.Timestamptz(6)
+  scheduled_for     DateTime?       @db.Timestamptz(6)
   created_by       String?         @db.Uuid
   planned_start_addr  String?      @db.VarChar(255)
+  planned_start_lat   Decimal?      @db.Decimal(9, 6)
+  planned_start_lng   Decimal?      @db.Decimal(9, 6)
   planned_end_addr    String?      @db.VarChar(255)
   planned_dest_lat   Decimal?      @db.Decimal(9, 6)
   planned_dest_lng   Decimal?      @db.Decimal(9, 6)

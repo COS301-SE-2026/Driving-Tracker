@@ -99,25 +99,48 @@ export const fleet_services = {
                         surname: true,
                         phone_number: true,
                         profile_picture_url: true,
+                        trips:{
+                            where: {
+                                status: { in: ['IN_PROGRESS', 'SCHEDULED'] }
+                            },
+                            select: {
+                                status: true
+                            },
+                        },
                     }
                 }
             }
         });
 
-        const drivers_result = drivers.map((e) =>({
-            user_id: user_id,
-            name: e.users.name,
-            surname: e.users.surname,
-            email: e.users.email,
-            username: e.users.username,
-            profile_picture_url: e.users.profile_picture_url,
-            joined_at: e.joined_at
-        }));
+        const drivers_result = drivers.map((d) => {
+
+            const active_trips = d.users.trips;
+
+            let status = 'AVAILABLE'
+
+            if(active_trips.some(t => t.status === 'IN_PROGRESS')){
+                status = 'UNAVAILABLE';
+
+            }else if(active_trips.some(t => t.status === 'SCHEDULED')){
+                status = 'ASSIGNED'
+            }
+
+            return {
+                user_id: d.users.user_id,
+                name: d.users.name,
+                surname: d.users.surname,
+                email: d.users.email,
+                username: d.users.username,
+                profile_picture_url: d.users.profile_picture_url,
+                joined_at: d.joined_at,
+                status
+            }
+        });
 
         return drivers_result;
+    },
 
 
-    }
 
 };
 
