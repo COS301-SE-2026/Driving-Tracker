@@ -82,6 +82,7 @@ fun LiveTrip(
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
     val nearbyPois by viewModel.nearbyPois.collectAsState()
+    val globalHotspots by viewModel.globalHotspots.collectAsState()
     val safetyState by viewModel.safetyCheck.collectAsState()
     var showManualEndFuelDialog by remember { mutableStateOf(false) }
     var manualEndFuel by remember { mutableStateOf("") }
@@ -105,7 +106,9 @@ fun LiveTrip(
             locationPermissionState.launchMultiplePermissionRequest()
         }
     }
-
+    LaunchedEffect(Unit) {
+        viewModel.loadGlobalHotspots()
+    }
     val context = LocalContext.current
     val tripPath by viewModel.tripPath.collectAsState()
 
@@ -176,6 +179,7 @@ fun LiveTrip(
             viewModel.fetchMapToken()
             viewModel.observeTripEvents(tripId)
             contactsViewModel.loadActiveShares(tripId)
+            viewModel.loadGlobalHotspots()
         }
     }
 
@@ -259,6 +263,7 @@ fun LiveTrip(
         showActiveViewersDialog = showActiveViewersDialog,
         onToggleActiveViewersDialog = {showActiveViewersDialog = it},
         onRevokeShare = { contactId -> contactsViewModel.revokeTripShare(tripId, contactId) },
+        globalHotspots = globalHotspots,
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -363,7 +368,8 @@ fun LiveTripContent(
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
     nearbyPois: List<MapPoiItem>? = null,
     liveDistance: Double =0.0,
-    liveDuration: Int= 0
+    liveDuration: Int= 0,
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList() // Add this
 ) {
     Column(modifier = Modifier.fillMaxSize()){
         //alert banner for E2E test
@@ -491,6 +497,7 @@ fun LiveTripContent(
                             showActiveViewersDialog = showActiveViewersDialog,
                             onToggleActiveViewersDialog = onToggleActiveViewersDialog,
                             onRevokeShare = onRevokeShare,
+                            globalHotspots = globalHotspots,
                         )
                     }
 
@@ -523,6 +530,7 @@ private fun TripDetails(
     nearbyPois: List<MapPoiItem>? = null,
     activeShares: List<ContactDto> = emptyList(),
     showActiveViewersDialog: Boolean = false,
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList(),
     onToggleActiveViewersDialog: (Boolean) -> Unit = {},
     onRevokeShare: (String) -> Unit = {}
 ) {
@@ -563,6 +571,7 @@ private fun TripDetails(
                     modifier = Modifier.fillMaxSize(),
                     nearbyPois = nearbyPois,
                     detourRoute = detourRoute,
+                    tripEvents = globalHotspots,
                     onPoiClick = onPoiClick,
                 )
                 IconButton(
