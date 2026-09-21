@@ -6,6 +6,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AddDriver from "@/components/drivers/AddDriver";
 import DriverMenu from "@/components/drivers/DriverMenu";
 import ViewDriver from "@/components/drivers/ViewDriver";
+import FilterDrivers, { FilterState } from "@/components/drivers/FilterDrivers";
 
 //mocked for now
 type Driver = {
@@ -88,8 +89,19 @@ export default function ManageDrivers(){
     const [driversList, setDriversList] = useState<Driver[]>(drivers);
     const inActiveCount = driversList.filter((d) => d.status === "Inactive").length;
     const onTripCount = driversList.filter((d) => d.status === "On Trip").length;
+    const [filters, setFilters] = useState<FilterState>({status: [], sortBy: null});
     const filtered = driversList.filter((d) => 
-    d.name.toLowerCase().includes(query.toLowerCase()));
+    d.name.toLowerCase().includes(query.toLowerCase()))
+    .filter((d) => filters.status.length === 0 || filters.status.includes(d.status))
+    .sort((a,b) => {
+        if (filters.sortBy === "name-asc") return a.name.localeCompare(b.name);
+        if (filters.sortBy === "name-desc") return b.name.localeCompare(a.name);
+        if (filters.sortBy === "score-desc") return b.score -a.score;
+        if (filters.sortBy === "score-asc") return a.score -b.score;
+        if (filters.sortBy === "distance-desc") return b.distanceKm -a.distanceKm;
+        if (filters.sortBy === "distance-asc") return a.distanceKm - b.distanceKm;
+        return 0;
+    });
     const [addOpen, setAddOpen] = useState(false);
     const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
@@ -117,7 +129,7 @@ export default function ManageDrivers(){
         <div className="flex">
             <DashboardNavbar/>
 
-        <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-100 p-8">
+        <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
 
             <h1 className="text-4xl text-center font-extrabold text-gray-900">
                 Manage Drivers
@@ -139,9 +151,7 @@ export default function ManageDrivers(){
                         placeholder="Search Drivers" 
                         className="w-48 rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-400"/>
                     </div>
-                    <button className="text-gray-500 hover:text-gray-700">
-                        <SlidersHorizontal size = {20} />
-                    </button>
+                    <FilterDrivers filters = {filters} onChange = {setFilters}/>
                 </div>
             </div>
 

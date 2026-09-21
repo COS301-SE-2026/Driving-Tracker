@@ -27,7 +27,7 @@ export default function DriverMenu({driverName, onDelete, onViewDetails}: Driver
                         onViewDetails();
                     }
                     }
-                    className="flx w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         <Eye size = {16}/>
                         View Details
                     </button>
