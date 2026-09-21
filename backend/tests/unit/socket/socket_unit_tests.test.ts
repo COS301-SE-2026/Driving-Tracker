@@ -116,6 +116,7 @@ const mockFleetServices = fleet_services as {
     add_organization: jest.MockedFunction<typeof fleet_services.add_organization>;
     list_fleet_drivers: jest.MockedFunction<typeof fleet_services.list_fleet_drivers>;
     list_fleet_vehicles: jest.MockedFunction<typeof fleet_services.list_fleet_vehicles>;
+    schedule_trip: jest.MockedFunction<typeof fleet_services.schedule_trip>;
 };
 
 function getMockIo(): MockIo {

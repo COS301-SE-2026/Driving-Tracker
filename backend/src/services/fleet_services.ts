@@ -1,6 +1,22 @@
 import { OrganizationRole } from "@prisma/client";
 import prisma from "../db/prisma";
 import { act } from "react";
+import { map_services } from "./map_services";
+
+export interface schedule_trip_data{
+    vehicle_id: string;
+    driver_id: string;
+    data_source: "OBD" | "PHONE";
+    planned_start_time: Date;
+    planned_start_location:{
+        lat: number;
+        lng: number;
+    };
+    planned_end_location:{
+        lat: number;
+        lng: number;
+    };
+};
 
 export const fleet_services = {
 
@@ -197,6 +213,102 @@ export const fleet_services = {
 
         return vehicles_result;
     
+    },
+
+    async schedule_trip(user_id: string, org_id: string, data: schedule_trip_data){
+
+        if(!user_id || !data.vehicle_id || !data.driver_id){
+            throw new Error("Missing required fields");
+        }
+
+        if(!data.planned_start_location.lat|| !data.planned_start_location.lng){
+            throw new Error("Unknown start location");
+        }
+
+        if(!data.planned_end_location.lat|| !data.planned_end_location.lng){
+            throw new Error("Unknown end location");
+        }
+
+        const driver = await prisma.organization_members.findUnique({
+            where: {
+                user_id: data.driver_id,
+                org_id,
+                role: OrganizationRole.DRIVER
+            },
+            select: {
+                joined_at: true,
+                users:{
+                    select: {
+                        trips:{
+                            where: {
+                                status: { in: ['IN_PROGRESS', 'SCHEDULED'] }
+                            },
+                            select: {
+                                status: true,
+                                scheduled_for: true,
+                                scheduled_end: true,
+                            },
+                        },
+                    }
+                }
+            }
+        });
+
+        if(!driver){
+            throw new Error("Driver not found");
+        }
+
+        const trips = driver.users.trips;
+
+        if(trips.some(t => t.status === 'IN_PROGRESS')){
+            throw new Error("Driver not available");
+        }
+
+        const route = await map_services.suggested_routes({
+            start_lat: data.planned_start_location.lat,
+            start_lng: data.planned_start_location.lng,
+            dest_lat:  data.planned_end_location.lat,
+            dest_lng: data.planned_end_location.lng,
+        });
+
+        const BUFFER_SECONDS = 10*60;
+        const total_seconds = route.travel_time_seconds+ BUFFER_SECONDS;
+
+        const new_start = new Date(data.planned_start_time);
+        const new_end = new Date(new_start.getTime() + total_seconds * 1000);
+
+        const scheduled = trips.filter(t => t.status === 'SCHEDULED');
+
+        const has_overlap = scheduled.some(t => {
+            if(!t.scheduled_for || !t.scheduled_end) return false;
+            return new_start < t.scheduled_end && t.scheduled_for < new_end;
+        });
+
+        if(has_overlap){ 
+            throw new Error("Driver has a scheduled trip that overlaps this time");
+        }
+
+        const trip = await prisma.trips.create({
+            data: {
+                user_id: data.driver_id,
+                vehicle_id: data.vehicle_id,
+                created_by: user_id,
+                status: 'SCHEDULED',
+                scheduled_for: new_start,
+                scheduled_end: new_end,
+                duration_minutes: Math.round(total_seconds / 60),
+                planned_start_lat: data.planned_start_location.lat,
+                planned_start_lng: data.planned_start_location.lng,
+                planned_dest_lat: data.planned_end_location.lat,
+                planned_dest_lng: data.planned_end_location.lng,
+            },
+        });
+
+        return {
+            trip: trip,
+            route: route.points
+        };
+
     }
 
 

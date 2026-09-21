@@ -162,6 +162,7 @@ model trips {
   status           String?         @default("IN_PROGRESS") @db.VarChar(20)
   created_at       DateTime?       @default(now()) @db.Timestamptz(6)
   scheduled_for     DateTime?       @db.Timestamptz(6)
+  scheduled_end     DateTime?       @db.Timestamptz(6)
   created_by       String?         @db.Uuid
   planned_start_addr  String?      @db.VarChar(255)
   planned_start_lat   Decimal?      @db.Decimal(9, 6)
