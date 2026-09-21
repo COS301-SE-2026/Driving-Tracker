@@ -1,0 +1,175 @@
+"use client";
+
+import {useState} from "react";
+import {Search} from "lucide-react";
+import DashboardNavbar from "@/components/DashboardNavbar"
+import AddDriver from "@/components/drivers/AddDriver";
+import DriverMenu from "@/components/drivers/DriverMenu";
+import ViewDriver from "@/components/drivers/ViewDriver";
+import FilterDrivers, { FilterState } from "@/components/drivers/FilterDrivers";
+
+//mocked for now
+type Driver = {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+    dob: string;
+    licenseNumber: string;
+    trips: number;
+    distanceKm: number;
+    status: "Inactive" | "On Trip";
+    score: number;
+};
+
+//mock drivers
+const drivers: Driver[] = [
+    {id: "1", name: "Joseph Sethoba",email: "employee1@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 5, distanceKm: 80, status: "Inactive", score: 96},
+    {id: "2", name: "Marius Surname",email: "employee2@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 3, distanceKm: 52, status: "Inactive", score: 52},
+    {id: "3", name: "Noah Beck",email: "employee1@gmail.com",phoneNumber:"0628546529", dob: "2002-06-15",licenseNumber: "ABC123", trips: 2, distanceKm: 48, status: "On Trip", score: 72}
+]
+
+function ScoreValue({score} : {score: number}){
+    const color = score >= 60 ? "text-emerald-500" : "text-red-500";
+    return <span className={`font-semibold ${color}`}> {score} </span>
+}
+
+function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> void;}){
+    return (
+        <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5">
+
+            <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gray-200"/>
+                    <h3 className="text-lg font-bold text-gray-900">
+                        {driver.name}
+                    </h3>
+                </div>
+
+                <DriverMenu driverName = {driver.name} onDelete = {onDelete} onViewDetails = {onView}/>
+
+            </div>
+
+            <div className="grid grid-cols-2 gap-y-2 text-sm">
+
+                <span className="font-medium text-gray-900">
+                    Trips
+                </span>
+                <span className="text-gray-700">
+                    {driver.trips}
+                </span>
+
+                <span className="font-medium text-gray-900">
+                    Distance
+                </span>
+                <span className="text-gray-700">
+                    {driver.distanceKm} km
+                </span>
+
+                <span className="font-medium text-gray-900">
+                    Status
+                </span>
+                <span className="text-gray-700">
+                    {driver.status}
+                </span>
+
+                <span className="font-medium text-gray-900">
+                    Score
+                </span>
+                <ScoreValue score = {driver.score} />
+
+            </div>
+        </div>
+    );
+}
+
+export default function ManageDrivers(){
+
+    const [query, setQuery] = useState("");
+    const [driversList, setDriversList] = useState<Driver[]>(drivers);
+    const inActiveCount = driversList.filter((d) => d.status === "Inactive").length;
+    const onTripCount = driversList.filter((d) => d.status === "On Trip").length;
+    const [filters, setFilters] = useState<FilterState>({status: [], sortBy: null});
+    const filtered = driversList.filter((d) => 
+    d.name.toLowerCase().includes(query.toLowerCase()))
+    .filter((d) => filters.status.length === 0 || filters.status.includes(d.status))
+    .sort((a,b) => {
+        if (filters.sortBy === "name-asc") return a.name.localeCompare(b.name);
+        if (filters.sortBy === "name-desc") return b.name.localeCompare(a.name);
+        if (filters.sortBy === "score-desc") return b.score -a.score;
+        if (filters.sortBy === "score-asc") return a.score -b.score;
+        if (filters.sortBy === "distance-desc") return b.distanceKm -a.distanceKm;
+        if (filters.sortBy === "distance-asc") return a.distanceKm - b.distanceKm;
+        return 0;
+    });
+    const [addOpen, setAddOpen] = useState(false);
+    const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
+
+    const handleAddDriver = (data: {name:string; surname:string;email: string, phoneNumber: string, dob: string, licenseNumber: string}) => {
+        const newDriver: Driver = {
+            id: crypto.randomUUID(),
+            name: `${data.name} ${data.surname}`,
+            email: data.email,
+            phoneNumber: data.phoneNumber,
+            dob: data.dob,
+            licenseNumber: data.licenseNumber,
+            trips: 0,
+            distanceKm: 0,
+            status: "Inactive",
+            score: 0,
+        };
+        setDriversList((prev) => [...prev, newDriver]);
+    };
+
+    const handleDeleteDriver = (id: string) => {
+        setDriversList((prev) => prev.filter((d)=> d.id !== id));
+    }
+
+    return(
+        <div className="flex">
+            <DashboardNavbar/>
+
+        <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
+
+            <h1 className="text-4xl text-center font-extrabold text-gray-900">
+                Manage Drivers
+            </h1>
+            <div className="mt-4 border-t border-gray-200 pt-3 text-center text-sm text-black">
+                {driversList.length} drivers &nbsp;•&nbsp; {inActiveCount} inactive &nbsp; •&nbsp; {onTripCount} on trip
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+                <button onClick={()=> setAddOpen(true)} className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
+                    + Add Driver
+                </button>
+                <AddDriver open = {addOpen} onClose={()=> setAddOpen(false)} onSubmit = {handleAddDriver} />
+
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search size = {20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+                        <input value = {query} onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search Drivers" 
+                        className="w-48 rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-400"/>
+                    </div>
+                    <FilterDrivers filters = {filters} onChange = {setFilters}/>
+                </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((driver) => (
+                    <DriverCard key = {driver.id} driver = {driver} 
+                    onView={()=> setViewingDriver(driver)}
+                    onDelete={() => handleDeleteDriver(driver.id)}/>
+                ))}
+            </div>
+
+            <ViewDriver
+            open = {!!viewingDriver}
+            onClose = {() => setViewingDriver(null)}
+            driver = {viewingDriver}
+            />
+
+        </div>
+        </div>
+    );
+}
