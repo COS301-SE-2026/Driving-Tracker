@@ -1,7 +1,17 @@
+jest.mock('../../../src/db/prisma', () => ({
+    __esModule: true,
+    default: {
+        trip_events: {
+            findMany: jest.fn(),
+        },
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import { map_services } from '../../../src/services/map_services';
+import prisma from '../../../src/db/prisma';
 
-
+const mock_prisma = prisma as any ;// mockng the prisma database 
 const mock_fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 globalThis.fetch = mock_fetch; //mocking the global fetch API 
 
@@ -375,3 +385,40 @@ describe('map services get reverse geocode', ()=>{
   
 });
 
+describe('Map services get_all_hotspots', () =>{
+    beforeEach(()=>{jest.clearAllMocks()});
+    it("Returns filtered hotspots from the database", async()=>{
+        const mock_hotspots = [{
+            latitude: -26.143, 
+            longitude: 27.842, 
+            type: 'HARSH_BRAKE',
+            event_id: 'e1',
+            recorded_at: new Date()
+        }];
+        mock_prisma.trip_events.findMany.mockResolvedValue(mock_hotspots);
+
+        const result = await map_services.get_all_hotspots();
+
+        expect(mock_prisma.trip_events.findMany).toHaveBeenCalledWith({
+            where: {
+                OR: [
+                    { type: 'HARSH_BRAKE' },
+                    { type: 'HARSH_ACCELERATION' }
+                ]
+            },
+            select: {
+                latitude: true,
+                longitude: true,
+                type: true,
+                event_id: true,
+                recorded_at: true
+            }
+        });
+        expect(result).toEqual(mock_hotspots);
+    });
+    it('throws error when database query fails', async () => {
+        mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));
+
+        await expect(map_services.get_all_hotspots()).rejects.toThrow('Prisma error');
+    });
+});
