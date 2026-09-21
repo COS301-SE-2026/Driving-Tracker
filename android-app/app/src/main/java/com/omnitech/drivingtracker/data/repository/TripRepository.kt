@@ -62,10 +62,10 @@ class TripRepository @Inject constructor(
                     gyroscope_x = entity.gyroscopeX?: 0f,
                     gyroscope_y = entity.gyroscopeY?: 0f,
                     gyroscope_z = entity.gyroscopeZ?: 0f,
-                    rpm = null,
-                    coolant_temp_c = null,
-                    fuel_trim_percent = null,
-                    throttle_position = null,
+                    rpm = entity.rpm,
+                    coolant_temp_c = entity.coolantTemp,
+                    fuel_trim_percent = entity.fuelTrimPercent,
+                    throttle_position = entity.throttlePosition,
                     dtc_codes = entity.dtcCodes?: emptyList()
                 )
             })

@@ -53,7 +53,7 @@ fun TripSummaryCard(
             ) {
                 SummaryItem(String.format(Locale.getDefault(), "%.2f", distanceKm ?: 0.0), "km")
                 SummaryItem("${durationMinutes ?: 0}", "min")
-                avgSpeed?.let{SummaryItem(it, "avg speed")}
+                SummaryItem("${avgSpeed?: 0}", "avg speed")
                 SummaryItem(String.format(Locale.getDefault(), "%.1f", fuelEstimate ?: 0.0), "est. fuel (L)")
             }
         }
