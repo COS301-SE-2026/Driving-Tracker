@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import { MoreVertical, Search, SlidersHorizontal } from "lucide-react";
+import {Search} from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AddDriver from "@/components/drivers/AddDriver";
 import DriverMenu from "@/components/drivers/DriverMenu";

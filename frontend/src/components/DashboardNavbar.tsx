@@ -1,6 +1,5 @@
 "use client";
 
-import {useState} from "react";
 import {Truck, Route as RouteIcon, Users, Settings, LogOut} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,8 +15,6 @@ const navItems = [
 export default function Sidebar(){
 
     const pathname = usePathname();
-
-    const [active, setActive] = useState("vehicles");
 
     return (
 
