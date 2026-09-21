@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Search, UserRound } from "lucide-react";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/fleet/Navbar";
 import FleetMap from "@/components/fleet/FleetMap";
 import type {
     Driver,

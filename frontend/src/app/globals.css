@@ -1,5 +1,5 @@
 @import "tailwindcss";
-import "azure-maps-control/dist/atlas.min.css";
+@import "azure-maps-control/dist/atlas.min.css";
 
 :root{
     --color-primary: #0095FF;
