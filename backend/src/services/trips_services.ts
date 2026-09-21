@@ -1009,7 +1009,7 @@ export const trips_services ={
         }
 
     },
-    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data_raw[]){
+    async record_batch_trip_readings(user_id: string, trip_id: string, readings: record_data_raw[], roadEvents: any[]){
         
         if(!trip_id){
             throw new Error("Missing required fields");
@@ -1050,6 +1050,19 @@ export const trips_services ={
                 }))
             });
 
+            if(roadEvents && roadEvents.length>0){
+                await tx.road_quality_events.createMany({
+                    data: roadEvents.map(ev => ({
+                        user_id: user_id,
+                        trip_id: trip_id,
+                        latitude: ev.lat,
+                        longitude: ev.lng,
+                        intensity: ev.intensity,
+                        event_type: ev.type
+                    }))
+                });
+            }
+
             const latest = readings[readings.length - 1]?? null;
 
             if(latest && latest.location.lat != null && latest.location.lng != null){
@@ -1063,7 +1076,6 @@ export const trips_services ={
                     }
                 });
             }
-
 
         });
 
