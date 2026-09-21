@@ -387,13 +387,14 @@ describe('map services get reverse geocode', ()=>{
 
 describe('Map services get_all_hotspots', () =>{
     beforeEach(()=>{jest.clearAllMocks()});
-    it("Returns filtered hotspots from the database", async()=>{
+    it("Returns filtered and mapped hotspots from the database", async () => {
+        const recordedAt = new Date();
         const mock_hotspots = [{
-            latitude: -26.143, 
-            longitude: 27.842, 
+            latitude: -26.143,
+            longitude: 27.842,
             type: 'HARSH_BRAKE',
             event_id: 'e1',
-            recorded_at: new Date()
+            recorded_at: recordedAt
         }];
         mock_prisma.trip_events.findMany.mockResolvedValue(mock_hotspots);
 
@@ -414,7 +415,14 @@ describe('Map services get_all_hotspots', () =>{
                 recorded_at: true
             }
         });
-        expect(result).toEqual(mock_hotspots);
+
+        expect(result).toEqual([{
+            event_id: 'e1',
+            event_type: 'HARSH_BRAKE',
+            latitude: -26.143,
+            longitude: 27.842,
+            time_stamp: recordedAt
+        }]);
     });
     it('throws error when database query fails', async () => {
         mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));

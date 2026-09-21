@@ -255,7 +255,13 @@ export const map_services ={
                 recorded_at: true
             }
         });
-        return hotspot;
+        return hotspot.map(h => ({
+            event_id: h.event_id,
+            event_type: h.type,
+            latitude: h.latitude,
+            longitude: h.longitude,
+            time_stamp: h.recorded_at
+        }));
     } 
     
 }
