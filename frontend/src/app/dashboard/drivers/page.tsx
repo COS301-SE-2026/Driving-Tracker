@@ -105,7 +105,7 @@ export default function ManageDrivers(){
     const [addOpen, setAddOpen] = useState(false);
     const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
 
-    const handleAddDriver = (data: {name:string; surname:string;email: string, phoneNumber: string, dob: string, licenseNumber: string, idNumber:string}) => {
+    const handleAddDriver = (data: {name:string; surname:string;email: string, phoneNumber: string, dob: string, licenseNumber: string}) => {
         const newDriver: Driver = {
             id: crypto.randomUUID(),
             name: `${data.name} ${data.surname}`,
