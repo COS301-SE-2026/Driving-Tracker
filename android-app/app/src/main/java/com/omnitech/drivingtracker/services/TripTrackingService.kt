@@ -48,6 +48,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.Instant
 import kotlin.String
+import com.omnitech.drivingtracker.data.models.TripEventDto
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -77,10 +78,23 @@ class TripTrackingService: Service() {
     private var isTrackingStarted = false
     private var lastSavedLat: Double? = null
     private var lastSavedLng: Double? = null
+
+    private var globalHotspots: List<TripEventDto> = emptyList()
+    private val notifiedHotspotIds = mutableSetOf<String>()
     private val MIN_DISTANCE_METERS = 10f
 
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
+
+    private fun loadGlobalHotspots() {
+        serviceScope.launch {
+            tripRepository.getGlobalHotspots().onSuccess {
+                globalHotspots = it
+            }.onFailure {
+                Log.e("TrackingService", "Failed to load hotspots for alerts")
+            }
+        }
+    }
     private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
         val tripId = currentTripId ?:return@StopMonitor
 
@@ -337,6 +351,26 @@ class TripTrackingService: Service() {
         lastSavedLat = reading.latitude
         lastSavedLng = reading.longitude
 
+        globalHotspots.forEach { hotspot ->
+            if (hotspot.latitude != null && hotspot.longitude != null && !notifiedHotspotIds.contains(hotspot.eventId)) {
+                val results = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    reading.latitude, reading.longitude,
+                    hotspot.latitude, hotspot.longitude,
+                    results
+                )
+
+                if (results[0] <= 1000f) { //1km warning
+                    notifiedHotspotIds.add(hotspot.eventId) // Mark as notified
+                    notificationHelper.showTripAlert(
+                        title = "Caution: Hotspot Ahead",
+                        message = "You are approaching an area with frequent harsh driving events. Drive carefully!",
+                        tripId = tripId
+                    )
+                }
+            }
+        }
+
         serviceScope.launch {
 
             var rpm: Int? = null
@@ -531,6 +565,8 @@ class TripTrackingService: Service() {
         sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        notifiedHotspotIds.clear()
+        globalHotspots = emptyList()
         isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
         tripStateManager.clearTripState()
