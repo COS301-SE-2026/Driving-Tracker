@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Search, UserRound } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -157,13 +158,107 @@ export default function DashboardHomePage() {
                                 }`}
                             >
                                 {/* profile image or fallback user icon */}
+                                <span className="grid h-[27px] w-[27px] shrink-0 place-items-center overflow-hidden rounded-full bg-white text-indigo-500">
+                                    {driver.image ? (
+                                        <Image
+                                            src={driver.image}
+                                            alt={`${driver.name} profile`}
+                                            width={27}
+                                            height={27}
+                                            unoptimized
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <UserRound size={17} aria-hidden="true" />
+                                    )}
+                                </span>
+
+                                <span className="flex flex-col gap-[3px] text-xs">
+                                    <strong>{driver.name}</strong>
+
+                                    <small
+                                        className={
+                                            driver.status === "On trip"
+                                                ? "text-green-600"
+                                                : "text-red-600"
+                                        }
+                                    >
+                                        {driver.status}
+                                    </small>
+                                </span>
 
                             </button>
-                        )
+                        );
                     })}
+
+                    {!isLoading && filteredDrivers.length === 0 && (
+                        <p className="px-2 text-xs text-slate-500">No drivers found.</p>
+                    )}
                 </div>
+
+                {apiError && (
+                    <p className="mt-6 px-2 text-xs text-slate-500">
+                        Showing fallback dashboard data.
+                    </p>
+                )}
             </aside>
+
+            {/* Main map and stats area */}
+            <section className="flex min-w-0 flex-1 flex-col">
+                <div className="h-[460px] border-b-2 border-[#159fe9]">
+                    <FleetMap
+                        drivers={drivers}
+                        selectedDriverId={selectedDriverId}
+                    />
+                </div>
+
+                {/* Stats */}
+                <section className="px-[26px] py-4">
+                    <h1 className="mb-6 text-[25px] font-bold">Events &amp; Stats</h1>
+
+                    <div className="grid grid-cols-2 items-center gap-8 text-center md:grid-cols-4">
+                        <StatItem 
+                            label="Harsh Braking"
+                            value={stats.harshBraking}
+                        />
+
+                        <StatItem 
+                            label="Harsh Acceleration"
+                            value={stats.harshAcceleration}
+                        />
+
+                        <StatItem 
+                            label="Idle Vehicles"
+                            value={stats.idleVehicles}
+                        />
+
+                        <div className="mx-auto flex min-h-[102px] w-[120px] flex-col justify-center gap-2 rounded-[11px] border border-[#1b2730] bg-[#e8f8ff] text-[15px]">
+                            <span>Trips in progress</span>
+
+                            <strong className="text-[25px] font-normal text-green-600">
+                                {stats.tripsInProgress}
+                            </strong>
+                        </div>
+                    </div>
+                </section>
+            </section>
         
         </main>
+    );
+}
+
+//stats item
+function StatItem({
+    label,
+    value,
+}: {
+    label: string;
+    value: number;
+}) {
+    return (
+        <div className="flex flex-col gap-2 text-[15px]">
+            <span>{label}</span>
+            <strong className="text-[25px] font-normal">{value}</strong>
+        </div>
     )
 }

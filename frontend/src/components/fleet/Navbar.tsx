@@ -4,6 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
+import {
+    Truck,
+    Route as RouteIcon,
+    Users,
+    Settings,
+    LogOut,
+} from "lucide-react";
 
 const navItems = [
     { key: "vehicles", label: "Vehicles", icon: Truck, path: "/dashboard/vehicles"},

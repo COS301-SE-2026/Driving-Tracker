@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import * as atlas from "azure-maps-control";
-import "azure-maps-control/dist/atlas.min.css";
 import type { Driver } from "./type";
 
 type FleetMapProps = {
@@ -49,7 +48,7 @@ export default function FleetMap({
             //dataSource stores all driver routes and markers
             const source = new atlas.source.DataSource();
 
-            map.source.add(source);
+            map.sources.add(source);
 
             for (const driver of drivers) {
                 //adding driver's route only when at least 2 points exist.
