@@ -36,6 +36,7 @@ class TripSummaryViewModel @Inject constructor(
         data class Success(
             val trip: TripSummaryDto
         ) : UiState()
+        object EndTripSuccess : UiState()
         data class Error(val code: String? = null, val message: String? = null) : UiState()
     }
 
@@ -198,24 +199,7 @@ class TripSummaryViewModel @Inject constructor(
 
             ).fold(
                 onSuccess = {
-                    _endTripState.value = UiState.Success(
-                        trip = TripSummaryDto(
-                            tripId = tripId,
-                            vehicleId = null,
-                            startedAt = "",
-                            endedAt = endTime,
-                            status = status,
-                            dataSource = null,
-                            routePolyline = null,
-                            distanceKm = distance,
-                            durationMinutes = durationMinutes,
-                            fuelEstimate = fuelEstimate,
-                            scores = null,
-                            events = emptyList(),
-                            startAddress = null,
-                            endAddress = null
-                        )
-                    )
+                    _endTripState.value = UiState.EndTripSuccess
                 },
                 onFailure = { exception ->
                     val errorMessage = if (exception is ApiException) {
@@ -223,7 +207,14 @@ class TripSummaryViewModel @Inject constructor(
                     } else {
                         exception.message ?: "Unknown error"
                     }
-                    _endTripState.value = UiState.Error(message = errorMessage)
+
+                    Log.e("LiveTripError", errorMessage)
+
+                    if((exception is ApiException) && exception.errorCode == "TRIP_ALREADY_COMPLETED"){
+                        _endTripState.value = UiState.EndTripSuccess
+                    }else {
+                        _endTripState.value = UiState.Error(message = errorMessage)
+                    }
                 }
             )
         }

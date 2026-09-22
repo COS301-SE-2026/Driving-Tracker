@@ -1,3 +1,4 @@
+import { ConsentStatus } from '@prisma/client';
 import prisma from '../db/prisma';
 
 import {
@@ -112,12 +113,29 @@ export const leaderboard_services = {
       },
     });
 
+    const visible_owner_ids = await prisma.trusted_contacts.findMany({
+      where: {
+        user_id: { in: rows.map((row) => row.user_id) },
+        contact_user_id: user_id,
+        consent_status: ConsentStatus.APPROVED,
+      },
+      select: {
+        user_id: true,
+      },
+    });
+
+    const visible_owner_id_set = new Set( visible_owner_ids.map((contact) => contact.user_id));
+
     const allEntries = rows.map((row: any, idx:any) => ({
       rank: idx + 1,
       user_id: row.user_id,
-      display_name: `${row.users.name ?? row.users.username ?? ''} ${row.users.surname ?? ''}`.trim(),
+      display_name: visible_owner_id_set.has(row.user_id)
+        ? (row.users.username ?? `${row.users.name ?? ''} ${row.users.surname ?? ''}`).trim()
+        : 'Anonymous Driver',
       score: to_number(row.score ?? 0),
-      profile_picture_url: row.users.profile_picture_url? `upload/profile-picture/${row.user_id}` : null,
+      profile_picture_url: visible_owner_id_set.has(row.user_id) && row.users.profile_picture_url 
+        ? `upload/profile-picture/${row.user_id}` 
+        : null,
     }));
 
     const entries = allEntries.slice(0, 25);
@@ -198,6 +216,15 @@ export const leaderboard_services = {
         }
 
         const score = Number(Number(average_score.toFixed(2)));
+
+        if(Math.floor(score) === 0) {
+
+          await prisma.leaderboard.deleteMany({
+            where: { user_id, category, scope, period_start }
+          });
+
+          continue;
+        }
 
         await prisma.leaderboard.upsert({
           where: {
