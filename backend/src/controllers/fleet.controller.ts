@@ -2,6 +2,8 @@ import { AuthRequest } from "../middleware/auth";
 import { Response } from 'express';
 import { fleet_services } from "../services/fleet_services";
 import { OrganizationRole } from '@prisma/client';
+import { auth_services } from "../services/auth_services";
+import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 
 
 const fleet_controller = {
@@ -270,6 +272,62 @@ const fleet_controller = {
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve scheduled trips" });
         }
 
+    },
+
+    async add_driver(req:AuthRequest, res: Response){
+
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return;
+        }
+        
+        if((!org_role && !org_id) || !org_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a driver' });
+            return;
+        }
+    
+            
+        const {email, username, name, surname, phone_number, dob } = req.body;
+
+        try{
+
+            await auth_services.add_driver_to_org(user_id, org_id, { email, username, name, surname, phone_number, dob });
+
+            return res.status(201).json({
+                message: "Successfully added driver"
+            });
+
+        }catch(err:any){
+
+            if(err instanceof ValidationError){
+                res.status(422).json({error: err.errorCode, message: err.message});
+                return;
+            }
+
+            if(err instanceof ConflictError){
+                res.status(409).json({error: err.errorCode, message: err.message});
+                return;
+            }
+
+            if(err instanceof ExtendedError && err.errorCode == "UNAUTHORIZED"){
+                res.status(403).json({error: err.errorCode, message: err.message});
+                return;
+            }
+
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR"});
+            return;
+            
+        }
     },
 };
 

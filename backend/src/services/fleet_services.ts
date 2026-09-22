@@ -69,7 +69,7 @@ export const fleet_services = {
 
     async add_organization(user_id: string, name: string){
 
-        if(name.trim.length <= 0){
+        if(name.trim().length <= 0){
             throw new Error('Name cannot be empty');
         }
 

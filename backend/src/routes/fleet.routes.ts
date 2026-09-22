@@ -11,7 +11,7 @@ const fleet_router = Router();
 /**
  * @openapi
  * /api/fleet/add_organization:
- *   get:
+ *   post:
  *     tags:
  *       - Fleet
  *     summary: Add new organization
@@ -79,18 +79,21 @@ const fleet_router = Router();
  *               error: INTERNAL_SERVER_ERROR
  *               message: Failed to add organization
  */
-fleet_router.get('/add_organization', verify_token, create_user_based_limiter(), fleet_controller.add_organization);
+fleet_router.post('/add_organization', verify_token, create_user_based_limiter(), fleet_controller.add_organization);
 
 
 fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), vehicle_router.add_fleet_vehicle);
 
+fleet_router.patch("/:trip_id/start_scheduled_trip", verify_token, create_user_based_limiter(), fleet_controller.start_scheduled_trip);
 
-fleet_router.post("/:trip_id/start_scheduled_trip", verify_token, create_user_based_limiter(), fleet_controller.start_scheduled_trip);
+fleet_router.post("/add_driver", verify_token, create_user_based_limiter(), fleet_controller.add_driver);
 
 fleet_router.get('/fleet_drivers', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_drivers);
 
 fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_vehicles);
 
 fleet_router.get('/scheduled_trips', verify_token, create_user_based_limiter(), fleet_controller.list_sheduled_trips);
+
+
 
 export default fleet_router;

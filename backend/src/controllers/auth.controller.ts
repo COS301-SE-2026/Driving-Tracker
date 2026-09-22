@@ -50,7 +50,6 @@ const auth_controller={
         }
             
         
-
         try{
             //User and refresh token returned from service
             const {user, refresh_token, user_org}=await auth_services.login(identifier,password);

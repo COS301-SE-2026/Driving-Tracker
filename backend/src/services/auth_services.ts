@@ -226,7 +226,7 @@ export const auth_services = {
         });
 
         if(!manager || !(manager.role == OrganizationRole.MANAGER || manager.role == OrganizationRole.ADMIN)){
-            throw new Error("Not authorized to add drivers.");
+            throw new ExtendedError("Not authorized to add drivers", "UNAUTHORIZED");
         }
 
         const { email, ...data } = driver_data;
@@ -235,7 +235,7 @@ export const auth_services = {
 
         return await prisma.$transaction(async (tx) => {
 
-            const { user, verificationToken } = await create_user_account({
+            const { user } = await create_user_account({
                 email: normalized_email,
                 ...data,
                 consent_status: true
