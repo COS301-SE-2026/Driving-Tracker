@@ -141,6 +141,15 @@ interface ApiService{
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
 
+    @GET("map/road_defects")
+    suspend fun getRoadDefects(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("heading") heading: Double? = null,
+        @Query("radius") radius: Int? = 100,
+        @Query("min_reports") minReports: Int? = 3
+    ): RoadDefectsResponse
+
     //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse
