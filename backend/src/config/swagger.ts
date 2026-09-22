@@ -247,6 +247,38 @@ const options: swaggerJsdoc.Options = {
                         address: { type: 'string', nullable: true, example: '100 Main St, Joburg, South Africa' },
                     }
                 },
+                RoadDefect: {
+                    type: 'object',
+                    required: ['lat', 'lng', 'reports', 'avg_severity', 'distance_m', 'bearing_deg'],
+                    properties: {
+                        lat: { type: 'number', example: -25.7461 },
+                        lng: { type: 'number', example: 28.2313 },
+                        reports: { type: 'integer', example: 4 },
+                        avg_severity: { type: 'number', example: 3.85 },
+                        distance_m: { type: 'number', example: 42.5 },
+                        bearing_deg: { type: 'number', example: 35.2 },
+                    },
+                },
+                RoadDefectsResponse: {
+                    type: 'object',
+                    required: ['message', 'data'],
+                    properties: {
+                        message: { type: 'string', example: 'Road defects retrieved successfully' },
+                        data: {
+                            type: 'object',
+                            required: ['radius_m', 'defects'],
+                            properties: {
+                                radius_m: { type: 'number', example: 100 },
+                                defects: {
+                                    type: 'array',
+                                    items: {
+                                        $ref: '#/components/schemas/RoadDefect',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
                 AddressData: {
                     type: 'object',
                     properties: {
