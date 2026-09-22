@@ -208,23 +208,35 @@ jobs:
           java-version: 17
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Set up Android SDK and Tools
         run: |
           set -euo pipefail
+          # 1. Add pre-installed cmdline-tools and platform-tools to the environment PATH
+          echo "${ANDROID_HOME}/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "${ANDROID_HOME}/platform-tools" >> $GITHUB_PATH
+          
+          # 2. Define the path to sdkmanager
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          
+          # 3. Accept all Android SDK licenses
+          echo "Accepting licenses..."
+          yes | $SDKMANAGER --licenses || true
+          
+          # 4. Install the platforms. We include 35 as a stable base for the runner
+          echo "Installing SDK platforms..."
+          $SDKMANAGER --install "platform-tools" "platforms;android-35"
+          $SDKMANAGER --install "platforms;android-36" || echo "Note: android-36 platform not found in remote, using local if available"
 
-          sdkmanager --install "platform-tools" "platforms;android-36"
-
+          # 5. Install the highest available build-tools
+          echo "Installing build tools..."
           for bt in 36.0.1 36.0.0 35.0.1 35.0.0 34.0.0; do
-            if sdkmanager --install "build-tools;${bt}"; then
-              exit 0
+            if $SDKMANAGER --install "build-tools;${bt}"; then
+              echo "Successfully installed build-tools;${bt}"
+              break
             fi
           done
 
-          echo "Failed to install Android build-tools" >&2
-          exit 1
-          
-      - run: chmod +x ./gradlew
-      - run: ./gradlew test --stacktrace
+      - name: Run Unit Tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --stacktrace
