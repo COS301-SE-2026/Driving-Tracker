@@ -92,16 +92,6 @@ class TripTrackingService: Service() {
 
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
-
-    private fun loadGlobalHotspots() {
-        serviceScope.launch {
-            tripRepository.getGlobalHotspots().onSuccess {
-                globalHotspots = it
-            }.onFailure {
-                Log.e("TrackingService", "Failed to load hotspots for alerts")
-            }
-        }
-    }
     private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
         val tripId = currentTripId ?:return@StopMonitor
 
