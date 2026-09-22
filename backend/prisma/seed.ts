@@ -20,6 +20,12 @@ function getSAloc() {
         lng: faker.number.float({ min: SACords.lng.min, max: SACords.lng.max, fractionDigits: 6 })
     };
 }
+function getTestLoc() {
+    return {
+        lat: faker.number.float({ min: -26.148, max: -26.138, fractionDigits: 6 }),
+        lng: faker.number.float({ min: 27.837, max: 27.847, fractionDigits: 6 })
+    };
+}
 
 async function main() {
 
@@ -531,13 +537,13 @@ async function main() {
                     },
 
                     trip_events: {
-                        create: Array.from({ length: 2 }).map(() => {
-                            const eventLoc = getSAloc();
+                        create: Array.from({ length: 5 }).map(() => {
+                            const eventLoc = getTestLoc(); // Use the test location
                             return {
-                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION', 'SHARP_CORNER']),
+                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION']),
                                 latitude: eventLoc.lat,
                                 longitude: eventLoc.lng,
-                                severity: faker.number.float({ min: 1, max: 10, fractionDigits: 2 }),
+                                severity: faker.number.float({ min: 5, max: 10, fractionDigits: 2 }),
                                 sensor_source: 'ACCELEROMETER',
                                 recorded_at: faker.date.recent()
                             }

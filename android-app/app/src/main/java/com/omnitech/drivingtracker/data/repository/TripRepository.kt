@@ -118,6 +118,15 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
         }
     }
+    suspend fun getGlobalHotspots(): Result<List<TripEventDto>> {
+        return try {
+            val response = api.getHotspots()
+            Result.success(response.data)
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepo", "Failed to fetch community hotspots: ${e.message}")
+            Result.failure(e)
+        }
+    }
     suspend fun startTrip(
         vehicleId: String,
         dataSource: String,
