@@ -63,3 +63,65 @@ export async function createVehicle(
     return result.data;
 
 }
+
+export async function searchVehicleImage(
+    make: string,
+    model: string,
+    year: number,
+): Promise<ImageSearchResult | null> {
+
+    const params = new URLSearchParams({
+        make,
+        model,
+        year: String(year),
+    });
+
+    const response = await fetch(
+        `${API_URL}/vehicle/image-search?${params.toString()}`,
+        {
+            headers: getHeaders(),
+        },
+    );
+
+    const result = await parseResponse<{
+        data: ImageSearchResult | null;
+    }>(response);
+
+    return result.data;
+
+}
+
+export async function getDrivers(): Promise<Driver[]> {
+
+    const response = await fetch(
+        `${API_URL}/users/drivers`,
+        {
+            headers: getHeaders(),
+        },
+    );
+
+    const result = await parseResponse<{ data: Driver[] }>(response);
+
+    return result.data;
+
+}
+
+export async function assignDriver(
+    vehicleId: string,
+    driverId: string,
+): Promise<void> {
+
+    const response = await fetch(
+        `${API_URL}/vehicle/${vehicleId}/driver`,
+        {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({
+                driver_id: driverId,
+            }),
+        },
+    );
+
+    await parseResponse(response);
+
+}
