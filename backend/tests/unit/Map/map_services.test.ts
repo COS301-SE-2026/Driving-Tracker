@@ -385,44 +385,33 @@ describe('map services get reverse geocode', ()=>{
   
 });
 
-describe('Map services get_all_hotspots', () =>{
+describe('Map services get_all_hotspots with grouping', () =>{
     beforeEach(()=>{jest.clearAllMocks()});
-    it("Returns filtered and mapped hotspots from the database", async () => {
-        const recordedAt = new Date();
-        const mock_hotspots = [{
-            latitude: -26.143,
-            longitude: 27.842,
-            type: 'HARSH_BRAKE',
-            event_id: 'e1',
-            recorded_at: recordedAt
-        }];
-        mock_prisma.trip_events.findMany.mockResolvedValue(mock_hotspots);
+    it("Returns only clustered hotspots (3+ within 500m) and filters isolated ones", async () => {
+        const now = new Date();
+        const mock_data = [
+            
+            { event_id: 'c1', type: 'HARSH_BRAKE', latitude: -26.143000, longitude: 27.842000, recorded_at: now },
+            { event_id: 'c2', type: 'HARSH_BRAKE', latitude: -26.143001, longitude: 27.842001, recorded_at: now },
+            { event_id: 'c3', type: 'HARSH_BRAKE', latitude: -26.143002, longitude: 27.842002, recorded_at: now },
+            
+            { event_id: 'i1', type: 'HARSH_ACCELERATION', latitude: -26.200000, longitude: 27.900000, recorded_at: now }
+        ];
+        
+        mock_prisma.trip_events.findMany.mockResolvedValue(mock_data);
 
         const result = await map_services.get_all_hotspots();
 
-        expect(mock_prisma.trip_events.findMany).toHaveBeenCalledWith({
-            where: {
-                OR: [
-                    { type: 'HARSH_BRAKE' },
-                    { type: 'HARSH_ACCELERATION' }
-                ]
-            },
-            select: {
-                latitude: true,
-                longitude: true,
-                type: true,
-                event_id: true,
-                recorded_at: true
-            }
-        });
-
-        expect(result).toEqual([{
-            event_id: 'e1',
+        // Should return only the 3 cluster points, not the isolated one
+        expect(result.length).toBe(3);
+        expect(result.map(r => r.event_id)).not.toContain('i1');
+        expect(result[0]).toEqual({
+            event_id: 'c1',
             event_type: 'HARSH_BRAKE',
-            latitude: -26.143,
-            longitude: 27.842,
-            time_stamp: recordedAt
-        }]);
+            latitude: -26.143000,
+            longitude: 27.842000,
+            time_stamp: now
+        });
     });
     it('throws error when database query fails', async () => {
         mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));

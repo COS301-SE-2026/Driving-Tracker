@@ -22,8 +22,8 @@ function getSAloc() {
 }
 function getTestLoc() {
     return {
-        lat: -26.143 + (Math.random() - 0.5) * 0.01, // Slight variance around your hotspot
-        lng: 27.842 + (Math.random() - 0.5) * 0.01
+        lat: faker.number.float({ min: -26.148, max: -26.138, fractionDigits: 6 }),
+        lng: faker.number.float({ min: 27.837, max: 27.847, fractionDigits: 6 })
     };
 }
 

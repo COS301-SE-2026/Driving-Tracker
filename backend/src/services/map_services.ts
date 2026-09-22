@@ -70,6 +70,18 @@ const azure_route_response_schema = z.object({
         })
     ),
 });
+function calculate_distance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const earth_radius = 6371e3; 
+    const distance_lat = (lat2 - lat1) * Math.PI / 180;
+    const distance_lng = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(distance_lat / 2) * Math.sin(distance_lat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(distance_lng / 2) * Math.sin(distance_lng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earth_radius * c;
+}
 export const map_services ={
     async get_map_token(): Promise<AzureMapsTokenResponse>{
         return {
@@ -240,7 +252,7 @@ export const map_services ={
         };
     },
     async get_all_hotspots(){
-        const hotspot= await prisma.trip_events.findMany({
+        const rawhotspots= await prisma.trip_events.findMany({
             where: {
                 OR: [
                     { type: 'HARSH_BRAKE' },
@@ -255,7 +267,26 @@ export const map_services ={
                 recorded_at: true
             }
         });
-        return hotspot.map(h => ({
+        if (rawhotspots.length < 3) return [];
+        const filteredHotspots = rawhotspots.filter((p1) => {
+            const lat1 = Number(p1.latitude);
+            const lng1 = Number(p1.longitude);
+
+            const neighborCount = rawhotspots.reduce((count, p2) => {
+                const lat2 = Number(p2.latitude);
+                const lng2 = Number(p2.longitude);
+                if (Math.abs(lat1 - lat2) > 0.005 || Math.abs(lng1 - lng2) > 0.005) {
+                    return count;
+                }
+
+                // 2. Precise Haversine distance
+                const distance = calculate_distance(lat1, lng1, lat2, lng2);
+                return distance <= 500 ? count + 1 : count;
+            }, 0);
+
+            return neighborCount >= 3;
+        });
+        return filteredHotspots.map(h => ({
             event_id: h.event_id,
             event_type: h.type,
             latitude: h.latitude,
