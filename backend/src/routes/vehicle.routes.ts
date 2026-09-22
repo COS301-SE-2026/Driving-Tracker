@@ -262,7 +262,7 @@ vehicle_router.delete("/:vehicle_id", verify_token, vehicle.remove_vehicle);
  *               error: INTERNAL_SERVER_ERROR
  *               message: Internal server error
  */
-vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
+vehicle_router.patch("/:vehicle_id", verify_token, vehicle.update_vehicle);
 //read fuel analytics
 vehicle_router.get("/fuel_analytics", verify_token, create_user_based_limiter(), vehicle.get_fuel_analytics);
 
