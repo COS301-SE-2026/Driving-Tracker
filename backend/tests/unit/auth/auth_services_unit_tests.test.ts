@@ -347,6 +347,7 @@ describe('Auth services.reset_password', () => {
         expect(mock_prisma.users.update).toHaveBeenCalledWith({
             where: { user_id: 'u3' },
             data: {
+                email_verified: true,
                 password_hash: 'new_hashed_pw',
                 password_reset_token: null,
                 reset_token_exp: null,
