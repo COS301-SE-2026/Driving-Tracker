@@ -220,10 +220,57 @@ const fleet_controller = {
                 });
             }
   
-            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve fleet vehicles" });
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to start scheduled trip" });
 
         }
-    }
+    },
+
+    async list_sheduled_trips(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return;
+        }
+        
+        if((!org_role && !org_id) || !org_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list scheduled trips' });
+            return;
+        }
+
+        const driver_id = req.query.driver_id as string | undefined;
+
+
+        try{
+        
+            const trips = await fleet_services.list_scheduled_trips(user_id, org_id, { driver_id });
+
+            return res.status(200).json({
+                message: 'Scheduled trips retrieved successfully',
+                data: { trips },
+            });
+
+        }catch(error: any){
+
+            if(error?.message?.includes("Not a member of this organization")){
+
+                return res.status(403).json({
+                    error: "UNAUTHORIZED", message: error.message
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve scheduled trips" });
+        }
+
+    },
 };
 
 export default fleet_controller;

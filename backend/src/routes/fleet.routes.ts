@@ -91,4 +91,6 @@ fleet_router.get('/fleet_drivers', verify_token, create_user_based_limiter(), fl
 
 fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_vehicles);
 
+fleet_router.get('/scheduled_trips', verify_token, create_user_based_limiter(), fleet_controller.list_sheduled_trips);
+
 export default fleet_router;

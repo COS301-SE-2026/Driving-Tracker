@@ -1,4 +1,4 @@
-import { OrganizationRole } from "@prisma/client";
+import { OrganizationRole, Prisma } from "@prisma/client";
 import prisma from "../db/prisma";
 import { act } from "react";
 import { map_services } from "./map_services";
@@ -415,7 +415,86 @@ export const fleet_services = {
 
         return new_trip;
 
-    }
+    },
+
+    async list_scheduled_trips(user_id: string, org_id: string, filters?: { driver_id?: string }){
+        
+        const membership = await prisma.organization_members.findUnique({
+                where: { 
+                    org_id_user_id: {
+                        org_id, user_id
+                    } 
+                },
+                select: { role: true },
+        });
+
+        if(!membership) {
+            throw new Error("Not a member of this organization");
+        }
+
+        const is_manager_or_admin = membership.role === OrganizationRole.ADMIN || membership.role === OrganizationRole.MANAGER;
+
+        if(!is_manager_or_admin && filters?.driver_id && filters.driver_id !== user_id){
+            throw new Error("Not authorized to view another driver's trips");
+        }
+
+        const where: Prisma.tripsWhereInput = {
+            status: "SCHEDULED",
+            users: {
+                org_memberships: {
+                    some: { org_id },
+                },
+            },
+            ...(is_manager_or_admin
+                ? filters?.driver_id 
+                    ? { user_id: filters.driver_id }
+                    : {}
+                : { user_id }),
+        };
+
+        const trips = await prisma.trips.findMany({
+            where,
+            orderBy: { scheduled_for: 'asc' },
+            select: {
+                trip_id: true,
+                status: true,
+                scheduled_for: true,
+                scheduled_end: true,
+                planned_start_addr: true,
+                planned_start_lat: true,
+                planned_start_lng: true,
+                planned_end_addr: true,
+                planned_dest_lat: true,
+                planned_dest_lng: true,
+                distance_km: true,
+                duration_minutes: true,
+                vehicle_id: true,
+                vehicles: {
+                    select: { make: true, model: true, year: true },
+                },
+                ...(is_manager_or_admin
+                    ? {
+                        users: {
+                            select: {
+                                user_id: true,
+                                name: true,
+                                surname: true,
+                                email: true,
+                            },
+                        },
+                    }
+                    : {}),
+            },
+
+        });
+
+        const result = trips.map(({ users, ...trip }) => ({
+            ...trip,
+            driver: users ?? undefined,
+        }));
+
+        return result;
+    },
 
 
 
