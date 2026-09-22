@@ -32,8 +32,8 @@ export default function FleetMap({
         //creating azure maps instance
         const map = new atlas.Map(mapElement.current, {
 
-            center: [-74.08, 40.57],
-            zoom: 10,
+            center: [28.2293, -25.7479],
+            zoom: 11,
             view: "Auto",
             style: "road",
 

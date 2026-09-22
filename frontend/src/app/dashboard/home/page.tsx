@@ -19,10 +19,10 @@ const fallbackDrivers: Driver[] = [
         status: "On trip",
         location: [-74.15, 40.51],
         route: [
-            [-74.15, 40.51],
-            [-74.15, 40.51],
-            [-74.15, 40.51],
-            [-74.15, 40.51],
+            [28.188, -25.747],
+            [28.205, -25.755],
+            [28.225, -25.760],
+            [28.1245, -25.770],
         ],
     },
     {
@@ -31,9 +31,9 @@ const fallbackDrivers: Driver[] = [
         status: "Inactive",
         location: [-74.1, 40.57],
         route: [
-            [-74.1, 40.57],
-            [-74.05, 40.61],
-            [-74.02, 40.64],
+            [28.230, -25.746],
+            [28.245, -25.735],
+            [28.260, -25.725],
         ],
     },
     {
@@ -42,9 +42,10 @@ const fallbackDrivers: Driver[] = [
         status: "On trip",
         location: [-74.08, 40.54],
         route: [
-            [-74.08, 40.54],
-            [-74.04, 40.58],
-            [-73.98, 40.62],
+            [28.275, -25.765],
+            [28.290, -25.750],
+            [28.305, -25.735],
+            [28.1320, -25.720],
         ],
     },
     
@@ -112,7 +113,7 @@ export default function DashboardHomePage() {
 
     //filtering driver cards by the search input
     const filteredDrivers = useMemo(() => {
-        const normalizedSearch = search.trim(). toLowerCase();
+        const normalizedSearch = search.trim().toLowerCase();
 
         if (!normalizedSearch) {
             return drivers;
@@ -122,7 +123,7 @@ export default function DashboardHomePage() {
     }, [drivers, search]);
 
     return (
-        <main className="flex min-h-screen w-full bg-white">
+        <main className="flex h-screen w-full overflow-hidden bg-white">
 
             <Navbar />
 
@@ -204,8 +205,8 @@ export default function DashboardHomePage() {
             </aside>
 
             {/* Main map and stats area */}
-            <section className="flex min-w-0 flex-1 flex-col">
-                <div className="h-[460px] border-b-2 border-[#159fe9]">
+            <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+                <div className="h-3/4 min-h-0 border-b-2 border-[#159fe9]">
                     <FleetMap
                         drivers={drivers}
                         selectedDriverId={selectedDriverId}
@@ -213,7 +214,7 @@ export default function DashboardHomePage() {
                 </div>
 
                 {/* Stats */}
-                <section className="px-[26px] py-4">
+                <section className="h-1/4 shrink-0 overflow-auto px-[26px] py-4">
                     <h1 className="mb-6 text-[25px] font-bold">Events &amp; Stats</h1>
 
                     <div className="grid grid-cols-2 items-center gap-8 text-center md:grid-cols-4">
