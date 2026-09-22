@@ -84,6 +84,9 @@ fleet_router.get('/add_organization', verify_token, create_user_based_limiter(),
 
 fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), vehicle_router.add_fleet_vehicle);
 
+
+fleet_router.post("/:trip_id/start_scheduled_trip", verify_token, create_user_based_limiter(), fleet_controller.start_scheduled_trip);
+
 fleet_router.get('/fleet_drivers', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_drivers);
 
 fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_vehicles);

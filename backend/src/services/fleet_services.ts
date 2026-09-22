@@ -2,6 +2,7 @@ import { OrganizationRole } from "@prisma/client";
 import prisma from "../db/prisma";
 import { act } from "react";
 import { map_services } from "./map_services";
+import { to_number } from "./trips_services";
 
 export interface schedule_trip_data{
     vehicle_id: string;
@@ -16,6 +17,17 @@ export interface schedule_trip_data{
         lat: number;
         lng: number;
     };
+};
+
+export interface start_scheduled_trip_data{
+    trip_id: string;
+    vehicle_id: string;
+    start_time: Date;
+    start_location:{
+        lat: number;
+        lng: number;
+    };
+    fuel_level_start?: number;
 };
 
 export const fleet_services = {
@@ -271,6 +283,7 @@ export const fleet_services = {
             dest_lng: data.planned_end_location.lng,
         });
 
+
         const BUFFER_SECONDS = 10*60;
         const total_seconds = route.travel_time_seconds+ BUFFER_SECONDS;
 
@@ -308,6 +321,99 @@ export const fleet_services = {
             trip: trip,
             route: route.points
         };
+    },
+
+    async start_scheduled_trip(user_id: string, org_id: string, data: start_scheduled_trip_data){
+
+        const new_trip = await prisma.$transaction(async (tx) => { 
+
+            const user = await prisma.organization_members.findUnique({
+                    where: { 
+                        org_id_user_id: {
+                            org_id, user_id
+                        } 
+                    }
+            });
+
+            if(!user){
+                throw new Error("Driver not found");
+            }
+
+            const trips = await prisma.trips.findMany({
+                where: {
+                    user_id: user.user_id,
+                    OR: [
+                        {status: "IN_PROGRESS" },
+                        { trip_id: data.trip_id, status: "SCHEDULED" },
+                    ],
+                },
+            });
+
+            const active_trip = trips.find(t => t.status === "IN_PROGRESS");
+            const scheduled_trip = trips.find(t => t.trip_id === data.trip_id);
+
+            if (active_trip) {
+                throw new Error("Trip already in progress");
+            }
+
+            if(!scheduled_trip){
+                throw new Error("Scheduled trip not found");
+            }
+            
+            const vehicle_info = await prisma.vehicles.findUnique({
+                where: {
+                    vehicle_id: data.vehicle_id
+                },
+                select: {
+                    make:true,
+                    model:true,
+                    year:true,
+                    fuel_efficiency:true
+                }
+            });
+
+            let fuel_est: number | null = null;
+            let planned_distance_km: number | null = null;
+
+            const dest_lat = to_number(scheduled_trip.planned_dest_lat);
+            const dest_lng = to_number(scheduled_trip.planned_dest_lng);
+
+            if (dest_lat && dest_lng) {
+                const route = await map_services.suggested_routes({
+                    start_lat: data.start_location.lat,
+                    start_lng: data.start_location.lng,
+                    dest_lat: dest_lat,
+                    dest_lng: dest_lng,
+                });
+
+                planned_distance_km = route.distance_km;
+                
+                fuel_est = ((to_number(vehicle_info?.fuel_efficiency) ??0) / 100) * planned_distance_km;
+            }
+
+            const update_result = await prisma.trips.updateMany({
+                where:{ trip_id: data.trip_id, status: "SCHEDULED" },
+                data: {
+                    user_id: user.user_id,
+                    vehicle_id: data.vehicle_id,
+                    start_time: data.start_time,
+                    start_latitude: data.start_location.lat,
+                    start_longitude: data.start_location.lng,
+                    fuel_estimate: fuel_est,
+                    fuel_level_start: data.fuel_level_start,
+                    status: "IN_PROGRESS"
+                },
+            });
+
+            if(update_result.count === 0){
+                throw new Error("Trip no longer available to start");
+            }
+
+            return tx.trips.findUniqueOrThrow({where: { trip_id: data.trip_id }});
+
+        });
+
+        return new_trip;
 
     }
 

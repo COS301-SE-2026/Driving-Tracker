@@ -143,6 +143,86 @@ const fleet_controller = {
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve fleet vehicles" });
 
         }
+    },
+
+    async start_scheduled_trip(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return;
+        }
+        
+        if((!org_role && !org_id) || !org_id){
+            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to start scheduled trips' });
+            return;
+        }
+
+        try{
+
+            const { trip_id } = req.params;
+
+            const {
+                    vehicle_id,
+                    start_time,
+                    start_location,
+                    fuel_level_start,
+                } = req.body;
+            
+            const trip = await fleet_services.start_scheduled_trip(user_id, org_id, {
+                trip_id,
+                vehicle_id,
+                start_time,
+                start_location,
+                fuel_level_start
+            });
+
+            return res.status(200).json({
+                message: 'Scheduled trip started successfully',
+                data: trip,
+            });
+
+        }catch(error: any){
+
+            if(error?.message?.includes("Driver not found")){
+
+                return res.status(404).json({
+                    error: "USER_NOT_FOUND", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Trip already in progress")){
+
+                return res.status(409).json({
+                    error: "TRIP_IN_PROGRESS", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Scheduled trip not found")){
+
+                return res.status(404).json({
+                    error: "TRIP_NOT_FOUND", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Trip no longer available to start")){
+
+                return res.status(409).json({
+                    error: "CANNOT_START_TRIP", message: error.message
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve fleet vehicles" });
+
+        }
     }
 };
 
