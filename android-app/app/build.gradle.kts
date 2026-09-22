@@ -123,4 +123,7 @@ dependencies {
 
     //Graphs
     implementation(libs.vico.compose.m3)
+
+    //Socket.io
+    implementation(libs.socket.io.client)
 }
