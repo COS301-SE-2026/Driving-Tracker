@@ -193,8 +193,82 @@ const map_controller = {
                 message: "Failed to fetch address"
             });
         }
+    },
+    async get_road_defects(req: AuthRequest, res: Response){
+        try{
+            const user_id = req.user?.sub;
+            if(!user_id){
+                res.status(401).json({
+                    error: 'UNAUTHORIZED',
+                    message: "Cannot access map services",
+                });
+                return;
+            }
+            const { lat, lng, heading, radius, min_reports } = req.query;
+
+            const parsed_lat = Number(lat);
+            const parsed_lng = Number(lng);
+
+            if(
+                lat === undefined || 
+                lng === undefined ||
+                !Number.isFinite(parsed_lat) || 
+                parsed_lat < -90 ||
+                parsed_lat > 90 ||
+                !Number.isFinite(parsed_lng) ||
+                parsed_lng < -180 ||
+                parsed_lng > 180
+            ){
+                res.status(400).json({
+                    error: "INVALID_COORDINATES",
+                    message: "Valid latitude and longitude are required",
+                });
+                return;
+            }
+
+            let parsed_heading: number | undefined;
+            if(heading !== undefined && heading !== null && heading !== ""){
+                parsed_heading = Number(heading);
+
+                if(
+                    !Number.isFinite(parsed_heading) || 
+                    parsed_heading < 0 ||
+                    parsed_heading >= 360
+                ){
+                    res.status(400).json({
+                        error: "INVALID_HEADING",
+                        message: "Heading must be a number between 0 and 359.99",
+                    });
+                    return;
+                }
+            }
+
+            const parsed_radius = radius !== undefined ? Number(radius) : 100;
+            const parsed_min_reports = min_reports !== undefined ? Number(min_reports) : 3;
+
+            const defects = await map_services.get_road_defects({
+                lat: parsed_lat,
+                lng: parsed_lng,
+                heading: parsed_heading,
+                radius_m: Number.isFinite(parsed_radius) && parsed_radius > 0 ? parsed_radius : 100,
+                min_reports: Number.isFinite(parsed_min_reports) && parsed_min_reports > 0 ? parsed_min_reports : 3,
+            });
+
+            res.status(200).json({
+                message: "Road defects retrieved successfully",
+                data: {
+                    radius_m: Number.isFinite(parsed_radius) && parsed_radius > 0 ? parsed_radius: 100,
+                    defects,
+                },
+            });
+        }catch(error: any){
+            console.error("Error in get_road_defects", error);
+            res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to fetch road defects",
+            });
+        }
     }
-    
 };
 
 export default map_controller;
