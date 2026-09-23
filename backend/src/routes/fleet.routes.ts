@@ -82,7 +82,7 @@ const fleet_router = Router();
 fleet_router.post('/add_organization', verify_token, create_user_based_limiter(), fleet_controller.add_organization);
 
 
-fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), vehicle_router.add_fleet_vehicle);
+fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), fleet_controller.add_fleet_vehicle);
 
 fleet_router.patch("/:trip_id/start_scheduled_trip", verify_token, create_user_based_limiter(), fleet_controller.start_scheduled_trip);
 

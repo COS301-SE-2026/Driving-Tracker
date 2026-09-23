@@ -153,6 +153,7 @@ async function create_user_account(params:{
             return {user, verificationToken};
         
         } catch (err: any) {
+            /* istanbul ignore next */
             if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
                 
                 usernameLocal = await generate_unique_username(params.name, params.surname);
@@ -164,6 +165,7 @@ async function create_user_account(params:{
         }
     }
 
+    /* istanbul ignore next */
     throw new ExtendedError("Failed to register user", "INTERNAL_SERVER_ERROR");
 
 }

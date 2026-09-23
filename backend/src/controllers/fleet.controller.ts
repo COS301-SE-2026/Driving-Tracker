@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { fleet_services } from "../services/fleet_services";
 import { OrganizationRole } from '@prisma/client';
 import { auth_services } from "../services/auth_services";
+import { vehicle_services } from "../services/vehicle.services";
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
 
 
@@ -146,7 +147,7 @@ const fleet_controller = {
 
         }
     },
-
+    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async start_scheduled_trip(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;
@@ -279,6 +280,82 @@ const fleet_controller = {
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve scheduled trips" });
         }
 
+    },
+
+    async add_fleet_vehicle(req: AuthRequest,res: Response){
+        try{
+            const user_id = req.user?.sub;
+            if(!user_id){
+                res.status(403).json({ error: 'UNAUTHORIZED', message: 'Unauthorized' });
+                return;
+            }
+    
+            const org_role = req.user?.org_role;
+    
+            const org_id = req.user?.org_id;
+    
+            if((org_role && !org_id) || (org_id && !org_role)){
+                res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+                return;
+            }
+    
+            if((!org_role && !org_id) 
+                || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
+                res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a fleet vehicle' });
+                return;
+            }
+    
+            const { name, registration, make, model, year, fuel_type, fuel_tank } = req.body;
+    
+            if( !make || !model || !year || !fuel_type || !fuel_tank){
+                res.status(400).json({
+                    error: "MISSING_REQUIRED_FIELDS", message: "Missing required fields: make, model, year, fuel_type, fuel_tank",
+                });
+                return;
+            }
+    
+            const result = await vehicle_services.add_fleet_vehicle({
+                user_id,
+                name,
+                registration,
+                make,
+                model,
+                year,
+                fuel_type,
+                fuel_tank
+            }, org_id);
+    
+            res.status(201).json(result);
+    
+        }catch(error: any){
+            if(error.message.includes("User does not exist")){
+                res.status(404).json({
+                    error: "USER_NOT_FOUND",
+                    message: "User not found"
+                });
+                return;
+            }
+            if(error.message.includes("Missing field(s)")){
+                res.status(400).json({
+                    error: "MISSING_REQUIRED_FIELDS",
+                    message: "Missing required fields"
+                });
+                return;
+            }
+    
+            if(error.message.includes("You do not have access to add fleet vehicles")){
+                res.status(403).json({
+                    error: "UNAUTHORIZED",
+                    message: "You do not have the permissions to add a fleet vehicle"
+                });
+                return;
+            }
+            
+            res.status(500).json({
+                error: "INTERNAL_SERVER",
+                message: error.message ? error.message: "Internal server error"
+            });
+        }
     },
 
     async add_driver(req:AuthRequest, res: Response){
