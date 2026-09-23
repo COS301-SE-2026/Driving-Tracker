@@ -16,7 +16,7 @@ type FilterProps = {
 
 const statusOptions = ["Not Started", "On Trip", "Completed"];
 
-export default function FilterDrivers({filters, onChange} :FilterProps){
+export default function FilterRoutes({filters, onChange} :FilterProps){
 
     const [open, setOpen] = useState(false);
     const toggleStatus = (status: string) => {
