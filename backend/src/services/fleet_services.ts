@@ -161,6 +161,7 @@ export const fleet_services = {
                 surname: d.users.surname,
                 email: d.users.email,
                 username: d.users.username,
+                phone_number: d.users.phone_number,
                 profile_picture_url: d.users.profile_picture_url,
                 joined_at: d.joined_at,
                 status

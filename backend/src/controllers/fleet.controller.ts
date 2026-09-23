@@ -251,10 +251,11 @@ const fleet_controller = {
 
         const driver_id = req.query.driver_id as string | undefined;
 
+         const { status, start_date, end_date} = (req.query || {}) as any;
 
         try{
         
-            const trips = await fleet_services.list_fleet_trips(user_id, org_id, { driver_id });
+            const trips = await fleet_services.list_fleet_trips(user_id, org_id, { driver_id, status, start_date, end_date });
 
             return res.status(200).json({
                 message: 'Fleet trips retrieved successfully',
