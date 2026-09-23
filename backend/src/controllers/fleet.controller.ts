@@ -227,7 +227,7 @@ const fleet_controller = {
         }
     },
 
-    async list_sheduled_trips(req: AuthRequest, res: Response){
+    async list_fleet_trips(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;
         const org_role = req.user?.org_role;
@@ -253,14 +253,21 @@ const fleet_controller = {
 
         try{
         
-            const trips = await fleet_services.list_scheduled_trips(user_id, org_id, { driver_id });
+            const trips = await fleet_services.list_fleet_trips(user_id, org_id, { driver_id });
 
             return res.status(200).json({
-                message: 'Scheduled trips retrieved successfully',
+                message: 'Fleet trips retrieved successfully',
                 data: { trips },
             });
 
         }catch(error: any){
+
+            if(error instanceof ValidationError){
+
+                return res.status(422).json({
+                    error: error.errorCode , message: error.message
+                });
+            }
 
             if(error?.message?.includes("Not a member of this organization")){
 

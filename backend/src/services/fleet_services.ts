@@ -3,6 +3,7 @@ import prisma from "../db/prisma";
 import { act } from "react";
 import { map_services } from "./map_services";
 import { to_number } from "./trips_services";
+import { ValidationError } from "../utils/errors";
 
 export interface schedule_trip_data{
     vehicle_id: string;
@@ -417,7 +418,22 @@ export const fleet_services = {
 
     },
 
-    async list_scheduled_trips(user_id: string, org_id: string, filters?: { driver_id?: string }){
+    async list_fleet_trips(user_id: string, org_id: string, filters: { driver_id?: string, status?: string, start_date?: Date, end_date?: Date }){
+
+        if (filters?.start_date && isNaN(filters?.start_date.getTime())) {
+            throw new ValidationError("Invalid start date", "start_date");
+        }
+        if (filters?.end_date && isNaN(filters?.end_date.getTime())) {
+            throw new ValidationError("Invalid end date", "end_date");
+        }
+
+        
+        const start_date = filters?.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const end_date = filters?.end_date || new Date();
+
+        if(start_date > end_date) {
+            throw new ValidationError("Start date must be before end date", "dates");
+        }
         
         const membership = await prisma.organization_members.findUnique({
                 where: { 
@@ -439,12 +455,16 @@ export const fleet_services = {
         }
 
         const where: Prisma.tripsWhereInput = {
-            status: "SCHEDULED",
             users: {
                 org_memberships: {
                     some: { org_id },
                 },
             },
+            created_at: {
+                gte: start_date,
+                lte: end_date,
+            },
+            ...(filters?.status ? { status: filters.status } : {} ),
             ...(is_manager_or_admin
                 ? filters?.driver_id 
                     ? { user_id: filters.driver_id }
@@ -495,8 +515,6 @@ export const fleet_services = {
 
         return result;
     },
-
-
 
 };
 
