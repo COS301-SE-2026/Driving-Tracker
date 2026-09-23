@@ -117,7 +117,7 @@ const mockFleetServices = fleet_services as {
     list_fleet_drivers: jest.MockedFunction<typeof fleet_services.list_fleet_drivers>;
     list_fleet_vehicles: jest.MockedFunction<typeof fleet_services.list_fleet_vehicles>;
     schedule_trip: jest.MockedFunction<typeof fleet_services.schedule_trip>;
-    list_scheduled_trips: jest.MockedFunction<typeof fleet_services.list_scheduled_trips>;
+    list_fleet_trips: jest.MockedFunction<typeof fleet_services.list_fleet_trips>;
     start_scheduled_trip: jest.MockedFunction<typeof fleet_services.start_scheduled_trip>;
 };
 

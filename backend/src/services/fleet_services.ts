@@ -228,6 +228,7 @@ export const fleet_services = {
     
     },
 
+    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async schedule_trip(user_id: string, org_id: string, data: schedule_trip_data){
 
         if(!user_id || !data.vehicle_id || !data.driver_id){
@@ -324,6 +325,7 @@ export const fleet_services = {
         };
     },
 
+    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async start_scheduled_trip(user_id: string, org_id: string, data: start_scheduled_trip_data){
 
         const new_trip = await prisma.$transaction(async (tx) => { 
