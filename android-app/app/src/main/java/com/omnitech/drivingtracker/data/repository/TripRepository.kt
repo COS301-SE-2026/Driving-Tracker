@@ -40,6 +40,20 @@ class TripRepository @Inject constructor(
 
     suspend fun saveTripLocally(trip: TripEntity) = tripDao.insertTrip(trip)
 
+    suspend fun getRoadDefects(
+        lat: Double,
+        lng: Double,
+        heading: Double? = null,
+        radius: Int = 100
+    ): Result<RoadDefectsData> {
+        return try{
+            val response = api.getRoadDefects(lat, lng, heading, radius)
+            Result.success(response.data)
+        }catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
     fun bufferRoadEvent(event: RoadEvent){
         synchronized(roadEventBuffer){
             roadEventBuffer.add(event)
