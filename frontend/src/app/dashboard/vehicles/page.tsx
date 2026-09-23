@@ -5,7 +5,6 @@ import { Filter, Plus, Search } from "lucide-react";
 import Navbar from "@/components/fleet/Navbar";
 import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
-import AssignDriverDialog from "@/components/vehicles/AssignDriverDialog";
 import { getVehicles } from "@/lib/vehicle-api";
 import type { Driver, Vehicle } from "@/components/vehicles/types";
 
@@ -14,8 +13,7 @@ export default function VehiclesPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [search, setSearch] = useState("");
     const [isAddOpen, setIsAddOpen] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = 
-    | useState<Vehicle | null>(null);
+    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -127,7 +125,7 @@ export default function VehiclesPage() {
                             onClick={() => setIsAddOpen(true)}
                             className="flex min-h-[258px] w-full max-w-[238px] flex-col items-center justify-center gap-2 rounded-[9px] text-center hover:bg-slate-50"
                         >
-                            <Plus size={76} sstrokeWidth={1.5} />
+                            <Plus size={76} strokeWidth={1.5} />
                             <span className="text-sm">Add Vehicle</span>
                         </button>
                     </div>
@@ -146,11 +144,6 @@ export default function VehiclesPage() {
                 onCreated={handleVehicleCreated}
             />
 
-            <AssignDriverDialog
-                vehicle={selectedVehicle}
-                onClose={() => setSelectedVehicle(null)}
-                onAssigned={handleDriverAssigned}
-            />
         </main>
     )
 
