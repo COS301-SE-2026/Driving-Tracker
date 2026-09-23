@@ -4,6 +4,7 @@ import {useState} from "react";
 import {Search, ArrowRight} from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import FilterRoutes, {FilterState} from "@/components/routes/FilterRoutes"
+import AddRoute from "@/components/routes/AddRoute";
 
 type Route = {
     id: string;
@@ -107,6 +108,9 @@ export default function Routes(){
         return 0;
     });
 
+    const [addOpen, setAddOpen] = useState(false);
+    const driverOptions = Array.from(new Set(routesList.map((r)=> r.driver)));
+
     return(
         <div className="flex">
             <DashboardNavbar />
@@ -119,9 +123,12 @@ export default function Routes(){
 
                 <div className="mt-6 flex items-center justify-between">
                     <button
+                    onClick={() => setAddOpen(true)}
                     className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
                         + Assign Route
                     </button>
+                    <AddRoute open = {addOpen} onClose={()=>setAddOpen(false)}
+                    onSubmit={(data) => console.log(data)} driverOptions={driverOptions} />
 
                     <div className="flex items-center gap-3">
                         <div className="relative">
