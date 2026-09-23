@@ -50,6 +50,72 @@ function mpg_to_lper100km(mpg: number): number | null {//helper function for con
     return 235.215 / mpg;
 }
 
+async function get_vehicle_fuel_benchmark(
+    make: string, 
+    model: string,
+    year: number
+){
+
+    let benchmark_lper100km: number | null = null;
+    let warning: string | null = null;
+
+    try {
+        if(year >= 2015 && year <= 2020){
+            const benchmarks = await fetch_vehicle_benchmark(
+                make,
+                model,
+                year
+            );    
+
+            const validMpgValues = benchmarks
+                .map((benchmark) => Number(benchmark.combined_mpg))
+                .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
+
+            if (validMpgValues.length > 0) {
+                const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
+                benchmark_lper100km = mpg_to_lper100km(averageMpg);
+            }
+        }
+    } catch  {
+        // CAR API failure is handled by the database fallback below
+        console.error("CAR API lookup failed, using database fallback.");
+    }
+
+    if (benchmark_lper100km === null) {
+        const databaseAverage = await prisma.vehicles.aggregate({
+            where: {
+                make: {
+                    equals: make.trim(),
+                    mode: "insensitive",
+                },
+                model: {
+                    equals: model.trim(),
+                    mode: "insensitive",
+                },
+                year: year,
+                fuel_efficiency: {
+                    not: null,
+                },
+            },
+            _avg: {
+                fuel_efficiency: true,
+            },
+        });
+
+        const average = databaseAverage._avg.fuel_efficiency;
+
+        if(average === null){
+            benchmark_lper100km = 8.0;
+            warning = "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
+        }else{
+            benchmark_lper100km = Number(average);
+        }
+    }
+
+    return { benchmark_lper100km, warning };
+    
+}
+
 export const vehicle_services={
     async get_all_vehicles(data:get_vehicles): Promise<any[]>{
         const user_id = data.user_id;
@@ -183,71 +249,13 @@ export const vehicle_services={
             if(!user){
                 throw new Error("User does not exist");
             }
-            
-            let benchmark_lper100km: number | null = null;
-            let warning: string | null = null;
 
-            try {
-                if(data.year >= 2015 && data.year <= 2020){
-                    const benchmarks = await fetch_vehicle_benchmark(
-                        data.make,
-                        data.model,
-                        data.year
-                    );    
-
-                    const validMpgValues = benchmarks
-                        .map((benchmark) => Number(benchmark.combined_mpg))
-                        .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
-
-                    if (validMpgValues.length > 0) {
-                        const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
-                        benchmark_lper100km = mpg_to_lper100km(averageMpg);
-                    }
-                }
-            } catch  {
-                // CAR API failure is handled by the database fallback below
-                console.error("CAR API lookup failed, using database fallback.");
-            }
-
-            if (benchmark_lper100km === null) {
-                const databaseAverage = await prisma.vehicles.aggregate({
-                    where: {
-                        make: {
-                            equals: data.make.trim(),
-                            mode: "insensitive",
-                        },
-                        model: {
-                            equals: data.model.trim(),
-                            mode: "insensitive",
-                        },
-                        year: data.year,
-                        fuel_efficiency: {
-                            not: null,
-                        },
-                    },
-                    _avg: {
-                        fuel_efficiency: true,
-                    },
-                });
-
-                const average = databaseAverage._avg.fuel_efficiency;
-
-                if(average === null){
-                    benchmark_lper100km = 8.0;
-                    warning = "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
-                }else{
-                    benchmark_lper100km = Number(average);
-                }
-                // benchmark_lper100km = average === null
-                //     ? 8.0 // only if all other sources are unavailable
-                //     : Number(average);
-            }
-            
-                
-                //if it comes back as null then the first trip will be used as the fuel efficiency of the car until the first 5 trips are reached 
-                //if (benchmark_lper100km == null && data.year>=2015 && data.year<=2020) return null;
-            
-             
+            const { benchmark_lper100km, warning } = await get_vehicle_fuel_benchmark(
+                data.make,
+                data.model,
+                data.year
+            );
+                  
             const result = await prisma.$transaction(async (tx) => {
                 const vehicle = await tx.vehicles.create({
                     data: {
@@ -298,75 +306,24 @@ export const vehicle_services={
                 throw new Error("Missing field(s)");
             }
 
-            const user = await prisma.organization_members.findUnique({
-                where: { org_id, user_id: data.user_id },
-            });
+        const user = await prisma.organization_members.findUnique({
+            where: { org_id, user_id: data.user_id },
+        });
 
-            if(!user){
-                throw new Error("User does not exist");
-            }
+        if(!user){
+            throw new Error("User does not exist");
+        }
 
-            if(user.role != OrganizationRole.ADMIN && user.role != OrganizationRole.MANAGER){
-                throw new Error("You do not have access to add fleet vehicles");
-            }
+        if(user.role != OrganizationRole.ADMIN && user.role != OrganizationRole.MANAGER){
+            throw new Error("You do not have access to add fleet vehicles");
+        }
+
+        const { benchmark_lper100km, warning } = await get_vehicle_fuel_benchmark(
+                data.make,
+                data.model,
+                data.year
+            );
             
-            let benchmark_lper100km: number | null = null;
-            let warning: string | null = null;
-
-            try {
-
-                if(data.year >= 2015 && data.year <= 2020){
-                    const benchmarks = await fetch_vehicle_benchmark(
-                        data.make,
-                        data.model,
-                        data.year
-                    );    
-
-                    const validMpgValues = benchmarks
-                        .map((benchmark) => Number(benchmark.combined_mpg))
-                        .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
-
-                    if (validMpgValues.length > 0) {
-                        const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
-                        benchmark_lper100km = mpg_to_lper100km(averageMpg);
-                    }
-                }
-            } catch  {
-                console.error("CAR API lookup failed, using database fallback.");
-            }
-
-            if(benchmark_lper100km === null) {
-                const databaseAverage = await prisma.vehicles.aggregate({
-                    where: {
-                        make: {
-                            equals: data.make.trim(),
-                            mode: "insensitive",
-                        },
-                        model: {
-                            equals: data.model.trim(),
-                            mode: "insensitive",
-                        },
-                        year: data.year,
-                        fuel_efficiency: {
-                            not: null,
-                        },
-                    },
-                    _avg: {
-                        fuel_efficiency: true,
-                    },
-                });
-
-                const average = databaseAverage._avg.fuel_efficiency;
-
-                if(average === null){
-                    benchmark_lper100km = 8.0;
-                    warning = "Your vehicle is not fully supported. Fuel estimates and efficiency will not be accurate until 5 trips have elapsed."
-                }else{
-                    benchmark_lper100km = Number(average);
-                }
-            }
-            
-
         const vehicle = await prisma.vehicles.create({
             data: {
                 name: data.name,

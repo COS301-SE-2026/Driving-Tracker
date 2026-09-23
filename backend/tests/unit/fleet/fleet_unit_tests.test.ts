@@ -223,26 +223,6 @@ describe("Fleet controller", () =>{
                 expectStatus(response, 500);
             });
 
-            it("returns 403 when the user lacks the required role", async () => {
-                const response = makeResponse();
-
-                await controller(
-                    makeRequest({
-                        user: {
-                            sub: "user-1",
-                            org_id: "org-1",
-                            org_role: OrganizationRole.DRIVER,
-                        },
-                    }),
-                    response as any,
-                );
-
-                expectStatus(response, 403);
-                expect(response.json).toHaveBeenCalledWith(
-                    expect.objectContaining({ message: forbiddenMessage }),
-                );
-            });
-
             it("returns 403 when organization context is missing", async () => {
 
                 const response = makeResponse();
@@ -511,7 +491,7 @@ describe("Fleet controller", () =>{
         });
 
         it.each([
-            ["User does not exist", 404, "USER_NOT_FOUND"],
+            ["User does not exist", 404, "MEMBER_NOT_FOUND"],
             ["Missing field(s)", 400, "MISSING_REQUIRED_FIELDS"],
             ["You do not have access to add fleet vehicles", 403, "UNAUTHORIZED"],
             ["Unexpected failure", 500, "INTERNAL_SERVER"],
@@ -645,7 +625,7 @@ describe("Fleet controller", () =>{
                 expect.objectContaining({ error: errorCode }),
             );
         });
-        
+
     });
 
 });

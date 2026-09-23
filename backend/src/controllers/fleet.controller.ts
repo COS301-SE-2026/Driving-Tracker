@@ -5,6 +5,27 @@ import { OrganizationRole } from '@prisma/client';
 import { auth_services } from "../services/auth_services";
 import { vehicle_services } from "../services/vehicle.services";
 import { ConflictError, ExtendedError, ValidationError } from '../utils/errors';
+import { Or } from "@prisma/client/runtime/client";
+
+function check_org_authorization(
+    res: Response,
+    org_role: OrganizationRole | null | undefined,
+    org_id: string | null | undefined,
+    message: string = 'You do not have permissions to perform this action',
+    allowed_roles: OrganizationRole[] = [],
+){
+    if((org_role && !org_id) || (org_id && !org_role)){
+            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
+            return false;
+        }
+        
+    if((!org_role && !org_id) || (allowed_roles.length > 0 && !allowed_roles.includes(org_role!)) || !org_id){
+        res.status(403).json({ error: 'UNAUTHORIZED', message });
+        return false;
+    }
+
+    return true;
+}
 
 
 const fleet_controller = {
@@ -69,20 +90,13 @@ const fleet_controller = {
             });
         }
 
-        if((org_role && !org_id) || (org_id && !org_role)){
-            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-            return;
-        }
-        
-        if((!org_role && !org_id) 
-            || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list fleet drivers' });
-            return;
-        }
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , "You do not have the permissions to list fleet drivers"
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
 
         try{
             
-            const drivers = await fleet_services.list_fleet_drivers(user_id, org_id);
+            const drivers = await fleet_services.list_fleet_drivers(user_id, org_id!);
 
             return res.status(200).json({
                 message: 'Fleet drivers successfully retrieved',
@@ -114,20 +128,12 @@ const fleet_controller = {
             });
         }
 
-        if((org_role && !org_id) || (org_id && !org_role)){
-            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-            return;
-        }
-        
-        if((!org_role && !org_id) 
-            || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list fleet vehicles' });
-            return;
-        }
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to list fleet vehicles')){  return; }
 
         try{
             
-            const vehicles = await fleet_services.list_fleet_vehicles(user_id, org_id);
+            const vehicles = await fleet_services.list_fleet_vehicles(user_id, org_id!);
 
             return res.status(200).json({
                 message: 'Fleet vehicles successfully retrieved',
@@ -159,15 +165,8 @@ const fleet_controller = {
             });
         }
 
-        if((org_role && !org_id) || (org_id && !org_role)){
-            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-            return;
-        }
-        
-        if((!org_role && !org_id) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to start scheduled trips' });
-            return;
-        }
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to start scheduled trips')){  return; }
 
         try{
 
@@ -180,7 +179,7 @@ const fleet_controller = {
                     fuel_level_start,
                 } = req.body;
             
-            const trip = await fleet_services.start_scheduled_trip(user_id, org_id, {
+            const trip = await fleet_services.start_scheduled_trip(user_id, org_id!, {
                 trip_id,
                 vehicle_id,
                 start_time,
@@ -239,15 +238,8 @@ const fleet_controller = {
             });
         }
 
-        if((org_role && !org_id) || (org_id && !org_role)){
-            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-            return;
-        }
-        
-        if((!org_role && !org_id) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to list scheduled trips' });
-            return;
-        }
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to list scheduled trips')){  return; }
 
         const driver_id = req.query.driver_id as string | undefined;
 
@@ -255,7 +247,7 @@ const fleet_controller = {
 
         try{
         
-            const trips = await fleet_services.list_fleet_trips(user_id, org_id, { driver_id, status, start_date, end_date });
+            const trips = await fleet_services.list_fleet_trips(user_id, org_id!, { driver_id, status, start_date, end_date });
 
             return res.status(200).json({
                 message: 'Fleet trips retrieved successfully',
@@ -294,17 +286,10 @@ const fleet_controller = {
             const org_role = req.user?.org_role;
     
             const org_id = req.user?.org_id;
-    
-            if((org_role && !org_id) || (org_id && !org_role)){
-                res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-                return;
-            }
-    
-            if((!org_role && !org_id) 
-                || (org_role !== OrganizationRole.ADMIN && org_role !== OrganizationRole.MANAGER) || !org_id){
-                res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a fleet vehicle' });
-                return;
-            }
+
+            if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to add a fleet vehicle'
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
     
             const { name, registration, make, model, year, fuel_type, fuel_tank } = req.body;
     
@@ -324,15 +309,15 @@ const fleet_controller = {
                 year,
                 fuel_type,
                 fuel_tank
-            }, org_id);
+            }, org_id!);
     
             res.status(201).json(result);
     
         }catch(error: any){
             if(error.message.includes("User does not exist")){
                 res.status(404).json({
-                    error: "USER_NOT_FOUND",
-                    message: "User not found"
+                    error: "MEMBER_NOT_FOUND",
+                    message: "Member not found"
                 });
                 return;
             }
@@ -371,22 +356,16 @@ const fleet_controller = {
             });
         }
 
-        if((org_role && !org_id) || (org_id && !org_role)){
-            res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong processing your session' });
-            return;
-        }
-        
-        if((!org_role && !org_id) || !org_id){
-            res.status(403).json({ error: 'UNAUTHORIZED', message: 'You do not have the permissions to add a driver' });
-            return;
-        }
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to add a driver'
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
     
             
         const {email, username, name, surname, phone_number, dob } = req.body;
 
         try{
 
-            await auth_services.add_driver_to_org(user_id, org_id, { email, username, name, surname, phone_number, dob });
+            await auth_services.add_driver_to_org(user_id, org_id!, { email, username, name, surname, phone_number, dob });
 
             return res.status(201).json({
                 message: "Successfully added driver"

@@ -156,14 +156,14 @@ fleet_router.post('/add_organization', verify_token, create_user_based_limiter()
  *               error: UNAUTHORIZED
  *               message: You do not have the permissions to add a fleet vehicle
  *       404:
- *         description: User was not found
+ *         description: Member was not found or is not in that organization
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: USER_NOT_FOUND
- *               message: User not found
+ *               error: MEMBER_NOT_FOUND
+ *               message: Member not found
  *       429:
  *         description: Rate limit triggered
  *         content:
