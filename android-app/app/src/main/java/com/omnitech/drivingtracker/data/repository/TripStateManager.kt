@@ -36,6 +36,19 @@ class TripStateManager @Inject constructor(){
 
     val detourTravelTimeSeconds = _detourTravelTimeSeconds.asStateFlow()
 
+    private val notifiedHotspotIds = mutableSetOf<String>()
+
+    fun markHotspotNotified(eventId: String): Boolean {
+        synchronized(notifiedHotspotIds) {
+            return notifiedHotspotIds.add(eventId)
+        }
+    }
+
+    fun clearNotifiedHotspots() {
+        synchronized(notifiedHotspotIds) {
+            notifiedHotspotIds.clear()
+        }
+    }
     fun setExpectedTravelTime(seconds: Int){
         _baseTravelTimeSeconds.value = seconds
     }
@@ -77,5 +90,6 @@ class TripStateManager @Inject constructor(){
         _nearbyPois.value = emptyList()
         _baseTravelTimeSeconds.value = null
         _detourTravelTimeSeconds.value = null
+        clearNotifiedHotspots()
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,6 +66,7 @@ import java.time.Instant
 import kotlinx.coroutines.delay
 import com.omnitech.drivingtracker.data.models.MapPoiItem
 import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
+import com.omnitech.drivingtracker.utils.VoiceAlertManager
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -111,6 +113,40 @@ fun LiveTrip(
     }
     val context = LocalContext.current
     val tripPath by viewModel.tripPath.collectAsState()
+
+    var activeHotspotAlert by remember { mutableStateOf<String?>(null) }
+    val voiceAlertManager = remember(context) { VoiceAlertManager(context) }
+
+    DisposableEffect(voiceAlertManager) {
+        onDispose {
+            voiceAlertManager.shutdown()
+        }
+    }
+    //monitor the prox of hotspots and play voice alert
+    LaunchedEffect(liveMetrics,globalHotspots) {
+        val lat = liveMetrics.latitude
+        val lng = liveMetrics.longitude
+        if (lat == null || lng == null || lat == 0.0 || lng == 0.0 || globalHotspots.isEmpty()) return@LaunchedEffect
+
+        for(hotspot in globalHotspots){
+            val hLat = hotspot.latitude ?: continue
+            val hLng = hotspot.longitude ?: continue
+            val results = FloatArray(1)
+            android.location.Location.distanceBetween(lat, lng, hLat, hLng, results)
+            if (results[0] <= 500) { // 500 meters threshold
+                if (viewModel.checkAndNotifyHotspot(hotspot.eventId)) {
+                    voiceAlertManager.playHotspotAlert(hotspot.eventType)
+                    activeHotspotAlert = "HOTSPOT AHEAD: ${hotspot.eventType.replace("_", " ")}"
+                }
+            }
+        }
+    }
+    LaunchedEffect(activeHotspotAlert) {
+        if (activeHotspotAlert != null) {
+//            kotlinx.coroutines.delay(6000)
+            activeHotspotAlert = null
+        }
+    }
 
     val liveDistance = remember(tripPath){
         var total = 0.0
