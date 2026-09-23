@@ -596,3 +596,60 @@ function isVehicleBenchmarkArray(value: unknown[]): value is VehicleBenchmarkTri
         'trim_description' in item
     );
 }
+
+//seearching wikimedia commons for a vehicle image
+export async function search_vehicle_image(
+    make: string,
+    model: string,
+    year: number,
+) {
+    const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: `${year} ${make} ${model}`,
+        gsrnamespace: "6",
+        gsrlimit: "10",
+        prop: "imageinfo",
+        iiprop: "url",
+        iiurlwidth: "900",
+        format: "json",
+        origin: "*",
+    });
+
+    const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`,);
+
+    if (!response.ok) {
+        throw new Error("Vehicle image search failed");
+    }
+
+    const result = (await response.json()) as {
+        query?: {
+            pages?: Record<
+                string,
+                {
+                    title: string;
+                    imageinfo?: Array<{
+                        url?: string;
+                        thumburl?: string;
+                    }>;
+                }
+            >;
+        };
+    };
+
+    const pages = Object.values(result.query?.pages ?? []);
+
+    for (const page of pages) {
+        const image = page.imageinfo?.[0];
+
+        if (image?.url) {
+            return {
+                title: page.title,
+                image_url: image.url,
+                thumbnail_url: image.thumburl ?? image.url,
+            };
+        }
+    }
+
+    return null;
+}
