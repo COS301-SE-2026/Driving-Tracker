@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '../middleware/auth';
 import { vehicle_services } from '../services/vehicle.services';
+import { OrganizationRole } from '@prisma/client';
 
 
 export const get_all_vehicles = async(req: AuthRequest, res: Response)=>{

@@ -6,7 +6,8 @@ import { generate_refresh_token, AppJwtPayload } from '../middleware/auth';
 import {z} from "zod";
 import { ValidationError, ConflictError, ExtendedError } from '../utils/errors';
 import jwt from 'jsonwebtoken';
-import { Prisma } from '@prisma/client';
+import { OrganizationRole, Prisma } from '@prisma/client';
+import { fleet_services } from './fleet_services';
 
 const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
 
@@ -59,65 +60,121 @@ async function generate_unique_username(name: string, surname: string) {
     return username;
   }
 
+async function create_user_account(params:{
+     email: string;
+     username: string;
+     name: string;
+     surname:string;
+     phone_number: string;
+     dob: string;
+     consent_status: boolean;
+     password?: string;
+}){
+
+    if(!params.consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
+
+    const username_result=username_schema.safeParse(params.username);
+    
+    if(!username_result.success){
+        throw new ValidationError(username_result.error.issues.at(0)?.message!,"username");
+    }
+
+    const name_result=name_schema.safeParse(params.name);
+    
+    if(!name_result.success){
+        throw new ValidationError(name_result.error.issues.at(0)?.message!,"name");
+    }
+
+    const surname_result=name_schema.safeParse(params.surname);
+    
+    if(!surname_result.success){
+        throw new ValidationError(surname_result.error.issues.at(0)?.message!,"surname")
+    }
+
+    const phone_result=phone_schema.safeParse(params.phone_number);
+
+    if(!phone_result.success){
+        throw new ValidationError(phone_result.error.issues.at(0)?.message!,"phone")
+    }
+
+    const email_result=validate_email(params.email);
+    
+    if(!email_result.success){
+        throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
+    }
+
+    const dob_result=dob_schema.safeParse(params.dob);
+
+    if(!dob_result.success){
+        throw new ValidationError(dob_result.error.issues.at(0)?.message!,"dob")
+    }
+
+    const dob_date=dob_result.data;
+
+    const existing_user=await prisma.users.findFirst({
+            where: { email: params.email }
+        });
+
+    if(existing_user){
+
+        if(existing_user.email === params.email){
+
+            throw new ConflictError("You already have an account with this email address","email");
+        }
+    }
+
+    const hashedPassword = params.password 
+        ? await bcrypt.hash(params.password, 10)
+        : await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+
+    
+    let usernameLocal = params.username;
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const user = await prisma.users.create({
+            data: {
+                email: params.email,
+                username: usernameLocal,
+                name: params.name,
+                surname: params.surname,
+                dob: dob_date,
+                phone_number: params.phone_number,
+                password_hash: hashedPassword,
+                consent_status: params.consent_status,
+                email_verified: params.email.startsWith('loadtest_'),
+                verification_token: verificationToken
+                }
+            });
+
+            return {user, verificationToken};
+        
+        } catch (err: any) {
+            /* istanbul ignore next */
+            if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+                
+                usernameLocal = await generate_unique_username(params.name, params.surname);
+                if (attempt === maxAttempts - 1) throw new ConflictError('Username already taken', 'username');
+                continue; 
+            }
+
+            throw err;
+        }
+    }
+
+    /* istanbul ignore next */
+    throw new ExtendedError("Failed to register user", "INTERNAL_SERVER_ERROR");
+
+}
+
 export const auth_services = {
 
     async register (email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean)
     :Promise<{user: any}>{
         //validating all parameters
-        if(!consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
-
-        const username_result=username_schema.safeParse(username);
-        
-        if(!username_result.success){
-            throw new ValidationError(username_result.error.issues.at(0)?.message!,"username");
-        }
-
-        const name_result=name_schema.safeParse(name);
-        
-        if(!name_result.success){
-            throw new ValidationError(name_result.error.issues.at(0)?.message!,"name");
-        }
-
-        const surname_result=name_schema.safeParse(surname);
-        
-        if(!surname_result.success){
-            throw new ValidationError(surname_result.error.issues.at(0)?.message!,"surname")
-        }
-
-        const phone_result=phone_schema.safeParse(phone_number);
-
-        if(!phone_result.success){
-            throw new ValidationError(phone_result.error.issues.at(0)?.message!,"phone")
-        }
-
-        const normalized_email = email.trim().toLowerCase();
-
-        const email_result=validate_email(normalized_email);
-        
-        if(!email_result.success){
-            throw new ValidationError(email_result.error.issues.at(0)?.message!,"email")
-        }
-
-        const dob_result=dob_schema.safeParse(dob);
-
-        if(!dob_result.success){
-            throw new ValidationError(dob_result.error.issues.at(0)?.message!,"dob")
-        }
-
-        const dob_date=dob_result.data;
-
-        //Checking if user with email already exists
-        const existing_user=await prisma.users.findFirst({
-            where: { email: normalized_email }
-        });
-
-        if(existing_user){
-
-            if(existing_user.email === normalized_email){
-
-                throw new ConflictError("You already have an account with this email address","email");
-            }
-        }
 
         const password_result=validate_password(password);
 
@@ -125,68 +182,99 @@ export const auth_services = {
             throw new ValidationError(password_result.error.issues.at(0)?.message!,"password")
         }
         //password hashing with bcrypt
-        const hashedPassword=await bcrypt.hash(password,10);
+        //const hashedPassword=await bcrypt.hash(password,10);
 
-        let usernameLocal = username;
+        const normalized_email = email.trim().toLowerCase();
 
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const { user, verificationToken } = await create_user_account({
+            email: normalized_email, username, name, surname, phone_number, dob, consent_status, password,
+        });
 
-        const maxAttempts = 3;
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            try {
-                const user = await prisma.users.create({
-                data: {
-                    email: normalized_email,
-                    username: usernameLocal,
-                    name,
-                    surname,
-                    dob: dob_date,
-                    phone_number,
-                    password_hash: hashedPassword,
-                    consent_status: consent_status,
-                    email_verified:email.startsWith('loadtest_'),
-                    verification_token: verificationToken
-                    }
-                });
+        const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
+        await sendAuthEmail(
+            normalized_email,
+            "Verify your Driving Tracker Account",
+            `<h1>Welcome to Driving Tracker!</h1>
+            <p>Please click the link below to verify your email address and activate your account:</p>
+            <a href="${verificationUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+            <p>If you did not create this account, you may safely ignore this email.</p>`
+        );
 
+        return { user };
+        
+    },
 
-                //generating refresh token
-                // const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+    async add_driver_to_org(manager_user_id: string, org_id: string, driver_data: {
+        email: string;
+        username: string;
+        name: string;
+        surname:string;
+        phone_number: string;
+        dob: string;
+    }){
 
-                // await prisma.users.update({
-                //     where: {user_id: user.user_id}, 
-                //     data: {
-                //         refresh_token, 
-                //         refresh_token_exp: new Date(Date.now() +7*24*60*60*1000),
-                //     },
-                // });
-
-                const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
-                await sendAuthEmail(
-                    normalized_email,
-                    "Verify your Driving Tracker Account",
-                    `<h1>Welcome to Driving Tracker!</h1>
-                    <p>Please click the link below to verify your email address and activate your account:</p>
-                    <a href="${verificationUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
-                    <p>If you did not create this account, you may safely ignore this email.</p>`
-                );
-
-                return {user};
-            
-            } catch (err: any) {
-                if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-                    
-                    usernameLocal = await generate_unique_username(name, surname);
-                    if (attempt === maxAttempts - 1) throw new ConflictError('Username already taken', 'username');
-                    continue; 
+        const manager = await prisma.organization_members.findUnique({
+            where: { 
+                org_id_user_id: {
+                    org_id, user_id: manager_user_id,
                 }
+            },
+            select: {
+                role: true,
+                organizations:{
+                    select: { name: true },
+                },
+            },
+        });
 
-                throw err;
-            }
+        if(!manager || !(manager.role == OrganizationRole.MANAGER || manager.role == OrganizationRole.ADMIN)){
+            throw new ExtendedError("Not authorized to add drivers", "UNAUTHORIZED");
         }
 
-        throw new ExtendedError("Failed to register user", "INTERNAL_SERVER_ERROR");
-        
+        const { email, ...data } = driver_data;
+
+        const normalized_email = email.trim().toLowerCase();
+
+        return await prisma.$transaction(async (tx) => {
+
+            const { user } = await create_user_account({
+                email: normalized_email,
+                ...data,
+                consent_status: true
+            });
+
+            await tx.organization_members.create({
+                data: { org_id, user_id: user.user_id, role: OrganizationRole.DRIVER },
+            });
+
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            await tx.users.update({
+                where: { user_id: user.user_id },
+                data: {
+                    verification_token: null,
+                    password_reset_token: resetToken,
+                    reset_token_exp: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                },
+            });
+
+            return { user, resetToken };
+
+        }).then(async ({ user, resetToken }) => {
+
+            const setupUrl = `${process.env.APP_URL}/api/auth/reset_password_link?token=${encodeURIComponent(resetToken)}`;
+
+            await sendAuthEmail(
+                normalized_email,
+                `Setup your Driving Tracker account for ${manager.organizations.name}`,
+                `<h1>Welcome!</h1>
+                <p>You've been added to ${manager.organizations.name} as a driver. Click below to set your account password</p>
+                <a href="${setupUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Password</a>
+                <p>This link will expire in 7 days.</p>`
+            );
+
+            return { user };
+        });
+
     },
 
     async verify_email(token: string){
@@ -244,7 +332,6 @@ export const auth_services = {
             <p>We received a request to reset your password. Click the button to reset your password:</p>
             <a href="${resetUrl}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
             <p>This link will expire in 1 hour.</p>`
-
         );
     },
 
@@ -277,7 +364,8 @@ export const auth_services = {
                 password_reset_token: null,
                 reset_token_exp: null,
                 refresh_token: null,
-                refresh_token_exp: null
+                refresh_token_exp: null,
+                email_verified: true,
             }
         })
     },
@@ -303,7 +391,14 @@ export const auth_services = {
 
         if(!valid) throw new ValidationError("Password incorrect","password");
 
-        const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role});
+        const user_org = await prisma.organization_members.findUnique({
+            where: {
+                user_id: user.user_id
+            },
+        });
+
+        const refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role, 
+            org_id: user_org?.org_id ?? null, org_role: user_org?.role ?? null });
 
         await prisma.users.update({
             where: {user_id: user.user_id}, 
@@ -313,7 +408,7 @@ export const auth_services = {
             },
         });
 
-        return {user, refresh_token};
+        return {user, refresh_token, user_org};
     },
 
     async logout(user_id:string){
@@ -342,8 +437,15 @@ export const auth_services = {
 
         if(!user) throw new ExtendedError("Invalid refresh token", "UNAUTHORIZED");
 
+         const user_org = await prisma.organization_members.findUnique({
+            where: {
+                user_id: user.user_id
+            },
+        });
+
         //generatte new refresh token
-        const new_refresh_token=generate_refresh_token({sub: user.user_id, role: user.role});
+        const new_refresh_token=generate_refresh_token({ sub:user.user_id, role:user.role, 
+            org_id: user_org?.org_id ?? null, org_role: user_org?.role ?? null });
 
         //rotate refresh token
         await prisma.users.update({
@@ -354,7 +456,7 @@ export const auth_services = {
             },
         });
 
-        return {user, new_refresh_token};
+        return {user, new_refresh_token, user_org};
     },
 
     async get_profile(user_id: string){

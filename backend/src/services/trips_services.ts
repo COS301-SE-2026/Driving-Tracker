@@ -16,7 +16,7 @@ import leaderboard_services from './leaderboard_services';
 import { broadcast_trip_ended, force_revoke_trip_access } from '../socket';
 
 // Helper function to safely convert Decimal or number values to number
-function to_number(value: any): number | null {
+export function to_number(value: any): number | null {
     if (value === null || value === undefined) {
         return null;
     }

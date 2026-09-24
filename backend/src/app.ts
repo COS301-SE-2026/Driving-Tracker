@@ -17,6 +17,7 @@ import user_router from './routes/user.routes';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger';
+import fleet_router from './routes/fleet.routes';
 
 const app = express();
 
@@ -67,5 +68,6 @@ app.use('/map', map_router);
 app.use('/notifications', notifications_router);
 app.use('/upload', upload_router);
 app.use('/users', user_router);
+app.use('/fleet', fleet_router);
 
 export default app;
