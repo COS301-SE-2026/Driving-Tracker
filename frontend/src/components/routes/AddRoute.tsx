@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {X,Plus,Trash2,Circle} from "lucide-react";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
@@ -8,26 +8,51 @@ import {BASE_PATH} from "@/lib/basePath";
 type Stop = {id: string, address: string};
 type Status = "Not Started" | "On Trip" | "Completed";
 
+export type RouteFormData = {
+    title: string;
+    task: string;
+    driver: string;
+    vehicle: string;
+    stops: Stop[];
+}
+
 type addRouteDialogProps = {
     open: boolean;
     onClose: () => void;
     onSubmit: (data:
-        {title: string; task: string; driver: string; stops: Stop[]; status: Status}
+        {title: string; task: string; driver: string;vehicle: string; stops: Stop[]; status: Status}
     ) => void;
     driverOptions: string[];
+    vehicleOptions: string[];
+    initialData?: RouteFormData;
 };
 
+const emptyStops = (): Stop[] => [
+    {id: crypto.randomUUID(), address: ""},
+    {id: crypto.randomUUID(), address: ""},
+];
+
 export default function AddRoute(
-    {open, onClose, onSubmit, driverOptions} : addRouteDialogProps
+    {open, onClose, onSubmit, driverOptions, vehicleOptions, initialData} : addRouteDialogProps
 ){
 
-    const [title, setTitle] = useState("");
-    const [task, setTask] = useState("");
-    const [driver, setDriver] = useState("");
-    const [stops, setStops] = useState<Stop[]>([
-        {id: crypto.randomUUID(), address: ""},
-        {id: crypto.randomUUID(), address: ""}
-    ]);
+    const isEditing = !!initialData;
+
+    const [title, setTitle] = useState(initialData?.title ?? "");
+    const [task, setTask] = useState(initialData?.task ?? "");
+    const [driver, setDriver] = useState(initialData?.driver ?? "");
+    const [vehicle, setVehicle] = useState(initialData?.vehicle ?? "");
+    const [stops, setStops] = useState<Stop[]>(initialData?.stops ?? emptyStops());
+
+    useEffect(() => {
+        if (open){
+            setTitle(initialData?.title ?? "");
+            setTask(initialData?.task ?? "");
+            setDriver(initialData?.driver ?? "");
+            setVehicle(initialData?.vehicle ?? "");
+            setStops(initialData?.stops ?? emptyStops());
+        }
+    }, [open, initialData]);
 
     if (!open){
         return null;
@@ -54,6 +79,7 @@ export default function AddRoute(
     const resetForm = () => {
         setTitle("");
         setTask("");
+        setVehicle("");
         setDriver("");
         setStops(
             [
@@ -65,7 +91,7 @@ export default function AddRoute(
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({title, task, driver, stops, status: "Not Started"});
+        onSubmit({title, task, driver, vehicle, stops, status: "Not Started"});
         resetForm();
         onClose();
     };
@@ -132,6 +158,23 @@ export default function AddRoute(
 
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Vehicle
+                        </label>
+                        <select value = {vehicle} onChange={(e) => setVehicle(e.target.value)} required
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400">
+                                <option value = "" disabled>
+                                    Select a vehicle
+                                </option>
+                                {vehicleOptions.map((name) => (
+                                    <option key = {name} value={name}>
+                                        {name}
+                                    </option>
+                                ))}
+                            </select>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
                             Stops
                         </label>
                         <div className="flex flex-col gap-1">
@@ -188,7 +231,7 @@ export default function AddRoute(
                         </button>
 
                         <button type="submit" className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600">
-                            Create Route
+                            {isEditing? "Save Changes" : "Create Route"}
                         </button>
 
                     </div>

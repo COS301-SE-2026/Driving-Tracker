@@ -4,12 +4,21 @@ import {useState} from "react";
 import {Search, ArrowRight} from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import FilterRoutes, {FilterState} from "@/components/routes/FilterRoutes"
-import AddRoute from "@/components/routes/AddRoute";
+import AddRoute, { RouteFormData } from "@/components/routes/AddRoute";
+import RouteMenu from "@/components/routes/RouteMenu";
+import ViewRoute from "@/components/routes/ViewRoute";
+
+type Stop = {
+    id: string;
+    address: string;
+};
 
 type Route = {
     id: string;
     title: string;
     task: string;
+    vehicle: string;
+    stops: Stop[];
     startDestination: string;
     endDestination: string;
     driver: string;
@@ -18,9 +27,9 @@ type Route = {
 
 //mocks
 const routes: Route[] = [
-    {id: "1",title:"Bread delivery",task: "Sales",startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
-    {id: "2",title:"Egg delivery",task: "Sales",startDestination: "Logistics house",endDestination: "Spar Baysvillage",driver: "Sipho Man",status: "On Trip"},
-    {id: "3",title:"Shirts delivery",task: "Sales",startDestination: "Logistics house",endDestination: "PNP Clothing",driver: "Ally Jackson",status: "Completed"},
+    {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
+    {id: "2",title:"Egg delivery",task: "Sales",vehicle: "Car1",stops: [{id: "2-start", address: "Logistics house"},{id: "2-end", address: "Spar"}],startDestination: "Logistics house",endDestination: "Spar Baysvillage",driver: "Sipho Man",status: "On Trip"},
+    {id: "3",title:"Shirts delivery",task: "Sales",vehicle: "Car1",stops: [{id: "3-start", address: "Logistics house"},{id: "3-end", address: "PNP Hatfield"}],startDestination: "Logistics house",endDestination: "PNP Clothing",driver: "Ally Jackson",status: "Completed"},
 ];
 
 function StatusPill({status} : {status: Route["status"]}){
@@ -45,7 +54,13 @@ function StatusPill({status} : {status: Route["status"]}){
     );
 }
 
-function RouteCard({route}: {route: Route}){
+function RouteCard({route, onView, onEdit, onDelete}: {
+    route: Route;
+    onView: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+}){
+
     return (
         <div className="w-full rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-3 flex items-start justify-between">
@@ -56,6 +71,7 @@ function RouteCard({route}: {route: Route}){
                     View Progress
                     <ArrowRight size = {14}/>
                 </button>
+                <RouteMenu routeTitle={route.title} onView = {onView} onEdit={onEdit} onDelete={onDelete} />
             </div>
 
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -93,13 +109,52 @@ export default function Routes(){
 
     const [query, setQuery] = useState("");
     const [routesList, setRoutesList] = useState<Route[]>(routes);
-    const [filters, setFilters] = useState<FilterState>({status : [],driver: [], destination: [], sortBy: null});
+    const [filters, setFilters] = useState<FilterState>({status : [], sortBy: null});
+    const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+    const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
+
+    const handleDeleteRoute = (id: string) => {
+        setRoutesList((prev) => prev.filter((r) => r.id !== id));
+    };
+
+    const handleAddRoute = (data: RouteFormData)=> {
+        setRoutesList((prev) => [
+            ...prev,
+            {
+                id: crypto.randomUUID(),
+                title: data.title,
+                task: data.task,
+                vehicle: data.vehicle,
+                stops: data.stops,
+                startDestination: data.stops[0].address,
+                endDestination: data.stops[data.stops.length - 1].address,
+                driver: data.driver,
+                status: "Not Started",
+            },
+        ]);
+    };
+
+    const handleEditRoute = (data: RouteFormData) => {
+
+        if (!editingRoute){
+            return;
+        }
+
+        setRoutesList((prev) => 
+            prev.map((route) =>
+            route.id === editingRoute.id ?
+        {
+            ...route, ...data,
+            startDestination: data.stops[0].address,
+            endDestination: data.stops[data.stops.length - 1].address,
+        } : route
+        ));
+        setEditingRoute(null);
+    };
 
     const filtered = routesList
     .filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
     .filter((r) => filters.status.length === 0 || filters.status.includes(r.status))
-    .filter((r) => filters.destination.length === 0 || filters.destination.includes(r.endDestination))
-    .filter((r) => filters.driver.length === 0 || filters.driver.includes(r.driver))
     .sort((a,b) => {
         if (filters.sortBy === "title-asc"){
             return a.title.localeCompare(b.title);
@@ -123,8 +178,16 @@ export default function Routes(){
         return 0;
     });
 
+    const activeRoutes = filtered.filter(
+        (route) => route.status !== "Completed"
+    )
+    const pastRoutes = filtered.filter(
+        (route) => route.status === "Completed"
+    )
+
     const [addOpen, setAddOpen] = useState(false);
     const driverOptions = Array.from(new Set(routesList.map((r)=> r.driver)));
+    const vehicleOptions = ["Toyota Hilux", "Ford Ranger", "Nissan NP200"];
 
     return(
         <div className="flex">
@@ -142,8 +205,11 @@ export default function Routes(){
                     className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
                         + Assign Route
                     </button>
-                    <AddRoute open = {addOpen} onClose={()=>setAddOpen(false)}
-                    onSubmit={(data) => console.log(data)} driverOptions={driverOptions} />
+                    <ViewRoute open={viewingRoute !== null} onClose={()=> setViewingRoute(null)} route={viewingRoute} />
+                    <AddRoute open={addOpen} onClose={()=>setAddOpen(false)} onSubmit={handleAddRoute} driverOptions={driverOptions} vehicleOptions={vehicleOptions}/>
+                    <AddRoute open = {editingRoute !== null} onClose={()=>setEditingRoute(null)}
+                    onSubmit={handleEditRoute} vehicleOptions={vehicleOptions} driverOptions={driverOptions}
+                    initialData={editingRoute ?? undefined} />
 
                     <div className="flex items-center gap-3">
                         <div className="relative">
@@ -162,7 +228,10 @@ export default function Routes(){
                 <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
 
                     {filtered.map((route) => (
-                        <RouteCard key = {route.id} route = {route} />
+                        <RouteCard key = {route.id} route = {route}
+                        onView = {() => setViewingRoute(route)}
+                        onEdit={() => setEditingRoute(route)}
+                        onDelete = {() => handleDeleteRoute(route.id)} />
                     ))}
 
                 </div>

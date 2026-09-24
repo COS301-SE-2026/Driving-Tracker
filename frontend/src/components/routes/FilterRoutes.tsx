@@ -6,8 +6,6 @@ import { SlidersHorizontal } from "lucide-react";
 
 export type FilterState = {
     status: string[];
-    driver: string[];
-    destination: string[];
     sortBy: "title-asc" | "title-desc" | "driver-asc" | "driver-desc" | "destination-asc" | "destination-desc" | null;
 };
 
