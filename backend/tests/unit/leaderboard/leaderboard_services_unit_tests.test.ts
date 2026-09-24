@@ -4,12 +4,16 @@ jest.mock('../../../src/db/prisma', () => ({
         leaderboard: {
             findMany: jest.fn(),
             upsert: jest.fn(),
+            deleteMany: jest.fn(),
         },
         users: {
             findUnique: jest.fn(),
         },
         trip_scores: {
             aggregate: jest.fn(),
+        },
+        trusted_contacts: {
+             findMany: jest.fn(),
         }
     },
 }));
@@ -30,7 +34,10 @@ class MockDecimal{
 
 describe('Leaderboard servies', () => {
 
-    beforeEach(async()=>{jest.clearAllMocks()});
+    beforeEach(async()=>{
+        jest.clearAllMocks();
+        mock_prisma.trusted_contacts.findMany.mockResolvedValue([]);
+    });
 
     describe('Leaderboard services get leaderboard',()=>{
         
@@ -76,6 +83,8 @@ describe('Leaderboard servies', () => {
                     },
                 },
             ]);
+
+
 
             const result = await leaderboard_services.get_leaderboard({
                 user_id: 'u2',
@@ -162,12 +171,72 @@ describe('Leaderboard servies', () => {
                 },
             }]);
 
+            mock_prisma.trusted_contacts.findMany.mockResolvedValue([
+                {user_id: 'u1'},
+            ]);
+
             const result = await leaderboard_services.get_leaderboard({
                 user_id: 'u1',
                 category: 'SAFETY',
                 scope: 'ALL_TIME'
             });
             expect(result.data.entries[0].profile_picture_url).toBe('upload/profile-picture/u1');
+        });
+
+        it('reveals names only for users who added the caller as approved contact', async()=>{
+            mock_prisma.leaderboard.findMany.mockResolvedValue([
+                {
+                    leaderboard_id: 'lb1',
+                    user_id: 'u2',
+                    category: 'SAFETY',
+                    scope: 'ALL_TIME',
+                    score: new MockDecimal(92.5),
+                    users: {
+                        user_id: 'u1',
+                        name: 'Luke',
+                        surname: 'Cage',
+                        username: 'lukey',
+                        profile_picture_url: null,
+                    },
+                },
+                {
+                    leaderboard_id: 'lb2',
+                    user_id: 'u3',
+                    category: 'SAFETY',
+                    scope: 'ALL_TIME',
+                    score: new MockDecimal(40.0),
+                    users: {
+                        user_id: 'u2',
+                        name: 'Hide',
+                        surname: 'Jones',
+                        username: 'hidey',
+                        profile_picture_url: null,
+                    },
+                },
+            ]);
+
+            mock_prisma.trusted_contacts.findMany.mockResolvedValue([
+                { user_id: 'u2'},
+            ]);
+
+            const result = await leaderboard_services.get_leaderboard({
+                user_id: 'u1',
+                category: 'SAFETY',
+                scope: 'ALL_TIME',
+            });
+
+            expect(result.data.entries[0].display_name).toBe('lukey');
+            expect(result.data.entries[1].display_name).toBe('Anonymous Driver');
+
+            expect(mock_prisma.trusted_contacts.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        contact_user_id: 'u1',
+                        consent_status: 'APPROVED',
+                    }),
+                }),
+            );
+
         });
     });
 
@@ -187,19 +256,6 @@ describe('Leaderboard servies', () => {
 
         });
 
-        // it('filters out null categories', async () =>{
-        //     mock_prisma.leaderboard.findMany.mockResolvedValue([
-        //         {category: 'SAFETY'},
-        //         {category: null},
-        //         {category: 'OVERALL'},
-        //     ]);
-
-        //     const result = await leaderboard_services.get_categories();
-
-        //     expect(result.data.categories).toEqual(['SAFETY', 'OVERALL']);
-        //     expect(result.data.categories.length).toBe(2);
-        // });
-
     });
 
     describe('get scopes', () =>{
@@ -217,20 +273,6 @@ describe('Leaderboard servies', () => {
             expect(result.data.scopes.length).toBe(3);
 
         });
-
-        // it('filters out null scopes', async () =>{
-        //     mock_prisma.leaderboard.findMany.mockResolvedValue([
-        //         {scope: 'WEEKLY'},
-        //         {scope: 'ALL_TIME'},
-        //         {scope: null},
-        //     ]);
-
-        //     const result = await leaderboard_services.get_scopes();
-
-        //     expect(result.data.scopes).toEqual(['WEEKLY', 'ALL_TIME']);
-        //     expect(result.data.scopes.length).toBe(2);
-
-        // });
 
     });
 
@@ -293,7 +335,7 @@ describe('Leaderboard servies', () => {
         it('should handle Decimal to number conversion', async()=>{
             mock_prisma.trip_scores.aggregate.mockResolvedValue({
                 _avg: {
-                    safety_score: 87.654,
+                    safety_score: 0.32,
                     eco_score: 91.234,
                     overall_score: 89.567,
                 }
@@ -303,13 +345,13 @@ describe('Leaderboard servies', () => {
 
             await leaderboard_services.update_user_leaderboards('u1');
 
-            expect(mock_prisma.leaderboard.upsert).toHaveBeenCalledTimes(9);
+            expect(mock_prisma.leaderboard.upsert).toHaveBeenCalledTimes(6);
 
             const calls = mock_prisma.leaderboard.upsert.mock.calls;
-            const safety_call = calls.find((c: any) => c[0].where.user_id_category_scope_period_start.category === 'SAFETY');
+            //const safety_call = calls.find((c: any) => c[0].where.user_id_category_scope_period_start.category === 'SAFETY');
             const eco_call = calls.find((c: any) => c[0].where.user_id_category_scope_period_start.category === 'ECO');
 
-            expect(safety_call[0].update.score).toBe(87.65);
+            //expect(safety_call[0].update.score).not.toHaveBeenCalled();
             expect(eco_call[0].update.score).toBe(91.23);
         });
 

@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.trip
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -104,20 +106,20 @@ fun LiveTripContacts(
     var recenterCount by remember { mutableStateOf(0) }
 
 
-
     LaunchedEffect(tripId) {
         viewModel.loadTripInfo(tripId)
-        viewModel.startPolling(tripId)
+        //viewModel.startPolling(tripId)
     }
 
     LaunchedEffect(state.tripData) {
+        Log.d("LiveTripContacts", "Started at: ${state.tripData?.startedAt}")
         state.tripData?.startedAt?.let { startTime ->
             viewModel.startDurationTimer(startTime)
         }
     }
 
-    LaunchedEffect(state.location?.status) {
-        if(state.location?.status == "COMPLETED") {
+    LaunchedEffect(state.hasTripEnded) {
+        if(state.hasTripEnded) {
             showTripEndDialog = true
         }
     }
@@ -136,11 +138,19 @@ fun LiveTripContacts(
         }
     }
 
+    DisposableEffect(tripId){
+        viewModel.startWatching(tripId)
+
+        onDispose {
+            viewModel.stopWatching(tripId)
+        }
+    }
+
     if(showTripEndDialog){
         AlertDialog(
             onDismissRequest = { /*User cant dismiss by tapping outside dialog */ },
             title = { Text("Trip Ended", fontWeight = FontWeight.Bold)},
-            text = { Text("$driverName has arrived at their destination") },
+            text = { Text("$driverName has ended their trip") },
             confirmButton = {
                 Button(onClick = {
                     showTripEndDialog = false
@@ -259,7 +269,7 @@ fun LiveTripContacts(
             distanceKm = liveDistance,
             durationMinutes = liveDuration.toInt(),
             fuelEstimate = state.tripData?.fuelEstimate,
-            avgSpeed = state.location?.lastSpeedKmh.toString(),
+            avgSpeed = (state.location?.lastSpeedKmh?:0).toInt().toString(),
             isLive = true
         )
 

@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '../middleware/auth';
 import { vehicle_services } from '../services/vehicle.services';
+import { OrganizationRole } from '@prisma/client';
 import { search_vehicle_image } from '../services/vehicle.services';
 import { error } from 'console';
 
@@ -79,18 +80,24 @@ export const assign_vehicle = async(req: AuthRequest,res: Response)=>{
     }
 };
 
-export const update_name = async (req: AuthRequest, res: Response) => {
+export const update_vehicle = async (req: AuthRequest, res: Response) => {
     try{
         const user_id = req.user?.sub;
         const { vehicle_id } = req.params;
-        const{ name } = req.body;
+        const { name, registration, make, model, year, fuel_type, fuel_tank } = req.body;
 
         if(!user_id) return res.status(401).json({ error: "UNAUTHORIZED", message: 'Unauthorized'});
 
-        const result = await vehicle_services.update_vehicle_name({
+        const result = await vehicle_services.update_vehicle({
             user_id,
             vehicle_id, 
-            name
+            name,
+            registration, 
+            make, 
+            model, 
+            year, 
+            fuel_type, 
+            fuel_tank 
         });
         res.status(200).json(result);
     }catch(error: any){

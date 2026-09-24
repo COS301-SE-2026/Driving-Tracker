@@ -62,7 +62,7 @@ fun TripSummary(
     viewModel: TripSummaryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
+    val globalHotspots by viewModel.globalHotspots.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
     val tripPath by viewModel.tripPath.collectAsState()
 
@@ -72,6 +72,9 @@ fun TripSummary(
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
         }
+    }
+    LaunchedEffect(Unit){
+        viewModel.loadGlobalHotspots()
     }
 
     when (val state = uiState) {
@@ -126,7 +129,8 @@ fun TripSummary(
             TripSummaryContent(trip = mappedData,
                 navController = navController,
                 mapToken = mapToken,
-                tripPath = displayPath
+                tripPath = displayPath,
+                globalHotspots = globalHotspots
             )
         }
         else -> Unit
@@ -138,7 +142,8 @@ fun TripSummaryContent(
     trip: TripSummaryData,
     navController: NavController? = null,
     mapToken: String? = null,
-    tripPath: List<LocationDto> = emptyList()
+    tripPath: List<LocationDto> = emptyList(),
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList()
 ) {
     val hasValidPath = tripPath.isNotEmpty()
     val canShowMap = mapToken != null && hasValidPath
@@ -187,6 +192,7 @@ fun TripSummaryContent(
                 AzureMapContainer(
                     subscriptionKey = mapToken!!,
                     actualRoute = tripPath,
+                    tripEvents = globalHotspots,
                     isInteractive = true, // DISABLES SCROLL  here,
                     zoom = 13,
                     modifier = Modifier.fillMaxSize()

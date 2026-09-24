@@ -341,7 +341,8 @@ class SensorFusionManager @Inject constructor(
             gyroZ = gyroscope.getOrElse(2){0f},
             speedKmh = location.speed * 3.6f,
             latitude = location.latitude,
-            longitude = location.longitude
+            longitude = location.longitude,
+            heading = if(location.hasBearing()){ location.bearing } else { null }
         )
         onReading?.invoke(reading)
         //update stateflow for UI

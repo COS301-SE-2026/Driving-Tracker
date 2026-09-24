@@ -15,11 +15,15 @@
   },
   "dependencies": {
     "animejs": "^4.5.0",
+<<<<<<< HEAD
     "azure-maps-control": "^3.7.4",
+=======
+>>>>>>> origin/dev
     "lucide-react": "^1.47.0",
     "next": "15.3.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

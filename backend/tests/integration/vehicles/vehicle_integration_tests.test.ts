@@ -62,3 +62,50 @@ describe('DELETE /vehicle/:vehicle_id integration test', () => {
         expect(res.body.message).toBe('Vehicle not found or not owned by you');
     });
 });
+describe("PATCH /vehicle/:vehicle_id integration test", ()=>{
+    beforeEach(async () => {
+		await cleanTripsData();
+	});
+
+	afterAll(async () => {
+		await prisma.$disconnect();
+	});
+
+    it('Returns throws 401 when the user is unauthorized', async ()=>{
+        const res = await request(app)
+            .patch('/vehicle/some-uuid')
+            .send({ name: 'Hack attempt' });
+
+        expect(res.status).toBe(401);
+    });
+    it("Returns 200 when update is successful", async()=>{
+        const unique = Date.now();
+        const { user, vehicle:vehicle_id,token } = await seedUserAndLogin(unique);
+
+        const update_data ={
+            name: 'Updated Luxury SUV',
+            registration: 'NEW-REG-123',
+            make: 'BMW',
+            model: 'X5',
+            year: 2024,
+            fuel_type: 'DIESEL',
+        };
+        const res = await request(app)
+            .patch(`/vehicle/${vehicle_id}`) 
+            .set('Authorization', `Bearer ${token}`)
+            .send(update_data);
+
+        expect(res.status).toBe(200);
+
+        // Verify the database was updated
+        const updated_vehicle = await prisma.vehicles.findUnique({
+            where: { vehicle_id: vehicle_id }
+        });
+
+        expect(updated_vehicle?.name).toBe(update_data.name);
+        expect(updated_vehicle?.registration).toBe(update_data.registration);
+        expect(updated_vehicle?.model).toBe(update_data.model);
+        expect(updated_vehicle?.year).toBe(update_data.year);
+        
+    })
+})

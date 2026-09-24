@@ -62,10 +62,10 @@ class TripRepository @Inject constructor(
                     gyroscope_x = entity.gyroscopeX?: 0f,
                     gyroscope_y = entity.gyroscopeY?: 0f,
                     gyroscope_z = entity.gyroscopeZ?: 0f,
-                    rpm = null,
-                    coolant_temp_c = null,
-                    fuel_trim_percent = null,
-                    throttle_position = null,
+                    rpm = entity.rpm,
+                    coolant_temp_c = entity.coolantTemp,
+                    fuel_trim_percent = entity.fuelTrimPercent,
+                    throttle_position = entity.throttlePosition,
                     dtc_codes = entity.dtcCodes?: emptyList()
                 )
             })
@@ -116,6 +116,15 @@ class TripRepository @Inject constructor(
         }
         catch (e: Exception) {
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+    suspend fun getGlobalHotspots(): Result<List<TripEventDto>> {
+        return try {
+            val response = api.getHotspots()
+            Result.success(response.data)
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepo", "Failed to fetch community hotspots: ${e.message}")
+            Result.failure(e)
         }
     }
     suspend fun startTrip(

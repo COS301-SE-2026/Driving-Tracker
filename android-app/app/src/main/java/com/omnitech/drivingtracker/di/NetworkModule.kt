@@ -1,6 +1,7 @@
 package com.omnitech.drivingtracker.di
 
 import android.content.Context
+import com.google.gson.Gson
 import com.omnitech.drivingtracker.data.api.AuthInterceptor
 import com.omnitech.drivingtracker.data.local.SessionManager
 import com.omnitech.drivingtracker.services.ApiService
@@ -21,6 +22,10 @@ import com.omnitech.drivingtracker.BuildConfig
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
 
     @Provides
     @Named("baseUrl")

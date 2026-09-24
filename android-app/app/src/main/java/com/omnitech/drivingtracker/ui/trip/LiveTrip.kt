@@ -50,12 +50,10 @@ import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.Screen
 import com.omnitech.drivingtracker.data.db.entities.TripEventEntity
 import com.omnitech.drivingtracker.data.models.LocationDto
-import com.omnitech.drivingtracker.data.models.ConsentStatus
 import com.omnitech.drivingtracker.data.models.LiveSensorMetrics
 import com.omnitech.drivingtracker.data.models.TripSummaryDto
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.components.AzureMapContainer
-import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 import com.omnitech.drivingtracker.ui.theme.DrivingTrackerTheme
 import java.util.Locale
@@ -63,13 +61,10 @@ import com.omnitech.drivingtracker.ui.components.ShareTripDialog
 import com.omnitech.drivingtracker.ui.contacts.*
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import com.omnitech.drivingtracker.data.obd.VehicleMetrics
-import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnitech.drivingtracker.data.models.MapPoiItem
 import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
-import com.omnitech.drivingtracker.ui.theme.Warning
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
@@ -87,6 +82,7 @@ fun LiveTrip(
     val contactsState by contactsViewModel.uiState.collectAsState()
     val liveMetrics by viewModel.liveMetrics.collectAsState()
     val nearbyPois by viewModel.nearbyPois.collectAsState()
+    val globalHotspots by viewModel.globalHotspots.collectAsState()
     val safetyState by viewModel.safetyCheck.collectAsState()
     var showManualEndFuelDialog by remember { mutableStateOf(false) }
     var manualEndFuel by remember { mutableStateOf("") }
@@ -110,7 +106,9 @@ fun LiveTrip(
             locationPermissionState.launchMultiplePermissionRequest()
         }
     }
-
+    LaunchedEffect(Unit) {
+        viewModel.loadGlobalHotspots()
+    }
     val context = LocalContext.current
     val tripPath by viewModel.tripPath.collectAsState()
 
@@ -181,6 +179,7 @@ fun LiveTrip(
             viewModel.fetchMapToken()
             viewModel.observeTripEvents(tripId)
             contactsViewModel.loadActiveShares(tripId)
+            viewModel.loadGlobalHotspots()
         }
     }
 
@@ -212,31 +211,40 @@ fun LiveTrip(
     var isMinimized by remember {mutableStateOf(false)}
 
     val currentEndTripState = endTripState
-    
-    if (currentEndTripState is TripSummaryViewModel.UiState.Success) {
 
-        LaunchedEffect(Unit) {
-            TripTrackingService.stopTrip(context)
-            navController?.navigate(Screen.Trips.route) {
-                popUpTo(Screen.Dashboard.route)
+    when (currentEndTripState) {
+        is TripSummaryViewModel.UiState.EndTripSuccess -> {
+            LaunchedEffect(Unit) {
+                TripTrackingService.stopTrip(context)
+                navController?.navigate(Screen.Trips.route) {
+                    popUpTo(Screen.Dashboard.route)
+                }
+                viewModel.resetEndTripState()
             }
         }
 
-    } else if (currentEndTripState is TripSummaryViewModel.UiState.Error) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Error") },
-            text = { Text(currentEndTripState.message ?: "Failed to end trip") },
-            confirmButton = {
-                Button(onClick = {
-                    navController?.navigate(Screen.Trips.route) {
-                        popUpTo(Screen.Dashboard.route)
+        is TripSummaryViewModel.UiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.resetEndTripState() },
+                title = { Text("Error") },
+                text = { Text(currentEndTripState.message ?: "Failed to end trip") },
+                confirmButton = {
+                    Button(onClick = {
+                        viewModel.resetEndTripState()
+                        navController?.navigate(Screen.Trips.route) {
+                            popUpTo(Screen.Dashboard.route)
+                        }
+                    }) {
+                        Text("OK")
                     }
-                }) {
-                    Text("OK")
                 }
-            }
-        )
+            )
+        }
+
+        is TripSummaryViewModel.UiState.Loading -> {
+
+        }
+        else -> { }
     }
 
     val localEvents by viewModel.localEvents.collectAsState()
@@ -255,6 +263,7 @@ fun LiveTrip(
         showActiveViewersDialog = showActiveViewersDialog,
         onToggleActiveViewersDialog = {showActiveViewersDialog = it},
         onRevokeShare = { contactId -> contactsViewModel.revokeTripShare(tripId, contactId) },
+        globalHotspots = globalHotspots,
         onEndTrip = {
             // Get the live trip data from the current state
             val currentTrip = (uiState as? TripSummaryViewModel.UiState.Success)?.trip
@@ -359,7 +368,8 @@ fun LiveTripContent(
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
     nearbyPois: List<MapPoiItem>? = null,
     liveDistance: Double =0.0,
-    liveDuration: Int= 0
+    liveDuration: Int= 0,
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList() // Add this
 ) {
     Column(modifier = Modifier.fillMaxSize()){
         //alert banner for E2E test
@@ -487,6 +497,7 @@ fun LiveTripContent(
                             showActiveViewersDialog = showActiveViewersDialog,
                             onToggleActiveViewersDialog = onToggleActiveViewersDialog,
                             onRevokeShare = onRevokeShare,
+                            globalHotspots = globalHotspots,
                         )
                     }
 
@@ -519,6 +530,7 @@ private fun TripDetails(
     nearbyPois: List<MapPoiItem>? = null,
     activeShares: List<ContactDto> = emptyList(),
     showActiveViewersDialog: Boolean = false,
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList(),
     onToggleActiveViewersDialog: (Boolean) -> Unit = {},
     onRevokeShare: (String) -> Unit = {}
 ) {
@@ -559,6 +571,7 @@ private fun TripDetails(
                     modifier = Modifier.fillMaxSize(),
                     nearbyPois = nearbyPois,
                     detourRoute = detourRoute,
+                    tripEvents = globalHotspots,
                     onPoiClick = onPoiClick,
                 )
                 IconButton(
@@ -645,7 +658,11 @@ private fun TripDetails(
                         Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(
-                                "${vehicleMetrics.speed} km/h",
+                                if(vehicleMetrics.isDataLive){
+                                    "${vehicleMetrics.speed} km/h"
+                                } else {
+                                    "${liveLocation?.speedKmh?.toInt()} km/h"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold, color = Color.Black
                             )
@@ -712,7 +729,9 @@ private fun TripDetails(
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(
                 onClick = { onToggleActiveViewersDialog(true) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             ) {
@@ -728,7 +747,11 @@ private fun TripDetails(
             distanceKm = liveDistance,
             durationMinutes = liveDuration,
             fuelEstimate = trip.fuelEstimate,
-            avgSpeed = vehicleMetrics.speed.toString(),
+            avgSpeed = if(vehicleMetrics.isDataLive){
+                vehicleMetrics.speed.toString()
+            } else {
+                liveLocation?.speedKmh?.toInt().toString()
+            },
             isLive = true
         )
 
@@ -816,7 +839,9 @@ fun ActiveViewersDialog(activeShares: List<ContactDto>, onRevoke: (String) -> Un
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 LazyColumn(
-                    Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(activeShares) { contact ->
