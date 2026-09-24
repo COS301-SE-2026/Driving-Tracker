@@ -7,6 +7,7 @@ import FilterRoutes, {FilterState} from "@/components/routes/FilterRoutes"
 import AddRoute, { RouteFormData } from "@/components/routes/AddRoute";
 import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
+import PastRoutes from "@/components/routes/PastRoutes";
 
 type Stop = {
     id: string;
@@ -197,6 +198,14 @@ export default function Routes(){
         <div className="flex">
             <DashboardNavbar />
 
+            <PastRoutes routes={pastRoutes} 
+            onSelect={(id)=> {
+                const route = routesList.find((r) => r.id === id);
+                if (route){
+                    setViewingRoute(route);
+                }
+            }} />
+
             <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
                 <h1 className="text-4xl text-center font-extrabold text-gray-900">
                     Routes
@@ -231,7 +240,7 @@ export default function Routes(){
 
                 <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
 
-                    {filtered.map((route) => (
+                    {activeRoutes.map((route) => (
                         <RouteCard key = {route.id} route = {route}
                         onView = {() => setViewingRoute(route)}
                         onEdit={() => setEditingRoute(route)}
