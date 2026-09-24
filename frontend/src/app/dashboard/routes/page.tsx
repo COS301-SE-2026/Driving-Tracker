@@ -67,11 +67,15 @@ function RouteCard({route, onView, onEdit, onDelete}: {
                 <h3 className="text-2xl font-bold text-gray-900">
                     {route.title}
                 </h3>
-                <button className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
-                    View Progress
-                    <ArrowRight size = {14}/>
-                </button>
-                <RouteMenu routeTitle={route.title} onView = {onView} onEdit={onEdit} onDelete={onDelete} />
+                <div className="flex items-center gap-2">
+                    {route.status === "On Trip" && (
+                        <button className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
+                            View Progress
+                            <ArrowRight size = {14}/>
+                        </button>
+                    )}
+                    <RouteMenu routeTitle={route.title} onView = {onView} onEdit={onEdit} onDelete={onDelete} />
+                </div>
             </div>
 
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
