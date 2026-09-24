@@ -153,6 +153,82 @@ const fleet_controller = {
 
         }
     },
+
+     async schedule_trip(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , "You do not have the permissions to schedule a trip"
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
+
+            const data = req.body;
+
+        try{
+            
+            const drivers = await fleet_services.schedule_trip(user_id, org_id!, data);
+
+            return res.status(200).json({
+                message: 'Fleet drivers successfully retrieved',
+                data: { drivers },
+            });
+
+        }catch(error: any){
+
+            if(error?.message?.includes("Driver not found")){
+
+                return res.status(404).json({
+                    error: "DRIVER_NOT_FOUND", message: error.message
+                });
+            }
+
+            if(error.message.includes("Missing required fields")){
+                res.status(422).json({
+                    error: "MISSING_REQUIRED_FIELDS",
+                    message: "user or vehicle not known"
+                });
+            }
+
+            if(error.message.includes("Driver has a scheduled trip that overlaps this time")){
+                res.status(409).json({
+                    error: "DRIVER_NOT_AVAILABLE",
+                    message: "Driver is not available during the scheduled time"
+                });
+            }
+
+            if(error.message.includes("Unknown start location")){
+                res.status(422).json({
+                    error: "INVALID_START_LOCATION",
+                    message: "Invalid start location"
+                });
+            }
+
+            if(error.message.includes("Unknown end location")){
+                res.status(422).json({
+                    error: "INVALID_END_LOCATION",
+                    message: "Invalid end location"
+                });
+            }
+
+            if(error.message.includes("Invalid stop coordinates")){
+                res.status(422).json({
+                    error: "INVALID_STOP",
+                    message: "Invalid coordinates for one or more stops"
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to schedule trip" });
+
+        }
+    },
+
     /* istanbul ignore next - Add tests after endpoint stabilizes */
     async start_scheduled_trip(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;

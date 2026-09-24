@@ -180,6 +180,8 @@ fleet_router.post('/add_organization', verify_token, create_user_based_limiter()
 fleet_router.post("/add_fleet_vehicle",verify_token, create_user_based_limiter(), fleet_controller.add_fleet_vehicle);
 
 
+fleet_router.post("/schedule_trip", verify_token, create_user_based_limiter(), fleet_controller.schedule_trip);
+
 /**
  * @openapi
  * /api/fleet/:trip_id/start_scheduled_trip:
