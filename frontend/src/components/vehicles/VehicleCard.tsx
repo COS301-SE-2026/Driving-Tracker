@@ -5,20 +5,16 @@ import type { Vehicle } from "./types";
 
 type VehicleCardProps = {
     vehicle: Vehicle;
-    onClick: () => void;
 };
 
 export default function VehicleCard({
     vehicle,
-    onClick,
 }: VehicleCardProps) {
 
     const vehicleName = vehicle.name || `${vehicle.make ?? "Unknown"} ${vehicle.model ?? "Vehicle"}`;
 
     return (
-        <button
-            type="button"
-            onClick={onClick}
+        <div
             className="w-full max-w-[238px] rounded-[9px] bg-[#d9d9d9] p-2 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
         >
 
@@ -76,7 +72,7 @@ export default function VehicleCard({
                 </div>
             </div>
 
-        </button>
+        </div>
     );
 
 }

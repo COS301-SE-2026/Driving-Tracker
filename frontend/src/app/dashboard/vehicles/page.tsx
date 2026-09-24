@@ -2,18 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Filter, Plus, Search } from "lucide-react";
-import Navbar from "@/components/fleet/Navbar";
+import DashboardNavbar from "@/components/DashboardNavbar"
 import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
 import { getVehicles } from "@/lib/vehicle-api";
-import type { Driver, Vehicle } from "@/components/vehicles/types";
+import type { Vehicle } from "@/components/vehicles/types";
 
 export default function VehiclesPage() {
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [search, setSearch] = useState("");
     const [isAddOpen, setIsAddOpen] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -53,26 +52,10 @@ export default function VehiclesPage() {
         setVehicles((current) => [...current, vehicle]);
     }
 
-    function handleDriverAssigned(driver: Driver) {
-        if (!selectedVehicle) {
-            return;
-        }
-
-        setVehicles((current) => 
-            current.map((vehicle) =>
-                vehicle.vehicle_id === selectedVehicle.vehicle_id
-                ? {
-                    ...vehicle,
-                    assigned_driver: driver,
-                  }
-                : vehicle,
-            ),
-        );
-    }
 
     return (
         <main className="flex min-h-screen bg-white">
-            <Navbar />
+            <DashboardNavbar />
 
             <section className="min-w-0 flex-1 px-3 py-8 md:px-4">
                 <header className="mb-8 flex items-center gap-8">
@@ -116,7 +99,6 @@ export default function VehiclesPage() {
                             <VehicleCard
                                 key={vehicle.vehicle_id}
                                 vehicle={vehicle}
-                                onClick={() => setSelectedVehicle(vehicle)}
                             />
                         ))}
 

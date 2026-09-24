@@ -1,7 +1,7 @@
 "use client"
 
-import { FormEvent, use, useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { LoaderCircle, X } from "lucide-react";
 import {
     createVehicle,
     searchVehicleImage,

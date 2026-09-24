@@ -3,13 +3,27 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Search, UserRound } from "lucide-react";
-import Navbar from "@/components/fleet/Navbar";
-import FleetMap from "@/components/fleet/FleetMap";
+import DashboardNavbar from "@/components/DashboardNavbar"
+import dynamic from "next/dynamic";
 import type {
     Driver,
     FleetDashboardResponse,
     FleetStats,
 } from "@/components/fleet/type";
+
+const FleetMap = dynamic(
+    () => import("@/components/fleet/FleetMap"),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex h-full w-full items-center justify-center bg-slate-100">
+                <span className="text-sm text-slate-500">
+                    Loading map...
+                </span>
+            </div>
+        ),
+    },
+);
 
 //temporary fallback data
 const fallbackDrivers: Driver[] = [
@@ -125,7 +139,7 @@ export default function DashboardHomePage() {
     return (
         <main className="flex h-screen w-full overflow-hidden bg-white">
 
-            <Navbar />
+            <DashboardNavbar />
 
             {/* driver search ad driver cards section */}
             <aside className="w-[190px] shrink-0 border-r border-black bg-white px-[18px] py-[26px]">
