@@ -1,6 +1,7 @@
 jest.mock('../../../src/db/prisma', () => ({
     __esModule: true,
     default: {
+        $queryRaw: jest.fn(),
         trip_events: {
             findMany: jest.fn(),
         },
@@ -10,7 +11,6 @@ jest.mock('../../../src/db/prisma', () => ({
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import { map_services } from '../../../src/services/map_services';
 import prisma from '../../../src/db/prisma';
-import { before } from 'node:test';
 
 
 const mock_prisma = prisma as any ;// mockng the prisma database 
