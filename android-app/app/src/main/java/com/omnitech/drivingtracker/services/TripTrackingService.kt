@@ -50,6 +50,7 @@ import kotlinx.coroutines.isActive
 import java.time.Instant
 import kotlin.String
 import com.omnitech.drivingtracker.data.models.TripEventDto
+import com.omnitech.drivingtracker.utils.VoiceAlertManager
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -90,6 +91,7 @@ class TripTrackingService: Service() {
     private val SOCKET_UPDATE_INTERVAL_MS = 1500L
     private val MIN_DISTANCE_METERS = 10f
 
+    private lateinit var voiceAlertManager: VoiceAlertManager
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
     private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
@@ -155,8 +157,37 @@ class TripTrackingService: Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         setupLocationCallBack()
+        voiceAlertManager = VoiceAlertManager(this)
     }
+    private fun checkHotspotProx(lat: Double, lng: Double){
+        if (lat == 0.0 && lng == 0.0 || globalHotspots.isEmpty()) return
 
+        for(hotspot in globalHotspots){
+            val hLat = hotspot.latitude ?: continue
+            val hLng = hotspot.longitude ?: continue
+
+            val results = FloatArray(1)
+            Location.distanceBetween(lat, lng, hLat, hLng, results)
+            val distanceInMeters = results[0]
+
+            if(distanceInMeters <= 500){
+                if(tripStateManager.markHotspotNotified(hotspot.eventId)){
+                    val eventTypeFormatted = hotspot.eventType.replace("_", " ").lowercase(java.util.Locale.ROOT)
+                    val alertMessage = "Caution: Approaching a high risk area. $eventTypeFormatted hotspot ahead."
+
+                    voiceAlertManager.playHotspotAlert(hotspot.eventType)
+
+                    // Show system notification
+                    notificationHelper.showTripAlert(
+                        "Hotspot Ahead",
+                        alertMessage,
+                        currentTripId ?: ""
+                    )
+                }
+            }
+
+        }
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int{
         val tripId = intent?.getStringExtra("EXTRA_TRIP_ID")
         if(tripId != null) currentTripId = tripId
@@ -176,7 +207,12 @@ class TripTrackingService: Service() {
                     socketManager.onReconnect {
                         currentTripId?.let { socketManager.joinTrip(it) }
                     }
-
+                    serviceScope.launch {
+                        tripRepository.getGlobalHotspots().onSuccess { hotspots ->
+                            globalHotspots = hotspots
+                            Log.d(TAG, "Loaded ${globalHotspots.size} global hotspots")
+                        }
+                    }
                     serviceScope.launch {
                         tripStateManager.totalExpectedTravelTime.collect{ totalSeconds ->
 
@@ -311,6 +347,16 @@ class TripTrackingService: Service() {
         val obdConnected = isObdConnected()
         val currentSpeed = if (obdConnected) obdManager.metrics.value.speed.toFloat() else reading.speedKmh
         val recordedAt = parseTimestamp(reading.timestamp)
+
+
+        // Check proximity to hotspots
+        checkHotspotProx(reading.latitude, reading.longitude)
+
+        // Handle Safety Prompts
+        resolveSafetyPromptIfMoving(currentSpeed)
+
+        // Update Fatigue and Stop Monitors
+        updateMonitors(currentSpeed, reading, recordedAt)
 
         //Handle Safety Prompts
         resolveSafetyPromptIfMoving(currentSpeed)
@@ -558,6 +604,7 @@ class TripTrackingService: Service() {
                 obdManager.fetchFuelLevel()
             }
         }
+        voiceAlertManager.shutdown()
         currentTripId?.let { socketManager.leaveTrip(it) }
         socketManager.offReconnect()
         socketManager.disconnect()

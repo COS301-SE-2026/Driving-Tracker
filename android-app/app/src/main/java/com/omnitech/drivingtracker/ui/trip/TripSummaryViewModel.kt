@@ -74,7 +74,9 @@ class TripSummaryViewModel @Inject constructor(
             }
         }
     }
-
+    fun checkAndNotifyHotspot(eventId: String): Boolean {
+        return tripStateManager.markHotspotNotified(eventId)
+    }
     fun clearDetour() {
         _detourRoute.value = null
         tripStateManager.clearDetour()
