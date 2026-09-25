@@ -28,10 +28,8 @@ class VoiceAlertManager(private val context: Context){
     }
     private fun getRawResourceForEventType(eventType: String): Int {
         val rawName = when (eventType.uppercase(Locale.ROOT)) {
-            "HARSH_BRAKE", "HARSH_BRAKING" -> "voice_harsh_brake"
-            "HARSH_ACCELERATION", "SPEEDING" -> "voice_speeding"
-            "ACCIDENT", "CRASH" -> "voice_accident"
-            else -> "voice_default"
+            "POTHOLE" -> "pothole_ahead"
+            else -> "event_hotspot" // Unified sound for all other hotspot alerts
         }
 
         // Dynamically find raw resource ID by file name
