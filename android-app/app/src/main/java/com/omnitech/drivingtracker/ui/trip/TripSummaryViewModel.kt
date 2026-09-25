@@ -61,6 +61,8 @@ class TripSummaryViewModel @Inject constructor(
 
     val safetyCheck = tripStateManager.safetyCheck
 
+    val nearbyPotholes = tripStateManager.nearbyPotholes
+
     fun clearSafetyCheck() = tripStateManager.clearSafetyCheck()
 
     val globalHotspots: StateFlow<List<TripEventDto>> = _globalHotspots

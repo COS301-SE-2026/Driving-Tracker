@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +65,7 @@ import com.omnitech.drivingtracker.data.obd.VehicleMetrics
 import java.time.Instant
 import kotlinx.coroutines.delay
 import com.omnitech.drivingtracker.data.models.MapPoiItem
+import com.omnitech.drivingtracker.data.models.RoadDefectItem
 import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
 
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
@@ -86,6 +88,8 @@ fun LiveTrip(
     val safetyState by viewModel.safetyCheck.collectAsState()
     var showManualEndFuelDialog by remember { mutableStateOf(false) }
     var manualEndFuel by remember { mutableStateOf("") }
+    val nearbyPotholes by viewModel.nearbyPotholes.collectAsState()
+    var showPotholes by remember { mutableStateOf(true) }
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     val detourRoute by viewModel.detourRoute.collectAsState()
@@ -315,6 +319,9 @@ fun LiveTrip(
         } },
         vehicleMetrics = metrics,
         nearbyPois = nearbyPois,
+        nearbyPotholes = nearbyPotholes,
+        showPotholes = showPotholes,
+        onToggleShowPotholes = { showPotholes = it },
 
     )
     if (showManualEndFuelDialog) {
@@ -367,6 +374,9 @@ fun LiveTripContent(
     localEvents: List<TripEventEntity> = emptyList(),
     vehicleMetrics: VehicleMetrics = VehicleMetrics(),
     nearbyPois: List<MapPoiItem>? = null,
+    nearbyPotholes: List<RoadDefectItem>? = null,
+    showPotholes: Boolean = true,
+    onToggleShowPotholes: (Boolean) -> Unit = {},
     liveDistance: Double =0.0,
     liveDuration: Int= 0,
     globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList() // Add this
@@ -493,6 +503,9 @@ fun LiveTripContent(
                             localEvents = localEvents,
                             vehicleMetrics = vehicleMetrics,
                             nearbyPois = nearbyPois,
+                            nearbyPotholes = nearbyPotholes,
+                            showPotholes = showPotholes,
+                            onToggleShowPotholes = onToggleShowPotholes,
                             activeShares = activeShares,
                             showActiveViewersDialog = showActiveViewersDialog,
                             onToggleActiveViewersDialog = onToggleActiveViewersDialog,
@@ -528,6 +541,9 @@ private fun TripDetails(
     localEvents: List<TripEventEntity>,
     vehicleMetrics: VehicleMetrics,
     nearbyPois: List<MapPoiItem>? = null,
+    nearbyPotholes: List<RoadDefectItem>? = null,
+    showPotholes: Boolean = true,
+    onToggleShowPotholes: (Boolean) -> Unit = {},
     activeShares: List<ContactDto> = emptyList(),
     showActiveViewersDialog: Boolean = false,
     globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList(),
@@ -568,6 +584,8 @@ private fun TripDetails(
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
+                    potholes = nearbyPotholes,
+                    showPotholes = showPotholes,
                     modifier = Modifier.fillMaxSize(),
                     nearbyPois = nearbyPois,
                     detourRoute = detourRoute,
@@ -641,6 +659,22 @@ private fun TripDetails(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalAlignment = Alignment.End
             ) {
+                FilterChip(
+                    selected = showPotholes,
+                    onClick = { onToggleShowPotholes(!showPotholes) },
+                    label = {
+                        Text(
+                            text = if(showPotholes) "Potholes ON" else "Potholes OFF",
+                            fontSize = 11.sp
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFD32F2F),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Color.Black
+                    )
+                )
                 Card(shape = RoundedCornerShape(8.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(4.dp)

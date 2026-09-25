@@ -169,6 +169,7 @@ class TripTrackingService: Service() {
                     startLocationUpdates()
                     startSensorFusion()
                     startSyncLoop()
+                    startRoadDefectWarningLoop()
                     socketManager.connect()
                     currentTripId?.let{ socketManager.joinTrip(it) }
 
@@ -524,6 +525,29 @@ class TripTrackingService: Service() {
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to post event ${e.message}, remains in Room for retry")
                 }
+        }
+    }
+
+    private fun startRoadDefectWarningLoop(){
+        serviceScope.launch {
+            while(isActive){
+                val lat = lastSavedLat
+                val lng = lastSavedLng
+                if(lat != null && lng != null && lastKnownSpeed > 10f){
+                    tripRepository.getRoadDefects(lat, lng, radius = 300).onSuccess { data ->
+                        tripStateManager.updateNearbyPotholes(data.defects)
+                        val nearest = data.defects.firstOrNull()
+                        if(nearest != null && nearest.distanceMeters <= 150){
+                            notificationHelper.showTripAlert(
+                                "Pothole Ahead!",
+                                "Caution: Road defect reported ~${nearest.distanceMeters.toInt()}m ahead",
+                                currentTripId ?: ""
+                            )
+                        }
+                    }
+                }
+                delay(10_000L) //poll every 10 secs
+            }
         }
     }
 

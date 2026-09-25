@@ -12,12 +12,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.omnitech.drivingtracker.data.models.RoadDefectItem
 
 @Singleton
 class TripStateManager @Inject constructor(){
 
     private val _nearbyPois = MutableStateFlow<List<MapPoiItem>>(emptyList())
+    private val _nearbyPotholes = MutableStateFlow<List<RoadDefectItem>>(emptyList())
     val nearbyPois: StateFlow<List<MapPoiItem>> = _nearbyPois
+    val nearbyPotholes: StateFlow<List<RoadDefectItem>> = _nearbyPotholes.asStateFlow()
 
     data class SafetyCheckState(
         val stopEventId: String? = null,
@@ -73,8 +76,13 @@ class TripStateManager @Inject constructor(){
         _nearbyPois.value = pois
     }
 
+    fun updateNearbyPotholes(potholes: List<RoadDefectItem>){
+        _nearbyPotholes.value = potholes
+    }
+
     fun clearTripState() {
         _nearbyPois.value = emptyList()
+        _nearbyPotholes.value = emptyList()
         _baseTravelTimeSeconds.value = null
         _detourTravelTimeSeconds.value = null
     }
