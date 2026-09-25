@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { get_all_vehicles } from '../../../src/controllers/vehicle.controller';
+import { get_all_vehicles, update_vehicle } from '../../../src/controllers/vehicle.controller';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 
 describe('Vehicle controller get_all_vehicles', () => {
@@ -96,3 +96,70 @@ describe('Vehicle controller get_all_vehicles', () => {
 		expect(json).toHaveBeenCalledWith(expectedBody);
 	}
 });
+describe('Vehicle controller update vehicle', ()=>{
+	beforeEach(()=>{jest.clearAllMocks});
+	it('Returns 200 when the update was successful', async()=>{
+		const updated_vehicle = {
+            vehicle_id: 'v1',
+            name: 'New Name',
+            registration: 'NEW-REG',
+            make: 'BMW',
+            model: 'M3',
+            year: 2018,
+            fuel_type: 'PETROL',
+            fuel_tank: 50.0
+        };
+
+		const update_data = {
+			vehicle_id: "v1",
+            name: "Old Car",
+            registration: "OLD123",
+            make: "BMW",
+            model: "M3",
+            year: 2018,
+            fuel_tank: 60,
+            fuel_type: "PETROL",
+		}
+		// jest.spyOn(vehicle_services,'update_vehicle')
+		const serviceSpy = jest.spyOn(vehicle_services, 'update_vehicle').mockResolvedValueOnce(updated_vehicle as any);
+
+        const req: any = {
+            user: { sub: 'user-1' },
+            params: { vehicle_id: 'v1' },
+            body: update_data
+        };
+
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValue({ json });
+        const res: any = { status };
+
+        await update_vehicle(req, res);
+
+        expect(serviceSpy).toHaveBeenCalledWith({
+            user_id: 'user-1',
+            ...update_data
+        });
+
+        expect(status).toHaveBeenCalledWith(200);
+        expect(json).toHaveBeenCalledWith(updated_vehicle);
+	});
+	 it('returns 401 when the user is not authenticated', async () => {
+        const req: any = {
+            user: {}, 
+            params: { vehicle_id: 'v1' },
+            body: { name: 'New Name' }
+        };
+
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValue({ json });
+        const res: any = { status };
+
+        await update_vehicle(req, res);
+
+        expect(status).toHaveBeenCalledWith(401);
+        expect(json).toHaveBeenCalledWith({
+            error: "UNAUTHORIZED",
+            message: "Unauthorized"
+        });
+    });
+})

@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import com.omnitech.drivingtracker.data.sensors.FusedEvent
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.omnitech.drivingtracker.data.models.PoiType
+import com.omnitech.drivingtracker.data.models.SocketLocationPayload
 import com.omnitech.drivingtracker.data.obd.ObdManager
 import com.omnitech.drivingtracker.data.repository.TripRepository
 import com.omnitech.drivingtracker.data.repository.TripStateManager
@@ -48,6 +49,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.Instant
 import kotlin.String
+import com.omnitech.drivingtracker.data.models.TripEventDto
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -68,6 +70,9 @@ class TripTrackingService: Service() {
     @Inject
     lateinit var tripStateManager: TripStateManager
 
+    @Inject
+    lateinit var socketManager: SocketManager
+
     private var currentTripId: String? = null
 
     private var lastKnownSpeed: Float = 0f
@@ -77,6 +82,12 @@ class TripTrackingService: Service() {
     private var isTrackingStarted = false
     private var lastSavedLat: Double? = null
     private var lastSavedLng: Double? = null
+
+    private var globalHotspots: List<TripEventDto> = emptyList()
+    private val notifiedHotspotIds = mutableSetOf<String>()
+    private var lastSocketUpdateMillis: Long = 0
+
+    private val SOCKET_UPDATE_INTERVAL_MS = 1500L
     private val MIN_DISTANCE_METERS = 10f
 
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
@@ -159,6 +170,12 @@ class TripTrackingService: Service() {
                     startSensorFusion()
                     startSyncLoop()
                     startRoadDefectWarningLoop()
+                    socketManager.connect()
+                    currentTripId?.let{ socketManager.joinTrip(it) }
+
+                    socketManager.onReconnect {
+                        currentTripId?.let { socketManager.joinTrip(it) }
+                    }
 
                     serviceScope.launch {
                         tripStateManager.totalExpectedTravelTime.collect{ totalSeconds ->
@@ -289,23 +306,37 @@ class TripTrackingService: Service() {
     private fun isObdConnected(): Boolean = obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED
 
     //Adding readings to Room
-    private fun postReading(reading: FusedReading){
-        val tripId = currentTripId?: return
-
-        //distance filter for live trip page
-        val lastLat = lastSavedLat
-        val lastLng = lastSavedLng
-
+    private fun postReading(reading: FusedReading) {
+        val tripId = currentTripId ?: return
         val obdConnected = isObdConnected()
+        val currentSpeed = if (obdConnected) obdManager.metrics.value.speed.toFloat() else reading.speedKmh
+        val recordedAt = parseTimestamp(reading.timestamp)
 
-        val currentSpeed = if(obdConnected){
-            obdManager.metrics.value.speed.toFloat()
-        } else {
-            reading.speedKmh
-        }
+        //Handle Safety Prompts
+        resolveSafetyPromptIfMoving(currentSpeed)
 
-        val safetyState =  tripStateManager.safetyCheck.value
-        if(safetyState.shouldPrompt && currentSpeed > 10f){
+        //Update Fatigue and Stop Monitors
+        updateMonitors(currentSpeed, reading, recordedAt)
+
+        lastKnownSpeed = currentSpeed
+
+        //Distance Filter
+        if (shouldSkipReading(reading.latitude, reading.longitude)) return
+
+        lastSavedLat = reading.latitude
+        lastSavedLng = reading.longitude
+
+        //Map and Save
+        saveReading(tripId, reading, recordedAt, obdConnected)
+    }
+
+    private fun parseTimestamp(timestamp: String): Long = runCatching {
+        Instant.parse(timestamp).toEpochMilli()
+    }.getOrDefault(System.currentTimeMillis())
+
+    private fun resolveSafetyPromptIfMoving(speed: Float) {
+        val safetyState = tripStateManager.safetyCheck.value
+        if (safetyState.shouldPrompt && speed > 10f) {
             serviceScope.launch {
                 safetyState.stopEventId?.let { id ->
                     tripRepository.resolveStopEvent(id, "movement")
@@ -313,73 +344,48 @@ class TripTrackingService: Service() {
                 }
             }
         }
+    }
 
-        val recordedAt = runCatching {
-            Instant.parse(reading.timestamp).toEpochMilli()
-        }.getOrDefault(System.currentTimeMillis())
+    private fun updateMonitors(speed: Float, reading: FusedReading, recordedAt: Long) {
+        fatigueMonitor.onLocationUpdate(speed, recordedAt)
+        stopMonitor.onLocationUpdate(speed, reading.latitude, reading.longitude, Instant.ofEpochMilli(recordedAt))
+    }
 
-        fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
+    private fun shouldSkipReading(lat: Double, lng: Double): Boolean {
+        val prevLat = lastSavedLat ?: return false
+        val prevLng = lastSavedLng ?: return false
 
-        val timestamp = Instant.parse(reading.timestamp)
+        val results = FloatArray(1)
+        Location.distanceBetween(prevLat, prevLng, lat, lng, results)
+        return results[0] < MIN_DISTANCE_METERS
+    }
 
-        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, timestamp)
-
-        tripDurationMonitor?.onLocationUpdate(currentSpeed, timestamp)
-
-        lastKnownSpeed = currentSpeed
-
-        if(lastLat != null && lastLng != null){
-            val results = FloatArray(1)
-            android.location.Location.distanceBetween(lastLat, lastLng, reading.latitude, reading.longitude, results)
-            if (results[0] < MIN_DISTANCE_METERS) {
-                return // Skip database recording if moved less than 10m
-            }
-        }
-        lastSavedLat = reading.latitude
-        lastSavedLng = reading.longitude
-
+    private fun saveReading(tripId: String, reading: FusedReading, recordedAt: Long, obdConnected: Boolean) {
         serviceScope.launch {
-
-            var rpm: Int? = null
-            var speed: Float? = reading.speedKmh
-            var coolantTemp: Int? = null
-            var fuelTrim: Double? = null
-            var dataSource: DataSource = DataSource.PHONE
-
-
-            if(obdConnected){
-                rpm = obdManager.metrics.value.rpm
-                speed = obdManager.metrics.value.speed.toFloat()
-                coolantTemp = obdManager.metrics.value.coolantTemp
-                fuelTrim = obdManager.metrics.value.fuelTrim
-                dataSource = DataSource.OBD
-            }
-
+            val metrics = if (obdConnected) obdManager.metrics.value else null
 
             val readingEntity = TripReadingEntity(
                 tripId = tripId,
                 recordedAt = recordedAt,
-                dataSource = dataSource.toString(),
+                dataSource = (if (obdConnected) DataSource.OBD else DataSource.PHONE).toString(),
                 latitude = reading.latitude,
                 longitude = reading.longitude,
-                speedKmh = speed,
+                speedKmh = metrics?.speed?.toFloat() ?: reading.speedKmh,
                 accelerometer = reading.linearAccelY,
                 gyroscopeX = reading.gyroX,
                 gyroscopeY = reading.gyroY,
                 gyroscopeZ = reading.gyroZ,
-                rpm = rpm,
-                coolantTemp = coolantTemp?.toFloat(),
-                fuelTrimPercent = fuelTrim?.toFloat(),
+                rpm = metrics?.rpm,
+                coolantTemp = metrics?.coolantTemp?.toFloat(),
+                fuelTrimPercent = metrics?.fuelTrim?.toFloat(),
                 throttlePosition = null,
                 dtcCodes = emptyList()
             )
 
             tripRepository.saveReadingLocally(readingEntity)
-            Log.d(TAG, "Saved reading: ${readingEntity}")
-
+            Log.d(TAG, "Saved reading: $readingEntity")
         }
     }
-
     private fun handleFatigueAlert(level: FatigueMonitor.FatigueAlertLevel){
         //Notification trigger
 
@@ -425,13 +431,14 @@ class TripTrackingService: Service() {
     }
 
     private fun computeSyncDelay(): Long {
-        val hasActiveViewers = tripHasActiveShares()
-        return when {
-            hasActiveViewers  && lastKnownSpeed > 10f -> 8_000L
-            hasActiveViewers -> 20_000L
-            lastKnownSpeed > 10f -> 15_000L
-            else -> 60_000L
-        }
+//        val hasActiveViewers = tripHasActiveShares()
+//        return when {
+//            hasActiveViewers  && lastKnownSpeed > 10f -> 8_000L
+//            hasActiveViewers -> 20_000L
+//            lastKnownSpeed > 10f -> 15_000L
+//            else -> 60_000L
+//        }
+        return if(lastKnownSpeed > 10f){ 30_000L } else { 120_000L }
     }
 
     private fun startSyncLoop() {
@@ -551,10 +558,15 @@ class TripTrackingService: Service() {
                 obdManager.fetchFuelLevel()
             }
         }
+        currentTripId?.let { socketManager.leaveTrip(it) }
+        socketManager.offReconnect()
+        socketManager.disconnect()
         stopLocationUpdates()
         sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        notifiedHotspotIds.clear()
+        globalHotspots = emptyList()
         isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
         tripStateManager.clearTripState()

@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun AddVehicleButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -62,7 +64,8 @@ fun AddVehicleDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add New Vehicle") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 //Clickable image placeholder
                 Box(
                     modifier = Modifier

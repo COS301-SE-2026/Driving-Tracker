@@ -34,10 +34,10 @@ interface ApiService{
 	@POST("vehicle/assign_vehicle")
 	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
 
-    @PATCH("vehicle/{vehicle_id}/name")
-    suspend fun updateVehicleName(
+    @PATCH("vehicle/{vehicle_id}")
+    suspend fun updateVehicle(
         @Path("vehicle_id") vehicleId: String,
-        @Body body: UpdateVehicleNameRequest
+        @Body body: UpdateVehicleRequest
     ): GenericResponse
 
     @DELETE("vehicle/{vehicle_id}")
@@ -150,6 +150,8 @@ interface ApiService{
         @Query("min_reports") minReports: Int? = 3
     ): RoadDefectsResponse
 
+    @GET("map/hotspots")
+    suspend fun getHotspots(): HotspotsResponse
     //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse

@@ -15,7 +15,8 @@ data class FusedReading(
     val gyroZ: Float,
     val speedKmh: Float,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val heading: Float? = null
 )
 
 //detected driving event representation

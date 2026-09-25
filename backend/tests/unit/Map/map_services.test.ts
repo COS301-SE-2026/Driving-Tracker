@@ -1,8 +1,19 @@
+jest.mock('../../../src/db/prisma', () => ({
+    __esModule: true,
+    default: {
+        trip_events: {
+            findMany: jest.fn(),
+        },
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import { map_services } from '../../../src/services/map_services';
 import prisma from '../../../src/db/prisma';
 import { before } from 'node:test';
 
+
+const mock_prisma = prisma as any ;// mockng the prisma database 
 const mock_fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 globalThis.fetch = mock_fetch; //mocking the global fetch API 
 
@@ -433,3 +444,37 @@ describe('Map services get_road_defects', () => {
     });
 });
 
+describe('Map services get_all_hotspots with grouping', () =>{
+    beforeEach(()=>{jest.clearAllMocks()});
+    it("Returns only clustered hotspots (3+ within 500m) and filters isolated ones", async () => {
+        const now = new Date();
+        const mock_data = [
+            
+            { event_id: 'c1', type: 'HARSH_BRAKE', latitude: -26.143000, longitude: 27.842000, recorded_at: now },
+            { event_id: 'c2', type: 'HARSH_BRAKE', latitude: -26.143001, longitude: 27.842001, recorded_at: now },
+            { event_id: 'c3', type: 'HARSH_BRAKE', latitude: -26.143002, longitude: 27.842002, recorded_at: now },
+            
+            { event_id: 'i1', type: 'HARSH_ACCELERATION', latitude: -26.200000, longitude: 27.900000, recorded_at: now }
+        ];
+        
+        mock_prisma.trip_events.findMany.mockResolvedValue(mock_data);
+
+        const result = await map_services.get_all_hotspots();
+
+        // Should return only the 3 cluster points, not the isolated one
+        expect(result.length).toBe(3);
+        expect(result.map(r => r.event_id)).not.toContain('i1');
+        expect(result[0]).toEqual({
+            event_id: 'c1',
+            event_type: 'HARSH_BRAKE',
+            latitude: -26.143000,
+            longitude: 27.842000,
+            time_stamp: now
+        });
+    });
+    it('throws error when database query fails', async () => {
+        mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));
+
+        await expect(map_services.get_all_hotspots()).rejects.toThrow('Prisma error');
+    });
+});

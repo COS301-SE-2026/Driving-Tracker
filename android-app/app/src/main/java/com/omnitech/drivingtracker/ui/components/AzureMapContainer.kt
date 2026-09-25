@@ -25,7 +25,7 @@ import com.omnitech.drivingtracker.data.models.MapPoiItem
 import com.omnitech.drivingtracker.data.models.RoadDefectItem
 import org.json.JSONObject
 import java.util.Locale
-
+import com.omnitech.drivingtracker.data.models.TripEventDto
 /**
  * Interface for JavaScript to call into Kotlin.
  * Using a named class with @Keep prevents "unused function" warnings.
@@ -88,7 +88,8 @@ fun AzureMapContainer(
     onPoiClick: (String, Double, Double) -> Unit = {_,_,_  -> },
     onMapReady: () -> Unit = {},
     isInteractive: Boolean = true,
-    nearbyPois: List<MapPoiItem>? = null
+    nearbyPois: List<MapPoiItem>? = null,
+    tripEvents: List<TripEventDto>? = null
 ) {
     var isMapStable by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
@@ -171,6 +172,12 @@ fun AzureMapContainer(
         if(isMapStable && detourRoute != null) {
             val json = Gson().toJson(detourRoute)
             webViewRef?.evaluateJavascript("javascript:window.setDetourRoute('$json')", null)
+        }
+    }
+    LaunchedEffect(tripEvents,isMapStable){
+        if(isMapStable && tripEvents != null){
+            val eventsJson = Gson().toJson(tripEvents)
+            webViewRef?.evaluateJavascript("javascript:window.setHotspots('$eventsJson')", null)
         }
     }
 

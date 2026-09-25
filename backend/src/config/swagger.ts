@@ -25,7 +25,7 @@ const options: swaggerJsdoc.Options = {
                     type: 'object',
                     required: ['error'],
                     properties: {
-                        error: { type: 'string'},
+                        error: { type: 'string', example: "INTERNAL_SERVER_ERROR" },
                         message: { type: 'string' },
                     },
                 },
@@ -530,6 +530,111 @@ const options: swaggerJsdoc.Options = {
                             ]
                         }
                     }
+                },
+                FleetOrganization: {
+                    type: 'object',
+                    required: ['org_id'],
+                    properties: {
+                        org_id: { type: 'string', format: 'uuid' },
+                    },
+                },
+                FleetDriver: {
+                    type: 'object',
+                    required: ['user_id', 'username', 'name', 'surname', 'email', 'status'],
+                    properties: {
+                        user_id: { type: 'string', format: 'uuid', example: 'user-123' },
+                        username: { type: 'string', example: 'janeboyega42' },
+                        name: { type: 'string', example: 'Jane' },
+                        surname: { type: 'string', example: 'Boyega' },
+                        email: { type: 'string', format: 'email', example: 'jane.boyega@example.com' },
+                        phone_number: { type: 'string', nullable: true, example: '0123456789' },
+                        profile_picture_url: { type: 'string', nullable: true, example: 'upload/profile-picture/user-123' },
+                        joined_at: { type: 'string', format: 'date-time', example: '2026-09-01T08:30:00.000Z' },
+                        status: { type: 'string', enum: ['AVAILABLE', 'ASSIGNED', 'UNAVAILABLE'], example: 'AVAILABLE' },
+                    },
+                },
+                FleetVehicle: {
+                    type: 'object',
+                    required: ['vehicle_id', 'make', 'model', 'year', 'status'],
+                    properties: {
+                        vehicle_id: { type: 'string', format: 'uuid', example: 'vehicle-123' },
+                        name: { type: 'string', nullable: true, example: 'Delivery Van' },
+                        registration: { type: 'string', nullable: true, example: 'ABC-123' },
+                        make: { type: 'string', example: 'Toyota' },
+                        model: { type: 'string', example: 'Corolla' },
+                        year: { type: 'integer', example: 2022 },
+                        engine_type: { type: 'string', nullable: true, example: 'Petrol' },
+                        fuel_type: { type: 'string', nullable: true, example: 'PETROL' },
+                        fuel_tank: { type: 'number', example: 50 },
+                        fuel_efficiency: { type: 'number', nullable: true, example: 7.2 },
+                        image_url: { type: 'string', nullable: true, example: 'upload/vehicle-image/vehicle-123' },
+                        org_id: { type: 'string', format: 'uuid', nullable: true, example: 'org-123' },
+                        created_at: { type: 'string', format: 'date-time', example: '2026-09-01T08:30:00.000Z' },
+                        status: { type: 'string', enum: ['AVAILABLE', 'ASSIGNED', 'UNAVAILABLE'], example: 'AVAILABLE' },
+                    },
+                },
+                FleetVehicleCreateResponse: {
+                    type: 'object',
+                    required: ['data', 'warning'],
+                    properties: {
+                        data: {
+                            allOf: [{ $ref: '#/components/schemas/FleetVehicle' }],
+                        },
+                        warning: { type: 'string', nullable: true, example: null },
+                    },
+                },
+                FleetTrip: {
+                    type: 'object',
+                    required: ['trip_id', 'status', 'vehicle_id'],
+                    properties: {
+                        trip_id: { type: 'string', format: 'uuid', example: 'trip-123' },
+                        status: { type: 'string', example: 'COMPLETED' },
+                        scheduled_for: { type: 'string', format: 'date-time', nullable: true, example: '2026-09-24T09:00:00.000Z' },
+                        scheduled_end: { type: 'string', format: 'date-time', nullable: true, example: '2026-09-24T10:00:00.000Z' },
+                        planned_start_addr: { type: 'string', nullable: true, example: '1 Main Street' },
+                        planned_start_lat: { type: 'number', nullable: true, example: -26.2041 },
+                        planned_start_lng: { type: 'number', nullable: true, example: 28.0473 },
+                        planned_end_addr: { type: 'string', nullable: true, example: '100 Malboro Street' },
+                        planned_dest_lat: { type: 'number', nullable: true, example: -26.1952 },
+                        planned_dest_lng: { type: 'number', nullable: true, example: 28.0341 },
+                        distance_km: { type: 'number', nullable: true, example: 12.5 },
+                        duration_minutes: { type: 'integer', nullable: true, example: 35 },
+                        vehicle_id: { type: 'string', format: 'uuid', example: 'vehicle-123' },
+                        vehicles: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                                make: { type: 'string', nullable: true, example: 'Toyota' },
+                                model: { type: 'string', nullable: true, example: 'Corolla' },
+                                year: { type: 'integer', nullable: true, example: 2016 },
+                            },
+                        },
+                        driver: {
+                            type: 'object',
+                            nullable: true,
+                            properties: {
+                                user_id: { type: 'string', format: 'uuid', example: 'user-123' },
+                                name: { type: 'string', example: 'Jane' },
+                                surname: { type: 'string', example: 'Doe' },
+                                email: { type: 'string', format: 'email', example: 'jane.doe@example.com' },
+                            },
+                        },
+                    },
+                },
+                ScheduledTrip: {
+                    allOf: [
+                        { $ref: '#/components/schemas/Trip' },
+                        {
+                            type: 'object',
+                            properties: {
+                                scheduled_for: { type: 'string', format: 'date-time', nullable: true },
+                                scheduled_end: { type: 'string', format: 'date-time', nullable: true },
+                                planned_dest_lat: { type: 'number', nullable: true },
+                                planned_dest_lng: { type: 'number', nullable: true },
+                                fuel_level_start: { type: 'number', nullable: true },
+                            },
+                        },
+                    ],
                 },
             },
         },

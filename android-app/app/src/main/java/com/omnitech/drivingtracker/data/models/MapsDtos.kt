@@ -70,3 +70,4 @@ enum class PoiType(val value: String){
 
     override fun toString() = value
 }
+data class HotspotsResponse( val data: List<TripEventDto> )

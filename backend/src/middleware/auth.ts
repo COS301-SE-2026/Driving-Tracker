@@ -7,6 +7,8 @@ const REFRESH_SECRET=process.env.JWT_REFRESH_SECRET!;
 //Extends JwtPAylod to add a role claim. sub claim stores user uuid
 export interface AppJwtPayload extends JwtPayload{
   role: "admin" | "user";
+  org_role?: "ADMIN" | "MANAGER" | "DRIVER" | null;
+  org_id?: string | null;
 }
 
 type UploadedFile = {

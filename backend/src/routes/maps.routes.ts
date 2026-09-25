@@ -481,13 +481,65 @@ map_router.get('/address/reverse', verify_token, create_trip_reading_limiter() ,
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/RateLimitResponse'
+ */
+map_router.get('/road_defects', verify_token, create_trip_reading_limiter(), map_controller.get_road_defects);
+
+/**
+ * @openapi
+ * /api/maps/hotspots:
+ *   get:
+ *     tags:
+ *       - Maps
+ *     summary: Get clustered community hotspots
+ *     description: Returns community-wide hotspots for harsh events (braking/acceleration). Points are only included if they are part of a cluster of 3 or more events within a 500m radius.
+ *     responses:
+ *       200:
+ *         description: Clustered hotspots retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - data
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     required:
+ *                       - event_id
+ *                       - event_type
+ *                       - latitude
+ *                       - longitude
+ *                       - time_stamp
+ *                     properties:
+ *                       event_id:
+ *                         type: string
+ *                         format: uuid
+ *                         example: "1022d96b-56e2-40fe-8df2-4b08bb51b503"
+ *                       event_type:
+ *                         type: string
+ *                         enum: [HARSH_BRAKE, HARSH_ACCELERATION]
+ *                         example: "HARSH_BRAKE"
+ *                       latitude:
+ *                         type: number
+ *                         example: -26.145389
+ *                       longitude:
+ *                         type: number
+ *                         example: 27.838202
+ *                       time_stamp:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2024-09-03T10:00:00Z"
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: INTERNAL_SERVER_ERROR
+ *               message: Failed to fetch hotspots
  */
-map_router.get('/road_defects', verify_token, create_trip_reading_limiter(), map_controller.get_road_defects);
-
+map_router.get("/hotspots", map_controller.get_hotspots);
 export default map_router;
