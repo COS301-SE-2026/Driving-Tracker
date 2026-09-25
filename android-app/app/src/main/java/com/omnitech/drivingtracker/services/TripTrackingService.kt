@@ -527,9 +527,10 @@ class TripTrackingService: Service() {
                 val lat = lastSavedLat
                 val lng = lastSavedLng
                 if(lat != null && lng != null && lastKnownSpeed > 10f){
-                    tripRepository.getRoadDefects(lat, lng, radius = 100).onSuccess { data ->
+                    tripRepository.getRoadDefects(lat, lng, radius = 300).onSuccess { data ->
+                        tripStateManager.updateNearbyPotholes(data.defects)
                         val nearest = data.defects.firstOrNull()
-                        if(nearest != null && nearest.distanceMeters <= 100){
+                        if(nearest != null && nearest.distanceMeters <= 150){
                             notificationHelper.showTripAlert(
                                 "Pothole Ahead!",
                                 "Caution: Road defect reported ~${nearest.distanceMeters.toInt()}m ahead",
