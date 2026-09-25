@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -85,6 +86,7 @@ fun LiveTrip(
     val safetyState by viewModel.safetyCheck.collectAsState()
     var showManualEndFuelDialog by remember { mutableStateOf(false) }
     var manualEndFuel by remember { mutableStateOf("") }
+    var showPotholes by remember { mutableStateOf(true) }
 
     val plannedRoute by viewModel.plannedRoute.collectAsState()
     val detourRoute by viewModel.detourRoute.collectAsState()
@@ -560,6 +562,8 @@ private fun TripDetails(
                     destination = destination,
                     plannedRoute = plannedRoute,
                     recenterTrigger = recenterCount,
+                    potholes = nearbyPotholes,
+                    showPotholes = showPotholes,
                     modifier = Modifier.fillMaxSize(),
                     nearbyPois = nearbyPois,
                     detourRoute = detourRoute,
@@ -579,6 +583,23 @@ private fun TripDetails(
                         tint = Color.Black
                     )
                 }
+                FilterChip(
+                    selected = showPotholes,
+                    onClick = { showPotholes = !showPotholes },
+                    label = {
+                        Text(
+                            text = if(showPotholes) "Potholes ON" else "Potholes OFF",
+                            fontSize = 12.sp
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFD32F2F),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Color.Black
+                    ),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+                )
             } else {
                 // Map placeholder
                 Image(
