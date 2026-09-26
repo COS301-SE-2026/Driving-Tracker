@@ -8,7 +8,7 @@ import { ValidationError } from "../utils/errors";
 export interface schedule_trip_data{
     vehicle_id: string;
     driver_id: string;
-    planned_start_time: Date;
+    planned_start_time: string;
     title: string;
     description: string;
     planned_start_location:{
@@ -32,7 +32,7 @@ export interface schedule_trip_data{
 export interface start_scheduled_trip_data{
     trip_id: string;
     vehicle_id: string;
-    start_time: Date;
+    start_time: string;
     start_location:{
         lat: number;
         lng: number;
@@ -379,7 +379,7 @@ export const fleet_services = {
             route: route.points
         };
     },
-    
+
     async start_scheduled_trip(user_id: string, org_id: string, data: start_scheduled_trip_data){
 
         const new_trip = await prisma.$transaction(async (tx) => { 
@@ -394,6 +394,12 @@ export const fleet_services = {
 
             if(!user){
                 throw new Error("Driver not found");
+            }
+
+            const start_time = new Date(data.start_time);
+
+            if(isNaN(start_time.getTime())){
+                throw new Error("Invalid start time");
             }
 
             const trips = await prisma.trips.findMany({
@@ -453,7 +459,7 @@ export const fleet_services = {
                 data: {
                     user_id: user.user_id,
                     vehicle_id: data.vehicle_id,
-                    start_time: data.start_time,
+                    start_time: new Date(data.start_time),
                     start_latitude: data.start_location.lat,
                     start_longitude: data.start_location.lng,
                     fuel_estimate: fuel_est,

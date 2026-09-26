@@ -254,7 +254,6 @@ const fleet_controller = {
         }
     },
 
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async start_scheduled_trip(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;
@@ -320,6 +319,13 @@ const fleet_controller = {
 
                 return res.status(409).json({
                     error: "CANNOT_START_TRIP", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Invalid start time")){
+
+                return res.status(422).json({
+                    error: "INVALID_START_TIME", message: error.message
                 });
             }
   

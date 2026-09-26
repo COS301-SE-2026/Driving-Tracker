@@ -13,6 +13,7 @@ jest.mock("../../../src/services/fleet_services", () =>({
         list_fleet_vehicles: jest.fn(),
         start_scheduled_trip: jest.fn(),
         list_fleet_trips: jest.fn(),
+        schedule_trip: jest.fn(),
     },
 }));
 
@@ -626,6 +627,316 @@ describe("Fleet controller", () =>{
             );
         });
 
+    });
+
+    describe("schedule_trip", () => {
+        const valid_schedule_payload = {
+            vehicle_id: "vehicle-1",
+            driver_id: "driver-1",
+            planned_start_time: "2026-10-01T10:00:00Z",
+            title: "Client Visit",
+            task: "Deliver package",
+            planned_start_location: { address: "15 Hemming St", lat: -26.2, lng: 28.0 },
+            planned_end_location: { address: "25 Crown Road", lat: -26.3, lng: 28.1 },
+            stops: [
+                { address: "Stop 1", lat: -26.25, lng: 28.05, stop_order: 1 }
+            ]
+        };
+
+        it("returns 401 when unauthenticated", async () => {
+            const response = makeResponse();
+            await fleet_controller.schedule_trip(
+                makeRequest({ user: undefined }),
+                response as any
+            );
+            expectStatus(response, 401);
+        });
+
+        it("returns 403 when user is DRIVER", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({
+                    user: { sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER }
+                }),
+                response as any
+            );
+
+            expectStatus(response, 403);
+        });
+
+        it("returns 201 when trip is successfully scheduled", async () => {
+
+            const mockScheduledTrip = {
+                trip: { trip_id: "trip-1", status: "SCHEDULED" },
+                route: [{ lat: -26.2, lng: 28.0 }]
+            };
+
+            mockFleetServices.schedule_trip.mockResolvedValueOnce(mockScheduledTrip as any);
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 201);
+
+            expect(response.json).toHaveBeenCalledWith({
+                message: "Trip successfully scheduled",
+                data: mockScheduledTrip
+            });
+
+            expect(mockFleetServices.schedule_trip).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                {
+                    vehicle_id: "vehicle-1",
+                    driver_id: "driver-1",
+                    planned_start_time: "2026-10-01T10:00:00Z",
+                    title: "Client Visit",
+                    description: "Deliver package",
+                    planned_start_location: { address: "15 Hemming St", lat: -26.2, lng: 28.0 },
+                    planned_end_location: { address: "25 Crown Road", lat: -26.3, lng: 28.1 },
+                    stops: [{ address: "Stop 1", lat: -26.25, lng: 28.05, stop_order: 1 }]
+                }
+            );
+        });
+
+        it("returns 404 when driver is not found", async () => {
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Driver not found"));
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+            expectStatus(response, 404);
+        });
+
+        it("returns 409 when driver is not available (active trip)", async () => {
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Driver not available"));
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 409);
+        });
+
+        it("returns 409 when driver has overlapping scheduled trip", async () => {
+
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(
+                new Error("Driver has a scheduled trip that overlaps this time")
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 409);
+        });
+
+        it("returns 422 when required fields are missing", async () => {
+
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Missing required fields"));
+            
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 422);
+        });
+
+        it("returns 422 when start location is invalid", async () => {
+
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Unknown start location"));
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 422);
+        });
+
+        it("returns 422 when end location is invalid", async () => {
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Unknown end location"));
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 422);
+        });
+
+        it("returns 500 on unexpected error", async () => {
+
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Database Crashed"));
+
+            const response = makeResponse();
+
+            await fleet_controller.schedule_trip(
+                makeRequest({ body: valid_schedule_payload }),
+                response as any
+            );
+
+            expectStatus(response, 500);
+        });
+    });
+
+    describe("start_scheduled_trip", () => {
+
+        const valid_start_payload = {
+            vehicle_id: "vehicle-1",
+            start_time: "2026-10-01T10:05:00Z",
+            start_location: { lat: -26.2, lng: 28.0 },
+            fuel_level_start: 85.5
+        };
+
+        it("returns 401 when unauthenticated", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ user: undefined, params: { trip_id: "trip-1" } }),
+                response as any
+            );
+
+            expectStatus(response, 401);
+        });
+
+        it("returns 200 when scheduled trip starts successfully", async () => {
+
+            const mockStartedTrip = { trip_id: "trip-1", status: "IN_PROGRESS" };
+
+            mockFleetServices.start_scheduled_trip.mockResolvedValueOnce(mockStartedTrip as any);
+
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({
+                    params: { trip_id: "trip-1" },
+                    body: valid_start_payload
+                }),
+                response as any
+            );
+
+            expectStatus(response, 200);
+
+            expect(response.json).toHaveBeenCalledWith({
+                message: "Scheduled trip started successfully",
+                data: mockStartedTrip
+            });
+
+            expect(mockFleetServices.start_scheduled_trip).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                {
+                    trip_id: "trip-1",
+                    vehicle_id: "vehicle-1",
+                    start_time: "2026-10-01T10:05:00Z",
+                    start_location: { lat: -26.2, lng: 28.0 },
+                    fuel_level_start: 85.5
+                }
+            );
+        });
+
+        it("returns 404 when scheduled trip is not found", async () => {
+
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
+                new Error("Scheduled trip not found")
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ params: { trip_id: "trip-999" }, body: valid_start_payload }),
+                response as any
+            );
+
+            expectStatus(response, 404);
+        });
+
+        it("returns 409 when trip is already in progress", async () => {
+
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
+                new Error("Trip already in progress")
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
+                response as any
+            );
+
+            expectStatus(response, 409);
+        });
+
+        it("returns 409 when trip is no longer available to start", async () => {
+
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
+                new Error("Trip no longer available to start")
+            );
+            
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
+                response as any
+            );
+
+            expectStatus(response, 409);
+        });
+
+        it("returns 422 when start_time is invalid", async () => {
+
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
+                new Error("Invalid start time")
+            );
+            
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
+                response as any
+            );
+
+            expectStatus(response, 422);
+        });
+
+        it("returns 500 on unexpected errors", async () => {
+
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
+                new Error("Internal error")
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.start_scheduled_trip(
+                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
+                response as any
+            );
+
+            expectStatus(response, 500);
+        });
     });
 
 });
