@@ -269,18 +269,21 @@ describe('fleet services ', () => {
                     make: "Toyota",
                     model: "Corolla",
                     trips: [{ status: "IN_PROGRESS", scheduled_for: null }],
+                    _count: { trips: 2 },
                 },
                 {
                     vehicle_id: "vehicle-2",
                     make: "Ford",
                     model: "Ranger",
                     trips: [{ status: "SCHEDULED", scheduled_for: new Date() }],
+                    _count: { trips: 1 },
                 },
                 {
                     vehicle_id: "vehicle-3",
                     make: "VW",
                     model: "Polo",
                     trips: [],
+                    _count: { trips: 0 },
                 },
             ]);
 

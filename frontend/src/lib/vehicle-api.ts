@@ -4,8 +4,28 @@ import type {
     ImageSearchResult,
     Vehicle,
 } from "@/components/vehicles/types"
+import { apiFetch } from "./auth/apiClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+interface FleetVehiclesResponse {
+    message: string;
+    data: {
+        vehicles: Vehicle[];
+    };
+}
+
+interface FleetDriversResponse {
+    message: string;
+    data: {
+        drivers: Driver[];
+    };
+}
+
+interface AddVehicleResponse{
+    data: Vehicle;
+    warning: string | null;
+}
 
 function getHeaders(): HeadersInit {
 
@@ -34,20 +54,9 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
 export async function getVehicles(): Promise<Vehicle[]> {
 
-    const response = await fetch(
-        `${API_URL}/fleet/fleet_vehicles`,
-        {
-            headers: getHeaders(),
-        },
-    );
+    const response = await apiFetch<FleetVehiclesResponse>("/fleet/fleet_vehicles");
 
-    const result = await parseResponse<{
-        data: {
-            vehicles: Vehicle[];
-        };
-    }>(response);
-
-    return result.data.vehicles;
+    return response.data.vehicles;
 
 }
 
@@ -55,19 +64,12 @@ export async function createVehicle(
     input: CreateVehicleInput,
 ): Promise<Vehicle> {
 
-    const response = await fetch(
-        `${API_URL}/fleet/add_fleet_vehicle`,
-        {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(input),
-        },
-    );
+    const response = await apiFetch<AddVehicleResponse>("/fleet/add_fleet_vehicle",{
+        method: "POST",
+        body: JSON.stringify(input) 
+    });
 
-    const result = await parseResponse<{ data: Vehicle }>(response);
-
-    return result.data;
-
+    return response.data;
 }
 
 export async function searchVehicleImage(
@@ -82,6 +84,7 @@ export async function searchVehicleImage(
         year: String(year),
     });
 
+    //TODO: Change to apiFetch or discard
     const response = await fetch(
         `${API_URL}/vehicle/image-search?${params.toString()}`,
         {
@@ -99,19 +102,8 @@ export async function searchVehicleImage(
 
 export async function getDrivers(): Promise<Driver[]> {
 
-    const response = await fetch(
-        `${API_URL}/fleet/fleet_drivers`,
-        {
-            headers: getHeaders(),
-        },
-    );
+    const response = await apiFetch<FleetDriversResponse>("/fleet/fleet_drivers");
 
-    const result = await parseResponse<{ 
-        data: {
-            drivers: Driver[];
-        };
-    }>(response);
-
-    return result.data.drivers;
+    return response.data.drivers;
 
 }

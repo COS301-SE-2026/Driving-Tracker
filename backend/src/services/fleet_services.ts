@@ -199,28 +199,54 @@ export const fleet_services = {
                     select: {
                         status: true,
                         scheduled_for: true,
+                        users: {
+                            select: {
+                                user_id: true,
+                                name: true,
+                                surname: true,
+                                profile_picture_url: true,
+                            },
+                        },
                     },
-                }
+                },
+                _count: { 
+                    select: { trips: true }
+                },
             }
         });
 
         const vehicles_result = vehicles.map((v) => {
 
-            const { trips: active_trips, ...vehicle_data } = v;
+            const { trips: active_trips, _count, ...vehicle_data } = v;
 
-            let status = 'AVAILABLE'
+            let status = 'AVAILABLE';
+            let assigned_driver = null;
 
-            if(active_trips.some(t => t.status === 'IN_PROGRESS')){
+            const in_progress_trip = active_trips.find(t => t.status === 'IN_PROGRESS');
+            const scheduled_trip = active_trips.find(t => t.status === 'SCHEDULED');
+            const active_trip = in_progress_trip ?? scheduled_trip;
+
+            if(in_progress_trip){
                 status = 'UNAVAILABLE';
 
-            }else if(active_trips.some(t => t.status === 'SCHEDULED')){
+            }else if(scheduled_trip){
                 status = 'ASSIGNED'
             }
-            
 
+            if(active_trip?.users){
+                assigned_driver = {
+                    user_id: active_trip.users.user_id,
+                    name: active_trip.users.name,
+                    surname: active_trip.users.surname,
+                    profile_picture_url: active_trip.users.profile_picture_url ?? undefined,
+                };
+            }
+            
             return {
                 ...vehicle_data,
-                status,    
+                status,
+                assigned_driver,
+                trip_count: _count.trips,
             };
 
         });

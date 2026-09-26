@@ -21,6 +21,8 @@ export default function AddVehicleDialog({
 }: Props) {
 
     const [make, setMake] = useState("");
+    const [name, setName] = useState("");
+    const [registration, setRegistration] = useState("");
     const [model, setModel] = useState("");
     const [year, setYear] = useState("");
     const [fuelType, setFuelType] = useState("PETROL");
@@ -31,6 +33,8 @@ export default function AddVehicleDialog({
     useEffect(() => {
         if (!open) {
             setMake("");
+            setName("");
+            setRegistration("");
             setModel("");
             setYear("");
             setFuelType("PETROL");
@@ -67,6 +71,8 @@ export default function AddVehicleDialog({
         try {
             //creating the vehicle in the db
             const vehicle = await createVehicle({
+                name: name?.trim(),
+                registration: registration?.trim(),
                 make: make.trim(),
                 model: model.trim(),
                 year: numericYear,
@@ -126,6 +132,27 @@ export default function AddVehicleDialog({
                     onSubmit={handleSubmit}
                     className="space-y-4"
                 >
+
+                    <label className="block text-sm font-medium">
+                        Name/Alias
+                        <input
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            placeholder="Delivery Truck 1"
+                            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
+                        />
+                    </label>
+
+                    <label className="block text-sm font-medium">
+                        Registration
+                        <input
+                            value={registration}
+                            onChange={(event) => setRegistration(event.target.value)}
+                            placeholder="FGF123GP"
+                            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
+                        />
+                    </label>
+
                     <label className="block text-sm font-medium">
                         Make
                         <input

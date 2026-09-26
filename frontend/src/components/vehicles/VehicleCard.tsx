@@ -7,6 +7,12 @@ type VehicleCardProps = {
     vehicle: Vehicle;
 };
 
+function capitalizeFirst(str: string) {
+    if (!str) return str;
+
+    return str.trim()[0].toUpperCase() + str.slice(1).toLowerCase();
+}
+
 export default function VehicleCard({
     vehicle,
 }: VehicleCardProps) {
@@ -53,7 +59,7 @@ export default function VehicleCard({
 
                     <p>
                         <strong>Status:</strong>{" "}
-                        {vehicle.assigned_driver ? "On Trip" : "Inactive"}
+                        { capitalizeFirst(vehicle.status?? "Unknown") }
                     </p>
 
                     <p>
