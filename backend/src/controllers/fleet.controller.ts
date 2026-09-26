@@ -169,15 +169,33 @@ const fleet_controller = {
             , "You do not have the permissions to schedule a trip"
             , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
 
-            const data = req.body;
+        const {
+            vehicle_id,
+            driver_id,
+            planned_start_time,
+            title,
+            task,
+            planned_start_location,
+            planned_end_location,
+            stops
+            } = req.body;
 
         try{
             
-            const drivers = await fleet_services.schedule_trip(user_id, org_id!, data);
+            const trip = await fleet_services.schedule_trip(user_id, org_id!, {
+                vehicle_id,
+                driver_id,
+                planned_start_time,
+                title,
+                description: task,
+                planned_start_location,
+                planned_end_location,
+                stops
+            });
 
-            return res.status(200).json({
-                message: 'Fleet drivers successfully retrieved',
-                data: { drivers },
+            return res.status(201).json({
+                message: 'Trip successfully scheduled',
+                data: trip,
             });
 
         }catch(error: any){
@@ -192,7 +210,7 @@ const fleet_controller = {
             if(error.message.includes("Missing required fields")){
                 res.status(422).json({
                     error: "MISSING_REQUIRED_FIELDS",
-                    message: "user or vehicle not known"
+                    message: "User or vehicle not known"
                 });
             }
 

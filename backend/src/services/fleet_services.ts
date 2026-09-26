@@ -238,7 +238,6 @@ export const fleet_services = {
     
     },
 
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async schedule_trip(user_id: string, org_id: string, data: schedule_trip_data){
 
         if(!user_id || !data.vehicle_id || !data.driver_id){
@@ -303,11 +302,17 @@ export const fleet_services = {
             start_lng: data.planned_start_location.lng,
             dest_lat:  data.planned_end_location.lat,
             dest_lng: data.planned_end_location.lng,
+            stops: data.stops ?? undefined
         });
 
 
-        const BUFFER_SECONDS = 10*60;
-        const total_seconds = route.travel_time_seconds+ BUFFER_SECONDS;
+        const BASE_BUFFER_SECONDS = 10*60;
+        const PER_STOP_BUFFER_SECONDS = 5 * 60;
+
+        const stop_count = data.stops?.length ?? 0;
+        const buffer_seconds = BASE_BUFFER_SECONDS + (stop_count * PER_STOP_BUFFER_SECONDS);
+
+        const total_seconds = route.travel_time_seconds + buffer_seconds;
 
         const new_start = new Date(data.planned_start_time);
         const new_end = new Date(new_start.getTime() + total_seconds * 1000);
@@ -335,13 +340,14 @@ export const fleet_services = {
                     title: data.title,
                     scheduled_for: new_start,
                     scheduled_end: new_end,
-                    duration_minutes: Math.round(total_seconds / 60),
                     planned_start_addr: data.planned_start_location.address,
                     planned_start_lat: data.planned_start_location.lat,
                     planned_start_lng: data.planned_start_location.lng,
                     planned_end_addr: data.planned_end_location.address,
                     planned_dest_lat: data.planned_end_location.lat,
                     planned_dest_lng: data.planned_end_location.lng,
+                    end_latitude: data.planned_end_location.lat,
+                    end_longitude: data.planned_end_location.lng,
                     trip_stops: data.stops && data.stops.length > 0? {
                         create: data.stops.map((stop) => ({
                             stop_order: stop.stop_order,
@@ -559,7 +565,7 @@ export const fleet_services = {
         }));
 
         return result;
-    },
+    }
 
 };
 

@@ -36,7 +36,9 @@ export interface get_directions_request {
     start_lng: number;
     dest_lat: number;
     dest_lng: number;
+    stops?: { lat: number; lng: number; stop_order: number; }[];
 };
+
 export interface route_summary{
      distance_km: number;
     travel_time_seconds: number;
@@ -80,7 +82,20 @@ export const map_services ={
     async suggested_routes(data: get_directions_request):Promise<route_summary>{
         // console.log("Does it reatch to azure ?")
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY;
-        const query = `${data.start_lat},${data.start_lng}:${data.dest_lat},${data.dest_lng}`;
+        //const query = `${data.start_lat},${data.start_lng}:${data.dest_lat},${data.dest_lng}`;
+
+        const sorted_stops = [...(data.stops ?? [])].sort(
+            (a, b) => (a.stop_order ?? 0) - (b.stop_order ?? 0)
+        );
+
+        const waypoints = [
+            { lat: data.start_lat, lng: data.start_lng },
+            ...sorted_stops,
+            { lat: data.dest_lat, lng: data.dest_lng },
+        ];
+
+        const query = waypoints.map(p => `${p.lat},${p.lng}`).join(':');
+
         const url =
             `https://atlas.microsoft.com/route/directions/json` +
             `?api-version=1.0` +
@@ -90,17 +105,19 @@ export const map_services ={
             `&traffic=true`;
  
         let response: Response;
+
         try{
             response = await fetch(url); 
         }catch(error){
             throw new Error(`Failed to reach Azure Maps: ${error instanceof Error ? error.message : String(error)}`);
         }
+
         if(!response.ok) {
             const body = await response.text().catch(() => "");
             throw new Error(`Azure Maps route request failed (${response.status}): ${body}`);
         }
  
-       const json = await response.json();
+        const json = await response.json();
         const parsed = azure_route_response_schema.safeParse(json);
 
         if (!parsed.success) {
@@ -111,10 +128,12 @@ export const map_services ={
         const summary = route.summary;
         
         // Map Azure points to  lat/lng format
-        const points = route.legs[0].points.map(p => ({
-            lat: p.latitude,
-            lng: p.longitude
-        }));
+        const points = route.legs.flatMap(leg =>
+            leg.points.map(p => ({
+                lat: p.latitude,
+                lng: p.longitude
+            }))
+        );
 
         return {
             distance_km: summary.lengthInMeters / 1000,
