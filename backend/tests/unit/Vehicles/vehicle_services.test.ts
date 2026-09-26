@@ -20,10 +20,15 @@ jest.mock('../../../src/db/prisma', () => {
         count: jest.fn(),
     };
 
+    const organization_members = {
+        findUnique: jest.fn(),
+    };
+
     const $transaction = jest.fn(async (fn: any) => await fn({
         users,
         vehicles,
-        users_vehicles
+        users_vehicles,
+        organization_members,
     }));
  
     return {
@@ -32,6 +37,7 @@ jest.mock('../../../src/db/prisma', () => {
             users,
             vehicles,
             users_vehicles,
+            organization_members,
             $transaction
         },
     };
@@ -217,6 +223,116 @@ describe('vehicle services assign user to vehicle', ()=>{
                 model: 'M3',
                 year: 2018,
                 fuel_tank: 60,
+                fuel_efficiency: 235.215 / 25,
+                fuel_type: 'PETROL'
+            },
+            warning: null
+        });
+    });
+});
+
+describe('vehicle services add fleet vehicle', ()=> {
+    beforeEach(async()=> jest.clearAllMocks());
+    const base_fleet_payload = {
+        user_id: 'u1',
+        name: 'Fleet Car',
+        registration: 'XYZ123BM',
+        make: "Toyota",
+        model: 'Challenger',
+        year: 2016,
+        fuel_type: 'PETROL',
+        fuel_tank: 54,
+    };
+
+
+    it('throws when vehicle data parameter is missing', async()=>{
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: 'MANAGER' });
+
+        await expect(
+            vehicle_services.add_fleet_vehicle({...base_fleet_payload, model: ''}, 'org-2')
+        ).rejects.toThrow('Missing field(s)');
+    });
+
+    it('throws when the user is not a member of the organization', async () => {
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+ 
+        await expect(
+            vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-2')
+        ).rejects.toThrow('User does not exist');
+    });
+
+    it('throws when the user is not Admin or Manager', async () => {
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: "DRIVER" });
+ 
+        await expect(
+            vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-2')
+        ).rejects.toThrow('You do not have access to add fleet vehicles');
+    });
+
+    it('creates fleet vehicle with org_id attached', async() =>{
+        process.env.CARAPI_TOKEN = "token123";
+        process.env.CARAPI_SECRET = "secret123";
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: 'MANAGER' });
+        
+         mock_fetch
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                text: async () => "jwt-token",
+            })
+        )
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    data: [{ combined_mpg: 25,
+                        trim_description:"Test trim",
+                    }],
+                }),
+            })
+        );
+        
+        mock_prisma.vehicles.create.mockResolvedValue({
+            vehicle_id: 'v-new-uuid',
+            name:'Fleet Car',
+            make: 'Toyota',
+            model: 'Challenger',
+            registration: 'XYZ123BM',
+            year: 2016,
+            fuel_type: 'PETROL',
+            fuel_tank: 54,
+            fuel_efficiency: 235.215 / 25,
+        });
+
+        const result = await vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-1');
+
+        expect(mock_prisma.vehicles.create).toHaveBeenCalledWith({
+            data: {
+                name: 'Fleet Car',
+                registration: 'XYZ123BM',
+                make: 'Toyota',
+                model: 'Challenger',
+                year: 2016,
+                fuel_type: 'PETROL',
+                fuel_tank: 54,
+                fuel_efficiency: 235.215 / 25,
+                org_id: 'org-1'
+            },
+        });
+
+        expect(result).toEqual({
+            data: {
+                vehicle_id: 'v-new-uuid',
+                name: 'Fleet Car',
+                registration: 'XYZ123BM',
+                make: 'Toyota',
+                model: 'Challenger',
+                year: 2016,
+                fuel_tank: 54,
                 fuel_efficiency: 235.215 / 25,
                 fuel_type: 'PETROL'
             },
