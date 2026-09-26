@@ -1,6 +1,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { get_all_vehicles, update_vehicle, assign_vehicle, remove_vehicle } from '../../../src/controllers/vehicle.controller';
 import { vehicle_services } from '../../../src/services/vehicle.services';
+import { before } from 'node:test';
 
 describe('Vehicle controller get_all_vehicles', () => {
 	beforeEach(() => {
@@ -261,6 +262,95 @@ describe('Vehicle controller assign_vehicle', () => {
 		expect(res.json).toHaveBeenCalledWith({
 			error: 'USER_NOT_FOUND',
 			message: 'User not found',
+		});
+	});
+});
+
+describe('Vehicle controller remove_vehicle', () => {
+	beforeEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	const makeResponse = () => {
+		const json = jest.fn();
+		const status = jest.fn().mockReturnValue({ json });
+		return { status, json };
+	};
+
+	it('returns 200 when the vehicle is successfully removed', async () => {
+		const result = { message: 'Vehicle removed successfully' };
+
+		const serviceSpy = jest.spyOn(vehicle_services, 'remove_vehicle').mockResolvedValueOnce(result as any);
+
+		const req: any = {
+			user: { sub: 'user-1' },
+			params: { vehicle_id: 'vehicle-1' },
+		};
+
+		const res: any = makeResponse();
+
+		await remove_vehicle(req, res);
+
+		expect(serviceSpy).toHaveBeenCalledWith('user-1', 'vehicle-1');
+		expect(res.status).toHaveBeenCalledWith(200);
+		expect(res.json).toHaveBeenCalledWith(result);
+	});
+
+	it('returns 401 when the user is not authenticated', async () => {
+
+		const req: any = {
+			user: { },
+			params: { vehicle_id: 'vehicle-1' },
+		};
+
+		const res: any = makeResponse();
+
+		await remove_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(401);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'UNAUTHORIZED',
+			message: 'Unauthorized'
+		});
+	});
+
+	it('returns 404 when the vehicle is not found or owned', async () => {
+
+		jest.spyOn(vehicle_services, 'remove_vehicle').mockRejectedValueOnce(new Error('Vehicle not found or not owned by you'));
+
+		const req: any = {
+			user: { sub: 'user-1' },
+			params: { vehicle_id: 'vehicle-1' },
+		};
+
+		const res: any = makeResponse();
+
+		await remove_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(404);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'INVALID_VEHICLE',
+			message: 'Vehicle not found or not owned by you'
+		});
+	});
+
+	it('returns 500 when the service fails unexpectedly', async () => {
+
+		jest.spyOn(vehicle_services, 'remove_vehicle').mockRejectedValueOnce(new Error('Database unavailable'));
+
+		const req: any = {
+			user: { sub: 'user-1' },
+			params: { vehicle_id: 'vehicle-1' },
+		};
+
+		const res: any = makeResponse();
+
+		await remove_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(500);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'INTERNAL_SERVER_ERROR',
+			message: 'Internal server error'
 		});
 	});
 });
