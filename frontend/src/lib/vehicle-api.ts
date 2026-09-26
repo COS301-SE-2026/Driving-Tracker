@@ -35,13 +35,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export async function getVehicles(): Promise<Vehicle[]> {
 
     const response = await fetch(
-        `${API_URL}/vehicle/get_all_vehicles`,
+        `${API_URL}/fleet/fleet_vehicles`,
         {
             headers: getHeaders(),
         },
     );
 
-    return parseResponse<Vehicle[]>(response);
+    const result = await parseResponse<{
+        data: {
+            vehicles: Vehicle[];
+        };
+    }>(response);
+
+    return result.data.vehicles;
 
 }
 
@@ -50,7 +56,7 @@ export async function createVehicle(
 ): Promise<Vehicle> {
 
     const response = await fetch(
-        `${API_URL}/vehicle/assign_vehicle`,
+        `${API_URL}/fleet/add_fleet_vehicle`,
         {
             method: "POST",
             headers: getHeaders(),
@@ -94,34 +100,18 @@ export async function searchVehicleImage(
 export async function getDrivers(): Promise<Driver[]> {
 
     const response = await fetch(
-        `${API_URL}/users/drivers`,
+        `${API_URL}/fleet/fleet_drivers`,
         {
             headers: getHeaders(),
         },
     );
 
-    const result = await parseResponse<{ data: Driver[] }>(response);
+    const result = await parseResponse<{ 
+        data: {
+            drivers: Driver[];
+        };
+    }>(response);
 
-    return result.data;
-
-}
-
-export async function assignDriver(
-    vehicleId: string,
-    driverId: string,
-): Promise<void> {
-
-    const response = await fetch(
-        `${API_URL}/vehicle/${vehicleId}/driver`,
-        {
-            method: "PUT",
-            headers: getHeaders(),
-            body: JSON.stringify({
-                driver_id: driverId,
-            }),
-        },
-    );
-
-    await parseResponse(response);
+    return result.data.drivers;
 
 }
