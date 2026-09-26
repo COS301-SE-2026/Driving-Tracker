@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { get_all_vehicles, update_vehicle } from '../../../src/controllers/vehicle.controller';
+import { get_all_vehicles, update_vehicle, assign_vehicle, remove_vehicle } from '../../../src/controllers/vehicle.controller';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 
 describe('Vehicle controller get_all_vehicles', () => {
@@ -162,4 +162,105 @@ describe('Vehicle controller update vehicle', ()=>{
             message: "Unauthorized"
         });
     });
-})
+});
+
+describe('Vehicle controller assign_vehicle', () => {
+	beforeEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	const makeResponse = () => {
+		const json = jest.fn();
+		const status = jest.fn().mockReturnValue({ json });
+		return { status, json };
+	};
+
+	const vehicleBody = {
+		name: 'New Name',
+		registration: 'NEW-REG',
+		make: 'BMW',
+		model: 'M3',
+		year: 2018,
+		fuel_type: 'PETROL',
+		fuel_tank: 50.0
+    };
+
+	it('returns 201 when the vehicle is assigned successfully', async () => {
+		const result = { data : { vehicle_id: 'vehicle-1' } };
+
+		const serviceSpy = jest.spyOn(vehicle_services, 'assign_user_to_vehicle').mockResolvedValueOnce(result as any);
+
+        const req: any = {
+            user: { sub: 'user-1' },
+            body: vehicleBody
+        };
+
+		const res: any = makeResponse();
+
+        await assign_vehicle(req, res);
+
+		expect(serviceSpy).toHaveBeenCalledWith({
+			user_id: 'user-1',
+			...vehicleBody,
+		});
+		expect(res.status).toHaveBeenCalledWith(201);
+		expect(res.json).toHaveBeenCalledWith(result);
+	});
+
+	it('returns 403 when the user is not authenticated', async () => {
+		const req: any = {
+			user: {},
+			body: vehicleBody,
+		};
+
+		const res: any = makeResponse();
+
+		await assign_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(403);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'UNAUTHORIZED',
+			message: 'Unauthorized'
+		});
+	});
+
+	it('returns 400 when required fields are missing', async () => {
+		const req: any = {
+			user: {sub: 'user-1' },
+			body: {
+				...vehicleBody,
+				make: ''
+			},
+		};
+
+		const res: any = makeResponse();
+
+		await assign_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(400);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'MISSING_REQUIRED_FIELDS',
+			message: 'Missing required fields: make, model, year, fuel_type, fuel_tank'
+		});
+	});
+
+	it('returns 404 when the user does not exist', async () => {
+
+		jest.spyOn(vehicle_services, 'assign_user_to_vehicle').mockRejectedValueOnce(new Error('User does not exist'));
+
+		const req: any = {
+			user: {sub: 'unknown-user' },
+			body: vehicleBody,
+		};
+
+		const res: any = makeResponse();
+
+		await assign_vehicle(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(404);
+		expect(res.json).toHaveBeenCalledWith({
+			error: 'USER_NOT_FOUND',
+			message: 'User not found',
+		});
+	});
+});
