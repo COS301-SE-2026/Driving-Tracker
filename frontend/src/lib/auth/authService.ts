@@ -8,6 +8,10 @@ interface AuthResponse {
     refresh_token: string;
 }
 
+interface LogoutResponse {
+    message: string;
+}
+
 export async function login(identifier: string, password: string): Promise<void> {
     const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
@@ -31,6 +35,30 @@ export async function login(identifier: string, password: string): Promise<void>
     tokenManager.setAccessToken(data.token);
     refreshTokenStorage.set(data.refresh_token);
 
+}
+
+export async function logout(): Promise<void> {
+
+    const accessToken = tokenManager.getAccessToken();
+
+    if(accessToken){
+        try{
+
+            await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                method: "POST",
+                headers: {
+                    "Content-Type" : "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
+
+        }catch {
+
+        }
+    }
+
+    tokenManager.clearAccessToken();
+    refreshTokenStorage.clear();
 }
 
 let refreshPromise: Promise<string | null> | null = null;
