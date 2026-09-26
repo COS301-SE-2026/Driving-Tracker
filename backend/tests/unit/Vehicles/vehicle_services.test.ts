@@ -46,7 +46,7 @@ jest.mock('../../../src/db/prisma', () => {
 
 import { describe, it, expect, jest, beforeEach,afterAll,afterEach } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
-import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark, search_vehicle_image } from '../../../src/services/vehicle.services';
 import { get_fuel_analytics } from '../../../src/controllers/vehicle.controller';
 import { manufacturer_baseline_service } from '../../../src/services/manufacturer_baseline.service';
 
@@ -596,7 +596,25 @@ describe('fetch_vehicle_benchmark', () => {
             fetch_vehicle_benchmark('BMW', 'M3', 2018)
         ).rejects.toThrow('No vehicle found for BMW M3 2018');
     });
+
+    it('throws when the vehicle benchmark request fails', async () => {
+        mock_fetch.mockResolvedValueOnce(make_response({
+            ok: true,
+            text: async () => 'jwt-token',
+        })).mockResolvedValueOnce(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'CAR API unavailable',
+            })
+        );
+        await expect(
+            fetch_vehicle_benchmark('BMW', 'M3', 2018)
+        ).rejects.toThrow('Vehicle API request failed');
+    });
 });
+
 describe("additional vehicle service tests", ()=>{
     beforeEach(() =>{
         jest.clearAllMocks();
@@ -961,6 +979,70 @@ describe('vehicle services get fuel analytics', ()=>{
 			await expect(vehicle_services.update_vehicle_image('user-1', 'v1', 'new'))
 				.rejects.toThrow('You do not own this vehicle');
 		});
+
+        it('uses the database fallback when the car api request fails', async () => {
+            const current_vehicle = {
+                vehicle_id: 'v1',
+                make: 'BMW',
+                model: 'M3',
+                year: 2010,
+                fuel_efficiency: 12.0,
+            };
+
+            mock_prisma.users_vehicles.findUnique.mockResolvedValue({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+            });
+
+            mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+
+            mock_fetch.mockReset().mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    text: async () => 'jwt-token',
+                })
+            ).mockResolvedValueOnce(
+                make_response({
+                    ok: false,
+                    status: 500,
+                    text: async () => 'CAR API unavailable',
+                })
+            );
+
+            mock_prisma.vehicles.aggregate.mockResolvedValue({
+                _avg: {
+                    fuel_efficiency: 7.4,
+                },
+            });
+
+            mock_prisma.vehicles.update.mockResolvedValue({
+                ...current_vehicle,
+                year: 2018,
+                fuel_efficiency: 7.4,
+            });
+
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            const result = await vehicle_services.update_vehicle({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+                year: 2018,
+            });
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith('CAR API lookup failed, using database fallback.');
+
+            expect(mock_prisma.vehicles.aggregate).toHaveBeenCalled();
+
+            expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+                where: {vehicle_id: 'v1' },
+                data: expect.objectContaining({
+                    fuel_efficiency: 7.4,
+                }),
+            });
+            expect(result.warning).toBeNull();
+
+            consoleErrorSpy.mockRestore();
+        });
 	});
 });
 
@@ -1086,5 +1168,97 @@ describe('vehicle services get fuel comparison', () => {
 
     });
 
+});
+
+describe('search_vehicle_image', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mock_fetch.mockReset();
+    });
+
+    it('returns the first matching image', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {
+                            '1': {
+                                title: 'File:BMW M3.jpg',
+                                imageinfo: [
+                                    {
+                                        url: 'https://example.com/bmw.jpg',
+                                        thumburl: 'https://example.com/bmw-thumb.jpg'
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toEqual({
+            title: 'File:BMW M3.jpg',
+            image_url: 'https://example.com/bmw.jpg',
+            thumbnail_url: 'https://example.com/bmw-thumb.jpg'
+        });
+    });
+
+    it('uses the full image URL when no thumbnail URL exists', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {
+                            '1': {
+                                title: 'File:BMW M3.jpg',
+                                imageinfo: [
+                                    {
+                                        url: 'https://example.com/bmw.jpg',
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toEqual({
+            title: 'File:BMW M3.jpg',
+            image_url: 'https://example.com/bmw.jpg',
+            thumbnail_url: 'https://example.com/bmw.jpg'
+        });
+    });
+
+    it('returns null when no matching image is found', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {},
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toBeNull();
+    });
+
+    it('throws when the wikimedia request fails', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+            })
+        );
+        await expect(
+            search_vehicle_image('BMW', 'M3', 2018)
+        ).rejects.toThrow('Vehicle image search failed');
+    });
 });
  
