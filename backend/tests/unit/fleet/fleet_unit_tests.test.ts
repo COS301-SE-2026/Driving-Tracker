@@ -704,100 +704,25 @@ describe("Fleet controller", () =>{
             );
         });
 
-        it("returns 404 when driver is not found", async () => {
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Driver not found"));
+        it.each([
+            ["Driver not found", 404],
+            ["Driver not available", 409],
+            ["Driver has a scheduled trip that overlaps this time", 409],
+            ["Missing required fields", 422],
+            ["Unknown start location", 422],
+            ["Unknown end location", 422],
+            ["Database crashed", 500]
+        ])("maps error '%s' to status %i", async (errorMessage, expectedStatus) =>{
+            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error(errorMessage));
 
             const response = makeResponse();
 
             await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-            expectStatus(response, 404);
-        });
-
-        it("returns 409 when driver is not available (active trip)", async () => {
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Driver not available"));
-
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
+                makeRequest({ body: valid_schedule_payload}),
                 response as any
             );
 
-            expectStatus(response, 409);
-        });
-
-        it("returns 409 when driver has overlapping scheduled trip", async () => {
-
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(
-                new Error("Driver has a scheduled trip that overlaps this time")
-            );
-
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-
-            expectStatus(response, 409);
-        });
-
-        it("returns 422 when required fields are missing", async () => {
-
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Missing required fields"));
-            
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-
-            expectStatus(response, 422);
-        });
-
-        it("returns 422 when start location is invalid", async () => {
-
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Unknown start location"));
-
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-
-            expectStatus(response, 422);
-        });
-
-        it("returns 422 when end location is invalid", async () => {
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Unknown end location"));
-
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-
-            expectStatus(response, 422);
-        });
-
-        it("returns 500 on unexpected error", async () => {
-
-            mockFleetServices.schedule_trip.mockRejectedValueOnce(new Error("Database Crashed"));
-
-            const response = makeResponse();
-
-            await fleet_controller.schedule_trip(
-                makeRequest({ body: valid_schedule_payload }),
-                response as any
-            );
-
-            expectStatus(response, 500);
+            expectStatus(response, expectedStatus);
         });
     });
 
@@ -858,85 +783,25 @@ describe("Fleet controller", () =>{
             );
         });
 
-        it("returns 404 when scheduled trip is not found", async () => {
-
-            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
-                new Error("Scheduled trip not found")
-            );
-
-            const response = makeResponse();
-
-            await fleet_controller.start_scheduled_trip(
-                makeRequest({ params: { trip_id: "trip-999" }, body: valid_start_payload }),
-                response as any
-            );
-
-            expectStatus(response, 404);
-        });
-
-        it("returns 409 when trip is already in progress", async () => {
-
-            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
-                new Error("Trip already in progress")
-            );
+        it.each([
+            ["Scheduled trip not found", 404],
+            ["Trip already in progress", 409],
+            ["DTrip no longer available to start", 409],
+            ["Invalid start time", 422],
+            ["Internal error", 500],
+        ])("maps error '%s' to status %i", async (errorMessage, expectedStatus) =>{
+            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(new Error(errorMessage));
 
             const response = makeResponse();
 
             await fleet_controller.start_scheduled_trip(
-                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
+                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload}),
                 response as any
             );
 
-            expectStatus(response, 409);
+            expectStatus(response, expectedStatus);
         });
-
-        it("returns 409 when trip is no longer available to start", async () => {
-
-            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
-                new Error("Trip no longer available to start")
-            );
-            
-            const response = makeResponse();
-
-            await fleet_controller.start_scheduled_trip(
-                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
-                response as any
-            );
-
-            expectStatus(response, 409);
-        });
-
-        it("returns 422 when start_time is invalid", async () => {
-
-            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
-                new Error("Invalid start time")
-            );
-            
-            const response = makeResponse();
-
-            await fleet_controller.start_scheduled_trip(
-                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
-                response as any
-            );
-
-            expectStatus(response, 422);
-        });
-
-        it("returns 500 on unexpected errors", async () => {
-
-            mockFleetServices.start_scheduled_trip.mockRejectedValueOnce(
-                new Error("Internal error")
-            );
-
-            const response = makeResponse();
-
-            await fleet_controller.start_scheduled_trip(
-                makeRequest({ params: { trip_id: "trip-1" }, body: valid_start_payload }),
-                response as any
-            );
-
-            expectStatus(response, 500);
-        });
+        
     });
 
 });
