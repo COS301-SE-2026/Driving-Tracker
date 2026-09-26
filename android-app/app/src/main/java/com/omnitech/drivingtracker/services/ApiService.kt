@@ -34,10 +34,10 @@ interface ApiService{
 	@POST("vehicle/assign_vehicle")
 	suspend fun assignVehicle(@Body body: AssignVehicleRequest): AddVehicleResponse
 
-    @PATCH("vehicle/{vehicle_id}/name")
-    suspend fun updateVehicleName(
+    @PATCH("vehicle/{vehicle_id}")
+    suspend fun updateVehicle(
         @Path("vehicle_id") vehicleId: String,
-        @Body body: UpdateVehicleNameRequest
+        @Body body: UpdateVehicleRequest
     ): GenericResponse
 
     @DELETE("vehicle/{vehicle_id}")
@@ -141,6 +141,17 @@ interface ApiService{
         @Query("dest_lng") destLng: Double?
     ): SuggestedRouteResponse
 
+    @GET("map/road_defects")
+    suspend fun getRoadDefects(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double,
+        @Query("heading") heading: Double? = null,
+        @Query("radius") radius: Int? = 100,
+        @Query("min_reports") minReports: Int? = 3
+    ): RoadDefectsResponse
+
+    @GET("map/hotspots")
+    suspend fun getHotspots(): HotspotsResponse
     //Notifications
     @GET("notifications")
     suspend fun getNotifications(): NotificationsResponse

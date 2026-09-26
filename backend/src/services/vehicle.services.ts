@@ -11,10 +11,16 @@ export interface get_vehicles{
     user_id:string;
 }
 
-export interface update_vehicle_name{
+export interface update_vehicle{
     user_id: string;
     vehicle_id: string;
-    name: string;
+    name?: string;
+    registration?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    fuel_type?: string;
+    fuel_tank?: number
 }
 
 /*
@@ -168,7 +174,7 @@ export const vehicle_services={
         }
     },
 
-    async update_vehicle_name(data: update_vehicle_name){
+    async update_vehicle(data: update_vehicle){
         const assignment = await prisma.users_vehicles.findUnique({
             where: {user_id_vehicle_id: {
                 user_id: data.user_id,
@@ -177,11 +183,43 @@ export const vehicle_services={
         });
 
         if(!assignment) throw new Error("You do not own this vehicle");
+        
+        const current = await prisma.vehicles.findUnique({ where: { vehicle_id: data.vehicle_id } });
+        if (!current) throw new Error("Vehicle not found");
+        //check if the vehicle change will update the fuel efficiency 
+        const changed = (data.make && data.make !== current.make) ||
+            (data.model && data.model !== current.model) ||
+            (data.year && data.year !== current.year);
 
-        return await prisma.vehicles.update({
+        let final_efficiency:any = current.fuel_efficiency;
+        let warning: string | null = null;
+
+        if (changed) {
+            const result = await get_efficiency_benchmark(
+                data.make || current.make!,
+                data.model || current.model!,
+                data.year || current.year!
+            );
+            final_efficiency = result.benchmark;
+            warning = result.warning;
+        }
+
+        //update
+        const updated = await prisma.vehicles.update({
             where: { vehicle_id: data.vehicle_id },
-            data: { name: data.name}
+            data: {
+                name: data.name,
+                registration: data.registration,
+                make: data.make,
+                model: data.model,
+                year: data.year,
+                fuel_type: data.fuel_type,
+                fuel_tank: data.fuel_tank,
+                fuel_efficiency: final_efficiency
+            }
         });
+
+        return { data: updated, warning };
     },
 
     async update_vehicle_image(user_id: string, vehicle_id: string, blob_name: string){
@@ -563,7 +601,49 @@ export const vehicle_services={
         };
     }
 };
+async function get_efficiency_benchmark(make: string, model: string, year: number): Promise<{ benchmark: number, warning: string | null }> {
+    let benchmark_lper100km: number | null = null;
+    let warning: string | null = null;
 
+    //Try existing benchmark function (2015-2020)
+    try {
+        if (year >= 2015 && year <= 2020) {
+            const benchmarks = await fetch_vehicle_benchmark(make, model, year);
+            const validMpgValues = benchmarks.map((b) => Number(b.combined_mpg))
+                .filter((mpg) => Number.isFinite(mpg) && mpg > 0);
+
+            if(validMpgValues.length > 0){
+                const averageMpg = validMpgValues.reduce((sum, mpg) => sum + mpg, 0) / validMpgValues.length;
+                benchmark_lper100km = mpg_to_lper100km(averageMpg);
+            }
+        }
+    } catch {
+        console.error("CAR API lookup failed, using database fallback.");
+    }
+
+    //Database Fallback aggreagates the same model to get an average fuel efficiency from users with the same car 
+    if (benchmark_lper100km === null) {
+        const databaseAverage = await prisma.vehicles.aggregate({
+            where: {
+                make: { equals: make.trim(), mode: "insensitive" },
+                model: { equals: model.trim(), mode: "insensitive" },
+                year: year,
+                fuel_efficiency: { not: null },
+            },
+            _avg: { fuel_efficiency: true },
+        });
+
+        const average = databaseAverage._avg.fuel_efficiency;
+        if (average === null) {
+            benchmark_lper100km = 8.0;
+            warning = "Your vehicle is not fully supported. Fuel estimates will not be accurate until 5 trips have elapsed.";
+        } else {
+            benchmark_lper100km = Number(average);
+        }
+    }
+
+    return { benchmark: benchmark_lper100km!, warning };
+}
 export async function fetch_jwt_car_token(){
     const url = `https://carapi.app/api/auth/login`;
     const api_token = process.env.CARAPI_TOKEN;
@@ -657,4 +737,61 @@ function isVehicleBenchmarkArray(value: unknown[]): value is VehicleBenchmarkTri
         'combined_mpg' in item &&
         'trim_description' in item
     );
+}
+
+//seearching wikimedia commons for a vehicle image
+export async function search_vehicle_image(
+    make: string,
+    model: string,
+    year: number,
+) {
+    const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: `${year} ${make} ${model}`,
+        gsrnamespace: "6",
+        gsrlimit: "10",
+        prop: "imageinfo",
+        iiprop: "url",
+        iiurlwidth: "900",
+        format: "json",
+        origin: "*",
+    });
+
+    const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`,);
+
+    if (!response.ok) {
+        throw new Error("Vehicle image search failed");
+    }
+
+    const result = (await response.json()) as {
+        query?: {
+            pages?: Record<
+                string,
+                {
+                    title: string;
+                    imageinfo?: Array<{
+                        url?: string;
+                        thumburl?: string;
+                    }>;
+                }
+            >;
+        };
+    };
+
+    const pages = Object.values(result.query?.pages ?? []);
+
+    for (const page of pages) {
+        const image = page.imageinfo?.[0];
+
+        if (image?.url) {
+            return {
+                title: page.title,
+                image_url: image.url,
+                thumbnail_url: image.thumburl ?? image.url,
+            };
+        }
+    }
+
+    return null;
 }

@@ -1,7 +1,19 @@
+jest.mock('../../../src/db/prisma', () => ({
+    __esModule: true,
+    default: {
+        $queryRaw: jest.fn(),
+        trip_events: {
+            findMany: jest.fn(),
+        },
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
 import { map_services } from '../../../src/services/map_services';
+import prisma from '../../../src/db/prisma';
 
 
+const mock_prisma = prisma as any ;// mockng the prisma database 
 const mock_fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 globalThis.fetch = mock_fetch; //mocking the global fetch API 
 
@@ -375,3 +387,94 @@ describe('map services get reverse geocode', ()=>{
   
 });
 
+describe('Map services get_road_defects', () => {
+    beforeEach(async () => jest.clearAllMocks());
+
+    it('returns road defects within search radius sorted by distance', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7461, lng: 28.2313, reports: 4, avg_severity: 3.5 },
+            { lat: -25.7465, lng: 28.2313, reports: 3, avg_severity: 4.0 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            radius_m: 100,
+        });
+
+        expect(result.length).toBe(2);
+        expect(result[0].distance_m).toBeLessThan(result[1].distance_m);
+        expect(result[0].reports).toBe(4);
+    });
+
+    it('filters out defects outside the requested radius', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7461, lng: 28.2313, reports: 5, avg_severity: 2.0 },
+            { lat: -25.7550, lng: 28.2313, reports: 3, avg_severity: 4.5 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            radius_m: 100,
+        });
+
+        expect(result.length).toBe(1);
+        expect(result[0].lat).toBe(-25.7461);
+    });
+
+    it('filters out defects that are behind the vehicle when heading is provided', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7450, lng: 28.2313, reports: 3, avg_severity: 3.0 },
+            { lat: -25.7470, lng: 28.2313, reports: 4, avg_severity: 4.0 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            heading: 0,
+            radius_m: 200,
+        });
+
+        expect(result.length).toBe(1);
+        expect(result[0].lat).toBe(-25.7450);
+    });
+});
+
+describe('Map services get_all_hotspots with grouping', () =>{
+    beforeEach(()=>{jest.clearAllMocks()});
+    it("Returns only clustered hotspots (3+ within 500m) and filters isolated ones", async () => {
+        const now = new Date();
+        const mock_data = [
+            
+            { event_id: 'c1', type: 'HARSH_BRAKE', latitude: -26.143000, longitude: 27.842000, recorded_at: now },
+            { event_id: 'c2', type: 'HARSH_BRAKE', latitude: -26.143001, longitude: 27.842001, recorded_at: now },
+            { event_id: 'c3', type: 'HARSH_BRAKE', latitude: -26.143002, longitude: 27.842002, recorded_at: now },
+            
+            { event_id: 'i1', type: 'HARSH_ACCELERATION', latitude: -26.200000, longitude: 27.900000, recorded_at: now }
+        ];
+        
+        mock_prisma.trip_events.findMany.mockResolvedValue(mock_data);
+
+        const result = await map_services.get_all_hotspots();
+
+        // Should return only the 3 cluster points, not the isolated one
+        expect(result.length).toBe(3);
+        expect(result.map(r => r.event_id)).not.toContain('i1');
+        expect(result[0]).toEqual({
+            event_id: 'c1',
+            event_type: 'HARSH_BRAKE',
+            latitude: -26.143000,
+            longitude: 27.842000,
+            time_stamp: now
+        });
+    });
+    it('throws error when database query fails', async () => {
+        mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));
+
+        await expect(map_services.get_all_hotspots()).rejects.toThrow('Prisma error');
+    });
+});

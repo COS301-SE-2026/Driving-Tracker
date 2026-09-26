@@ -222,11 +222,11 @@ export const record_batch_readings = async (req: AuthRequest, res: Response) => 
         return;
     }
 
-    const { readings } = req.body
+    const { readings, roadEvents } = req.body
 
     try{
         //returns how many users are currently viewing the trip
-        const active_share_count = await trips_services.record_batch_trip_readings(user_id, trip_id, readings);
+        const active_share_count = await trips_services.record_batch_trip_readings(user_id, trip_id, readings, roadEvents || []);
 
         return res.status(201).json({ message: "Readings added successfully", data: { active_share_count }});
 

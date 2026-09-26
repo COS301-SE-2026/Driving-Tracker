@@ -49,6 +49,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.time.Instant
 import kotlin.String
+import com.omnitech.drivingtracker.data.models.TripEventDto
+import com.omnitech.drivingtracker.utils.VoiceAlertManager
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -82,11 +84,14 @@ class TripTrackingService: Service() {
     private var lastSavedLat: Double? = null
     private var lastSavedLng: Double? = null
 
+    private var globalHotspots: List<TripEventDto> = emptyList()
+    private val notifiedHotspotIds = mutableSetOf<String>()
     private var lastSocketUpdateMillis: Long = 0
 
     private val SOCKET_UPDATE_INTERVAL_MS = 1500L
     private val MIN_DISTANCE_METERS = 10f
 
+    private lateinit var voiceAlertManager: VoiceAlertManager
     private val fatigueMonitor = FatigueMonitor(FatigueConfig(),onAlert = {level -> handleFatigueAlert(level)})
 
     private val stopMonitor = StopMonitor{ lat, lng, stoppedAt ->
@@ -152,8 +157,37 @@ class TripTrackingService: Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         setupLocationCallBack()
+        voiceAlertManager = VoiceAlertManager(this)
     }
+    private fun checkHotspotProx(lat: Double, lng: Double){
+        if (lat == 0.0 && lng == 0.0 || globalHotspots.isEmpty()) return
 
+        for(hotspot in globalHotspots){
+            val hLat = hotspot.latitude ?: continue
+            val hLng = hotspot.longitude ?: continue
+
+            val results = FloatArray(1)
+            Location.distanceBetween(lat, lng, hLat, hLng, results)
+            val distanceInMeters = results[0]
+
+            if(distanceInMeters <= 500){
+                if(tripStateManager.markHotspotNotified(hotspot.eventId)){
+                    val eventTypeFormatted = hotspot.eventType.replace("_", " ").lowercase(java.util.Locale.ROOT)
+                    val alertMessage = "Caution: Approaching a high risk area. $eventTypeFormatted hotspot ahead."
+
+                    voiceAlertManager.playHotspotAlert(hotspot.eventType)
+
+                    // Show system notification
+                    notificationHelper.showTripAlert(
+                        "Hotspot Ahead",
+                        alertMessage,
+                        currentTripId ?: ""
+                    )
+                }
+            }
+
+        }
+    }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int{
         val tripId = intent?.getStringExtra("EXTRA_TRIP_ID")
         if(tripId != null) currentTripId = tripId
@@ -166,13 +200,19 @@ class TripTrackingService: Service() {
                     startLocationUpdates()
                     startSensorFusion()
                     startSyncLoop()
+                    startRoadDefectWarningLoop()
                     socketManager.connect()
                     currentTripId?.let{ socketManager.joinTrip(it) }
 
                     socketManager.onReconnect {
                         currentTripId?.let { socketManager.joinTrip(it) }
                     }
-
+                    serviceScope.launch {
+                        tripRepository.getGlobalHotspots().onSuccess { hotspots ->
+                            globalHotspots = hotspots
+                            Log.d(TAG, "Loaded ${globalHotspots.size} global hotspots")
+                        }
+                    }
                     serviceScope.launch {
                         tripStateManager.totalExpectedTravelTime.collect{ totalSeconds ->
 
@@ -302,23 +342,47 @@ class TripTrackingService: Service() {
     private fun isObdConnected(): Boolean = obdManager.connectionState.value == ObdManager.ConnectionState.CONNECTED
 
     //Adding readings to Room
-    private fun postReading(reading: FusedReading){
-        val tripId = currentTripId?: return
-
-        //distance filter for live trip page
-        val lastLat = lastSavedLat
-        val lastLng = lastSavedLng
-
+    private fun postReading(reading: FusedReading) {
+        val tripId = currentTripId ?: return
         val obdConnected = isObdConnected()
+        val currentSpeed = if (obdConnected) obdManager.metrics.value.speed.toFloat() else reading.speedKmh
+        val recordedAt = parseTimestamp(reading.timestamp)
 
-        val currentSpeed = if(obdConnected){
-            obdManager.metrics.value.speed.toFloat()
-        } else {
-            reading.speedKmh
-        }
 
-        val safetyState =  tripStateManager.safetyCheck.value
-        if(safetyState.shouldPrompt && currentSpeed > 10f){
+        // Check proximity to hotspots
+        checkHotspotProx(reading.latitude, reading.longitude)
+
+        // Handle Safety Prompts
+        resolveSafetyPromptIfMoving(currentSpeed)
+
+        // Update Fatigue and Stop Monitors
+        updateMonitors(currentSpeed, reading, recordedAt)
+
+        //Handle Safety Prompts
+        resolveSafetyPromptIfMoving(currentSpeed)
+
+        //Update Fatigue and Stop Monitors
+        updateMonitors(currentSpeed, reading, recordedAt)
+
+        lastKnownSpeed = currentSpeed
+
+        //Distance Filter
+        if (shouldSkipReading(reading.latitude, reading.longitude)) return
+
+        lastSavedLat = reading.latitude
+        lastSavedLng = reading.longitude
+
+        //Map and Save
+        saveReading(tripId, reading, recordedAt, obdConnected)
+    }
+
+    private fun parseTimestamp(timestamp: String): Long = runCatching {
+        Instant.parse(timestamp).toEpochMilli()
+    }.getOrDefault(System.currentTimeMillis())
+
+    private fun resolveSafetyPromptIfMoving(speed: Float) {
+        val safetyState = tripStateManager.safetyCheck.value
+        if (safetyState.shouldPrompt && speed > 10f) {
             serviceScope.launch {
                 safetyState.stopEventId?.let { id ->
                     tripRepository.resolveStopEvent(id, "movement")
@@ -326,104 +390,48 @@ class TripTrackingService: Service() {
                 }
             }
         }
-
-        val recordedAt = runCatching {
-            Instant.parse(reading.timestamp).toEpochMilli()
-        }.getOrDefault(System.currentTimeMillis())
-
-        fatigueMonitor.onLocationUpdate(currentSpeed, recordedAt)
-
-        val timestamp = Instant.parse(reading.timestamp)
-
-        stopMonitor.onLocationUpdate(currentSpeed, reading.latitude, reading.longitude, timestamp)
-
-        tripDurationMonitor?.onLocationUpdate(currentSpeed, timestamp)
-
-        lastKnownSpeed = currentSpeed
-
-        val currentTime = System.currentTimeMillis()
-        if(currentTime - lastSocketUpdateMillis >= SOCKET_UPDATE_INTERVAL_MS) {
-
-            lastSocketUpdateMillis = currentTime
-
-            socketManager.sendLocationUpdate(
-                SocketLocationPayload(
-                    tripId = tripId,
-                    location = LocationDto(
-                        reading.latitude,
-                        reading.longitude
-                    ),
-                    speedKmh = currentSpeed,
-                    recordedAt = Instant.now().toString(),
-                    heading = reading.heading
-                )
-            )
-
-
-            var shouldSaveToDB = true
-            if (lastLat != null && lastLng != null) {
-                val results = FloatArray(1)
-                android.location.Location.distanceBetween(
-                    lastLat,
-                    lastLng,
-                    reading.latitude,
-                    reading.longitude,
-                    results
-                )
-                if (results[0] < MIN_DISTANCE_METERS) {
-                    shouldSaveToDB = false // Skip database recording if moved less than 10m
-                }
-            }
-
-            if (shouldSaveToDB){
-                serviceScope.launch {
-
-                    var rpm: Int? = null
-                    var speed: Float? = reading.speedKmh
-                    var coolantTemp: Int? = null
-                    var fuelTrim: Double? = null
-                    var dataSource: DataSource = DataSource.PHONE
-
-
-                    if (obdConnected) {
-                        rpm = obdManager.metrics.value.rpm
-                        speed = obdManager.metrics.value.speed.toFloat()
-                        coolantTemp = obdManager.metrics.value.coolantTemp
-                        fuelTrim = obdManager.metrics.value.fuelTrim
-                        dataSource = DataSource.OBD
-
-                    }
-
-                    val readingEntity = TripReadingEntity(
-                        tripId = tripId,
-                        recordedAt = recordedAt,
-                        dataSource = dataSource.toString(),
-                        latitude = reading.latitude,
-                        longitude = reading.longitude,
-                        speedKmh = speed,
-                        accelerometer = reading.linearAccelY,
-                        gyroscopeX = reading.gyroX,
-                        gyroscopeY = reading.gyroY,
-                        gyroscopeZ = reading.gyroZ,
-                        rpm = rpm,
-                        coolantTemp = coolantTemp?.toFloat(),
-                        fuelTrimPercent = fuelTrim?.toFloat(),
-                        throttlePosition = null,
-                        dtcCodes = emptyList()
-                    )
-
-                    tripRepository.saveReadingLocally(readingEntity)
-                    Log.d(TAG, "Saved reading: ${readingEntity}")
-
-                }
-            }
-
-            lastSavedLat = reading.latitude
-            lastSavedLng = reading.longitude
-
-        }
     }
 
+    private fun updateMonitors(speed: Float, reading: FusedReading, recordedAt: Long) {
+        fatigueMonitor.onLocationUpdate(speed, recordedAt)
+        stopMonitor.onLocationUpdate(speed, reading.latitude, reading.longitude, Instant.ofEpochMilli(recordedAt))
+    }
+
+    private fun shouldSkipReading(lat: Double, lng: Double): Boolean {
+        val prevLat = lastSavedLat ?: return false
+        val prevLng = lastSavedLng ?: return false
+
+        val results = FloatArray(1)
+        Location.distanceBetween(prevLat, prevLng, lat, lng, results)
+        return results[0] < MIN_DISTANCE_METERS
+    }
+
+    private fun saveReading(tripId: String, reading: FusedReading, recordedAt: Long, obdConnected: Boolean) {
+        serviceScope.launch {
+            val metrics = if (obdConnected) obdManager.metrics.value else null
+
+            val readingEntity = TripReadingEntity(
+                tripId = tripId,
+                recordedAt = recordedAt,
+                dataSource = (if (obdConnected) DataSource.OBD else DataSource.PHONE).toString(),
+                latitude = reading.latitude,
+                longitude = reading.longitude,
+                speedKmh = metrics?.speed?.toFloat() ?: reading.speedKmh,
+                accelerometer = reading.linearAccelY,
+                gyroscopeX = reading.gyroX,
+                gyroscopeY = reading.gyroY,
+                gyroscopeZ = reading.gyroZ,
+                rpm = metrics?.rpm,
+                coolantTemp = metrics?.coolantTemp?.toFloat(),
+                fuelTrimPercent = metrics?.fuelTrim?.toFloat(),
+                throttlePosition = null,
+                dtcCodes = emptyList()
+            )
+
+            tripRepository.saveReadingLocally(readingEntity)
+            Log.d(TAG, "Saved reading: $readingEntity")
+        }
+    }
     private fun handleFatigueAlert(level: FatigueMonitor.FatigueAlertLevel){
         //Notification trigger
 
@@ -566,6 +574,29 @@ class TripTrackingService: Service() {
         }
     }
 
+    private fun startRoadDefectWarningLoop(){
+        serviceScope.launch {
+            while(isActive){
+                val lat = lastSavedLat
+                val lng = lastSavedLng
+                if(lat != null && lng != null && lastKnownSpeed > 10f){
+                    tripRepository.getRoadDefects(lat, lng, radius = 300).onSuccess { data ->
+                        tripStateManager.updateNearbyPotholes(data.defects)
+                        val nearest = data.defects.firstOrNull()
+                        if(nearest != null && nearest.distanceMeters <= 150){
+                            notificationHelper.showTripAlert(
+                                "Pothole Ahead!",
+                                "Caution: Road defect reported ~${nearest.distanceMeters.toInt()}m ahead",
+                                currentTripId ?: ""
+                            )
+                        }
+                    }
+                }
+                delay(10_000L) //poll every 10 secs
+            }
+        }
+    }
+
     private fun stopEverything(){
         Log.d(TAG, "Stopping all tracking tasks")
         serviceScope.launch {
@@ -573,6 +604,7 @@ class TripTrackingService: Service() {
                 obdManager.fetchFuelLevel()
             }
         }
+        voiceAlertManager.shutdown()
         currentTripId?.let { socketManager.leaveTrip(it) }
         socketManager.offReconnect()
         socketManager.disconnect()
@@ -580,6 +612,8 @@ class TripTrackingService: Service() {
         sensorFusion.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+        notifiedHotspotIds.clear()
+        globalHotspots = emptyList()
         isTrackingStarted = false
         Log.d(TAG, "Trip tracking stopped")
         tripStateManager.clearTripState()

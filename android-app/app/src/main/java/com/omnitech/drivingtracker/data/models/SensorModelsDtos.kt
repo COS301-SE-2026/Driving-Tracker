@@ -20,7 +20,8 @@ data class RecordReadingRequest(
 )
 
 data class BatchReadingRequest(
-    val readings: List<RecordReadingRequest>
+    val readings: List<RecordReadingRequest>,
+    val roadEvents: List<RoadEvent> = emptyList()
 )
 
 
@@ -73,3 +74,10 @@ enum class SpeedZone{
     SUBURBAN,
     HIGHWAY
 }
+
+data class RoadEvent(
+    val lat: Double,
+    val lng: Double,
+    val intensity: Float,
+    val type: String
+)

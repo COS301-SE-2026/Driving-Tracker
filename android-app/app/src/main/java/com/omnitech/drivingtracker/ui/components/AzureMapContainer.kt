@@ -22,9 +22,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.omnitech.drivingtracker.data.models.LocationDto
 import com.google.gson.Gson
 import com.omnitech.drivingtracker.data.models.MapPoiItem
+import com.omnitech.drivingtracker.data.models.RoadDefectItem
 import org.json.JSONObject
 import java.util.Locale
-
+import com.omnitech.drivingtracker.data.models.TripEventDto
 /**
  * Interface for JavaScript to call into Kotlin.
  * Using a named class with @Keep prevents "unused function" warnings.
@@ -82,10 +83,13 @@ fun AzureMapContainer(
     actualRoute : List<LocationDto>? = null,
     plannedRoute: List<LocationDto>? = null,
     detourRoute: List<LocationDto>? = null,
+    potholes: List<RoadDefectItem>? = null,
+    showPotholes: Boolean = true,
     onPoiClick: (String, Double, Double) -> Unit = {_,_,_  -> },
     onMapReady: () -> Unit = {},
     isInteractive: Boolean = true,
-    nearbyPois: List<MapPoiItem>? = null
+    nearbyPois: List<MapPoiItem>? = null,
+    tripEvents: List<TripEventDto>? = null
 ) {
     var isMapStable by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
@@ -94,6 +98,17 @@ fun AzureMapContainer(
     var lastCameraLng by remember {mutableStateOf(0.0)}
 
     val latestOnPoiClick by rememberUpdatedState(onPoiClick)
+
+    LaunchedEffect(potholes, showPotholes, isMapStable) {
+        if(!isMapStable) return@LaunchedEffect
+
+        if(showPotholes && !potholes.isNullOrEmpty()){
+            val json = Gson().toJson(potholes)
+            webViewRef?.evaluateJavascript("javascript:window.setPotholes('$json')", null)
+        }else{
+            webViewRef?.evaluateJavascript("javascript:window.clearPotholes()", null)
+        }
+    }
 
     // React to coordinate changes after the map is stable
     LaunchedEffect(latitude, longitude, zoom, isMapStable) {
@@ -157,6 +172,12 @@ fun AzureMapContainer(
         if(isMapStable && detourRoute != null) {
             val json = Gson().toJson(detourRoute)
             webViewRef?.evaluateJavascript("javascript:window.setDetourRoute('$json')", null)
+        }
+    }
+    LaunchedEffect(tripEvents,isMapStable){
+        if(isMapStable && tripEvents != null){
+            val eventsJson = Gson().toJson(tripEvents)
+            webViewRef?.evaluateJavascript("javascript:window.setHotspots('$eventsJson')", null)
         }
     }
 

@@ -152,6 +152,92 @@ const vehicle_router = Router();
  */
 vehicle_router.get("/get_all_vehicles", verify_token, create_user_based_limiter(), vehicle.get_all_vehicles);
 
+/**
+ * @openapi
+ * /api/vehicle/image-search:
+ *   get:
+ *     tags:
+ *       - Vehicles
+ *     summary: Search for a vehicle image
+ *     description: Searches Wikimedia Commons for an image matching the vehicle make, model, and year.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: make
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: Mercedes-Benz
+ *       - in: query
+ *         name: model
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: Actros
+ *       - in: query
+ *         name: year
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 2022
+ *     responses:
+ *       200:
+ *         description: Vehicle image search completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - data
+ *               properties:
+ *                 data:
+ *                   oneOf:
+ *                     - type: object
+ *                       required:
+ *                         - title
+ *                         - image_url
+ *                         - thumbnail_url
+ *                       properties:
+ *                         title:
+ *                           type: string
+ *                           example: File:Mercedes Actros.jpg
+ *                         image_url:
+ *                           type: string
+ *                           format: uri
+ *                         thumbnail_url:
+ *                           type: string
+ *                           format: uri
+ *                     - type: "null"
+ *       400:
+ *         description: Invalid or missing search parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: INVALID_QUERY
+ *               message: Make, model and year are required.
+ *       401:
+ *         description: User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *       500:
+ *         description: Vehicle image search failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: IMAGE_SEARCH_FAILED
+ *               message: Could not search for vehicle image.
+ */
+vehicle_router.get("/image-search", verify_token, create_user_based_limiter(), vehicle.search_vehicle_image_controller);
+
 
 /**
  * @openapi
@@ -262,7 +348,7 @@ vehicle_router.delete("/:vehicle_id", verify_token, vehicle.remove_vehicle);
  *               error: INTERNAL_SERVER_ERROR
  *               message: Internal server error
  */
-vehicle_router.patch("/:vehicle_id/name", verify_token, vehicle.update_name);
+vehicle_router.patch("/:vehicle_id", verify_token, vehicle.update_vehicle);
 //read fuel analytics
 vehicle_router.get("/fuel_analytics", verify_token, create_user_based_limiter(), vehicle.get_fuel_analytics);
 

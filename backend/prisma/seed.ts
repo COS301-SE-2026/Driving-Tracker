@@ -20,6 +20,12 @@ function getSAloc() {
         lng: faker.number.float({ min: SACords.lng.min, max: SACords.lng.max, fractionDigits: 6 })
     };
 }
+function getTestLoc() {
+    return {
+        lat: faker.number.float({ min: -26.148, max: -26.138, fractionDigits: 6 }),
+        lng: faker.number.float({ min: 27.837, max: 27.847, fractionDigits: 6 })
+    };
+}
 
 async function main() {
 
@@ -531,13 +537,13 @@ async function main() {
                     },
 
                     trip_events: {
-                        create: Array.from({ length: 2 }).map(() => {
-                            const eventLoc = getSAloc();
+                        create: Array.from({ length: 5 }).map(() => {
+                            const eventLoc = getTestLoc(); // Use the test location
                             return {
-                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION', 'SHARP_CORNER']),
+                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION']),
                                 latitude: eventLoc.lat,
                                 longitude: eventLoc.lng,
-                                severity: faker.number.float({ min: 1, max: 10, fractionDigits: 2 }),
+                                severity: faker.number.float({ min: 5, max: 10, fractionDigits: 2 }),
                                 sensor_source: 'ACCELEROMETER',
                                 recorded_at: faker.date.recent()
                             }
@@ -613,6 +619,43 @@ async function main() {
         }
     }
     console.log(`Seeded alerts, notifications and trip location shares`);
+
+    console.log('Seeding Road Quality Events (Potholes)...')
+
+    const potholeLocations = [
+        { lat: -25.7482, lng: 28.2354, label: 'Burnett St & Festival St (Near UP Campus)' },
+        { lat: -25.7461, lng: 28.2313, label: 'Francis Baard St & Grosvenor St' },
+        { lat: -25.7510, lng: 28.2388, label: 'Park St & Jan Shoba St' },
+        { lat: -25.7445, lng: 28.2335, label: 'Pretorius St & Hilda St' },
+        { lat: -25.7430, lng: 28.2370, label: 'Arcadia St & Richard St' },
+        { lat: -25.7525, lng: 28.2410, label: 'South St & End St (Hatfield Gautrain)' },
+        { lat: -25.7558, lng: 28.2295, label: 'Lynnwood Rd & Roper St (UP Gate)' },
+        { lat: -25.7502, lng: 28.2360, label: 'Prospect St & Festival St' }
+    ];
+
+    if(users.length >= 3 && allTrips.length > 0){
+        for(const loc of potholeLocations){
+            const reporters = users.slice(0, 3);
+
+            for(let i= 0; i < reporters.length; i++){
+                const user = reporters[i];
+                const userTrip = allTrips.find(t => t.user_id === user.user_id) ?? allTrips[i%allTrips.length]; 
+            
+                await prisma.road_quality_events.create({
+                    data: {
+                        user_id: user.user_id,
+                        trip_id: userTrip.trip_id,
+                        latitude: loc.lat,
+                        longitude: loc.lng,
+                        intensity: faker.number.float({ min: 6.5, max: 9.8, fractionDigits: 2 }),
+                        event_type: 'IMPACT',
+                        created_at: new Date()
+                    }
+                });
+            }
+        }
+        console.log(`Seeded ${potholeLocations.length} verified potholes around Hatfield`)
+    }
 
     console.log('Seeding finished successfully');
 

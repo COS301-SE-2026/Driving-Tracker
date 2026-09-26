@@ -1,5 +1,6 @@
 //this will be where tokens and other things need for map processing 
 import {z} from "zod";
+import prisma from "../db/prisma";
 
 const azure_maps_config_schema = z.object({
     AZURE_MAPS_SUBSCRIPTION_KEY: z.string().min(1, "AZURE_MAPS_SUBSCRIPTION_KEY is required"),
@@ -46,6 +47,23 @@ export interface route_summary{
     points: { lat: number; lng: number }[];// points that that will display the shortest route
 };
 
+export interface RoadDefectQuery{
+    lat: number;
+    lng: number;
+    heading?: number;
+    radius_m?: number;
+    min_reports?: number;
+}
+
+export interface RoadDefect{
+    lat: number;
+    lng: number;
+    reports: number;
+    avg_severity: number;
+    distance_m: number;
+    bearing_deg: number;
+}
+
 export interface search_address_request{
     address:string;
 }
@@ -71,6 +89,18 @@ const azure_route_response_schema = z.object({
         })
     ),
 });
+function calculate_distance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const earth_radius = 6371e3; 
+    const distance_lat = (lat2 - lat1) * Math.PI / 180;
+    const distance_lng = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(distance_lat / 2) * Math.sin(distance_lat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(distance_lng / 2) * Math.sin(distance_lng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earth_radius * c;
+}
 export const map_services ={
     async get_map_token(): Promise<AzureMapsTokenResponse>{
         return {
@@ -256,6 +286,135 @@ export const map_services ={
             municipality: result?.address?.municipality ?? null,
             countryCode: result?.address?.countryCode ?? null,
         };
-    }
+    },
+
+    async get_road_defects(query: RoadDefectQuery): Promise<RoadDefect[]> {
+        const { lat, lng, heading, radius_m = 100, min_reports = 3 } = query;
+
+        const normalized_heading = 
+            heading === undefined || heading === null ? null : ((heading % 360) + 360) % 360;
+
+        //bounding box
+        const buffer_meters = Math.max(radius_m * 1.5, 200); //square box but diag distance ~ 1.4... - use 1.5
+        const lat_offset = buffer_meters / 111_000;//convert buffer meters into degs of lat - 111000 constant
+        const cos_lat = Math.cos((lat * Math.PI) / 180);//cos factor for lng shrinkage due to earths curvature
+        const lng_offset = buffer_meters / (111_000 * Math.max(Math.abs(cos_lat), 0.01));//convert buffer meters into degs of lng
+
+        const min_lat = lat-lat_offset;
+        const max_lat = lat+lat_offset;
+        const min_lng = lng-lng_offset;
+        const max_lng = lng+lng_offset;
+
+        const raw_candidates = await prisma.$queryRaw<
+            Array<{
+                lat: number;
+                lng: number;
+                reports: number;
+                avg_severity: number;
+            }>
+        >`
+            SELECT
+                ROUND(latitude::numeric, 4)::float as lat,
+                ROUND(longitude::numeric, 4)::float as lng,
+                COUNT(DISTINCt user_id):: int as reports,
+                AVG(intensity)::float as avg_severity
+            FROM road_quality_events
+            WHERE event_type = 'IMPACT'
+                AND latitude BETWEEN ${min_lat} AND ${max_lat}
+                AND longitude BETWEEN ${min_lng} AND ${max_lng}
+            GROUP BY ROUND(latitude::numeric, 4), ROUND(longitude::numeric, 4)
+            HAVING COUNT(DISTINCT user_id) >= ${min_reports}
+        `;
+
+        const candidates: RoadDefect[] = raw_candidates.map((candidate) => {
+            const cand_lat = Number(candidate.lat);
+            const cand_lng = Number(candidate.lng);
+
+            //haversine
+            const dLat = ((cand_lat - lat) * Math.PI) / 180;
+            const dLng = ((cand_lng - lng) * Math.PI) / 180;
+            const radLat1 = (lat * Math.PI) / 180;
+            const radLat2 = (cand_lat * Math.PI) / 180;
+
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(radLat1) * Math.cos(radLat2) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance_m = 6_371_000 * c;
+
+            //compass bearing formula
+            const y = Math.sin(dLng) * Math.cos(radLat2);
+            const x = 
+                Math.cos(radLat1) * Math.sin(radLat2) -
+                Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(dLng);
+            const bearing_rad = Math.atan2(y, x);
+            const bearing_deg = ((bearing_rad * 180) / Math.PI + 360) % 360;
+
+            return{
+                lat: cand_lat,
+                lng: cand_lng,
+                reports: Number(candidate.reports),
+                avg_severity: Number(Number(candidate.avg_severity).toFixed(2)),
+                distance_m: Number(distance_m.toFixed(2)),
+                bearing_deg: Number(bearing_deg.toFixed(2)),
+            };
+        });
+
+        return candidates.filter((defect) => {
+            if(defect.distance_m > radius_m){
+                return false;
+            }
+            if(normalized_heading !== null){
+                const diff = Math.abs(defect.bearing_deg - normalized_heading) % 360;
+                const angular_distance = diff > 180 ? 360 - diff : diff;
+                return angular_distance <= 90;
+            }
+            return true;
+        }).sort((a, b) => a.distance_m - b.distance_m);
+    },
+    async get_all_hotspots(){
+        const rawhotspots= await prisma.trip_events.findMany({
+            where: {
+                OR: [
+                    { type: 'HARSH_BRAKE' },
+                    { type: 'HARSH_ACCELERATION' }
+                ]
+            },
+            select:{
+               latitude: true,
+                longitude: true,
+                type: true,     
+                event_id: true,
+                recorded_at: true
+            }
+        });
+        if (rawhotspots.length < 3) return [];
+        const filteredHotspots = rawhotspots.filter((p1) => {
+            const lat1 = Number(p1.latitude);
+            const lng1 = Number(p1.longitude);
+
+            const neighborCount = rawhotspots.reduce((count, p2) => {
+                const lat2 = Number(p2.latitude);
+                const lng2 = Number(p2.longitude);
+                if (Math.abs(lat1 - lat2) > 0.005 || Math.abs(lng1 - lng2) > 0.005) {
+                    return count;
+                }
+
+                // 2. Precise Haversine distance
+                const distance = calculate_distance(lat1, lng1, lat2, lng2);
+                return distance <= 500 ? count + 1 : count;
+            }, 0);
+
+            return neighborCount >= 3;
+        });
+        return filteredHotspots.map(h => ({
+            event_id: h.event_id,
+            event_type: h.type,
+            latitude: h.latitude,
+            longitude: h.longitude,
+            time_stamp: h.recorded_at
+        }));
+    } 
     
 }

@@ -20,10 +20,15 @@ jest.mock('../../../src/db/prisma', () => {
         count: jest.fn(),
     };
 
+    const organization_members = {
+        findUnique: jest.fn(),
+    };
+
     const $transaction = jest.fn(async (fn: any) => await fn({
         users,
         vehicles,
-        users_vehicles
+        users_vehicles,
+        organization_members,
     }));
  
     return {
@@ -32,6 +37,7 @@ jest.mock('../../../src/db/prisma', () => {
             users,
             vehicles,
             users_vehicles,
+            organization_members,
             $transaction
         },
     };
@@ -40,7 +46,7 @@ jest.mock('../../../src/db/prisma', () => {
 
 import { describe, it, expect, jest, beforeEach,afterAll,afterEach } from '@jest/globals';
 import prisma from '../../../src/db/prisma';
-import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark } from '../../../src/services/vehicle.services';
+import {vehicle_services,fetch_jwt_car_token,fetch_vehicle_benchmark, search_vehicle_image } from '../../../src/services/vehicle.services';
 import { get_fuel_analytics } from '../../../src/controllers/vehicle.controller';
 import { manufacturer_baseline_service } from '../../../src/services/manufacturer_baseline.service';
 
@@ -225,14 +231,126 @@ describe('vehicle services assign user to vehicle', ()=>{
     });
 });
 
+describe('vehicle services add fleet vehicle', ()=> {
+    beforeEach(async()=> jest.clearAllMocks());
+    const base_fleet_payload = {
+        user_id: 'u1',
+        name: 'Fleet Car',
+        registration: 'XYZ123BM',
+        make: "Toyota",
+        model: 'Challenger',
+        year: 2016,
+        fuel_type: 'PETROL',
+        fuel_tank: 54,
+    };
+
+
+    it('throws when vehicle data parameter is missing', async()=>{
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: 'MANAGER' });
+
+        await expect(
+            vehicle_services.add_fleet_vehicle({...base_fleet_payload, model: ''}, 'org-2')
+        ).rejects.toThrow('Missing field(s)');
+    });
+
+    it('throws when the user is not a member of the organization', async () => {
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+ 
+        await expect(
+            vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-2')
+        ).rejects.toThrow('User does not exist');
+    });
+
+    it('throws when the user is not Admin or Manager', async () => {
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: "DRIVER" });
+ 
+        await expect(
+            vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-2')
+        ).rejects.toThrow('You do not have access to add fleet vehicles');
+    });
+
+    it('creates fleet vehicle with org_id attached', async() =>{
+        process.env.CARAPI_TOKEN = "token123";
+        process.env.CARAPI_SECRET = "secret123";
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue({ role: 'MANAGER' });
+        
+         mock_fetch
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                text: async () => "jwt-token",
+            })
+        )
+        .mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    data: [{ combined_mpg: 25,
+                        trim_description:"Test trim",
+                    }],
+                }),
+            })
+        );
+        
+        mock_prisma.vehicles.create.mockResolvedValue({
+            vehicle_id: 'v-new-uuid',
+            name:'Fleet Car',
+            make: 'Toyota',
+            model: 'Challenger',
+            registration: 'XYZ123BM',
+            year: 2016,
+            fuel_type: 'PETROL',
+            fuel_tank: 54,
+            fuel_efficiency: 235.215 / 25,
+        });
+
+        const result = await vehicle_services.add_fleet_vehicle(base_fleet_payload, 'org-1');
+
+        expect(mock_prisma.vehicles.create).toHaveBeenCalledWith({
+            data: {
+                name: 'Fleet Car',
+                registration: 'XYZ123BM',
+                make: 'Toyota',
+                model: 'Challenger',
+                year: 2016,
+                fuel_type: 'PETROL',
+                fuel_tank: 54,
+                fuel_efficiency: 235.215 / 25,
+                org_id: 'org-1'
+            },
+        });
+
+        expect(result).toEqual({
+            data: {
+                vehicle_id: 'v-new-uuid',
+                name: 'Fleet Car',
+                registration: 'XYZ123BM',
+                make: 'Toyota',
+                model: 'Challenger',
+                year: 2016,
+                fuel_tank: 54,
+                fuel_efficiency: 235.215 / 25,
+                fuel_type: 'PETROL'
+            },
+            warning: null
+        });
+    });
+});
+
 describe ('vehicle services update vehicle name', () =>{
     beforeEach(async () => jest.clearAllMocks());
 
     it('updates vehicle name successfully', async ()=> {
-        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1'});
-        mock_prisma.vehicles.update.mockResolvedValue({ vehicle_id: 'v1', name: 'New Name' });
+        const current_vehicle = { vehicle_id: 'v1', name: 'Old Name', fuel_efficiency: 10.0 };
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1' });
+        mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+        mock_prisma.vehicles.update.mockResolvedValue({ ...current_vehicle, name: 'New Name' });
 
-        const result = await vehicle_services.update_vehicle_name({ 
+        const result = await vehicle_services.update_vehicle({ 
             user_id: 'u1',
             vehicle_id: 'v1',
             name: 'New Name'
@@ -240,20 +358,56 @@ describe ('vehicle services update vehicle name', () =>{
 
         expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
             where: { vehicle_id: 'v1' },
-            data: { name: 'New Name' }
+            data: expect.objectContaining({ name: 'New Name' })
         });
-        expect(result.name).toBe('New Name');
+        expect(result.data.name).toBe('New Name');
     });
     
     it('Throws error if the user does not own the vehicle', async()=>{
         mock_prisma.users_vehicles.findUnique.mockResolvedValue(null);
         await expect(
-            vehicle_services.update_vehicle_name({
+            vehicle_services.update_vehicle({
                 user_id: 'u1',
                 vehicle_id: 'v1',
                 name: 'New Name'
             })
         ).rejects.toThrow('You do not own this vehicle');
+    });
+    it('Updates multiple fields and recalculates efficiency when year changes', async () => { const current_vehicle = { vehicle_id: 'v1', make: 'BMW', model: 'M3', year: 2010, fuel_efficiency: 12.0 };
+        mock_prisma.users_vehicles.findUnique.mockResolvedValue({ user_id: 'u1', vehicle_id: 'v1' });
+        mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+        mock_fetch
+            .mockResolvedValueOnce(make_response({ ok: true, text: async () => "jwt-token" }))
+            .mockResolvedValueOnce(make_response({
+                ok: true,
+                json: async () => ({
+                    data: [{ combined_mpg: 25, trim_description: "Test trim" }],
+                }),
+            }));
+
+        const new_efficiency = 235.215 / 25;
+        mock_prisma.vehicles.update.mockResolvedValue({ 
+            ...current_vehicle, 
+            year: 2018, 
+            fuel_efficiency: new_efficiency 
+        });
+
+        const result = await vehicle_services.update_vehicle({
+            user_id: 'u1',
+            vehicle_id: 'v1',
+            year: 2018,
+            name: 'Updated BMW'
+        });
+
+        expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+            where: { vehicle_id: 'v1' },
+            data: expect.objectContaining({
+                year: 2018,
+                fuel_efficiency: new_efficiency 
+            })
+        });
+
+        expect(result.data.year).toBe(2018);
     });
 });
 
@@ -442,7 +596,25 @@ describe('fetch_vehicle_benchmark', () => {
             fetch_vehicle_benchmark('BMW', 'M3', 2018)
         ).rejects.toThrow('No vehicle found for BMW M3 2018');
     });
+
+    it('throws when the vehicle benchmark request fails', async () => {
+        mock_fetch.mockResolvedValueOnce(make_response({
+            ok: true,
+            text: async () => 'jwt-token',
+        })).mockResolvedValueOnce(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                text: async () => 'CAR API unavailable',
+            })
+        );
+        await expect(
+            fetch_vehicle_benchmark('BMW', 'M3', 2018)
+        ).rejects.toThrow('Vehicle API request failed');
+    });
 });
+
 describe("additional vehicle service tests", ()=>{
     beforeEach(() =>{
         jest.clearAllMocks();
@@ -553,7 +725,7 @@ describe("additional vehicle service tests", ()=>{
         );
 
         await expect(
-            vehicle_services.update_vehicle_name({
+            vehicle_services.update_vehicle({
                 user_id: "u1",
                 vehicle_id: "v1",
                 name: "New Name",
@@ -807,6 +979,70 @@ describe('vehicle services get fuel analytics', ()=>{
 			await expect(vehicle_services.update_vehicle_image('user-1', 'v1', 'new'))
 				.rejects.toThrow('You do not own this vehicle');
 		});
+
+        it('uses the database fallback when the car api request fails', async () => {
+            const current_vehicle = {
+                vehicle_id: 'v1',
+                make: 'BMW',
+                model: 'M3',
+                year: 2010,
+                fuel_efficiency: 12.0,
+            };
+
+            mock_prisma.users_vehicles.findUnique.mockResolvedValue({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+            });
+
+            mock_prisma.vehicles.findUnique.mockResolvedValue(current_vehicle);
+
+            mock_fetch.mockReset().mockResolvedValueOnce(
+                make_response({
+                    ok: true,
+                    text: async () => 'jwt-token',
+                })
+            ).mockResolvedValueOnce(
+                make_response({
+                    ok: false,
+                    status: 500,
+                    text: async () => 'CAR API unavailable',
+                })
+            );
+
+            mock_prisma.vehicles.aggregate.mockResolvedValue({
+                _avg: {
+                    fuel_efficiency: 7.4,
+                },
+            });
+
+            mock_prisma.vehicles.update.mockResolvedValue({
+                ...current_vehicle,
+                year: 2018,
+                fuel_efficiency: 7.4,
+            });
+
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            const result = await vehicle_services.update_vehicle({
+                user_id: 'u1',
+                vehicle_id: 'v1',
+                year: 2018,
+            });
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith('CAR API lookup failed, using database fallback.');
+
+            expect(mock_prisma.vehicles.aggregate).toHaveBeenCalled();
+
+            expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+                where: {vehicle_id: 'v1' },
+                data: expect.objectContaining({
+                    fuel_efficiency: 7.4,
+                }),
+            });
+            expect(result.warning).toBeNull();
+
+            consoleErrorSpy.mockRestore();
+        });
 	});
 });
 
@@ -932,5 +1168,97 @@ describe('vehicle services get fuel comparison', () => {
 
     });
 
+});
+
+describe('search_vehicle_image', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mock_fetch.mockReset();
+    });
+
+    it('returns the first matching image', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {
+                            '1': {
+                                title: 'File:BMW M3.jpg',
+                                imageinfo: [
+                                    {
+                                        url: 'https://example.com/bmw.jpg',
+                                        thumburl: 'https://example.com/bmw-thumb.jpg'
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toEqual({
+            title: 'File:BMW M3.jpg',
+            image_url: 'https://example.com/bmw.jpg',
+            thumbnail_url: 'https://example.com/bmw-thumb.jpg'
+        });
+    });
+
+    it('uses the full image URL when no thumbnail URL exists', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {
+                            '1': {
+                                title: 'File:BMW M3.jpg',
+                                imageinfo: [
+                                    {
+                                        url: 'https://example.com/bmw.jpg',
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toEqual({
+            title: 'File:BMW M3.jpg',
+            image_url: 'https://example.com/bmw.jpg',
+            thumbnail_url: 'https://example.com/bmw.jpg'
+        });
+    });
+
+    it('returns null when no matching image is found', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: true,
+                json: async () => ({
+                    query: {
+                        pages: {},
+                    },
+                }),
+            })
+        );
+        const result = await search_vehicle_image('BMW', 'M3', 2018);
+        expect(result).toBeNull();
+    });
+
+    it('throws when the wikimedia request fails', async () => {
+        mock_fetch.mockResolvedValueOnce(
+            make_response({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+            })
+        );
+        await expect(
+            search_vehicle_image('BMW', 'M3', 2018)
+        ).rejects.toThrow('Vehicle image search failed');
+    });
 });
  
