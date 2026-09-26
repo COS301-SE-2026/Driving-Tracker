@@ -420,6 +420,18 @@ model unusual_duration_events{
   @@index([trip_id])  
 }
 
+model road_quality_events{
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String      @db.Uuid
+  trip_id         String      @db.Uuid
+  latitude        Decimal     @db.Decimal(9, 6)
+  longitude       Decimal     @db.Decimal(9, 6)
+  intensity       Float
+  event_type      String      @db.VarChar(10)
+  created_at      DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@index([latitude, longitude])
+}
 model organizations {
   org_id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String  @db.VarChar(100)

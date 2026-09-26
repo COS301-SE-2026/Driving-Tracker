@@ -407,6 +407,83 @@ map_router.get('/nearby/pois', verify_token, create_trip_reading_limiter() ,map_
  *               message: Failed to fetch address
  */
 map_router.get('/address/reverse', verify_token, create_trip_reading_limiter() ,map_controller.get_address_reverse);
+
+/**
+ * @openapi
+ * /map/road_defects:
+ *   get:
+ *     tags:
+ *       - Maps
+ *     summary: Get nearby validated road defects (potholes) along driver route
+ *     description: Retrieves crowdsourced road defects detected within a specified radius (default 100m) near the given GPS coordinates. If heading is provided, filters for defects ahead of the vehicle.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Current latitude of driver (-90 to 90)
+ *         example: -25.7461
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Current longitude of driver (-180 to 180)
+ *         example: 28.2313
+ *       - in: query
+ *         name: heading
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: Compass heading in degrees (0 to 359.99) to filter defects ahead of driver
+ *         example: 45.0
+ *       - in: query
+ *         name: radius
+ *         required: false
+ *         schema:
+ *           type: number
+ *           default: 100
+ *         description: Search radius in meters (default 100m)
+ *         example: 100
+ *       - in: query
+ *         name: min_reports
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 3
+ *         description: Minimum distinct user reports required to validate a defect
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Road defects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoadDefectsResponse'
+ *       400:
+ *         description: Invalid coordinates or heading
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         description: Rate limit triggered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitResponse'
+ */
+map_router.get('/road_defects', verify_token, create_trip_reading_limiter(), map_controller.get_road_defects);
+
 /**
  * @openapi
  * /api/maps/hotspots:
