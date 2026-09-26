@@ -8,10 +8,6 @@ interface AuthResponse {
     refresh_token: string;
 }
 
-interface LogoutResponse {
-    message: string;
-}
-
 export async function login(identifier: string, password: string): Promise<void> {
     const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
@@ -52,13 +48,15 @@ export async function logout(): Promise<void> {
                 },
             });
 
-        }catch {
-
+        }catch(error){
+            console.warn("Server logout request failed or network offline: ", error);
         }
     }
 
     tokenManager.clearAccessToken();
     refreshTokenStorage.clear();
+
+    window.location.href = "/login";
 }
 
 let refreshPromise: Promise<string | null> | null = null;
