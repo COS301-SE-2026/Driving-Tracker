@@ -153,7 +153,107 @@ const fleet_controller = {
 
         }
     },
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
+
+     async schedule_trip(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , "You do not have the permissions to schedule a trip"
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
+
+        const {
+            vehicle_id,
+            driver_id,
+            planned_start_time,
+            title,
+            task,
+            planned_start_location,
+            planned_end_location,
+            stops
+            } = req.body;
+
+        try{
+            
+            const trip = await fleet_services.schedule_trip(user_id, org_id!, {
+                vehicle_id,
+                driver_id,
+                planned_start_time,
+                title,
+                description: task,
+                planned_start_location,
+                planned_end_location,
+                stops
+            });
+
+            return res.status(201).json({
+                message: 'Trip successfully scheduled',
+                data: trip,
+            });
+
+        }catch(error: any){
+
+            if(error?.message?.includes("Driver not found")){
+
+                return res.status(404).json({
+                    error: "DRIVER_NOT_FOUND", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Driver not available")){
+
+                return res.status(409).json({
+                    error: "DRIVER_NOT_AVAILABLE", message: "Driver currently has an active trip"
+                });
+            }
+
+            if(error.message.includes("Missing required fields")){
+                res.status(422).json({
+                    error: "MISSING_REQUIRED_FIELDS",
+                    message: "User or vehicle not known"
+                });
+            }
+
+            if(error.message.includes("Driver has a scheduled trip that overlaps this time")){
+                res.status(409).json({
+                    error: "DRIVER_NOT_AVAILABLE",
+                    message: "Driver is not available during the scheduled time"
+                });
+            }
+
+            if(error.message.includes("Unknown start location")){
+                res.status(422).json({
+                    error: "INVALID_START_LOCATION",
+                    message: "Invalid start location"
+                });
+            }
+
+            if(error.message.includes("Unknown end location")){
+                res.status(422).json({
+                    error: "INVALID_END_LOCATION",
+                    message: "Invalid end location"
+                });
+            }
+
+            if(error.message.includes("Invalid stop coordinates")){
+                res.status(422).json({
+                    error: "INVALID_STOP",
+                    message: "Invalid coordinates for one or more stops"
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to schedule trip" });
+
+        }
+    },
+
     async start_scheduled_trip(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;
@@ -219,6 +319,13 @@ const fleet_controller = {
 
                 return res.status(409).json({
                     error: "CANNOT_START_TRIP", message: error.message
+                });
+            }
+
+            if(error?.message?.includes("Invalid start time")){
+
+                return res.status(422).json({
+                    error: "INVALID_START_TIME", message: error.message
                 });
             }
   

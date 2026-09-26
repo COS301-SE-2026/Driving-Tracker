@@ -8,22 +8,31 @@ import { ValidationError } from "../utils/errors";
 export interface schedule_trip_data{
     vehicle_id: string;
     driver_id: string;
-    data_source: "OBD" | "PHONE";
-    planned_start_time: Date;
+    planned_start_time: string;
+    title: string;
+    description: string;
     planned_start_location:{
+        address: string;
         lat: number;
         lng: number;
     };
     planned_end_location:{
+        address: string;
         lat: number;
         lng: number;
     };
+    stops?: {
+        address: string;
+        lat: number;
+        lng: number;
+        stop_order: number;
+    }[];
 };
 
 export interface start_scheduled_trip_data{
     trip_id: string;
     vehicle_id: string;
-    start_time: Date;
+    start_time: string;
     start_location:{
         lat: number;
         lng: number;
@@ -229,7 +238,6 @@ export const fleet_services = {
     
     },
 
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async schedule_trip(user_id: string, org_id: string, data: schedule_trip_data){
 
         if(!user_id || !data.vehicle_id || !data.driver_id){
@@ -242,6 +250,20 @@ export const fleet_services = {
 
         if(!data.planned_end_location.lat|| !data.planned_end_location.lng){
             throw new Error("Unknown end location");
+        }
+
+        if(data.stops && data.stops.length > 0){
+            for(const stop of data.stops){
+                if(!Number.isFinite(stop.lat) || !Number.isFinite(stop.lng)){
+                    throw new Error("Invalid stop coordinates");
+                }
+            }
+
+            data.stops = data.stops.sort((a, b) => (a.stop_order ?? 0) - (b.stop_order ?? 0))
+                .map((stop, index) => ({
+                    ...stop,
+                    stop_order: index +1
+                }));
         }
 
         const driver = await prisma.organization_members.findUnique({
@@ -275,7 +297,9 @@ export const fleet_services = {
 
         const trips = driver.users.trips;
 
-        if(trips.some(t => t.status === 'IN_PROGRESS')){
+        const has_active_trip = trips.some(t => t.status === "IN_PROGRESS");
+
+        if(has_active_trip){
             throw new Error("Driver not available");
         }
 
@@ -284,11 +308,17 @@ export const fleet_services = {
             start_lng: data.planned_start_location.lng,
             dest_lat:  data.planned_end_location.lat,
             dest_lng: data.planned_end_location.lng,
+            stops: data.stops ?? undefined
         });
 
 
-        const BUFFER_SECONDS = 10*60;
-        const total_seconds = route.travel_time_seconds+ BUFFER_SECONDS;
+        const BASE_BUFFER_SECONDS = 10*60;
+        const PER_STOP_BUFFER_SECONDS = 5 * 60;
+
+        const stop_count = data.stops?.length ?? 0;
+        const buffer_seconds = BASE_BUFFER_SECONDS + (stop_count * PER_STOP_BUFFER_SECONDS);
+
+        const total_seconds = route.travel_time_seconds + buffer_seconds;
 
         const new_start = new Date(data.planned_start_time);
         const new_end = new Date(new_start.getTime() + total_seconds * 1000);
@@ -304,29 +334,52 @@ export const fleet_services = {
             throw new Error("Driver has a scheduled trip that overlaps this time");
         }
 
-        const trip = await prisma.trips.create({
-            data: {
-                user_id: data.driver_id,
-                vehicle_id: data.vehicle_id,
-                created_by: user_id,
-                status: 'SCHEDULED',
-                scheduled_for: new_start,
-                scheduled_end: new_end,
-                duration_minutes: Math.round(total_seconds / 60),
-                planned_start_lat: data.planned_start_location.lat,
-                planned_start_lng: data.planned_start_location.lng,
-                planned_dest_lat: data.planned_end_location.lat,
-                planned_dest_lng: data.planned_end_location.lng,
-            },
-        });
+        const new_trip = await prisma.$transaction(async (tx) => { 
+
+            const trip = await tx.trips.create({
+                data: {
+                    user_id: data.driver_id,
+                    vehicle_id: data.vehicle_id,
+                    created_by: user_id,
+                    status: 'SCHEDULED',
+                    description: data.description,
+                    title: data.title,
+                    scheduled_for: new_start,
+                    scheduled_end: new_end,
+                    planned_start_addr: data.planned_start_location.address,
+                    planned_start_lat: data.planned_start_location.lat,
+                    planned_start_lng: data.planned_start_location.lng,
+                    planned_end_addr: data.planned_end_location.address,
+                    planned_dest_lat: data.planned_end_location.lat,
+                    planned_dest_lng: data.planned_end_location.lng,
+                    end_latitude: data.planned_end_location.lat,
+                    end_longitude: data.planned_end_location.lng,
+                    trip_stops: data.stops && data.stops.length > 0? {
+                        create: data.stops.map((stop) => ({
+                            stop_order: stop.stop_order,
+                            address: stop.address,
+                            latitude: stop.lat,
+                            longitude: stop.lng,
+                        }))
+                    } : undefined
+                },
+                include: {
+                    trip_stops: {
+                        orderBy: { stop_order: 'asc'}
+                    },
+                },
+            });
+
+            return trip;
+
+        }); 
 
         return {
-            trip: trip,
+            trip: new_trip,
             route: route.points
         };
     },
 
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
     async start_scheduled_trip(user_id: string, org_id: string, data: start_scheduled_trip_data){
 
         const new_trip = await prisma.$transaction(async (tx) => { 
@@ -341,6 +394,12 @@ export const fleet_services = {
 
             if(!user){
                 throw new Error("Driver not found");
+            }
+
+            const start_time = new Date(data.start_time);
+
+            if(isNaN(start_time.getTime())){
+                throw new Error("Invalid start time");
             }
 
             const trips = await prisma.trips.findMany({
@@ -400,7 +459,7 @@ export const fleet_services = {
                 data: {
                     user_id: user.user_id,
                     vehicle_id: data.vehicle_id,
-                    start_time: data.start_time,
+                    start_time: new Date(data.start_time),
                     start_latitude: data.start_location.lat,
                     start_longitude: data.start_location.lng,
                     fuel_estimate: fuel_est,
@@ -517,7 +576,7 @@ export const fleet_services = {
         }));
 
         return result;
-    },
+    }
 
 };
 
