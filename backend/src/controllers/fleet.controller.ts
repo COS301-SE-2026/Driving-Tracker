@@ -207,6 +207,13 @@ const fleet_controller = {
                 });
             }
 
+            if(error?.message?.includes("Driver not available")){
+
+                return res.status(409).json({
+                    error: "DRIVER_NOT_AVAILABLE", message: "Driver currently has an active trip"
+                });
+            }
+
             if(error.message.includes("Missing required fields")){
                 res.status(422).json({
                     error: "MISSING_REQUIRED_FIELDS",

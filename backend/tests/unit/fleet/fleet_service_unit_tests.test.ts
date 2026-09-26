@@ -47,6 +47,7 @@ import { describe, it, expect, jest, beforeEach,afterAll,afterEach } from '@jest
 import prisma from '../../../src/db/prisma';
 import { fleet_services } from '../../../src/services/fleet_services';
 import { map_services } from '../../../src/services/map_services';
+import { mock } from 'node:test';
 
 
 const mock_map_services = map_services as jest.Mocked<typeof map_services>;
@@ -66,9 +67,13 @@ const schedule_data = {
     vehicle_id: "vehicle-1",
     driver_id: "driver-1",
     data_source: "PHONE" as const,
+    title: "Bread Run",
+    description: "Deliver bread to given locations",
     planned_start_time: new Date("2026-09-23T10:00:00Z"),
-    planned_start_location: { lat: -26.1, lng: 28.1 },
-    planned_end_location: { lat: -26.2, lng: 28.2 },
+    planned_start_location: { address: "10 Canary Way",lat: -26.1, lng: 28.1 },
+    planned_end_location: { address: "24 Avery Way ", lat: -26.2, lng: 28.2 },
+    stops: [{ address: "25 Brookside Field",lat: -26.4, lng: 28.4, stop_order: 1 }, 
+        { address: "80 Crew Avenue", lat: -26.5, lng: 28.5, stop_order: 2 }]
 };
 
 beforeEach(reset_mocks);
@@ -401,6 +406,101 @@ describe('fleet services ', () => {
             expect(mock_prisma.trips.findMany).not.toHaveBeenCalled();
         });
     });
+
+    describe("schedule_trip", () => {
+        it("creates a scheduled trip", async () => {
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                joined_at: new Date("2026-01-01"),
+                users: { trips: [] },
+            });
+
+            mock_prisma.trips.create.mockResolvedValue({
+                trip_id: "trip-1",
+                status: "SCHEDULED",
+            });
+
+            const result = await fleet_services.schedule_trip(
+                "manager-1",
+                "org-1",
+                schedule_data,
+            );
+
+            expect(mock_map_services.suggested_routes).toHaveBeenCalled();
+
+            expect(mock_prisma.trips.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        title: "Bread Run",
+                        description: "Deliver bread to given locations",
+                        user_id: "driver-1",
+                        vehicle_id: "vehicle-1",
+                        created_by: "manager-1",
+                        status: "SCHEDULED",
+                    }),
+                }),
+            );
+
+            expect(result).toEqual({
+                trip: { trip_id: "trip-1", status: "SCHEDULED" },
+                route: [{ lat: -26.1, lng: 28.1 }],
+            });
+        });
+
+        it("rejects a driver who already has an active trip", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                users: { trips: [{ status: "IN_PROGRESS" }] },
+            });
+
+            await expect(
+                fleet_services.schedule_trip("manager-1", "org-1", schedule_data),
+            ).rejects.toThrow("Driver not available");
+
+            expect(mock_map_services.suggested_routes).not.toHaveBeenCalled();
+        });
+
+        it("rejects when stop coordinates are invalid", async () => {
+            
+            const invalid_stops = [{ address: "25 Brookside Field",lat: -26.4, lng: 28.4, stop_order: 1 }, 
+        { address: "80 Crew Avenue", lat: -26.5, lng: NaN, stop_order: 2 }]
+
+            await expect(
+                fleet_services.schedule_trip("manager-1", "org-1", {...schedule_data, stops: invalid_stops }),
+            ).rejects.toThrow("Invalid stop coordinates");
+
+            expect(mock_map_services.suggested_routes).not.toHaveBeenCalled();
+        });
+
+        it("rejects when start location is invalid", async () => {
+            
+            const planned_start_location = { address: "25 Brookside Field", lat: NaN, lng: 28.4, stop_order: 1 };
+
+            await expect(
+                fleet_services.schedule_trip("manager-1", "org-1", {...schedule_data, planned_start_location }),
+            ).rejects.toThrow("Unknown start location");
+
+            expect(mock_map_services.suggested_routes).not.toHaveBeenCalled();
+        });
+
+        it("rejects overlapping scheduled trips", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                users: {
+                    trips: [{
+                        status: "SCHEDULED",
+                        scheduled_for: new Date("2026-09-23T10:10:00Z"),
+                        scheduled_end: new Date("2026-09-23T11:00:00Z"),
+                    }],
+                },
+            });
+
+            await expect(
+                fleet_services.schedule_trip("manager-1", "org-1", schedule_data),
+            ).rejects.toThrow("Driver has a scheduled trip that overlaps this time");
+
+            expect(mock_prisma.trips.create).not.toHaveBeenCalled();
+        });
+    });
+
 
 });
 

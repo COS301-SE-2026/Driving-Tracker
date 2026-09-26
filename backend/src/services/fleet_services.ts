@@ -297,6 +297,12 @@ export const fleet_services = {
 
         const trips = driver.users.trips;
 
+        const has_active_trip = trips.some(t => t.status === "IN_PROGRESS");
+
+        if(has_active_trip){
+            throw new Error("Driver not available");
+        }
+
         const route = await map_services.suggested_routes({
             start_lat: data.planned_start_location.lat,
             start_lng: data.planned_start_location.lng,
@@ -373,8 +379,7 @@ export const fleet_services = {
             route: route.points
         };
     },
-
-    /* istanbul ignore next - Add tests after endpoint stabilizes */
+    
     async start_scheduled_trip(user_id: string, org_id: string, data: start_scheduled_trip_data){
 
         const new_trip = await prisma.$transaction(async (tx) => { 
