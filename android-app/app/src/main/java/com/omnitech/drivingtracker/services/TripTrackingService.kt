@@ -358,13 +358,10 @@ class TripTrackingService: Service() {
         // Update Fatigue and Stop Monitors
         updateMonitors(currentSpeed, reading, recordedAt)
 
-        //Handle Safety Prompts
-        resolveSafetyPromptIfMoving(currentSpeed)
-
-        //Update Fatigue and Stop Monitors
-        updateMonitors(currentSpeed, reading, recordedAt)
-
         lastKnownSpeed = currentSpeed
+
+        //Emit live location over WebSocket
+        sendSocketUpdate(reading, tripId, currentSpeed)
 
         //Distance Filter
         if (shouldSkipReading(reading.latitude, reading.longitude)) return
@@ -389,6 +386,26 @@ class TripTrackingService: Service() {
                     tripStateManager.clearSafetyCheck()
                 }
             }
+        }
+    }
+
+    private fun sendSocketUpdate(reading: FusedReading, tripId: String, currentSpeed: Float){
+        val now = System.currentTimeMillis()
+        if(now - lastSocketUpdateMillis >= SOCKET_UPDATE_INTERVAL_MS) {
+            lastSocketUpdateMillis = now
+
+            socketManager.sendLocationUpdate(
+                SocketLocationPayload(
+                    tripId = tripId,
+                    location = LocationDto(
+                        lat = reading.latitude,
+                        lng = reading.longitude
+                    ),
+                    speedKmh = currentSpeed,
+                    heading = reading.heading,
+                    recordedAt = reading.timestamp
+                )
+            )
         }
     }
 

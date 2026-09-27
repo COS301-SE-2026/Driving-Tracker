@@ -7,12 +7,10 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import dynamic from "next/dynamic";
 import type {
     Driver,
-    FleetDashboardResponse,
     FleetStats,
 } from "@/components/fleet/type";
 import { tokenManager } from "@/lib/auth/tokenManager";
 import { useFleetSocket, LocationUpdatePayload } from "@/lib/hooks/useFleetSocket";
-import { apiFetch } from "@/lib/auth/apiClient";
 import { getDrivers } from "@/lib/driver-api";
 
 const FleetMap = dynamic(
@@ -35,35 +33,35 @@ const fallbackDrivers: Driver[] = [
         id: "driver-1",
         name: "Sipho M",
         status: "On trip",
-        location: [-74.15, 40.51],
+        location: [28.2179, -25.7545],
         route: [
-            [28.188, -25.747],
-            [28.205, -25.755],
-            [28.225, -25.760],
-            [28.1245, -25.770],
+            [28.1881, -25.7466],
+            [28.2049, -25.7526],
+            [28.2179, -25.7545],
+            [28.2293, -25.7479],
         ],
     },
     {
         id: "driver-2",
         name: "Jane V",
         status: "Inactive",
-        location: [-74.1, 40.57],
+        location: [28.2477, -25.7566],
         route: [
-            [28.230, -25.746],
-            [28.245, -25.735],
-            [28.260, -25.725],
+            [28.2312, -25.7466],
+            [28.2477, -25.7566],
+            [28.2601, -25.7625],
         ],
     },
     {
         id: "driver-3",
         name: "Thando S",
         status: "On trip",
-        location: [-74.08, 40.54],
+        location: [28.1897, -25.8553],
         route: [
-            [28.275, -25.765],
-            [28.290, -25.750],
-            [28.305, -25.735],
-            [28.1320, -25.720],
+            [28.2113, -25.7906],
+            [28.1965, -25.8281],
+            [28.1897, -25.8553],
+            [28.1889, -25.8601],
         ],
     },
     
@@ -90,12 +88,12 @@ export default function DashboardHomePage() {
     function toDisplayStatus(status: string): string {
 
         switch(status) {
-            case "IN_PROGRESS":
+            case "UNAVAILABLE":
                 return "On trip";
             case "AVAILABLE":
-                return "Available";
-            case "SCHEDULED":
-                return "Scheduled";
+                return "Inactive";
+            case "ASSIGNED":
+                return "Assigned";
             default:
                 return status;
         }
@@ -125,13 +123,6 @@ export default function DashboardHomePage() {
 
     useEffect(() => {
         async function loadFleetDashboard() {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            const accessToken = tokenManager.getAccessToken();
-
-            if (!apiUrl) {
-                setIsLoading(false);
-                return;
-            }
 
             try {
 
@@ -168,6 +159,7 @@ export default function DashboardHomePage() {
 
 
                 //TODO: setStats
+                setStats({ harshAcceleration: 0, harshBraking: 3, idleVehicles: 3, tripsInProgress: 2});
                 setDrivers(displayDrivers);
                 setApiError(null);
             } catch (error) {
@@ -215,6 +207,14 @@ export default function DashboardHomePage() {
                     <Search size={15} aria-hidden="true" />
                 </div>
 
+                {/* Live Socket Status Indicator */}
+                <div className="mb-4 flex items-center gap-2 px-1 text-[10px]">
+                    <span className={`h-2 w-2 rounded-full ${ isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-400" }`} />
+                    <span className="text-gray-500"> 
+                        {isConnected ? "Live GPS Connected" : "GPS Disconnected"}
+                    </span> 
+                </div>
+
                 <div className="flex flex-col gap-5">
                     {filteredDrivers.map((driver) => {
                         const isSelected = selectedDriverId === driver.id;
@@ -254,7 +254,7 @@ export default function DashboardHomePage() {
                                         className={
                                             driver.status === "On trip"
                                                 ? "text-green-600"
-                                                : "text-red-600"
+                                                : driver.status === "Assigned" ? "text-blue-600" : "text-red-600"
                                         }
                                     >
                                         {driver.status}

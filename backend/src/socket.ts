@@ -52,6 +52,7 @@ export function initSocket(httpServer: HttpServer){
             const payload = jwt.verify(token, ACCESS_SECRET) as unknown as AppJwtPayload;
             socket.data.user_id = payload.sub;
             socket.data.role = payload.role;
+            socket.data.org_id = payload.org_id;
 
             next();
         }catch(err: any){
@@ -69,6 +70,8 @@ export function initSocket(httpServer: HttpServer){
 
         socket.on('join_trip', async (trip_id: string)=> {
 
+            console.log("join_trip received: ", trip_id);
+
             if(socket.data.trip_id){
                 return socket.emit('error', {code: 'ALREADY_IN_TRIP', event: 'join_trip', message: 'Leave current trip before joining another'})
             }
@@ -77,13 +80,12 @@ export function initSocket(httpServer: HttpServer){
 
             if(!access) return socket.emit('error', {code: 'FORBIDDEN', event: 'join_trip'});
 
-            const org_id = await fleet_services.get_org_id_for_trip(trip_id);
-            
-            socket.data.org_id = org_id;
             socket.data.trip_id = trip_id;
             socket.data.is_trip_owner = access === 'owner';
 
             socket.join(`trip:${trip_id}`);
+
+            console.log("Trip joined: ", trip_id);
         });
 
         socket.on('leave_trip', (trip_id: string) => {
@@ -113,6 +115,8 @@ export function initSocket(httpServer: HttpServer){
             socket.data.fleet_org_id = org_id;
 
             socket.join(`fleet:${org_id}`);
+
+            console.log("Fleet joined");
         });
 
         socket.on('leave_fleet', (org_id: string) => {
@@ -147,7 +151,6 @@ export function initSocket(httpServer: HttpServer){
 
             io.to(rooms).emit('location:update', payload);
 
-            console.log("location:update received: ",data.location.lat,":",data.location.lng);
 
             //TODO: store vehicle latest location without await
 

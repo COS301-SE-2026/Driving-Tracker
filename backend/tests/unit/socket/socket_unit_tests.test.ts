@@ -246,7 +246,6 @@ describe("socket", () => {
             const socket = createSocket();
 
             mockCheckTripAccess.mockResolvedValue("owner");
-            mockFleetServices.get_org_id_for_trip.mockResolvedValue("org-1");
 
             initSocket({} as any);
 
@@ -265,7 +264,7 @@ describe("socket", () => {
             );
             expect(socket.join).toHaveBeenCalledWith("trip:trip-1");
             expect(socket.data.trip_id).toBe("trip-1");
-            expect(socket.data.org_id).toBe("org-1");
+            expect(socket.data.org_id).toBe(null);
             expect(socket.data.is_trip_owner).toBe(true);
         });
 
@@ -331,6 +330,7 @@ describe("socket", () => {
             const handlers = getSocketHandlers(socket);
             const data = {
                 trip_id: "trip-1",
+                user_id: "user-1",
                 location: {
                     lat: -29.85,
                     lng: 31.02,
