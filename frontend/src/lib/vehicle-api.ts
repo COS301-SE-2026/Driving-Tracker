@@ -5,6 +5,7 @@ import type {
     Vehicle,
 } from "@/components/vehicles/types"
 import { apiFetch } from "./auth/apiClient";
+import VehicleCard from "@/components/vehicles/VehicleCard";
 
 interface FleetVehiclesResponse {
     message: string;
@@ -71,4 +72,47 @@ export async function getDrivers(): Promise<Driver[]> {
 
     return response.data.drivers;
 
+}
+
+export async function updateVehicle(
+    vehicleId: string,
+    input: CreateVehicleInput,
+): Promise<Vehicle>{
+    const result = await apiFetch<{ data: Vehicle }>(
+        `/fleet/vehicles/${vehicleId}`,
+        {
+            method: "PATCH",
+            body: JSON.stringify(input),
+        },
+    );
+    return result.data;
+}
+
+export async function deleteVehicle(vehicleId: string): Promise<void>{
+    await apiFetch(
+        `/fleet/vehicles/${vehicleId}`,
+        {
+            method: "DELETE",
+        },
+    );
+}
+
+export async function uploadVehicleImage(
+    vehicleId: string,
+    file: File,
+): Promise<string>{
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const result = await apiFetch<{
+        data: {
+            image_url: string;
+        };
+    }>(`/upload/fleet-vehicle/${vehicleId}`,
+        {
+            method: "POST",
+            body: formData,
+        });
+
+    return result.data.image_url;
 }

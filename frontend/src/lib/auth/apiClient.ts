@@ -23,8 +23,12 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
     const accessToken = tokenManager.getAccessToken();
 
     const headers = new Headers(options.headers);
-    headers.set("Content-Type", "application/json");
-    if(accessToken){
+    if(options.body instanceof FormData){
+        headers.delete("Content-Type");
+    }else{
+        headers.set("Content-Type", "application/json");
+    }
+        if(accessToken){
         headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
