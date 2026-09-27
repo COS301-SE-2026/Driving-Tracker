@@ -602,7 +602,68 @@ export const fleet_services = {
         }));
 
         return result;
-    }
+    },
+    async get_manageable_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const member = await prisma.organization_members.findUnique({
+            where: {
+                org_id_user_id: { org_id, user_id },
+            },
+            select: { role: true},
+        });
+
+        if(
+            !member || (member.role !== OrganizationRole.ADMIN && member.role !== OrganizationRole.MANAGER)
+        ){
+            throw new Error("You do not have permission to manage fleet vehicles");
+        }
+
+        const vehicle = await prisma.vehicles.findFirst({
+            where: {
+                vehicle_id,
+                org_id,
+            },
+        });
+
+        if(!vehicle){
+            throw new Error("Fleet vehicle not found");
+        }
+
+        return vehicle;
+    },
+
+    async update_fleet_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+        data: {
+            name?: string,
+            registration?: string,
+            make?: string,
+            model?: string,
+            year?: number,
+            fuel_type?: string,
+            fuel_tank?: number,
+        },
+    ){
+        await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        return prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                name: data.name,
+                registration: data.registration,
+                make: data.make,
+                model: data.model,
+                year: data.year,
+                fuel_type: data.fuel_type,
+                fuel_tank: data.fuel_tank,
+            },
+        });
+    },
+
 
 };
 
