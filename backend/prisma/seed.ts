@@ -49,7 +49,7 @@ async function main() {
             surname: 'Omnitech',
             email : 'omnitech@gmail.com',
             password_hash : hashedPassword,
-            role: 'USER',
+            role: 'ADMIN',
             dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
             phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
             consent_status: true,
@@ -57,6 +57,38 @@ async function main() {
             email_verified: true,
         }
     });
+
+    const membership = await prisma.organization_members.findUnique({
+        where: {user_id: myLoginUser.user_id},
+    });
+
+    if (membership){
+        await prisma.organization_members.update(
+            {
+                where: {user_id: myLoginUser.user_id},
+                data: {role: 'ADMIN'},
+            }
+        );
+    }
+    else {
+        let organization = await prisma.organizations.findFirst({
+            where: {name: 'Local Dashboard Org'},
+        });
+
+        if (!organization){
+            organization = await prisma.organizations.create({
+                data: {name: 'Local Dashboard Org'},
+            });
+        }
+
+        await prisma.organization_members.create({
+            data: {
+                org_id: organization.org_id,
+                user_id: myLoginUser.user_id,
+                role: 'ADMIN',
+            },
+        });
+    }
 
     const myLoginUser2 = await prisma.users.upsert({
         where: { email: 'dan.harbor@gmail.com' },
