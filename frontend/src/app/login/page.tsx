@@ -49,12 +49,7 @@ export default function SignInPage(){
         }
         setSubmitting(true);
 
-        type LoginResponse = {
-            token?: string;
-            refresh_token?: string;
-            message?: string;
-        };
-
+    
         setFormError("");
 
         try{
@@ -115,6 +110,7 @@ export default function SignInPage(){
                     onChange = {setEmail}
                     error = {errors.email}
                     placeholder = "email@example.com"
+                    autoComplete="email"
                     />
 
                     <div>
@@ -174,7 +170,7 @@ export default function SignInPage(){
                     </button>
 
                     <p className="text-center text-sm text-white/85">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <a href="/register" className="font-semibold text-white underline underline-offset-2 hover:text-white/90">
                     Sign Up
                     </a>
@@ -216,6 +212,7 @@ function LoginField({
             value = {value}
             onChange = {(e) => onChange(e.target.value)}
             placeholder = {placeholder}
+            autoComplete= {autoComplete}
             aria-invalid  ={!!error}
             aria-describedby = {error ? `${id}-error` : undefined}
             className = {`mt-1.5 w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-2 focus:ring-white/70 ${error ? "border-red-400" : "border-transparent"}`}
