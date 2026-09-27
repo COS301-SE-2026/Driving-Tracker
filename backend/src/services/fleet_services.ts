@@ -540,6 +540,8 @@ export const fleet_services = {
             select: {
                 trip_id: true,
                 status: true,
+                title: true,
+                description: true,
                 scheduled_for: true,
                 scheduled_end: true,
                 planned_start_addr: true,
