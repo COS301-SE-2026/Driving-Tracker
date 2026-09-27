@@ -52,7 +52,7 @@ export default function FleetMap({
 
             for (const driver of drivers) {
                 //adding driver's route only when at least 2 points exist.
-                if (driver.route.length > 1) {
+                if (driver.route && driver.route.length > 1) {
                     source.add(
                         new atlas.data.Feature(
                             new atlas.data.LineString(driver.route),
@@ -65,13 +65,15 @@ export default function FleetMap({
                 }
 
                 //adding driver's current location
-                source.add(
-                    new atlas.data.Feature(new atlas.data.Point(driver.location), {
-                        driverId: driver.id,
-                        driverName: driver.name,
-                        type: "driver",
-                    }),
-                );
+                if(driver.location){
+                    source.add(
+                        new atlas.data.Feature(new atlas.data.Point(driver.location), {
+                            driverId: driver.id,
+                            driverName: driver.name,
+                            type: "driver",
+                        }),
+                    );
+                }
             }
 
             //selected driver's route is thicker, brighter and fully opaque
@@ -116,8 +118,8 @@ export default function FleetMap({
 
             //fitting the map around all drivers when possible
             const coordinates = drivers.flatMap((driver) => [
-                driver.location,
-                ...driver.route,
+                ...(driver.location? [driver.location] : []),
+                ...(driver.route ?? []),
             ]);
 
             if (coordinates.length > 0) {

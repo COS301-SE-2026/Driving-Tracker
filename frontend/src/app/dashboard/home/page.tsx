@@ -12,6 +12,8 @@ import type {
 } from "@/components/fleet/type";
 import { tokenManager } from "@/lib/auth/tokenManager";
 import { useFleetSocket, LocationUpdatePayload } from "@/lib/hooks/useFleetSocket";
+import { apiFetch } from "@/lib/auth/apiClient";
+import { getDrivers } from "@/lib/driver-api";
 
 const FleetMap = dynamic(
     () => import("@/components/fleet/FleetMap"),
@@ -85,6 +87,20 @@ export default function DashboardHomePage() {
     const claims = tokenManager.getClaims();
     const orgId = claims?.org_id ?? null;
 
+    function toDisplayStatus(status: string): string {
+
+        switch(status) {
+            case "IN_PROGRESS":
+                return "On trip";
+            case "AVAILABLE":
+                return "Available";
+            case "SCHEDULED":
+                return "Scheduled";
+            default:
+                return status;
+        }
+    }
+
     const handleLocationUpdate = useCallback((data: LocationUpdatePayload) => {
         const newPoint: [number, number] = [data.location.lng, data.location.lat];
 
@@ -96,7 +112,7 @@ export default function DashboardHomePage() {
                         ...driver, 
                         status: "On trip",
                         location: newPoint,
-                        route: [...driver.route, newPoint],
+                        route: [...(driver.route ?? []), newPoint],
                     };
                 }
 
@@ -119,25 +135,40 @@ export default function DashboardHomePage() {
 
             try {
 
-                const response = await fetch(`${apiUrl}/admin/fleet/dashboard`, {
-                    headers: {
-                        Authorization: `Bearer ${accessToken ?? ""}`,
-                    },
-                });
+                const fleetDrivers = await getDrivers();
 
-                if (!response.ok) {
-                    throw new Error("Unabel to load fleet dashboard data");
-                }
+                // const response = await apiFetch(`${apiUrl}/admin/fleet/dashboard`, {
+                //     headers: {
+                //         Authorization: `Bearer ${accessToken ?? ""}`,
+                //     },
+                // });
 
-                const result = (await response.json()) as {
-                    data?: FleetDashboardResponse;
-                } & FleetDashboardResponse;
+                // if (!response.ok) {
+                //     throw new Error("Unabel to load fleet dashboard data");
+                // }
+
+                // const result = (await response.json()) as {
+                //     data?: FleetDashboardResponse;
+                // } & FleetDashboardResponse;
 
                 //supports both {  data: {...} } and direct API responses
-                const dashboard = result.data ?? result;
+                // const dashboard = result.data ?? result;
 
-                setDrivers(dashboard.drivers);
-                setStats(dashboard.stats);
+                // setDrivers(dashboard.drivers);
+                // setStats(dashboard.stats);
+
+                const displayDrivers: Driver[] = fleetDrivers.map((d) => ({
+                    id: d.user_id,
+                    name: `${d.name} ${d.surname}`,
+                    image: d.profile_picture_url,
+                    status: toDisplayStatus(d.status),
+                    location: undefined,
+                    route: undefined,
+                }));
+
+
+                //TODO: setStats
+                setDrivers(displayDrivers);
                 setApiError(null);
             } catch (error) {
                 setApiError(
