@@ -61,6 +61,8 @@ class TripSummaryViewModel @Inject constructor(
 
     val safetyCheck = tripStateManager.safetyCheck
 
+    val nearbyPotholes = tripStateManager.nearbyPotholes
+
     fun clearSafetyCheck() = tripStateManager.clearSafetyCheck()
 
     val globalHotspots: StateFlow<List<TripEventDto>> = _globalHotspots
@@ -72,7 +74,9 @@ class TripSummaryViewModel @Inject constructor(
             }
         }
     }
-
+    fun checkAndNotifyHotspot(eventId: String): Boolean {
+        return tripStateManager.markHotspotNotified(eventId)
+    }
     fun clearDetour() {
         _detourRoute.value = null
         tripStateManager.clearDetour()

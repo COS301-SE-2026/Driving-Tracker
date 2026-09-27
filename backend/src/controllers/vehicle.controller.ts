@@ -2,6 +2,8 @@ import type { Response } from 'express';
 import type { AuthRequest } from '../middleware/auth';
 import { vehicle_services } from '../services/vehicle.services';
 import { OrganizationRole } from '@prisma/client';
+import { search_vehicle_image } from '../services/vehicle.services';
+import { error } from 'console';
 
 
 export const get_all_vehicles = async(req: AuthRequest, res: Response)=>{
@@ -160,6 +162,45 @@ export const get_fuel_comparison = async (req: AuthRequest, res: Response) => {
         res.status(500).json({
             error: "INTERNAL_SERVER_ERROR",
             message: error.message || "Could not retrieve fuel comparison"
+        });
+    }
+};
+
+export const search_vehicle_image_controller = async (
+    req: AuthRequest,
+    res: Response,
+) => {
+    try {
+        if (!req.user?.sub) {
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        const make = String(req.query.make ?? "").trim();
+        const model = String(req.query.model ?? "").trim();
+        const year = Number(req.query.year);
+
+        if (!make || !model || !Number.isInteger(year)) {
+            return res.status(400).json({
+                error: "INVALID_QUERY",
+                message: "Make, model and year are required."
+            });
+        }
+
+        const image = await search_vehicle_image(
+            make,
+            model,
+            year,
+        );
+
+        return res.status(200).json({
+            data: image,
+        });
+    } catch {
+        return res.status(500).json({
+            error: "IMAGE_SEARCH_FAILED",
+            message: "Could not search for vehicle image.",
         });
     }
 };

@@ -19,14 +19,20 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.sqrt
 import kotlin.math.abs
 import java.time.Instant
+import com.omnitech.drivingtracker.data.models.RoadEvent
 
 @Singleton
 class SensorFusionManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val tripRepository: com.omnitech.drivingtracker.data.repository.TripRepository
 ): ISensorFusionManager, SensorEventListener {
 
     companion object{
         private const val TAG = "SensorFusion"
+
+        private val verticalWindow = mutableListOf<Float>()
+        private val WINDOW_SIZE = 50 //1 sec of data at 50 Hz
+        private const val POTHOLE_SIGMA_FACTOR = 4.5f //impact must be 4.5 noisier than avg
 
         //speed gates
         //below min speed no events are triggered
@@ -110,6 +116,27 @@ class SensorFusionManager @Inject constructor(
     //reading timer
     private var lastReadingTime = 0L
 
+    private fun processRoadQuality(zAcc: Float, speed: Float, location: Location?){
+        if(speed<MINIMUM_SPEED_KMH || location == null) return
+
+        verticalWindow.add(zAcc)
+        if(verticalWindow.size>WINDOW_SIZE) verticalWindow.removeAt(0)
+
+        if(verticalWindow.size == WINDOW_SIZE){
+            val mean = verticalWindow.average().toFloat()
+            val stdDev = sqrt(verticalWindow.map { (it-mean) * (it-mean) }.average()).toFloat()
+
+            if(abs(zAcc-mean) > (stdDev * POTHOLE_SIGMA_FACTOR) && abs(zAcc) > 7.0f){
+                tripRepository.bufferRoadEvent(
+                    RoadEvent(location.latitude, location.longitude, abs(zAcc), "IMPACT")
+                )
+            }else if(stdDev > 2.5f){
+                tripRepository.bufferRoadEvent(
+                    RoadEvent(location.latitude, location.longitude, abs(zAcc), "ROUGH")
+                )
+            }
+        }
+    }
 
     //Lifecycle
     override fun start(
@@ -165,6 +192,8 @@ class SensorFusionManager @Inject constructor(
             Sensor.TYPE_LINEAR_ACCELERATION -> {
                 linearAccel = event.values.clone()
                 checkForLinearEvents()
+                val speed = currentLocation?.speed ?: 0f
+                processRoadQuality(event.values[2], speed, currentLocation)
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
                 rotationVector = event.values.clone()
