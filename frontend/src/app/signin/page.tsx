@@ -4,6 +4,7 @@ import {useState, type FormEvent} from "react";
 import Image from "next/image";
 import {Eye, EyeOff, MapPin} from "lucide-react";
 import {BASE_PATH} from "@/lib/basePath";
+import {useRouter} from "next/navigation";
 
 export default function SignInPage(){
 
@@ -13,6 +14,8 @@ export default function SignInPage(){
     const [remember, setRemember] = useState(false);
     const [errors, setErrors] = useState<{email ?: string; password?: string}>({});
     const [submitting, setSubmitting] = useState(false);
+    const router = useRouter();
+    const [formError, setFormError] = useState("");
 
     function validate(){
 
@@ -39,13 +42,55 @@ export default function SignInPage(){
     async function handleSubmit(e: FormEvent){
 
         e.preventDefault();
+
         if (!validate()){
             return;
         }
         setSubmitting(true);
+
+        type LoginResponse = {
+            token?: string;
+            refresh_token?: string;
+            message?: string;
+        };
+
+        setFormError("");
+
         try{
-            //integrate endpoint
-            await new Promise((r) => setTimeout(r,600));
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type" : "application/json"
+                    },
+                    body: JSON.stringify({
+                        identifier: email.trim(),
+                        password,
+                    }),
+                }
+            );
+            const result: LoginResponse = await response.json();
+
+            if (!response.ok){
+                setFormError(
+                    result.message ?? "Unable to sign in"
+                );
+                return;
+            }
+
+            if (!result.token || !result.refresh_token){
+                setFormError("The server returned an invalid login response");
+                return;
+            }
+
+            sessionStorage.setItem("accessToken", result.token);
+            sessionStorage.setItem("refreshToken", result.refresh_token);
+
+            router.replace("/dashboard/drivers")
+        }
+        catch{
+            setFormError("Could not reach server. Please try again later.");
         }
         finally{
             setSubmitting(false);
@@ -161,6 +206,11 @@ export default function SignInPage(){
                     Sign Up
                     </a>
                     </p>
+                    {formError && (
+                        <p role="alert" className="text-sm text-red-100">
+                            {formError}
+                        </p>
+                    )}
                 </form>
 
                 </div>
