@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, UserRound } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import dynamic from "next/dynamic";
@@ -10,6 +10,8 @@ import type {
     FleetDashboardResponse,
     FleetStats,
 } from "@/components/fleet/type";
+import { tokenManager } from "@/lib/auth/tokenManager";
+import { useFleetSocket, LocationUpdatePayload } from "@/lib/hooks/useFleetSocket";
 
 const FleetMap = dynamic(
     () => import("@/components/fleet/FleetMap"),
@@ -80,10 +82,35 @@ export default function DashboardHomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
 
+    const claims = tokenManager.getClaims();
+    const orgId = claims?.org_id ?? null;
+
+    const handleLocationUpdate = useCallback((data: LocationUpdatePayload) => {
+        const newPoint: [number, number] = [data.location.lng, data.location.lat];
+
+        setDrivers((prevDrivers) => 
+            prevDrivers.map((driver) => {
+
+                if(driver.id === data.user_id){
+                    return {
+                        ...driver, 
+                        status: "On trip",
+                        location: newPoint,
+                        route: [...driver.route, newPoint],
+                    };
+                }
+
+                return driver;
+            })
+        );
+    }, []);
+
+    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate);
+
     useEffect(() => {
         async function loadFleetDashboard() {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            const accessToken = localStorage.getItem("access_token");
+            const accessToken = tokenManager.getAccessToken();
 
             if (!apiUrl) {
                 setIsLoading(false);
@@ -91,6 +118,7 @@ export default function DashboardHomePage() {
             }
 
             try {
+
                 const response = await fetch(`${apiUrl}/admin/fleet/dashboard`, {
                     headers: {
                         Authorization: `Bearer ${accessToken ?? ""}`,

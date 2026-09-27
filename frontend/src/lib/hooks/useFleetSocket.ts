@@ -6,6 +6,7 @@ import { tokenManager } from "../auth/tokenManager";
 
 export interface LocationUpdatePayload{
     trip_id: string;
+    user_id: string;
     location: {
         lat: number;
         lng: number;
@@ -17,16 +18,18 @@ export interface LocationUpdatePayload{
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export function useFleetSocket(org_id: string | null) {
+export function useFleetSocket(
+    orgId: string | null,
+    onLocationUpdate?: (data: LocationUpdatePayload) => void
+) {
     const socketRef = useRef<Socket | null>(null);
-    const [driverLocations, setDriverLocations] = useState<Record<string, LocationUpdatePayload>>({});
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(()=> {
 
         const token = tokenManager.getAccessToken();
 
-        if(!org_id || !token) return;
+        if(!orgId || !token) return;
 
         const socket = io(SOCKET_URL, {
             auth: { token },
@@ -37,10 +40,10 @@ export function useFleetSocket(org_id: string | null) {
 
         socket.on("connect", ()=> {
             setIsConnected(true);
-            console.log("Connected to Socket server. Joining fleet room: ", org_id);
+            console.log("Connected to Socket server. Joining fleet room: ", orgId);
 
 
-            socket.emit("join_fleet", org_id);
+            socket.emit("join_fleet", orgId);
         });
 
         socket.on("disconnect", ()=> {
@@ -50,23 +53,22 @@ export function useFleetSocket(org_id: string | null) {
         socket.on("location:update", (data: LocationUpdatePayload) => {
             console.log("Received driver location update:", data);
 
-            setDriverLocations((prev) => ({
-                ...prev,
-                [data.trip_id]: data,
-            }));
+            if(onLocationUpdate) {
+                onLocationUpdate(data);
+            }
         });
 
-        socket.on("error", (err: { code: string; message: string }) => {
+        socket.on("error", (err: { code: string; event: string; message?: string }) => {
             console.error("Socket error:", err);
         });
 
         return () => {
             if(socket.connected) {
-                socket.emit("leave_fleet", org_id);
+                socket.emit("leave_fleet", orgId);
                 socket.disconnect();
             }
         };
-    }, [org_id]);
+    }, [orgId, onLocationUpdate]);
 
-    return  { isConnected, driverLocations };
+    return  { isConnected };
 }

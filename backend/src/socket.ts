@@ -20,7 +20,7 @@ interface AuthedSocket extends Socket {
     }
 }
 
-interface LocationUpdatePayload {
+interface LocationUpdateInput {
     trip_id: string;
     location: {
         lat: number;
@@ -29,6 +29,10 @@ interface LocationUpdatePayload {
     speed_kmh?: number;
     heading?: number;
     recorded_at: string;
+}
+
+interface LocationUpdatePayload extends LocationUpdateInput {
+    user_id: string;
 }
 
 export function initSocket(httpServer: HttpServer){
@@ -119,7 +123,7 @@ export function initSocket(httpServer: HttpServer){
             socket.data.fleet_org_id = null;
         });
 
-        socket.on('location:update', async (data: LocationUpdatePayload ) => {
+        socket.on('location:update', async (data: LocationUpdateInput ) => {
 
 
             if(!socket.data.is_trip_owner){
@@ -130,13 +134,18 @@ export function initSocket(httpServer: HttpServer){
                 return socket.emit('error', {code: 'INVALID_PAYLOAD', event: 'location:update'});
             }
 
+            const payload: LocationUpdatePayload = {
+                ...data,
+                user_id: socket.data.user_id,
+            };
+
             const rooms = [`trip:${data.trip_id}`];
 
             if(socket.data.org_id){
                 rooms.push(`fleet:${socket.data.org_id}`);
             }
 
-            io.to(rooms).emit('location:update', data);
+            io.to(rooms).emit('location:update', payload);
 
             console.log("location:update received: ",data.location.lat,":",data.location.lng);
 

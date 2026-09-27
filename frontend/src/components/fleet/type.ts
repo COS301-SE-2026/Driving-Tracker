@@ -3,7 +3,7 @@ export type Driver = {
     id: string;
     name: string;
     image?: string | null;
-    status: "On trip" | "Inactive";
+    status: string;
     location: [number, number];
     route: [number, number][];
 };
