@@ -664,6 +664,58 @@ export const fleet_services = {
         });
     },
 
+    async remove_fleet_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        
+        await prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                org_id: null,
+                image_url: null,
+            },
+        });
 
+        return {
+            previous_blob_name: vehicle.image_url,
+            message: "Fleet vehicle removed successfully",
+        }
+    },
+
+    async update_fleet_vehicle_image(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+        blob_name: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+
+        await prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                image_url: blob_name,
+            },
+        });
+
+        return {
+            previous_blob_name: vehicle.image_url,
+            display_url: `upload/fleet-vehicle-image/${vehicle_id}`,
+        };
+    },
+
+    async get_fleet_vehicle_image_blob_name(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        
+        return vehicle.image_url;
+    }
+    
 };
+
 
