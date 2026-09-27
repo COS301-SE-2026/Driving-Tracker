@@ -6,8 +6,6 @@ import type {
 } from "@/components/vehicles/types"
 import { apiFetch } from "./auth/apiClient";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 interface FleetVehiclesResponse {
     message: string;
     data: {
@@ -25,31 +23,6 @@ interface FleetDriversResponse {
 interface AddVehicleResponse{
     data: Vehicle;
     warning: string | null;
-}
-
-function getHeaders(): HeadersInit {
-
-    const token = localStorage.getItem("access_token");
-
-    return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token ?? ""}`,
-    };
-
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-
-        throw new Error(
-            error?.message ?? error?.error ?? "Request failed",
-        );
-    }
-
-    return response.json() as Promise<T>;
-
 }
 
 export async function getVehicles(): Promise<Vehicle[]> {
@@ -84,19 +57,11 @@ export async function searchVehicleImage(
         year: String(year),
     });
 
-    //TODO: Change to apiFetch or discard
-    const response = await fetch(
-        `${API_URL}/vehicle/image-search?${params.toString()}`,
-        {
-            headers: getHeaders(),
-        },
-    );
-
-    const result = await parseResponse<{
+    const response = await apiFetch<{
         data: ImageSearchResult | null;
-    }>(response);
+    }>(`/vehicle/image-search?${params.toString()}`);
 
-    return result.data;
+    return response.data;
 
 }
 
