@@ -5,6 +5,7 @@ import Image from "next/image";
 import {Eye, EyeOff, MapPin} from "lucide-react";
 import {BASE_PATH} from "@/lib/basePath";
 import {useRouter} from "next/navigation";
+import { login } from "@/lib/auth/authService";
 
 export default function SignInPage(){
 
@@ -57,40 +58,12 @@ export default function SignInPage(){
         setFormError("");
 
         try{
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type" : "application/json"
-                    },
-                    body: JSON.stringify({
-                        identifier: email.trim(),
-                        password,
-                    }),
-                }
-            );
-            const result: LoginResponse = await response.json();
-
-            if (!response.ok){
-                setFormError(
-                    result.message ?? "Unable to sign in"
-                );
-                return;
-            }
-
-            if (!result.token || !result.refresh_token){
-                setFormError("The server returned an invalid login response");
-                return;
-            }
-
-            sessionStorage.setItem("accessToken", result.token);
-            sessionStorage.setItem("refreshToken", result.refresh_token);
-
-            router.replace("/dashboard/home")
+            setFormError("");
+            await login(email.trim(), password);
+            router.replace("/dashboard/home");
         }
-        catch{
-            setFormError("Could not reach server. Please try again later.");
+        catch (error){
+            setFormError(error instanceof Error ? error.message : "Unable to sign in");
         }
         finally{
             setSubmitting(false);
