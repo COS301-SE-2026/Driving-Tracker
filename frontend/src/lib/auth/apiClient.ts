@@ -67,3 +67,21 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
     return res.json();
 }
+
+export async function apiFetchBlob(
+    path: string,
+    options: RequestInit = {},
+): Promise<Blob> {
+    const res = await request(path, options);
+
+    if(!res.ok){
+        const body: ApiErrorBody = await res.json().catch(() => ({}));
+
+        throw new ApiError(
+            res.status,
+            body.message ?? "Request failed",
+            body.error,
+        );
+    }
+    return res.blob();
+}

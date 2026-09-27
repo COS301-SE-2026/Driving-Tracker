@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import type { Vehicle } from "./types";
+import { useEffect, useState } from "react";
+import { apiFetchBlob } from "@/lib/auth/apiClient";
 
 type VehicleCardProps = {
     vehicle: Vehicle;
@@ -19,6 +21,52 @@ export default function VehicleCard({
 
     const vehicleName = vehicle.name || `${vehicle.make ?? "Unknown"} ${vehicle.model ?? "Vehicle"}`;
 
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [imageLoading, setImageLoading] = useState(false);
+
+    useEffect(() => {
+        let objectUrl: string | null = null;
+        let cancelled = false;
+
+        async function loadImage(){
+            if(!vehicle.image_url){
+                setImageSrc(null);
+                return;
+            }
+
+            setImageLoading(true);
+
+            try{
+                const imageBlob = await apiFetchBlob(
+                    `/upload/fleet-vehicle-image/${vehicle.vehicle_id}`,
+                );
+                objectUrl = URL.createObjectURL(imageBlob);
+
+                if(!cancelled){
+                    setImageSrc(objectUrl);
+                }
+            }catch{
+                if(!cancelled){
+                    setImageSrc(null);
+                }
+            }finally{
+                if(!cancelled){
+                    setImageLoading(false);
+                }
+            }
+        }
+
+        loadImage();
+
+        return () => {
+            cancelled = true;
+
+            if(objectUrl){
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+    },[vehicle.vehicle_id, vehicle.image_url]);
+
     return (
         <div
             className="w-full max-w-[238px] rounded-[9px] bg-[#d9d9d9] p-2 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -34,9 +82,13 @@ export default function VehicleCard({
 
             {/*vehicle image returned by the backend image search endpoint */}
             <div className="relative flex h-[202px] items-center justify-center overflow-hidden rounded-md bg-white">
-                {vehicle.image_url ? (
+                {imageLoading ? (
+                    <span className="text-xs text-slate-400">
+                        Loading image...
+                    </span>
+                ) : imageSrc ? (
                     <Image
-                        src={vehicle.image_url}
+                        src={imageSrc}
                         alt={`${vehicleName} image`}
                         fill
                         sizes="238px"

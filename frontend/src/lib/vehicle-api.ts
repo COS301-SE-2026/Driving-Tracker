@@ -5,7 +5,6 @@ import type {
     Vehicle,
 } from "@/components/vehicles/types"
 import { apiFetch } from "./auth/apiClient";
-import VehicleCard from "@/components/vehicles/VehicleCard";
 
 interface FleetVehiclesResponse {
     message: string;
