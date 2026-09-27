@@ -87,7 +87,7 @@ export default function SignInPage(){
             sessionStorage.setItem("accessToken", result.token);
             sessionStorage.setItem("refreshToken", result.refresh_token);
 
-            router.replace("/dashboard/drivers")
+            router.replace("/dashboard/home")
         }
         catch{
             setFormError("Could not reach server. Please try again later.");
