@@ -109,15 +109,19 @@ services:
         context: ./frontend
         args:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY: ${NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY}
     ports:
         - "3001:3001"
     volumes:
       - ./frontend/src:/app/src
+    env_file:
+      - ./frontend/.env.local
     depends_on:
         - api
     environment:
         PORT: 3001
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY: ${NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY}
 
   api-test:
     build: ./backend
