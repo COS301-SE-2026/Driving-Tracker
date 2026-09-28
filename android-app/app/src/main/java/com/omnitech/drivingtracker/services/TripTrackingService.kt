@@ -360,17 +360,22 @@ class TripTrackingService: Service() {
 
         lastKnownSpeed = currentSpeed
 
-        //Emit live location over WebSocket
-        sendSocketUpdate(reading, tripId, currentSpeed)
+        val now = System.currentTimeMillis()
+        if(now - lastSocketUpdateMillis >= SOCKET_UPDATE_INTERVAL_MS) {
+            lastSocketUpdateMillis = now
 
-        //Distance Filter
-        if (shouldSkipReading(reading.latitude, reading.longitude)) return
+            //Emit live location over WebSocket
+            sendSocketUpdate(reading, tripId, currentSpeed)
 
-        lastSavedLat = reading.latitude
-        lastSavedLng = reading.longitude
+            //Distance Filter
+            if (shouldSkipReading(reading.latitude, reading.longitude)) return
 
-        //Map and Save
-        saveReading(tripId, reading, recordedAt, obdConnected)
+            lastSavedLat = reading.latitude
+            lastSavedLng = reading.longitude
+
+            //Map and Save
+            saveReading(tripId, reading, recordedAt, obdConnected)
+        }
     }
 
     private fun parseTimestamp(timestamp: String): Long = runCatching {
@@ -390,9 +395,7 @@ class TripTrackingService: Service() {
     }
 
     private fun sendSocketUpdate(reading: FusedReading, tripId: String, currentSpeed: Float){
-        val now = System.currentTimeMillis()
-        if(now - lastSocketUpdateMillis >= SOCKET_UPDATE_INTERVAL_MS) {
-            lastSocketUpdateMillis = now
+
 
             socketManager.sendLocationUpdate(
                 SocketLocationPayload(
@@ -406,7 +409,7 @@ class TripTrackingService: Service() {
                     recordedAt = reading.timestamp
                 )
             )
-        }
+
     }
 
     private fun updateMonitors(speed: Float, reading: FusedReading, recordedAt: Long) {

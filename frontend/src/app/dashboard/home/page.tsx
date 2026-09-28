@@ -70,17 +70,21 @@ const fallbackDrivers: Driver[] = [
 const fallbackStats: FleetStats = {
     harshBraking: 8,
     harshAcceleration: 2,
-    idleVehicles: 1,
+    idleDrivers: 1,
     tripsInProgress: 2,
 };
 
 export default function DashboardHomePage() {
     const [drivers, setDrivers] = useState<Driver[]>(fallbackDrivers);
-    const [stats, setStats] = useState<FleetStats>(fallbackStats);
+    //const [stats, setStats] = useState<FleetStats>(fallbackStats);
     const [search, setSearch] = useState("");
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null,);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
+    const [harshEventStats, setHarshEventStats] = useState({
+        harshBraking: 0,
+        harshAcceleration: 0
+    });
 
     const claims = tokenManager.getClaims();
     const orgId = claims?.org_id ?? null;
@@ -133,6 +137,19 @@ export default function DashboardHomePage() {
 
     const { isConnected } = useFleetSocket(orgId, handleLocationUpdate, handleTripEnded);
 
+    //Stats use drivers and independant harsh event endpoint
+    const stats: FleetStats = useMemo(() => {
+
+        const tripsInProgress = drivers.filter((d) => d.status === "On trip").length;
+
+        return {
+            tripsInProgress,
+            idleDrivers: drivers.length - tripsInProgress,
+            harshBraking: harshEventStats.harshBraking,
+            harshAcceleration: harshEventStats.harshAcceleration,
+        };
+    }, [drivers, harshEventStats]);
+
     useEffect(() => {
         async function loadFleetDashboard() {
 
@@ -169,10 +186,13 @@ export default function DashboardHomePage() {
                     route: undefined,
                 }));
 
+                
 
-                //TODO: setStats
-                setStats({ harshAcceleration: 0, harshBraking: 3, idleVehicles: 3, tripsInProgress: 2});
+
+                
+                //setStats({ harshAcceleration: 0, harshBraking: 3, idleVehicles: 3, tripsInProgress: 2});
                 setDrivers(displayDrivers);
+
                 setApiError(null);
             } catch (error) {
                 setApiError(
@@ -314,8 +334,8 @@ export default function DashboardHomePage() {
                         />
 
                         <StatItem 
-                            label="Idle Vehicles"
-                            value={stats.idleVehicles}
+                            label="Idle Drivers"
+                            value={stats.idleDrivers}
                         />
 
                         <div className="mx-auto flex min-h-[102px] w-[120px] flex-col justify-center gap-2 rounded-[11px] border border-[#1b2730] bg-[#e8f8ff] text-[15px]">

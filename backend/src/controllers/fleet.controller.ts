@@ -27,6 +27,11 @@ function check_org_authorization(
     return true;
 }
 
+function is_valid_date(date_param: Date){
+
+    return Number.isFinite(date_param.getTime());
+}
+
 
 const fleet_controller = {
     async add_organization(req: AuthRequest, res: Response){
@@ -350,11 +355,18 @@ const fleet_controller = {
 
         const driver_id = req.query.driver_id as string | undefined;
 
-         const { status, start_date, end_date} = (req.query || {}) as any;
+        const { status, start_date, end_date} = (req.query || {}) as any;
 
         try{
-        
-            const trips = await fleet_services.list_fleet_trips(user_id, org_id!, { driver_id, status, start_date, end_date });
+            
+            const parsed_start_date = start_date? new Date(start_date) : undefined;
+            const parsed_end_date = end_date? new Date(end_date) : undefined;
+
+            const trips = await fleet_services.list_fleet_trips(user_id, org_id!, { 
+                driver_id, status, 
+                start_date: parsed_start_date, 
+                end_date: parsed_end_date  
+            });
 
             return res.status(200).json({
                 message: 'Fleet trips retrieved successfully',
@@ -500,6 +512,58 @@ const fleet_controller = {
             
         }
     },
+    async get_fleet_event_counts(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({
+                error: "UNAUTHORIZED"
+            });
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to view event stats'
+            , [OrganizationRole.ADMIN, OrganizationRole.MANAGER])){  return; }
+
+        const { start_date, end_date} = (req.query || {}) as any;
+
+        try{
+            
+            const parsed_start_date = start_date? new Date(start_date) : undefined;
+            const parsed_end_date = end_date? new Date(end_date) : undefined;
+
+            const events = await fleet_services.get_fleet_event_counts(user_id, org_id!, { 
+                start_date: parsed_start_date, 
+                end_date: parsed_end_date  
+            });
+
+            return res.status(200).json({
+                message: 'Trip event counts retrieved successfully',
+                data: events ,
+            });
+
+        }catch(error: any){
+
+            if(error instanceof ValidationError){
+
+                return res.status(422).json({
+                    error: error.errorCode , message: error.message
+                });
+            }
+
+            if(error?.message?.includes("'You do not have permission to view fleet event stats'")){
+
+                return res.status(403).json({
+                    error: "UNAUTHORIZED", message: error.message
+                });
+            }
+  
+            return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve trip event counts" });
+        }
+        
+    }
 };
 
 export default fleet_controller;

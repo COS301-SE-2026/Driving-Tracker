@@ -619,5 +619,7 @@ fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), f
 fleet_router.get('/fleet_trips', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_trips);
 
 
+fleet_router.get('/fleet_events', verify_token, create_user_based_limiter(), fleet_controller.get_fleet_event_counts);
+
 
 export default fleet_router;
