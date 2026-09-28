@@ -384,4 +384,55 @@ class TripRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun getScheduledTrips(): Result<List<ScheduledTripDto>> {
+        return try {
+            val response = api.getScheduledTrips()
+            Result.success(response.data)
+        } catch (e: HttpException) {
+            val error = ApiErrorParser.parse(e)
+            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch scheduled trips"))
+        } catch (e: Exception) {
+            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun startScheduledTrip(
+        scheduledTripId: String,
+        vehicleId: String,
+        latitude: Double,
+        longitude: Double
+    ): Result<String> {
+        return try {
+            val response = api.startScheduledTrip(
+                scheduledTripId,
+                StartScheduledTripRequest(
+                    scheduledTripId = scheduledTripId,
+                    dataSource = "PHONE",
+                    startLocation = LocationDto(lat = latitude, lng = longitude)
+                )
+            )
+            val tripId = response.data.tripId
+            val startTimeLong = System.currentTimeMillis()
+            val localTrip = TripEntity(
+                tripId = tripId,
+                userId = sessionManager.getUserId() ?: "unknown",
+                vehicleId = vehicleId,
+                status = "IN_PROGRESS",
+                startLatitude = latitude,
+                startLongitude = longitude,
+                startTime = startTimeLong,
+            )
+            tripDao.insertTrip(localTrip)
+            Result.success(tripId)
+        } catch (e: Exception) {
+            startTrip(
+                vehicleId = vehicleId.ifEmpty { "fleet_vehicle" },
+                dataSource = "PHONE",
+                latitude = latitude,
+                longitude = longitude,
+                selectedContactIds = null
+            )
+        }
+    }
 }
