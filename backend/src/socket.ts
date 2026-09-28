@@ -31,6 +31,16 @@ interface LocationUpdateInput {
     recorded_at: string;
 }
 
+export interface HarshEventPayload{
+    trip_id: string;
+    user_id: string;
+    event_type: string;
+    location: {
+        lat: number;
+        lng: number;
+    };
+}
+
 interface LocationUpdatePayload extends LocationUpdateInput {
     user_id: string;
 }
@@ -200,4 +210,21 @@ export async function broadcast_trip_ended(trip_id: string, org_id: string | nul
 
     io.in(trip_room).socketsLeave(trip_room);
     
+}
+
+export async function broadcast_harsh_event(org_id: string | null, payload: HarshEventPayload){
+
+    if(!io){
+        console.log("Attempted to broadcast harsh event before Socket.io was initialized");
+        return;
+    }
+
+    const rooms = [`trip:${payload.trip_id}`];
+
+    if(org_id){
+        rooms.push(`fleet:${org_id}`);
+    }
+
+    io.to(rooms).emit('harsh_event', payload);
+    console.log(`Broadcasted harsh event [${payload.event_type}]`)
 }

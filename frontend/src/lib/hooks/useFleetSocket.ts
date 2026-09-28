@@ -16,12 +16,23 @@ export interface LocationUpdatePayload{
     recorded_at: string;
 }
 
+export interface HarshEventPayload{
+    trip_id: string;
+    user_id: string;
+    event_type: string;
+    location: {
+        lat: number;
+        lng: number;
+    };
+}
+
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export function useFleetSocket(
     orgId: string | null,
     onLocationUpdate?: (data: LocationUpdatePayload) => void,
     onTripEnded?: (driver_id: string) => void,
+    onHarshEvent?: (data: HarshEventPayload) => void,
 ) {
     const socketRef = useRef<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -59,6 +70,14 @@ export function useFleetSocket(
             }
         });
 
+        socket.on("harsh_event", (data: HarshEventPayload) => {
+            console.log("Received driver harsh event update:", data);
+
+            if(onHarshEvent) {
+                onHarshEvent(data);
+            }
+        });
+
         socket.on("trip_ended", (data: { trip_id: string, user_id: string }) => {
             console.log("Received driver location update:", data);
 
@@ -77,7 +96,7 @@ export function useFleetSocket(
                 socket.disconnect();
             }
         };
-    }, [orgId, onLocationUpdate, onTripEnded]);
+    }, [orgId, onLocationUpdate, onTripEnded, onHarshEvent]);
 
     return  { isConnected };
 }

@@ -11,7 +11,7 @@ import type {
     HarshEventCounts,
 } from "@/components/fleet/type";
 import { tokenManager } from "@/lib/auth/tokenManager";
-import { useFleetSocket, LocationUpdatePayload } from "@/lib/hooks/useFleetSocket";
+import { useFleetSocket, LocationUpdatePayload, HarshEventPayload } from "@/lib/hooks/useFleetSocket";
 import { getDrivers, getFleetEvents } from "@/lib/driver-api";
 
 const FleetMap = dynamic(
@@ -138,7 +138,33 @@ export default function DashboardHomePage() {
         );
     }, []);
 
-    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate, handleTripEnded);
+    const handleHarshEvent = useCallback((event: HarshEventPayload) => {
+
+        setHarshEventStats((prevStats) => {
+            
+            const eventType = event.event_type;
+
+            switch(eventType){
+                case "HARSH_BRAKE":
+                    return {
+                        ...prevStats,
+                        harsh_brake: prevStats.harsh_brake + 1,
+                    };
+
+                case "HARSH_ACCELERATION":
+                    return {
+                        ...prevStats,
+                        harsh_acceleration: prevStats.harsh_acceleration + 1,
+                    };
+
+                default: 
+                    return prevStats;
+            }
+        });
+
+    }, []);
+
+    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate, handleTripEnded, handleHarshEvent);
 
     //Stats use drivers and independant harsh event endpoint
     const stats: FleetStats = useMemo(() => {
