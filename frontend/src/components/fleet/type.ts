@@ -24,6 +24,7 @@ export type FleetDriver = {
 export type FleetStats = {
     harshBraking: number;
     harshAcceleration: number;
+    crashLike: number;
     idleDrivers: number;
     tripsInProgress: number;
 };

@@ -172,6 +172,12 @@ export default function DashboardHomePage() {
                         harsh_acceleration: prevStats.harsh_acceleration + 1,
                     };
 
+                case "CRASH_LIKE":
+                    return {
+                        ...prevStats,
+                        crash_like: prevStats.crash_like + 1,
+                    };
+
                 default: 
                     return prevStats;
             }
@@ -190,6 +196,7 @@ export default function DashboardHomePage() {
             tripsInProgress,
             idleDrivers: drivers.length - tripsInProgress,
             harshBraking: harshEventStats.harsh_brake,
+            crashLike: harshEventStats.crash_like,
             harshAcceleration: harshEventStats.harsh_acceleration,
         };
     }, [drivers, harshEventStats]);
@@ -373,7 +380,7 @@ export default function DashboardHomePage() {
                 <section className="h-1/4 shrink-0 overflow-auto px-[26px] py-4">
                     <h1 className="mb-6 text-[25px] font-bold">Events &amp; Stats</h1>
 
-                    <div className="grid grid-cols-2 items-center gap-8 text-center md:grid-cols-4">
+                    <div className="grid grid-cols-2 items-center gap-6 text-center md:grid-cols-5">
                         <StatItem 
                             label="Harsh Braking"
                             value={stats.harshBraking}
@@ -385,14 +392,19 @@ export default function DashboardHomePage() {
                         />
 
                         <StatItem 
+                            label="Crash Like"
+                            value={stats.crashLike}
+                        />
+
+                        <StatItem 
                             label="Idle Drivers"
                             value={stats.idleDrivers}
                         />
 
-                        <div className="mx-auto flex min-h-[102px] w-[120px] flex-col justify-center gap-2 rounded-[11px] border border-[#1b2730] bg-[#e8f8ff] text-[15px]">
+                        <div className="mx-auto flex min-h-[90px] w-[110px] flex-col justify-center gap-2 rounded-[11px] border border-[#1b2730] bg-[#e8f8ff] text-[13px]">
                             <span>Trips in progress</span>
 
-                            <strong className="text-[25px] font-normal text-green-600">
+                            <strong className="text-[20px] font-normal text-green-600">
                                 {stats.tripsInProgress}
                             </strong>
                         </div>
@@ -413,9 +425,9 @@ function StatItem({
     value: number;
 }) {
     return (
-        <div className="flex flex-col gap-2 text-[15px]">
+        <div className="flex flex-col gap-1 text-[13px]">
             <span>{label}</span>
-            <strong className="text-[25px] font-normal">{value}</strong>
+            <strong className="text-[20px] font-normal">{value}</strong>
         </div>
     )
 }
