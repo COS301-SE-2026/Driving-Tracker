@@ -534,7 +534,7 @@ const fleet_controller = {
 
             if(!make || !model || !year || !fuel_type || !fuel_tank){
                 return res.status(400).json({
-                    error: "MISSINF_REQUIRED_FIELDS",
+                    error: "MISSING_REQUIRED_FIELDS",
                     message: "Make, model, year, fuel type, fuel tank are required",
                 });
             }

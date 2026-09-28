@@ -115,7 +115,7 @@ export default function VehiclesPage() {
                                 }}
                                 onDelete={(selectedVehicle) => {
                                     setActionError("");
-                                    setVehicleToEdit(selectedVehicle);
+                                    setVehicleToDelete(selectedVehicle);
                                 }}
                                 onImageChange={async (selectedVehicle, file) => {
                                     try{
@@ -180,7 +180,7 @@ export default function VehiclesPage() {
 
             {vehicleToDelete && (
                 <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4">
-                    <div className="w-full max-w-sm rounded-lg bg-white p 6 shadow-xl">
+                    <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
                         <h2 className="text-lg font-bold">
                             Remove vehicle?
                         </h2>
