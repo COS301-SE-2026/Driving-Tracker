@@ -24,6 +24,8 @@ jest.mock('../../../src/db/prisma', () => {
         vehicles: {
             findMany: jest.fn(),
             findUnique: jest.fn(),
+			findFirst: jest.fn(),
+			update: jest.fn(),
         },
         $transaction: jest.fn(async (callback: (client: typeof prisma) => unknown) => 
             callback(prisma),
@@ -630,8 +632,175 @@ describe('fleet services ', () => {
 
     });
 
+	describe("get_manageable_vehicle", () => {
+		it("returns vehicle for ADMIN or MANAGER when vehicle exists", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "MANAGER",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+				name: "Truck 2",
+			});
 
+			const vehicle = await fleet_services.get_manageable_vehicle(
+				"user-1",
+				"org-1",
+				"vehicle-1"
+			);
 
+			expect(vehicle).toEqual({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+				name: "Truck 2",
+			});
+
+			expect(mock_prisma.vehicles.findFirst).toHaveBeenCalledWith({
+				where: { vehicle_id: "vehicle-1", org_id: "org-1" },
+			});
+		});
+
+		it("rejects when member is not ADMIN or MANAGER", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "DRIVER",
+			});
+			
+			await expect(
+				fleet_services.get_manageable_vehicle("user-1", "org-1", "vehicle-1")
+			).rejects.toThrow("You do not have permission to manage fleet vehicles");
+		});
+
+		it("rejects when vehicle is not found", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "ADMIN",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue(null);
+			
+			await expect(
+				fleet_services.get_manageable_vehicle("user-1", "org-1", "vehicle-99")
+			).rejects.toThrow("Fleet vehicle not found");
+		});
+	});
+
+	describe("update_fleet_vehicle", () => {
+		it("updates vehicle fields successfully", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "MANAGER",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+			});
+
+			mock_prisma.vehicles.update.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				name: "Updated Name",
+				make: "Toyota",
+				model: "Hilux",
+			});
+
+			const result = await fleet_services.update_fleet_vehicle(
+				"user-1",
+				"org-1",
+				"vehicle-1",
+				{ name: "Updated Name", make: "Toyota", model: "Hilux" }
+			);
+
+			expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+				where: { vehicle_id: "vehicle-1"},
+				data: expect.objectContaining({
+					name: "Updated Name",
+					make: "Toyota",
+					model: "Hilux",
+				}),
+			});
+			expect(result.name).toBe("Updated Name");
+		});
+	});
+
+	describe("remove_fleet_vehicle", () => {
+		it("removes fleet vehicle from fleet organization and clears image_url", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "ADMIN",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+				image_url: "old-blob.png",
+			});
+
+			mock_prisma.vehicles.update.mockResolvedValue({
+			});
+
+			const result = await fleet_services.remove_fleet_vehicle(
+				"user-1",
+				"org-1",
+				"vehicle-1",
+			);
+
+			expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+				where: { vehicle_id: "vehicle-1"},
+				data: { org_id: null, image_url: null },
+			});
+			expect(result).toEqual({
+				previous_blob_name: "old-blob.png",
+				message: "Fleet vehicle removed successfully",
+			});
+		});
+	});
+
+	describe("update_fleet_vehicle_image", () => {
+		it("updates vehicle image url and returns previous blob name", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "MANAGER",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+				image_url: "previous-image.png",
+			});
+
+			mock_prisma.vehicles.update.mockResolvedValue({
+			});
+
+			const result = await fleet_services.update_fleet_vehicle_image(
+				"user-1",
+				"org-1",
+				"vehicle-1",
+				"new-image.png"
+			);
+
+			expect(mock_prisma.vehicles.update).toHaveBeenCalledWith({
+				where: { vehicle_id: "vehicle-1"},
+				data: { image_url: "new-image.png" },
+			});
+			expect(result).toEqual({
+				previous_blob_name: "previous-image.png",
+				display_url: "upload/fleet-vehicle-image/vehicle-1",
+			});
+		});
+	});
+
+	describe("get_fleet_vehicle_image_blob_name", () => {
+		it("returns image_url for manageable vehicle", async () => {
+			mock_prisma.organization_members.findUnique.mockResolvedValue({
+				role: "ADMIN",
+			});
+			mock_prisma.vehicles.findFirst.mockResolvedValue({
+				vehicle_id: "vehicle-1",
+				org_id: "org-1",
+				image_url: "vehicle-blob.png",
+			});
+
+			const blobName = await fleet_services.get_fleet_vehicle_image_blob_name(
+				"user-1",
+				"org-1",
+				"vehicle-1"
+			);
+
+			expect(blobName).toBe("vehicle-blob.png");
+		});
+	});
 });
 
 

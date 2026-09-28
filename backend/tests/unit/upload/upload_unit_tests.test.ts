@@ -5,6 +5,7 @@ import { auth_services } from '../../../src/services/auth_services';
 import { vehicle_services } from '../../../src/services/vehicle.services';
 import { ExtendedError } from '../../../src/utils/errors';
 import prisma from '../../../src/db/prisma';
+import { fleet_services } from '../../../src/services/fleet_services';
 
 describe('Upload controller', () => {
 	beforeEach(() => {
@@ -374,4 +375,266 @@ describe('Upload controller', () => {
 			await expect(vehicle_services.get_vehicle_image_blob_name('user-1', 'vehicle-1')).resolves.toBeNull();
 		});		
 	});
+
+	describe('upload_fleet_vehicle_image', () => {
+		it('uploads fleet vehicle image successfully', async () => {
+			const file = {
+				buffer: Buffer.from('fake-image'),
+				mimetype: 'image/jpeg',
+				orignalname: 'fleet-vehicle.jpg'
+			};
+			jest.spyOn(fleet_services, 'get_manageable_vehicle').mockResolvedValueOnce({
+				vehicle_id: 'vehicle-1'
+			} as any);
+
+			jest.spyOn(blob_storage_service, 'upload_image').mockResolvedValueOnce('fleet-image.jpg');
+
+			jest.spyOn(fleet_services, 'update_fleet_vehicle_image').mockResolvedValueOnce({
+				display_url: 'upload/fleet-vehicle-image/vehicle-1',
+				previous_blob_name: 'old-fleet-image.jpg'
+			});
+
+			const deleteImage = jest.spyOn(blob_storage_service, 'delete_image').mockResolvedValueOnce();
+			const req: any = {
+				user: {
+					sub: 'user-1', 
+					org_id: 'org-1',
+				},
+				params: {vehicle_id: 'vehicle-1'},
+				file
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(fleet_services.get_manageable_vehicle).toHaveBeenCalledWith('user-1', 'org-1', 'vehicle-1');
+			expect(blob_storage_service.upload_image).toHaveBeenCalledWith(file, 'vehicle');
+			expect(fleet_services.update_fleet_vehicle_image).toHaveBeenCalledWith('user-1', 'org-1', 'vehicle-1', 'fleet-image.jpg');
+			expect(deleteImage).toHaveBeenCalledWith('vehicle', 'old-fleet-image.jpg');
+			expect(status).toHaveBeenCalledWith(200);
+			expect(json).toHaveBeenCalledWith({
+				message: 'Fleet vehicle image uploaded successfully',
+				data: {
+					image_url: 'upload/fleet-vehicle-image/vehicle-1'
+				}
+			});
+		});
+
+		it('returns 401 when user_id or org_id is missing', async () => {
+			const req: any = {
+				user: { sub: 'user-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+				file: { buffer: Buffer.from('fake-image'), mimetype: 'image/png' }
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(401);
+			expect(json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+		});
+
+		it('returns 400 when no file is provided', async () => {
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(400);
+			expect(json).toHaveBeenCalledWith({ error: 'NO_FILE_PROVIDED', message: 'No image file was provided' });
+		});
+
+		it('returns 400 when no file is provided', async () => {
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(400);
+			expect(json).toHaveBeenCalledWith({ error: 'NO_FILE_PROVIDED', message: 'No image file was provided' });
+		});
+
+		it('returns 404 when fleet vehicle is not found', async () => {
+			jest.spyOn(fleet_services, 'get_manageable_vehicle').mockRejectedValueOnce(
+				new Error('Fleet vehicle not found')
+			);
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+				file: { buffer: Buffer.from('fake-image'), mimetype: 'image/png'}
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(404);
+			expect(json).toHaveBeenCalledWith({ error: 'VEHICLE_NOT_FOUND', message: 'Fleet vehicle not found' });
+		});
+
+		it('returns 400 for an invalid file type', async () => {
+			jest.spyOn(fleet_services, 'get_manageable_vehicle').mockResolvedValueOnce({
+				vehicle_id: 'vehicle-1'
+			} as any);
+			jest.spyOn(blob_storage_service, 'upload_image').mockRejectedValueOnce(
+				new ExtendedError('Unsupported image type', 'INVALID_FILE_TYPE'));
+			
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+				file: { buffer: Buffer.from('fake-file'), mimetype: 'text/plain'}
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(400);
+			expect(json).toHaveBeenCalledWith({ error: 'INVALID_FILE_TYPE', message: 'Only jpeg, jpg, png, and webp images are allowed' });
+		});
+
+		it('returns 500 on unexpected failure', async () => {
+			jest.spyOn(fleet_services, 'get_manageable_vehicle').mockRejectedValueOnce(
+				new Error('Database offline'));
+			
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+				file: { buffer: Buffer.from(''), mimetype: 'image/png'}
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.upload_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(500);
+			expect(json).toHaveBeenCalledWith({ error: 'INTERNAL_SERVER_ERROR', message: 'Database offline' });
+		});
+	});
+
+	describe('get_fleet_vehicle_image', () => {
+		it('pipes fleet vehicle image stream successfully', async () => {
+			jest.spyOn(fleet_services, 'get_fleet_vehicle_image_blob_name').mockResolvedValueOnce('fleet-v-img.png');
+
+			const pipe = jest.fn();
+			jest.spyOn(blob_storage_service, 'download').mockResolvedValueOnce({
+				stream: { pipe } as any,
+				content_Type: 'image/png',
+				content_length: 5678
+			});
+
+			const req: any = {
+				user: {
+					sub: 'user-1', 
+					org_id: 'org-1',
+				},
+				params: { vehicle_id: 'vehicle-1' }
+			};
+
+			const res: any = { setHeader: jest.fn() };
+
+			await upload_controller.get_fleet_vehicle_image(req, res);
+
+			expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+			expect(res.setHeader).toHaveBeenCalledWith('Content-Length', '5678');
+			expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600');
+			expect(pipe).toHaveBeenCalledWith(res);
+		});
+
+		it('returns 401 when user_id or org_id is missing', async () => {
+			const req: any = {
+				user: { sub: 'user-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.get_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(401);
+			expect(json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+		});
+
+		it('returns 404 when fleet vehicle has no image', async () => {
+			jest.spyOn(fleet_services, 'get_fleet_vehicle_image_blob_name').mockResolvedValueOnce(null);
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.get_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(404);
+			expect(json).toHaveBeenCalledWith({ error: 'NOT_FOUND', message: 'This fleet vehicle has no image' });
+		});
+
+		it('returns 404 when fleet vehicle is not found', async () => {
+			jest.spyOn(fleet_services, 'get_fleet_vehicle_image_blob_name').mockRejectedValueOnce(
+				new Error('Fleet vehicle not found')
+			);
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.get_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(404);
+			expect(json).toHaveBeenCalledWith({ error: 'VEHICLE_NOT_FOUND', message: 'Fleet vehicle not found' });
+		});
+
+		it('returns 500 on unexpected failure', async () => {
+			jest.spyOn(fleet_services, 'get_fleet_vehicle_image_blob_name').mockRejectedValueOnce(
+				new Error('Storage failure'));
+			
+			const req: any = {
+				user: { sub: 'user-1', org_id: 'org-1' }, 
+				params: { vehicle_id: 'vehicle-1' },
+			};
+
+			const json = jest.fn();
+			const status = jest.fn().mockReturnValue({ json });
+			const res: any = { status };
+
+			await upload_controller.get_fleet_vehicle_image(req, res);
+
+			expect(status).toHaveBeenCalledWith(500);
+			expect(json).toHaveBeenCalledWith({ error: 'INTERNAL_SERVER_ERROR', message: 'Storage failure' });
+		});
+	});
+
 });
