@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
 import { deleteVehicle, getVehicles, uploadVehicleImage } from "@/lib/vehicle-api";
 import type { Vehicle } from "@/components/vehicles/types";
 import EditVehicleDialog from "@/components/vehicles/EditVehicleDialog";
+import FilterVehicles, { VehicleFilterState } from "@/components/vehicles/FilterVehicles";
 
 export default function VehiclesPage() {
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [search, setSearch] = useState("");
+	const [filters, setFilters] = useState<VehicleFilterState>({ status: [] });
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -38,19 +40,40 @@ export default function VehiclesPage() {
         loadVehicles();
     }, []);
 
+	const availableStatuses = useMemo(() => {
+        const statuses = new Set<string>();
+		vehicles.forEach((v) => {
+			if(v.status){
+				statuses.add(v.status);
+			}
+		});
+
+        return Array.from(statuses);
+    }, [vehicles]);
+
     const filteredVehicles = useMemo(() => {
         const searchValue = search.trim().toLowerCase();
 
-        if (!searchValue) {
-            return vehicles;
-        }
+        return vehicles.filter((vehicle) => {
+			if(searchValue){
+				const searchTarget = `${vehicle.name ?? ""} ${vehicle.make ?? ""} ${vehicle.model ?? ""} ${vehicle.registration ?? ""}`.toLowerCase();
+				if(!searchTarget.includes(searchValue)){
+					return false;
+				}
+			}
 
-        return vehicles.filter((vehicle) =>
-            `${vehicle.make} ${vehicle.model} ${vehicle.registration}`
-            .toLowerCase()
-            .includes(searchValue),
-        );
-    }, [search, vehicles]);
+			if(filters.status.length > 0){
+				const vehicleStatus = (vehicle.status ?? "").toUpperCase();
+				const matchesStatus = filters.status.some(
+					(s) => s.toUpperCase() === vehicleStatus
+				);
+				if(!matchesStatus){
+					return false;
+				}
+			}
+			return true;
+	});
+    }, [search, vehicles, filters]);
 
     function handleVehicleCreated(vehicle: Vehicle) {
         setVehicles((current) => [...current, vehicle]);
@@ -76,14 +99,49 @@ export default function VehiclesPage() {
                         <Search size={15} />
                     </div>
 
-                    <button
-                        type="button"
-                        aria-label="Filter vehicles"
-                        className="rounded-md p-1 hover:bg-slate-100"
-                    >
-                        <Filter size={20} />
-                    </button>
+					<FilterVehicles
+						filters={filters}
+						onChange={setFilters}
+						availableStatuses={availableStatuses}
+					/>
                 </header>
+
+				{filters.status.length > 0 && (
+					<div className="mb-6 flex flex-wrap items-center gap-2">
+						<span className="text-xs font-medium text-slate-500">
+							Filtered by status:
+						</span>
+						{filters.status.map((status) => (
+							<span
+								key={status}
+								className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-800"
+							>
+								{status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+								<button
+									type="button"
+									onClick={() => 
+										setFilters((prev) => ({
+											...prev,
+											status: prev.status.filter(
+												(s) => s.toUpperCase() !== status.toUpperCase()
+											),
+										}))
+									}
+									className="ml-0.5 text-sky-600 hover:text-sky-900"
+								>
+									<X size={12} />
+								</button>
+							</span>
+						))}
+						<button
+							type="button"
+							onClick={() => setFilters((prev) => ({ ...prev, status: [] }))}
+							className="text-xs text-slate-500 underline hover:text-slate-700"
+						>
+							Clear filters
+						</button>
+					</div>
+				)}
 
                 {isLoading && (
                     <p className="text-sm text-slate-500">
