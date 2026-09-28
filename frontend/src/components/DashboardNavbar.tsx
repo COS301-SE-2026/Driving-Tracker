@@ -8,10 +8,10 @@ import {BASE_PATH} from "@/lib/basePath";
 import { logout } from "@/lib/auth/authService";
 
 const navItems = [
+    { key: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard/home"},
     { key: "vehicles", label: "Vehicles", icon: Truck, path: "/dashboard/vehicles"},
     { key: "routes", label: "Routes", icon: RouteIcon, path: "/dashboard/routes"},
     { key: "drivers", label: "Drivers", icon: Users, path: "/dashboard/drivers"},
-    { key: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard/home"},
 ];
 
 export default function Sidebar(){

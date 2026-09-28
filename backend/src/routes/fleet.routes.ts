@@ -618,6 +618,7 @@ fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), f
  */
 fleet_router.get('/fleet_trips', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_trips);
 
+fleet_router.delete('/drivers/:driver_id', verify_token, create_user_based_limiter(), fleet_controller.delete_fleet_driver);
 
 
 export default fleet_router;

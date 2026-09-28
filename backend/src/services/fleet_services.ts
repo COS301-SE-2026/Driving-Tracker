@@ -208,6 +208,53 @@ export const fleet_services = {
         return drivers_result;
     },
 
+    async delete_fleet_driver(manager_id: string, org_id: string, driver_id: string){
+        
+        return prisma.$transaction(async (tx) => {
+
+            const manager = await tx.organization_members.findUnique({
+                
+                where: {
+                    org_id_user_id: {org_id, user_id: manager_id},
+                },
+                select: {role: true},
+            });
+
+            if (
+                !manager || (manager.role !== OrganizationRole.ADMIN && manager.role !== OrganizationRole.MANAGER)
+            ){
+                throw new Error("Not authorized to delete fleet drivers");
+            }
+
+            const membership = await tx.organization_members.findUnique({
+                where: {user_id: driver_id},
+                select: {org_id: true, role: true},
+            });
+
+            if (
+                !membership || membership.org_id !== org_id || membership.role !== OrganizationRole.DRIVER
+            ){
+                throw new Error("Fleet driver not found");
+            }
+
+            const pendingTrips = await tx.trips.findMany({
+                where: {
+                    user_id: driver_id,
+                    status: {in: ["SCHEDULED", "IN_PROGRESS"]},
+                },
+                select: {trip_id: true},
+            });
+
+            if (pendingTrips.length > 0){
+                throw new Error("Cancel the driver's scheduled or active trips first.");
+            }
+
+            await tx.users.delete({
+                where: {user_id: driver_id},
+            });
+        });
+    },
+
     async list_fleet_vehicles(user_id: string, org_id: string){
 
         const member = await prisma.organization_members.findUnique({

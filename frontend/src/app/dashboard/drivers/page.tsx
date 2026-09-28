@@ -49,7 +49,7 @@ function ScoreValue({score} : {score: number | null}){
     return <span className={`font-semibold ${color}`}> {score} </span>
 }
 
-function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> void;}){
+function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> Promise<void>;}){
     return (
         <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5">
 
@@ -141,6 +141,7 @@ function compareScores(a: Driver, b: Driver, direction: "asc" | "desc"){
 
     return direction === "asc" ? a.score - b.score : b.score - a.score;
 }
+
 
 export default function ManageDrivers(){
 
@@ -243,8 +244,13 @@ export default function ManageDrivers(){
         setRefreshKey((key) => key + 1);
     };
 
-    const handleDeleteDriver = (id: string) => {
-        setDriversList((prev) => prev.filter((d)=> d.id !== id));
+    const handleDeleteDriver = async (id: string): Promise<void> => {
+
+        await apiFetch<void>(`/fleet/drivers/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+        });
+
+        setDriversList((drivers) => drivers.filter((driver) => driver.id !== id));
     }
 
     return(
