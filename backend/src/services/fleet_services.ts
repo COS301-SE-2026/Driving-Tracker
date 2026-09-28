@@ -385,7 +385,7 @@ export const fleet_services = {
         }); 
 
         return {
-            trip: new_trip,
+            trip: new_trip.trip,
             route: route.points
         };
     },

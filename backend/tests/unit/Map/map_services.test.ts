@@ -9,7 +9,7 @@ jest.mock('../../../src/db/prisma', () => ({
 }));
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
-import { map_services } from '../../../src/services/map_services';
+import { map_services,route_summary } from '../../../src/services/map_services';
 import prisma from '../../../src/db/prisma';
 
 
@@ -115,7 +115,8 @@ describe('Map services suggested routes ', ()=>{
             dest_lat:3 ,
             dest_lng: 4
         });
-        expect(result.traffic_delay_seconds).toBe(0);
+        // expect(result.traffic_delay_seconds).toBe(0);
+        expect((result as route_summary).traffic_delay_seconds).toBe(0);
     });
 
     it('throws a clear error when fetch itself fails', async() =>{
