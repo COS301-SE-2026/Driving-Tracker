@@ -8,10 +8,13 @@ import AddRoute, { RouteFormData } from "@/components/routes/AddRoute";
 import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
 import PastRoutes from "@/components/routes/PastRoutes";
+import { apiFetch } from "@/lib/auth/apiClient";
 
 type Stop = {
     id: string;
     address: string;
+    lat?: number; 
+    lng?: number;
 };
 
 type Route = {
@@ -122,22 +125,83 @@ export default function Routes(){
         setRoutesList((prev) => prev.filter((r) => r.id !== id));
     };
 
-    const handleAddRoute = (data: RouteFormData)=> {
-        setRoutesList((prev) => [
-            ...prev,
-            {
-                id: crypto.randomUUID(),
-                title: data.title,
-                task: data.task,
-                vehicle: data.vehicle,
-                stops: data.stops,
-                startDestination: data.stops[0].address,
-                endDestination: data.stops[data.stops.length - 1].address,
-                driver: data.driver,
-                status: "Not Started",
-            },
-        ]);
-    };
+    // const handleAddRoute = (data: RouteFormData)=> {
+    //     setRoutesList((prev) => [
+    //         ...prev,
+    //         {
+    //             id: crypto.randomUUID(),
+    //             title: data.title,
+    //             task: data.task,
+    //             vehicle: data.vehicle,
+    //             stops: data.stops,
+    //             startDestination: data.stops[0].address,
+    //             endDestination: data.stops[data.stops.length - 1].address,
+    //             driver: data.driver,
+    //             status: "Not Started",
+    //         },
+    //     ]);
+    // };
+    const handleAddRoute = async( data: RouteFormData) =>{
+        try{
+            const res = await apiFetch<{ data:{trip: {trip_id: string}}}>('/fleet/schedule_trip',{
+                method: 'POST',
+                body: JSON.stringify({
+                    title: data.title,
+                    task: data.task,
+                    driver_id: data.driver,
+                    vehicle_id: data.vehicle,
+                    planned_start_time: new Date().toISOString(),
+                    planned_start_location:{
+                        address: data.stops[0].address,
+                        lat: data.stops[0].lat ?? 0,
+                        lng: data.stops[0].lng ?? 0,
+                    },
+                    planned_end_location:{
+                        address: data.stops[data.stops.length - 1].address,
+                        lat: data.stops[data.stops.length - 1].lat ?? 0,
+                        lng: data.stops[data.stops.length - 1].lng ?? 0,
+                    },
+                    selected_points: data.selected_points,
+                    stops: data.stops.map((s, idx) => ({
+                        address: s.address,
+                        lat: s.lat ?? 0,
+                        lng: s.lng ?? 0,
+                        stop_order: idx + 1,
+                    }))
+                })
+            });
+             setRoutesList((prev) => [
+                ...prev,
+                {
+                    id: res.data?.trip?.trip_id ?? crypto.randomUUID(),
+                    title: data.title,
+                    task: data.task,
+                    vehicle: data.vehicle,
+                    stops: data.stops,
+                    startDestination: data.stops[0].address,
+                    endDestination: data.stops[data.stops.length - 1].address,
+                    driver: data.driver,
+                    status: "Not Started",
+                },
+            ]);
+        }catch(err){
+            console.error("Failed to schedule trip", err);
+            setRoutesList((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    title: data.title,
+                    task: data.task,
+                    vehicle: data.vehicle,
+                    stops: data.stops,
+                    startDestination: data.stops[0].address,
+                    endDestination: data.stops[data.stops.length - 1].address,
+                    driver: data.driver,
+                    status: "Not Started",
+                },
+            ]);
+        }
+    }
 
     const handleEditRoute = (data: RouteFormData) => {
 

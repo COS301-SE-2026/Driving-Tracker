@@ -21,6 +21,7 @@ export interface schedule_trip_data{
         lat: number;
         lng: number;
     };
+    selected_points?: { lat: number; lng: number }[]; 
     stops?: {
         address: string;
         lat: number;
@@ -337,6 +338,9 @@ export const fleet_services = {
         }
 
         const new_trip = await prisma.$transaction(async (tx) => { 
+            const chosenPoints = (data.selected_points && data.selected_points.length > 0)
+                ? data.selected_points
+                : route.points;
 
             const trip = await tx.trips.create({
                 data: {
@@ -344,6 +348,7 @@ export const fleet_services = {
                     vehicle_id: data.vehicle_id,
                     created_by: user_id,
                     status: 'SCHEDULED',
+                    route_polyline: chosenPoints as any,
                     description: data.description,
                     title: data.title,
                     scheduled_for: new_start,
@@ -372,7 +377,10 @@ export const fleet_services = {
                 },
             });
 
-            return trip;
+            return {
+                trip,
+                route: chosenPoints
+            };
 
         }); 
 

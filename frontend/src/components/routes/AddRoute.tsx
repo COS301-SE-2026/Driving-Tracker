@@ -16,6 +16,8 @@ export type RouteFormData = {
     driver: string;
     vehicle: string;
     stops: Stop[];
+    selected_points?: { lat: number; lng: number }[];
+    risk_level?: 'LOW' | 'MEDIUM' | 'HIGH'; 
 }
 export type RouteOption = {
     route_index: number;
@@ -31,8 +33,8 @@ export type RouteOption = {
 type addRouteDialogProps = {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data:
-        {title: string; task: string; driver: string;vehicle: string; stops: Stop[]; status: Status}
+    onSubmit: (data: RouteFormData & 
+        {status: Status}
     ) => void;
     driverOptions: string[];
     vehicleOptions: string[];
@@ -306,7 +308,7 @@ export default function AddRoute(
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // const chosen = routeOptions[selectedRouteIndex];
+        const chosen = routeOptions[selectedRouteIndex];
 
         onSubmit({
             title,
@@ -315,6 +317,8 @@ export default function AddRoute(
             vehicle,
             stops,
             status: "Not Started",
+            selected_points: chosen?.points,
+            risk_level: chosen?.risk_level
         });
 
         resetForm();
