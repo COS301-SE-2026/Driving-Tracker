@@ -28,13 +28,23 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
             putString("token", accessToken)
             putString("refresh_token", refreshToken)
         }
+
+        val orgRole = getOrgRoleFromToken()
+        if (!orgRole.isNullOrEmpty()) {
+            saveOrgRole(orgRole)
+        }
+
     }
 
     fun getAccessToken(): String? = prefs.getString("token", null)
     fun getRefreshToken(): String? = prefs.getString("refresh_token", null)
 
     fun clearTokens(){
-        prefs.edit { remove("token").remove("refresh_token") }
+        prefs.edit {
+            remove("token")
+            remove("refresh_token")
+            remove("org_role")
+        }
     }
 
     fun saveLastObdAddress(address: String){
@@ -75,6 +85,32 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
 
     fun getUserId(): String? {
         return prefs.getString("user_id", null)
+    }
+
+    fun saveOrgRole(role: String) {
+        prefs.edit { putString("org_role", null) ?: getOrgRoleFromToken() }
+    }
+
+    fun getOrgRoleFromToken(): String? {
+        val token = getAccessToken() ?: return null
+        return try {
+            val parts = token.split(".")
+            if (parts.size < 2) return null
+
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
+            val jsonObject = Gson.fromJson(payload, JsonObject::class.java)
+
+            jsonObject.get("org_role")?.asString
+                ?: jsonObject.get("orgRole")?.asString
+                ?: jsonObject.get("role")?.asString
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun isDriver(): Boolean {
+        val role = getOrgRole() ?: return false
+        return role.equals("driver", ignoreCase = true) || role.contains("driver", ignoreCase = true)
     }
 
     fun getUserIdFromToken(): String? {
