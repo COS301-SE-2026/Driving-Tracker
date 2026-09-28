@@ -200,7 +200,6 @@ export default function Routes(){
 
     useEffect(()=>{
         loadData();
-
     }, [loadData]);
     const handleDeleteRoute = (id: string) => {
         setRoutesList((prev) => prev.filter((r) => r.id !== id));
@@ -306,8 +305,18 @@ export default function Routes(){
     )
 
     const [addOpen, setAddOpen] = useState(false);
-    const driverOptions = Array.from(new Set(routesList.map((r)=> r.driver)));
-    const vehicleOptions = ["Toyota Hilux", "Ford Ranger", "Nissan NP200"];
+
+    const driverOptions = drivers.map(
+        (driver) => ({
+            id: driver.user_id,
+            label: [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
+    }));
+
+    const vehicleOptions = vehicles.map(
+        (vehicle) => ({
+            id: vehicle.vehicle_id,
+            label: [vehicle.make, vehicle.model].filter(Boolean).join(" ") || vehicle.vehicle_id,
+    }));
 
     return(
         <div className="flex">
@@ -363,6 +372,8 @@ export default function Routes(){
                     ))}
 
                 </div>
+
+                {loadError && <p role="alert" className="mt-4 text-sm text-red-600">{loadError}</p>}
             </div>
         </div>
     );

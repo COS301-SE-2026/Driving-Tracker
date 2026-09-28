@@ -10,11 +10,15 @@ import { apiFetch } from "@/lib/auth/apiClient";
 type Stop = { id: string; address: string; lat?: number; lng?: number };
 type Status = "Not Started" | "On Trip" | "Completed";
 
+
 export type RouteFormData = {
     title: string;
     task: string;
     driver: string;
+    driverId: string;
     vehicle: string;
+    vehicleId: string;
+    plannedStartTime: string;
     stops: Stop[];
     selected_points?: { lat: number; lng: number }[];
     risk_level?: 'LOW' | 'MEDIUM' | 'HIGH'; 
@@ -177,24 +181,30 @@ export default function AddRoute(
 
     const [title, setTitle] = useState(initialData?.title ?? "");
     const [task, setTask] = useState(initialData?.task ?? "");
-    const [driver, setDriver] = useState(initialData?.driver ?? "");
-    const [vehicle, setVehicle] = useState(initialData?.vehicle ?? "");
     const [stops, setStops] = useState<Stop[]>(initialData?.stops ?? emptyStops());
     const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
     const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
     const [loadingRoutes, setLoadingRoutes] = useState(false);
     const [routeError, setRouteError] = useState<string | null>(null);
+    const [driverId, setDriverId] = useState(initialData?. driverId ?? "");
+    const [vehicleId, setVehicleId] = useState(initialData?.vehicleId ?? "");
+    const [plannedStartTime, setPlannedStartTime] = useState(
+        initialData?.plannedStartTime ?? "",
+    );
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open){
             setTitle(initialData?.title ?? "");
             setTask(initialData?.task ?? "");
-            setDriver(initialData?.driver ?? "");
-            setVehicle(initialData?.vehicle ?? "");
+            setDriverId(initialData?.driverId ?? "");
+            setVehicleId(initialData?.vehicleId ?? "");
+            setPlannedStartTime(initialData?.plannedStartTime ?? "");
             setStops(initialData?.stops ?? emptyStops());
             setRouteOptions([]);
             setSelectedRouteIndex(0);
             setRouteError(null);
+            setSubmitError(null);
         }
     }, [open, initialData]);
 
@@ -298,6 +308,9 @@ export default function AddRoute(
         setRouteOptions([]);
         setSelectedRouteIndex(0);
         setRouteError(null);
+        setDriverId("");
+        setVehicleId("");
+        setPlannedStartTime("");
         setStops(
             [
                 {id: crypto.randomUUID(), address: ""},
@@ -306,7 +319,7 @@ export default function AddRoute(
         );
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const chosen = routeOptions[selectedRouteIndex];
 
@@ -418,6 +431,18 @@ export default function AddRoute(
 
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Time
+                        </label>
+                        <input
+                        type = "datetime-local"
+                        value = {plannedStartTime}
+                        onChange = {(e) => setPlannedStartTime(e.target.value)}
+                        required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
                             Stops
                         </label>
                         <div className="flex flex-col gap-1">
@@ -509,6 +534,13 @@ export default function AddRoute(
                             {isEditing ? "Save Changes" : "Create Route"}
                         </button>
                     </div>
+
+                    {submitError && (
+                        <p role="alert" className="text-sm text-red-600">
+                            {submitError}
+                        </p>
+                    )}
+
                 </form>
             </div>
         </div>

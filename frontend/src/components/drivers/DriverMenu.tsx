@@ -4,7 +4,7 @@ import { MoreVertical, Trash2, Eye } from "lucide-react";
 
 type DriverMenuProps = {
     driverName: string;
-    onDelete: () => void;
+    onDelete: () => Promise<void>;
     onViewDetails: () => void;
 };
 
@@ -12,6 +12,27 @@ export default function DriverMenu({driverName, onDelete, onViewDetails}: Driver
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const confirmDelete = async () => {
+        
+        setIsDeleting(true);
+        setDeleteError(null);
+
+        try{
+            await onDelete();
+            setConfirmOpen(false);
+        }
+        catch (error){
+            setDeleteError(
+                error instanceof Error ? error.message : "Could not delete driver",
+            );
+        }
+        finally{
+            setIsDeleting(false);
+        }
+    };
 
     return(
         <div className="relative">
@@ -60,11 +81,11 @@ export default function DriverMenu({driverName, onDelete, onViewDetails}: Driver
                             className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
                                 Cancel
                             </button>
+
+                            {deleteError && <p role="alert" className="mt-3 text-sm text-red-600">{deleteError}</p>}
+                            
                             <button 
-                            onClick={()=> {
-                                onDelete();
-                                setConfirmOpen(false);
-                            }}
+                            onClick={confirmDelete} disabled = {isDeleting}
                             className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600">
                                 Delete
                             </button>
