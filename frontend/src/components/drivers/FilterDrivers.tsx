@@ -6,7 +6,7 @@ import { SlidersHorizontal } from "lucide-react";
 
 export type FilterState = {
     status: string[];
-    sortBy: "name-asc" | "name-desc" | "score-desc" | "score-asc" | "distance-desc" | "distance-asc" | null;
+    sortBy: "name-asc" | "name-desc" | null;
 };
 
 type FilterProps = {
@@ -14,7 +14,7 @@ type FilterProps = {
     onChange: (filters: FilterState) => void;
 };
 
-const statusOptions = ["Inactive", "On Trip"];
+const statusOptions = ["Assigned","Available", "On Trip"];
 
 export default function FilterDrivers({filters, onChange} :FilterProps){
 
@@ -73,10 +73,6 @@ export default function FilterDrivers({filters, onChange} :FilterProps){
                             <option value = ""> None </option>
                             <option value = "name-asc"> Name (A-Z) </option>
                             <option value = "name-desc"> Name (Z-A) </option>
-                            <option value = "score-desc"> Score (High-Low) </option>
-                            <option value = "score-asc"> Score (Low-High) </option>
-                            <option value = "distance-desc"> Distance (High-Low) </option>
-                            <option value = "distance-asc"> Distance (Low-High) </option>
                         </select>
                     </div>
                     </div>

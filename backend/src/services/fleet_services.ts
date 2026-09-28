@@ -140,10 +140,14 @@ export const fleet_services = {
                         profile_picture_url: true,
                         trips:{
                             where: {
-                                status: { in: ['IN_PROGRESS', 'SCHEDULED'] }
+                                status: { in: ['IN_PROGRESS', 'SCHEDULED', 'COMPLETED'] },
                             },
                             select: {
-                                status: true
+                                status: true,
+                                distance_km: true,
+                                trip_scores: {
+                                    select: {overall_score: true},
+                                },
                             },
                         },
                     }
@@ -156,6 +160,26 @@ export const fleet_services = {
             const active_trips = d.users.trips;
 
             let status = 'AVAILABLE'
+
+            const completedTrips = d.users.trips.filter(
+                (trip) => trip.status === "COMPLETED",
+            );
+
+            const totalDistanceKm = completedTrips.reduce(
+                (total, trip) => total + Number(trip.distance_km ?? 0), 0,
+            );
+
+            const scoreValues: number[] = [];
+
+            for (const trip of completedTrips){
+                for (const score of trip.trip_scores){
+                    if (score.overall_score !== null){
+                        scoreValues.push(Number(score.overall_score));
+                    }
+                }
+            }
+
+            const averageScore = scoreValues.length ? scoreValues.reduce((total, score) => total + score, 0) / scoreValues.length : null;
 
             if(active_trips.some(t => t.status === 'IN_PROGRESS')){
                 status = 'UNAVAILABLE';
@@ -173,11 +197,62 @@ export const fleet_services = {
                 phone_number: d.users.phone_number,
                 profile_picture_url: d.users.profile_picture_url,
                 joined_at: d.joined_at,
-                status
+                status,
+                trips: completedTrips.length,
+                distance_km: totalDistanceKm,
+                score: averageScore,
             }
+
         });
 
         return drivers_result;
+    },
+
+    async delete_fleet_driver(manager_id: string, org_id: string, driver_id: string){
+        
+        return prisma.$transaction(async (tx) => {
+
+            const manager = await tx.organization_members.findUnique({
+                
+                where: {
+                    org_id_user_id: {org_id, user_id: manager_id},
+                },
+                select: {role: true},
+            });
+
+            if (
+                !manager || (manager.role !== OrganizationRole.ADMIN && manager.role !== OrganizationRole.MANAGER)
+            ){
+                throw new Error("Not authorized to delete fleet drivers");
+            }
+
+            const membership = await tx.organization_members.findUnique({
+                where: {user_id: driver_id},
+                select: {org_id: true, role: true},
+            });
+
+            if (
+                !membership || membership.org_id !== org_id || membership.role !== OrganizationRole.DRIVER
+            ){
+                throw new Error("Fleet driver not found");
+            }
+
+            const pendingTrips = await tx.trips.findMany({
+                where: {
+                    user_id: driver_id,
+                    status: {in: ["SCHEDULED", "IN_PROGRESS"]},
+                },
+                select: {trip_id: true},
+            });
+
+            if (pendingTrips.length > 0){
+                throw new Error("Cancel the driver's scheduled or active trips first.");
+            }
+
+            await tx.users.delete({
+                where: {user_id: driver_id},
+            });
+        });
     },
 
     async list_fleet_vehicles(user_id: string, org_id: string){

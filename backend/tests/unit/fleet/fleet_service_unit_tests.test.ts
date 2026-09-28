@@ -4,6 +4,7 @@ jest.mock('../../../src/db/prisma', () => {
         users: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        delete: jest.fn(),
         },
         trips: {
             findUnique: jest.fn(),
@@ -259,6 +260,167 @@ describe('fleet services ', () => {
             ).rejects.toThrow("You do not have permission to list fleet drivers");
 
             expect(mock_prisma.organization_members.findMany).not.toHaveBeenCalled();
+        });
+
+        it("returns completed trip count, distance, and average overall score", async ()=> {
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                role: "MANAGER",
+            });
+
+            mock_prisma.organization_members.findMany.mockResolvedValue([
+                {
+                    joined_at: new Date("2026-01-01"),
+                    users: {
+                        user_id: "driver-1",
+                        username: "driver1",
+                        name: "Jane",
+                        surname: "Doe",
+                        email: "jane@example.com",
+                        phone_number: "0878990494",
+                        profile_picture_url: null,
+                        trips: [
+                            {
+                                status: "COMPLETED",
+                                distance_km: 12.5, 
+                                trip_scores: [{overall_score: 80}],
+                            },
+                            {
+                                status: "COMPLETED",
+                                distance_km: 7.5, 
+                                trip_scores: [{overall_score: 60}],
+                            },
+                            {
+                                status: "SCHEDULED",
+                                distance_km: 100, 
+                                trip_scores: [{overall_score: 100}],
+                            },
+                            {
+                                status: "IN_PROGRESS",
+                                distance_km: 50, 
+                                trip_scores: [],
+                            },
+                        ],
+                    },
+                },
+            ]);
+            const [driver] = await fleet_services.list_fleet_drivers(
+                "manager-1", 
+                "org-1"
+            );
+            expect(driver).toMatchObject({
+                trips: 2,
+                distance_km: 20,
+                score: 70,
+                status: "UNAVAILABLE",
+            });
+        });
+
+        it("returns zero distance and null score when completed trips have no values", async()=>{
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                role: "MANAGER",
+            });
+
+            mock_prisma.organization_members.findMany.mockResolvedValue([
+                {
+                    joined_at: new Date("2026-01-01"),
+                    users: {
+                        user_id: "driver-id",
+                        username: "driver1",
+                        name: "Jane",
+                        surname: "Doe",
+                        email: "jane@example.com",
+                        phone_number: "0600000001",
+                        profile_picture_url: null,
+                        trips: [
+                            {
+                                status: "COMPLETED",
+                                distance_km: null,
+                                trip_scores: [{overall_score: null}],
+                            },
+                        ],
+                    },
+                },
+            ]);
+
+            const [driver] = await fleet_services.list_fleet_drivers(
+                "manager-1",
+                "org-1",
+            );
+
+            expect (driver).toMatchObject({
+                trips: 1,
+                distance_km: 0,
+                score: null,
+                status: "AVAILABLE",
+            });
+        });
+    });
+
+    describe("delete_fleet_driver", () => {
+
+        it("hard deletes a driver in the manager's organization", async () => {
+            mock_prisma.organization_members.findUnique
+            .mockResolvedValueOnce({role: "MANAGER"})
+            .mockResolvedValueOnce({
+                org_id: "org-1",
+                role: "DRIVER",
+            });
+            mock_prisma.trips.findMany.mockResolvedValue([]);
+
+            await expect(
+                fleet_services.delete_fleet_driver("manager-1", "org-1", "driver-1"),
+            ).resolves.toBeUndefined();
+
+            expect(mock_prisma.users.delete).toHaveBeenCalledWith({
+                where: {user_id: "driver-1"},
+            });
+        });
+
+        it ("rejects a caller who is not an organization manager or admin", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValueOnce({
+                role: "DRIVER",
+            });
+
+            await expect(
+                fleet_services.delete_fleet_driver("driver-2", "org-1", "driver-1"),
+            ).rejects.toThrow("Not authorized to delete fleet drivers");
+
+            expect(mock_prisma.users.delete).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            [null, "Fleet driver not found"],
+            [{org_id: "other-org", role: "DRIVER"}, "Fleet driver not found"],
+            [{org_id: "org-1", role: "MANAGER"}, "Fleet driver not found"],
+        ])("rejects a missing, foreign-organization, or non--driver target", async (membership, message) => {
+            mock_prisma.organization_members.findUnique
+            .mockResolvedValueOnce({role: "MANAGER"})
+            .mockResolvedValueOnce(membership);
+
+            await expect(
+                fleet_services.delete_fleet_driver("manager-1", "org-1", "driver-1"),
+            ).rejects.toThrow(message);
+
+            expect(mock_prisma.users.delete).not.toHaveBeenCalled();
+        });
+
+        it ("does not delete a driver with scheduled or active trips", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValueOnce({
+                role: "MANAGER",
+            })
+            .mockResolvedValueOnce({org_id: "org-1", role: "DRIVER",});
+
+            mock_prisma.trips.findMany.mockResolvedValue([
+                {trip_id: "scheduled-trip"},
+            ]);
+
+            await expect(
+                fleet_services.delete_fleet_driver("manager-1", "org-1", "driver-1"),
+            ).rejects.toThrow("Cancel the driver's scheduled or active trips first.");
+
+            expect(mock_prisma.users.delete).not.toHaveBeenCalled();
         });
     });
 

@@ -117,6 +117,56 @@ const fleet_controller = {
         }
     },
 
+    async delete_fleet_driver(req: AuthRequest, res: Response){
+
+        const manager_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const driver_id = req.params.driver_id;
+
+        if (!manager_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to delete fleet drivers', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+        
+        try{
+
+            await fleet_services.delete_fleet_driver(
+                manager_id, org_id!, driver_id,
+            );
+
+            return res.status(204).send();
+        }
+        catch (error: any){
+
+            if (error?.message === "Not authorized to delete fleet drivers"){
+                return res.status(403).json({
+                    error: "UNAUTHORIZED",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Fleet driver not found"){
+                return res.status(404).json({
+                    error: "DRIVER_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message?.includes("scheduled or active trips")){
+                return res.status(409).json({
+                    error: "DRIVER_HAS_PENDING_TRIPS",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
+
+        }
+    },
+
     async list_fleet_vehicles(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;

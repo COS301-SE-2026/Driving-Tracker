@@ -7,8 +7,6 @@ type ViewDriverDialog = {
         name: string;
         email: string;
         phoneNumber: string;
-        dob: string;
-        licenseNumber: string;
     } | null;
 };
 
@@ -53,23 +51,7 @@ export default function ViewDriver({open, onClose, driver} : ViewDriverDialog) {
                         </span>
                     </div>
 
-                    <div>
-                        <span className="block font-medium text-gray-500">
-                            Date of Birth
-                        </span>
-                        <span className="text-gray-900">
-                            {driver.dob}
-                        </span>
-                    </div>
 
-                    <div>
-                        <span className="block font-medium text-gray-500">
-                            License Number
-                        </span>
-                        <span className="text-gray-900">
-                            {driver.licenseNumber}
-                        </span>
-                    </div>
                 </div>
 
                 <div className="mt-6 flex justify-end">

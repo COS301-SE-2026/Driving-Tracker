@@ -16,6 +16,7 @@ jest.mock("../../../src/services/fleet_services", () =>({
         schedule_trip: jest.fn(),
         update_fleet_vehicle: jest.fn(),
         remove_fleet_vehicle: jest.fn(),
+        delete_fleet_driver: jest.fn(),
     },
 }));
 
@@ -46,6 +47,7 @@ const makeResponse = () =>{
     const response = {
         status: jest.fn(),
         json: jest.fn(),
+        send: jest.fn(),
     };
 
     response.status.mockReturnValue(response);
@@ -1004,5 +1006,99 @@ describe("Fleet controller", () =>{
             });
         });
     });
+
+    describe("delete_fleet_driver", () => {
+        
+        it("returns 401 when unauthenticated", async()=> {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_driver(
+                makeRequest({user: undefined, params: { driver_id: "driver-1"}}),
+                response as any,
+            );
+
+            expectStatus(response, 401);
+            expect (mockFleetServices.delete_fleet_driver).not.toHaveBeenCalled();
+        });
+
+        it("returns 403 when user does not have permission to delete fleet drivers", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_driver(
+                makeRequest({
+                    user: {sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER},
+                    params: {driver_id: "driver-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+            expect(mockFleetServices.delete_fleet_driver).not.toHaveBeenCalled();
+        });
+
+        it("returns 204 when the driver is successfully deleted", async () => {
+
+            mockFleetServices.delete_fleet_driver.mockResolvedValueOnce(undefined as never);
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_driver(
+                makeRequest({
+                    params: {driver_id: "driver-1"},
+                }),
+                response as any,
+            );
+
+            expect(mockFleetServices.delete_fleet_driver).toHaveBeenCalledWith(
+                "user-1", "org-1", "driver-1",
+            );
+
+            expectStatus(response, 204);
+            expect(response.send).toHaveBeenCalled();
+        });
+
+        it.each([
+
+            ["Not authorized to delete fleet drivers", 403, "UNAUTHORIZED"],
+            ["Fleet driver not found", 404, "DRIVER_NOT_FOUND"],
+            ["Cancel the driver's scheduled or active trips first.", 409, "DRIVER_HAS_PENDING_TRIPS"],
+
+        ])("maps service error '%s' to %i", async (message, status, error) => {
+            
+            mockFleetServices.delete_fleet_driver.mockRejectedValueOnce(new Error(message),);
+            const response = makeResponse();
+            await fleet_controller.delete_fleet_driver(
+                makeRequest({params: {driver_id: "driver-1"}}),
+                response as any,
+            );
+
+            expectStatus(response, status);
+            expect(response.json).toHaveBeenCalledWith({error, message});
+        });
+
+        it("maps unexpected errors to 500", async () => {
+
+            mockFleetServices.delete_fleet_driver.mockRejectedValueOnce(
+                new Error("Database crash"),
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_driver(
+                makeRequest({
+                    params: {driver_id: "driver-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(response.json).toHaveBeenCalledWith({
+                error: "INTERNAL_SERVER_ERROR",
+            });
+        });
+
+        
+    })
 
 });

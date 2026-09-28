@@ -785,6 +785,7 @@ fleet_router.patch("/vehicles/:vehicle_id", verify_token, create_user_based_limi
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 fleet_router.delete("/vehicles/:vehicle_id", verify_token, create_user_based_limiter(), fleet_controller.remove_fleet_vehicle,);
+fleet_router.delete('/drivers/:driver_id', verify_token, create_user_based_limiter(), fleet_controller.delete_fleet_driver);
 
 
 export default fleet_router;
