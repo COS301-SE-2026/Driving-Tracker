@@ -10,7 +10,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.util.Base64
-import android.util.Log
 
 @Singleton
 class SessionManager @Inject constructor(@ApplicationContext context: Context) {

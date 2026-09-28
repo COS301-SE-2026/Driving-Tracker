@@ -18,7 +18,6 @@ import com.omnitech.drivingtracker.ui.auth.AuthViewModel
 import com.omnitech.drivingtracker.ui.components.DriverBottomNavBar
 import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.other.CRow
-import com.omnitech.drivingtracker.ui.other.ContactCard
 import com.omnitech.drivingtracker.ui.other.ContentCard
 
 @Composable
@@ -52,7 +51,7 @@ fun DriverMore(
                 color = Color.Black
             )
 
-            ContactCard {
+            ContentCard {
                 CRow(label = "OBD Diagnostics", icon = Icons.Default.BluetoothDrive) {
                     navController?.navigate(Screen.OBDMain.route)
                 }
@@ -60,7 +59,7 @@ fun DriverMore(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            ContactCard {
+            ContentCard {
                 CRow(label = "Assigned Vehicles", icon = Icons.Default.DirectionsCar) {
                     navController?.navigate(Screen.Vehicles.route)
                 }
@@ -75,7 +74,7 @@ fun DriverMore(
                 color = Color.Black
             )
 
-            ContactCard {
+            ContentCard {
                 CRow(label = "Profile", icon = Icons.Default.CardMembership) {
                     navController?.navigate(Screen.Profile.route)
                 }
@@ -84,7 +83,7 @@ fun DriverMore(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            ContactCard {
+            ContentCard {
                 CRow(label = "Alerts & Notifications", icon = Icons.Default.Doorbell) {
                     navController?.navigate(Screen.Notifications.route)
                 }
@@ -99,7 +98,7 @@ fun DriverMore(
                 color = Color.Black
             )
 
-            ContactCard {
+            ContentCard {
                 CRow(label = "Help & Support", icon = Icons.Default.QuestionMark) {
                     navController?.navigate(Screen.Help.route)
                 }

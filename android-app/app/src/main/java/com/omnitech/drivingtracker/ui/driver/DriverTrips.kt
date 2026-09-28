@@ -46,8 +46,8 @@ fun DriverTrips(
     val locationPermissionsState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    var currentLat by remember { mutableStateOf(0.0) }
-    var currentLng by remember { mutableStateOf(0.0) }
+    var currentLat by remember { mutableDoubleStateOf(0.0) }
+    var currentLng by remember { mutableDoubleStateOf(0.0) }
 
     LaunchedEffect(Unit) {
         tripViewModel.loadScheduledTrips()
@@ -107,7 +107,7 @@ fun DriverTrips(
                     if (state.scheduledTrips.isEmpty()) {
                         Text("No trips assigned by manager.", color = Color.Gray)
                     } else {
-                        state.scheduledTrips.forEach { tripViewModel ->
+                        state.scheduledTrips.forEach { trip ->
                             ScheduledTripCard(
                                 trip = trip,
                                 onStartTrip = {
