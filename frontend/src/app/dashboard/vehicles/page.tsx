@@ -7,6 +7,7 @@ import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
 import { deleteVehicle, getVehicles, uploadVehicleImage } from "@/lib/vehicle-api";
 import type { Vehicle } from "@/components/vehicles/types";
+import EditVehicleDialog from "@/components/vehicles/EditVehicleDialog";
 
 export default function VehiclesPage() {
 
@@ -96,6 +97,12 @@ export default function VehiclesPage() {
                     </p>
                 )}
 
+                {actionError && (
+                    <p className="mb-4 text-sm text-red-600">
+                        {actionError}
+                    </p>
+                )}
+
                 {!isLoading && !error && (
                     <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3">
                         {filteredVehicles.map((vehicle) => (
@@ -103,10 +110,12 @@ export default function VehiclesPage() {
                                 key={vehicle.vehicle_id}
                                 vehicle={vehicle}
                                 onEdit={(selectedVehicle) => {
-                                    console.log("Edit vehicle:", selectedVehicle);
+                                    setActionError("");
+                                    setVehicleToEdit(selectedVehicle);
                                 }}
                                 onDelete={(selectedVehicle) => {
-                                    console.log("Delete vehicle:", selectedVehicle);
+                                    setActionError("");
+                                    setVehicleToEdit(selectedVehicle);
                                 }}
                                 onImageChange={async (selectedVehicle, file) => {
                                     try{
@@ -154,6 +163,19 @@ export default function VehiclesPage() {
                 open={isAddOpen}
                 onClose={() => setIsAddOpen(false)}
                 onCreated={handleVehicleCreated}
+            />
+
+            <EditVehicleDialog
+                vehicle={vehicleToEdit}
+                onClose={() => setVehicleToEdit(null)}
+                onUpdated={(updatedVehicle) => {
+                    setVehicles((current) => 
+                        current.map((vehicle) =>
+                            vehicle.vehicle_id === updatedVehicle.vehicle_id ? updatedVehicle : vehicle,
+                    ),
+                );
+                setVehicleToEdit(null);
+            }}
             />
 
             {vehicleToDelete && (
