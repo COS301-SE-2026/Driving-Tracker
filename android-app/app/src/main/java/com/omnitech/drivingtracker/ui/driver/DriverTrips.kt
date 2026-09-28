@@ -128,3 +128,63 @@ fun DriverTrips(
     }
 }
 
+@Composable
+fun ScheduledTripCard(
+    trip: ScheduledTripDto,
+    onStartTrip: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Blue)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "${trip.origin ?: "Start"} -> ${trip.destination ?: "Destination"}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (!trip.vehicleName.isNullOrEmpty() || !trip.vehicleRegistration.isNullOrEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Vehicle: ${trip.vehicleName ?: ""} (${trip.vehicleRegistration ?: ""})",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            if (!trip.scheduledStartTime.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Scheduled: ${trip.scheduledStartTime}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+
+            if (!trip.notes.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Notes: ${trip.notes}", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onStartTrip,
+                colors = ButtonDefaults.buttonColors(containerColor = Green),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Start Assigned Trip")
+            }
+        }
+    }
+}
+
