@@ -1,10 +1,11 @@
 "use client"
 
-import { FormEvent, useEffect, useState } from "react";
-import { LoaderCircle, X } from "lucide-react";
+import { FormEvent, useEffect, useState, useRef } from "react";
+import { ImagePlus, LoaderCircle, X } from "lucide-react";
 import {
     createVehicle,
     searchVehicleImage,
+    uploadVehicleImage,
 } from "@/lib/vehicle-api";
 import type { Vehicle } from "./types";
 
@@ -29,6 +30,8 @@ export default function AddVehicleDialog({
     const [fuelTank, setFuelTank] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!open) {
@@ -40,6 +43,11 @@ export default function AddVehicleDialog({
             setFuelType("PETROL");
             setFuelTank("");
             setError("");
+            setSelectedImage(null);
+
+            if(imageInputRef.current){
+                imageInputRef.current.value = "";
+            }
         }
     }, [open]);
 
@@ -80,17 +88,27 @@ export default function AddVehicleDialog({
                 fuel_tank: numericTank,
             });
 
-            //fetching a matching vehicle image after creation
-            const image = await searchVehicleImage(
-                make.trim(),
-                model.trim(),
-                numericYear,
-            );
+            let imageUrl = vehicle.image_url ?? null;
+
+            if(selectedImage){
+                imageUrl = await uploadVehicleImage(
+                    vehicle.vehicle_id,
+                    selectedImage,
+                );
+            }else{
+                const image = await searchVehicleImage(
+                    make.trim(),
+                    model.trim(),
+                    numericYear,
+                );
+
+                imageUrl = image?.image_url ?? null;
+            }
 
             //adding image URL to the new card immediately
             onCreated({
                 ...vehicle,
-                image_url: image?.image_url ?? null,
+                image_url: imageUrl,
             });
 
             onClose();
@@ -218,6 +236,35 @@ export default function AddVehicleDialog({
                         </div>
                         
                     </label>
+
+                    <div className="space-y-2">
+                        <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={(event) => {
+                                const file = event.target.files?.[0] ?? null;
+                                setSelectedImage(file);
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
+                        >
+                            <ImagePlus size={18} />
+                            {selectedImage
+                                ? "Change image"
+                                : "Choose vehicle image"}
+                        </button>
+
+                        {selectedImage && (
+                            <p className="truncate text-xs text-slate-500">
+                                {selectedImage.name}
+                            </p>
+                        )}
+                    </div>
 
                     {error && (
                         <p className="text-sm text-red-600">

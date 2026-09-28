@@ -5,7 +5,7 @@ import { Filter, Plus, Search } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
-import { getVehicles } from "@/lib/vehicle-api";
+import { deleteVehicle, getVehicles, uploadVehicleImage } from "@/lib/vehicle-api";
 import type { Vehicle } from "@/components/vehicles/types";
 
 export default function VehiclesPage() {
@@ -15,6 +15,9 @@ export default function VehiclesPage() {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+    const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
+    const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+    const [actionError, setActionError] = useState("");
 
     useEffect(() => {
         async function loadVehicles() {
@@ -99,6 +102,33 @@ export default function VehiclesPage() {
                             <VehicleCard
                                 key={vehicle.vehicle_id}
                                 vehicle={vehicle}
+                                onEdit={(selectedVehicle) => {
+                                    console.log("Edit vehicle:", selectedVehicle);
+                                }}
+                                onDelete={(selectedVehicle) => {
+                                    console.log("Delete vehicle:", selectedVehicle);
+                                }}
+                                onImageChange={async (selectedVehicle, file) => {
+                                    try{
+                                        setActionError("");
+                                        const imageUrl = await uploadVehicleImage(
+                                            selectedVehicle.vehicle_id,
+                                            file,
+                                        );
+
+                                        setVehicles((current) => 
+                                            current.map((item) =>
+                                            item.vehicle_id === selectedVehicle.vehicle_id
+                                                ? { ...item, image_url: imageUrl }
+                                                : item,
+                                            ),
+                                        );
+                                    }catch(error){
+                                        setActionError(
+                                            error instanceof Error ? error.message : "Could not upload vehicle image."
+                                        );
+                                    }
+                                }}
                             />
                         ))}
 
@@ -125,6 +155,56 @@ export default function VehiclesPage() {
                 onClose={() => setIsAddOpen(false)}
                 onCreated={handleVehicleCreated}
             />
+
+            {vehicleToDelete && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4">
+                    <div className="w-full max-w-sm rounded-lg bg-white p 6 shadow-xl">
+                        <h2 className="text-lg font-bold">
+                            Remove vehicle?
+                        </h2>
+
+                        <p className="mt-2 text-sm text-slate-600">
+                            Remove {vehicleToDelete.name ?? vehicleToDelete.make } from
+                            the fleet?
+                        </p>
+
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => setVehicleToDelete(null)}
+                                className="rounded-md border px-4 py-2 text-sm"
+                            >
+                                Cancel
+                            </button>
+
+                            <button 
+                                type="button"
+                                onClick={async () => {
+                                    try{
+                                        await deleteVehicle(vehicleToDelete.vehicle_id);
+
+                                        setVehicles((current) =>
+                                            current.filter(
+                                                (vehicle) =>
+                                                    vehicle.vehicle_id !== vehicleToDelete.vehicle_id,
+                                            ),
+                                        );
+
+                                        setVehicleToDelete(null);
+                                    }catch(error){
+                                        setActionError(
+                                            error instanceof Error ? error.message : "Could not remove vehicle.",
+                                        );
+                                    }
+                                }}
+                                className="rounded-md bg-red-600 px-4 py-2 text-sm text-white"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </main>
     )
