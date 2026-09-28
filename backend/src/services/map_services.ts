@@ -184,6 +184,12 @@ export const map_services ={
         const hotspotsOnRoute = allHotspots.filter(h =>
             points.some(pt => calculate_distance(Number(h.latitude), Number(h.longitude), pt.lat, pt.lng) <= 100)
         ).length;
+        let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+        if (hotspotsOnRoute > 2) {
+            riskLevel = 'HIGH';
+        } else if (hotspotsOnRoute > 0) {
+            riskLevel = 'MEDIUM';
+        }
 
             return {
                 route_index: idx,
@@ -193,7 +199,7 @@ export const map_services ={
                 traffic_delay_seconds: route.summary.trafficDelayInSeconds ?? 0,
                 pothole_count: 0, 
                 harsh_brake_hotspot_count: hotspotsOnRoute,
-                risk_level: hotspotsOnRoute > 2 ? 'HIGH' : hotspotsOnRoute > 0 ? 'MEDIUM' : 'LOW',
+                risk_level: riskLevel,
                 points
             };
         });

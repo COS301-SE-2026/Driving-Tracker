@@ -15,9 +15,9 @@ export type RouteFormData = {
     title: string;
     task: string;
     driver: string;
-    driverId: string;
+    driverId?: string;
     vehicle: string;
-    vehicleId: string;
+    vehicleId?: string;
     plannedStartTime: string;
     stops: Stop[];
     selected_points?: { lat: number; lng: number }[];
@@ -103,7 +103,8 @@ export function AddressAutocompleteInput({
             {showDropdown && suggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
                     {suggestions.map((item, idx) => (
-                        <div
+                        <button
+                            type="button"
                             key={idx}
                             onClick={() => {
                                 onSelectAddress(item.address, item.lat, item.lng);
@@ -112,7 +113,7 @@ export function AddressAutocompleteInput({
                             className="cursor-pointer px-3 py-2 text-xs font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 border-b border-gray-100 last:border-0"
                         >
                              {item.address}
-                        </div>
+                        </button>
                     ))}
                 </div>
             )}
@@ -135,14 +136,16 @@ export function RouteRiskSelector({
     };
     return(
         <div className="flex flex-col gap-3 my-3">
-            <label className="text-sm font-semibold text-gray-800">
+            <span className="text-sm font-semibold text-gray-800">
                 Choose Preferred Route:
-            </label>
+            </span>
             {routes.map((rt) =>{
                 const isSelected = selectedIndex === rt.route_index;
                 const minutes = Math.round(rt.travel_time_seconds / 60);
                 return(
-                    <div key={rt.route_index}
+                    <button
+                    type="button"
+                    key={rt.route_index}
                     onClick={() => onSelect(rt.route_index)}
                     className={`cursor-pointer rounded-xl border p-4 transition-all ${
                             isSelected
@@ -166,7 +169,7 @@ export function RouteRiskSelector({
                             <div>{rt.pothole_count} Potholes</div>
                             <div>{rt.harsh_brake_hotspot_count} Harsh Brake Spots</div>
                         </div>
-                    </div>
+                    </button>
                 );
             })}
         </div>
@@ -181,6 +184,8 @@ export default function AddRoute(
 
     const [title, setTitle] = useState(initialData?.title ?? "");
     const [task, setTask] = useState(initialData?.task ?? "");
+    const [driver,setDriver] = useState(initialData?.driver ?? "");
+    const [vehicle,setVehicle] = useState(initialData?.vehicle ?? "");
     const [stops, setStops] = useState<Stop[]>(initialData?.stops ?? emptyStops());
     const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
     const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
@@ -197,7 +202,9 @@ export default function AddRoute(
         if (open){
             setTitle(initialData?.title ?? "");
             setTask(initialData?.task ?? "");
+            setDriver(initialData?.driver ?? "");
             setDriverId(initialData?.driverId ?? "");
+            setVehicle(initialData?.vehicle ?? "");
             setVehicleId(initialData?.vehicleId ?? "");
             setPlannedStartTime(initialData?.plannedStartTime ?? "");
             setStops(initialData?.stops ?? emptyStops());
@@ -305,17 +312,18 @@ export default function AddRoute(
         setTask("");
         setVehicle("");
         setDriver("");
+        setVehicleId("");
+        setDriverId("");
         setRouteOptions([]);
         setSelectedRouteIndex(0);
         setRouteError(null);
         setDriverId("");
         setVehicleId("");
         setPlannedStartTime("");
+        setRouteError(null);
+        setSubmitError(null);
         setStops(
-            [
-                {id: crypto.randomUUID(), address: ""},
-                {id: crypto.randomUUID(), address: ""}
-            ]
+           emptyStops()
         );
     };
 
@@ -326,8 +334,11 @@ export default function AddRoute(
         onSubmit({
             title,
             task,
+            driverId,
+            vehicleId,
             driver,
             vehicle,
+            plannedStartTime,
             stops,
             status: "Not Started",
             selected_points: chosen?.points,
@@ -364,9 +375,9 @@ export default function AddRoute(
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <span className="mb-1 block text-sm font-medium text-gray-700">
                             Title
-                        </label>
+                        </span>
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -376,9 +387,9 @@ export default function AddRoute(
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <span className="mb-1 block text-sm font-medium text-gray-700">
                             Task
-                        </label>
+                        </span>
                         <input
                             value={task}
                             onChange={(e) => setTask(e.target.value)}
@@ -388,9 +399,9 @@ export default function AddRoute(
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <span className="mb-1 block text-sm font-medium text-gray-700">
                             Driver
-                        </label>
+                        </span>
                         <select
                             value={driver}
                             onChange={(e) => setDriver(e.target.value)}
@@ -409,9 +420,9 @@ export default function AddRoute(
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <span className="mb-1 block text-sm font-medium text-gray-700">
                             Vehicle
-                        </label>
+                        </span>
                         <select
                             value={vehicle}
                             onChange={(e) => setVehicle(e.target.value)}
@@ -438,6 +449,7 @@ export default function AddRoute(
                         value = {plannedStartTime}
                         onChange = {(e) => setPlannedStartTime(e.target.value)}
                         required
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
                         />
                     </div>
 

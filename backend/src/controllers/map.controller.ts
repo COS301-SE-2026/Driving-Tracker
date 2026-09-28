@@ -33,7 +33,7 @@ const map_controller = {
     async suggested_route(req: AuthRequest, res: Response) {
         try{
             const { start_lat, start_lng, dest_lat, dest_lng, include_alternative } = req.query;
-            const isAlternative = include_alternative === 'true' || include_alternative === 'true';
+            const isAlternative = include_alternative === 'true';
 
        
             const route_response = await map_services.suggested_routes({

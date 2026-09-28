@@ -148,7 +148,7 @@ export default function Routes(){
     const [routesList, setRoutesList] = useState<Route[]>(routes);
     const [driverList, setDriversList] = useState<FleetDriver[]>([]);
     const [vehicleList, setVehiclesList]= useState<FleetVehicle[]>([]);
-
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [filters, setFilters] = useState<FilterState>({status : [], sortBy: null});
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
@@ -195,6 +195,7 @@ export default function Routes(){
             setRoutesList(mappedRoutes);
         }catch(err){
             console.error("Failed to load fleet data:", err);
+            setLoadError(err instanceof Error ? err.message : "Failed to load fleet data");
         }
     },[]);
 
@@ -306,17 +307,26 @@ export default function Routes(){
 
     const [addOpen, setAddOpen] = useState(false);
 
-    const driverOptions = drivers.map(
-        (driver) => ({
-            id: driver.user_id,
-            label: [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
-    }));
+    const driverOptions = driverList.map(
+        (driver) => 
+            [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
+    );
 
-    const vehicleOptions = vehicles.map(
-        (vehicle) => ({
-            id: vehicle.vehicle_id,
-            label: [vehicle.make, vehicle.model].filter(Boolean).join(" ") || vehicle.vehicle_id,
-    }));
+    const vehicleOptions = vehicleList.map(
+        (vehicle) => 
+            [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||vehicle.vehicle_id,
+    );
+
+    const editingRouteFormData: RouteFormData | undefined = editingRoute
+    ? {
+          title: editingRoute.title,
+          task: editingRoute.task,
+          driver: editingRoute.driver,
+          vehicle: editingRoute.vehicle,
+          stops: editingRoute.stops,
+          plannedStartTime: new Date().toISOString().slice(0, 16),
+      }
+    : undefined
 
     return(
         <div className="flex">
@@ -346,7 +356,7 @@ export default function Routes(){
                     <AddRoute open={addOpen} onClose={()=>setAddOpen(false)} onSubmit={handleAddRoute} driverOptions={driverOptions} vehicleOptions={vehicleOptions}/>
                     <AddRoute open = {editingRoute !== null} onClose={()=>setEditingRoute(null)}
                     onSubmit={handleEditRoute} vehicleOptions={vehicleOptions} driverOptions={driverOptions}
-                    initialData={editingRoute ?? undefined} />
+                    initialData={editingRouteFormData} />
 
                     <div className="flex items-center gap-3">
                         <div className="relative">
