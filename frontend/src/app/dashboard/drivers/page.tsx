@@ -8,6 +8,7 @@ import DriverMenu from "@/components/drivers/DriverMenu";
 import ViewDriver from "@/components/drivers/ViewDriver";
 import FilterDrivers, { FilterState } from "@/components/drivers/FilterDrivers";
 import { apiFetch } from "@/lib/auth/apiClient";
+import Image from "next/image";
 
 type DriverStatus = "Available" | "Assigned" | "On Trip";
 
@@ -19,6 +20,7 @@ type Driver = {
     //dob: string;
     //trips: number;
     //distanceKm: number;
+    profilePictureUrl: string | null;
     status: DriverStatus;
     //score: number;
 };
@@ -29,6 +31,7 @@ type FleetDriver = {
     surname: string | null;
     email: string | null;
     phone_number: string | null;
+    profile_picture_url: string | null;
     status: "AVAILABLE" | "ASSIGNED" | "UNAVAILABLE";
 };
 
@@ -47,10 +50,27 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
 
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-gray-200"/>
+
+                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+                        {driver.profilePictureUrl ? (
+                            <Image src = {driver.profilePictureUrl}
+                            alt = {`${driver.name}'s profile picture`}
+                            fill
+                            sizes = "48px"
+                            unoptimized
+                            className="object-cover"
+                            />
+                        ) : (
+                            <span className = "font-semibold text-gray-600">
+                                {driver.name.charAt(0).toUpperCase()}
+                            </span>
+                        )}
+                    </div>
+
                     <h3 className="text-lg font-bold text-gray-900">
                         {driver.name}
                     </h3>
+                    
                 </div>
 
                 <DriverMenu driverName = {driver.name} onDelete = {onDelete} onViewDetails = {onView}/>
@@ -156,6 +176,7 @@ export default function ManageDrivers(){
                 name: [driver.name, driver.surname].filter(Boolean).join(" ") || "Unnamed driver",
                 email: driver.email ?? "Not Provided",
                 phoneNumber: driver.phone_number ?? "Not provided",
+                profilePictureUrl: driver.profile_picture_url,
                 status: statusMap[driver.status],
             })));
 
