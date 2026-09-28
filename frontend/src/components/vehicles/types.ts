@@ -3,6 +3,11 @@ export type Driver = {
     name: string;
     surname: string;
     profile_picture_url?: string | null;
+    email?: string;
+    username?: string;
+    phone_number?: string;
+    status?: string;
+    joined_at?: Date;
 };
 
 export type Vehicle = {
@@ -15,11 +20,15 @@ export type Vehicle = {
     fuel_type?: string | null;
     fuel_tank?: number | null;
     image_url?: string | null;
-    trip_count: number;
+    trip_count?: number;
+    status?: string;
+    org_id: string;
     assigned_driver?: Driver | null;
 };
 
 export type CreateVehicleInput = {
+    name?: string;
+    registration?: string;
     make: string;
     model: string;
     year: number;

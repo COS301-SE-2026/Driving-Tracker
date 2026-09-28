@@ -283,28 +283,54 @@ export const fleet_services = {
                     select: {
                         status: true,
                         scheduled_for: true,
+                        users: {
+                            select: {
+                                user_id: true,
+                                name: true,
+                                surname: true,
+                                profile_picture_url: true,
+                            },
+                        },
                     },
-                }
+                },
+                _count: { 
+                    select: { trips: true }
+                },
             }
         });
 
         const vehicles_result = vehicles.map((v) => {
 
-            const { trips: active_trips, ...vehicle_data } = v;
+            const { trips: active_trips, _count, ...vehicle_data } = v;
 
-            let status = 'AVAILABLE'
+            let status = 'AVAILABLE';
+            let assigned_driver = null;
 
-            if(active_trips.some(t => t.status === 'IN_PROGRESS')){
+            const in_progress_trip = active_trips.find(t => t.status === 'IN_PROGRESS');
+            const scheduled_trip = active_trips.find(t => t.status === 'SCHEDULED');
+            const active_trip = in_progress_trip ?? scheduled_trip;
+
+            if(in_progress_trip){
                 status = 'UNAVAILABLE';
 
-            }else if(active_trips.some(t => t.status === 'SCHEDULED')){
+            }else if(scheduled_trip){
                 status = 'ASSIGNED'
             }
-            
 
+            if(active_trip?.users){
+                assigned_driver = {
+                    user_id: active_trip.users.user_id,
+                    name: active_trip.users.name,
+                    surname: active_trip.users.surname,
+                    profile_picture_url: active_trip.users.profile_picture_url ?? undefined,
+                };
+            }
+            
             return {
                 ...vehicle_data,
-                status,    
+                status,
+                assigned_driver,
+                trip_count: _count.trips,
             };
 
         });
@@ -653,7 +679,120 @@ export const fleet_services = {
         }));
 
         return result;
-    }
+    },
+    async get_manageable_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const member = await prisma.organization_members.findUnique({
+            where: {
+                org_id_user_id: { org_id, user_id },
+            },
+            select: { role: true},
+        });
 
+        if(
+            !member || (member.role !== OrganizationRole.ADMIN && member.role !== OrganizationRole.MANAGER)
+        ){
+            throw new Error("You do not have permission to manage fleet vehicles");
+        }
+
+        const vehicle = await prisma.vehicles.findFirst({
+            where: {
+                vehicle_id,
+                org_id,
+            },
+        });
+
+        if(!vehicle){
+            throw new Error("Fleet vehicle not found");
+        }
+
+        return vehicle;
+    },
+
+    async update_fleet_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+        data: {
+            name?: string,
+            registration?: string,
+            make?: string,
+            model?: string,
+            year?: number,
+            fuel_type?: string,
+            fuel_tank?: number,
+        },
+    ){
+        await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        return prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                name: data.name,
+                registration: data.registration,
+                make: data.make,
+                model: data.model,
+                year: data.year,
+                fuel_type: data.fuel_type,
+                fuel_tank: data.fuel_tank,
+            },
+        });
+    },
+
+    async remove_fleet_vehicle(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        
+        await prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                org_id: null,
+                image_url: null,
+            },
+        });
+
+        return {
+            previous_blob_name: vehicle.image_url,
+            message: "Fleet vehicle removed successfully",
+        }
+    },
+
+    async update_fleet_vehicle_image(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+        blob_name: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+
+        await prisma.vehicles.update({
+            where: { vehicle_id },
+            data: {
+                image_url: blob_name,
+            },
+        });
+
+        return {
+            previous_blob_name: vehicle.image_url,
+            display_url: `upload/fleet-vehicle-image/${vehicle_id}`,
+        };
+    },
+
+    async get_fleet_vehicle_image_blob_name(
+        user_id: string,
+        org_id: string,
+        vehicle_id: string,
+    ){
+        const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
+        
+        return vehicle.image_url;
+    }
+    
 };
+
 
