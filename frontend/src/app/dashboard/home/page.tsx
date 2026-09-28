@@ -8,10 +8,11 @@ import dynamic from "next/dynamic";
 import type {
     Driver,
     FleetStats,
+    HarshEventCounts,
 } from "@/components/fleet/type";
 import { tokenManager } from "@/lib/auth/tokenManager";
 import { useFleetSocket, LocationUpdatePayload } from "@/lib/hooks/useFleetSocket";
-import { getDrivers } from "@/lib/driver-api";
+import { getDrivers, getFleetEvents } from "@/lib/driver-api";
 
 const FleetMap = dynamic(
     () => import("@/components/fleet/FleetMap"),
@@ -28,62 +29,64 @@ const FleetMap = dynamic(
 );
 
 //temporary fallback data
-const fallbackDrivers: Driver[] = [
-    {
-        id: "driver-1",
-        name: "Sipho M",
-        status: "On trip",
-        location: [28.2179, -25.7545],
-        route: [
-            [28.1881, -25.7466],
-            [28.2049, -25.7526],
-            [28.2179, -25.7545],
-            [28.2293, -25.7479],
-        ],
-    },
-    {
-        id: "driver-2",
-        name: "Jane V",
-        status: "Inactive",
-        location: [28.2477, -25.7566],
-        route: [
-            [28.2312, -25.7466],
-            [28.2477, -25.7566],
-            [28.2601, -25.7625],
-        ],
-    },
-    {
-        id: "driver-3",
-        name: "Thando S",
-        status: "On trip",
-        location: [28.1897, -25.8553],
-        route: [
-            [28.2113, -25.7906],
-            [28.1965, -25.8281],
-            [28.1897, -25.8553],
-            [28.1889, -25.8601],
-        ],
-    },
+// const fallbackDrivers: Driver[] = [
+//     {
+//         id: "driver-1",
+//         name: "Sipho M",
+//         status: "On trip",
+//         location: [28.2179, -25.7545],
+//         route: [
+//             [28.1881, -25.7466],
+//             [28.2049, -25.7526],
+//             [28.2179, -25.7545],
+//             [28.2293, -25.7479],
+//         ],
+//     },
+//     {
+//         id: "driver-2",
+//         name: "Jane V",
+//         status: "Inactive",
+//         location: [28.2477, -25.7566],
+//         route: [
+//             [28.2312, -25.7466],
+//             [28.2477, -25.7566],
+//             [28.2601, -25.7625],
+//         ],
+//     },
+//     {
+//         id: "driver-3",
+//         name: "Thando S",
+//         status: "On trip",
+//         location: [28.1897, -25.8553],
+//         route: [
+//             [28.2113, -25.7906],
+//             [28.1965, -25.8281],
+//             [28.1897, -25.8553],
+//             [28.1889, -25.8601],
+//         ],
+//     },
     
-];
+// ];
 
-const fallbackStats: FleetStats = {
-    harshBraking: 8,
-    harshAcceleration: 2,
-    idleDrivers: 1,
-    tripsInProgress: 2,
-};
+// const fallbackStats: FleetStats = {
+//     harshBraking: 8,
+//     harshAcceleration: 2,
+//     idleDrivers: 1,
+//     tripsInProgress: 2,
+// };
 
 export default function DashboardHomePage() {
-    const [drivers, setDrivers] = useState<Driver[]>(fallbackDrivers);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
     //const [stats, setStats] = useState<FleetStats>(fallbackStats);
     const [search, setSearch] = useState("");
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null,);
     const [isLoading, setIsLoading] = useState(true);
     const [apiError, setApiError] = useState<string | null>(null);
-    const [harshEventStats, setHarshEventStats] = useState({
-        harshBraking: 0,
-        harshAcceleration: 0
+    const [harshEventStats, setHarshEventStats] = useState<HarshEventCounts>({
+        harsh_brake: 0,
+        harsh_acceleration: 0,
+        sharp_corner: 0,
+        crash_like: 0
     });
 
     const claims = tokenManager.getClaims();
@@ -145,8 +148,8 @@ export default function DashboardHomePage() {
         return {
             tripsInProgress,
             idleDrivers: drivers.length - tripsInProgress,
-            harshBraking: harshEventStats.harshBraking,
-            harshAcceleration: harshEventStats.harshAcceleration,
+            harshBraking: harshEventStats.harsh_brake,
+            harshAcceleration: harshEventStats.harsh_acceleration,
         };
     }, [drivers, harshEventStats]);
 
@@ -156,6 +159,8 @@ export default function DashboardHomePage() {
             try {
 
                 const fleetDrivers = await getDrivers();
+
+                const harshEvents = await getFleetEvents();
 
                 // const response = await apiFetch(`${apiUrl}/admin/fleet/dashboard`, {
                 //     headers: {
@@ -187,12 +192,8 @@ export default function DashboardHomePage() {
                 }));
 
                 
-
-
-                
-                //setStats({ harshAcceleration: 0, harshBraking: 3, idleVehicles: 3, tripsInProgress: 2});
                 setDrivers(displayDrivers);
-
+                setHarshEventStats(harshEvents);
                 setApiError(null);
             } catch (error) {
                 setApiError(

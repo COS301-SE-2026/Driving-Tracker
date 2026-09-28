@@ -27,6 +27,13 @@ export type FleetStats = {
     tripsInProgress: number;
 };
 
+export type HarshEventCounts = {
+    harsh_brake: number;
+    harsh_acceleration: number;
+    sharp_corner: number;
+    crash_like: number;
+};
+
 export type FleetDashboardResponse = {
     drivers: Driver[];
     stats: FleetStats;

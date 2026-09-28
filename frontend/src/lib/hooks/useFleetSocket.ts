@@ -77,7 +77,7 @@ export function useFleetSocket(
                 socket.disconnect();
             }
         };
-    }, [orgId, onLocationUpdate]);
+    }, [orgId, onLocationUpdate, onTripEnded]);
 
     return  { isConnected };
 }
