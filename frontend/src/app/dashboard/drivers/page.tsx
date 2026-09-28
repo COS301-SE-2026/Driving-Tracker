@@ -17,12 +17,11 @@ type Driver = {
     name: string;
     email: string;
     phoneNumber: string;
-    //dob: string;
-    //trips: number;
-    //distanceKm: number;
+    trips: number;
+    distanceKm: number;
     profilePictureUrl: string | null;
     status: DriverStatus;
-    //score: number;
+    score: number | null;
 };
 
 type FleetDriver = {
@@ -33,16 +32,22 @@ type FleetDriver = {
     phone_number: string | null;
     profile_picture_url: string | null;
     status: "AVAILABLE" | "ASSIGNED" | "UNAVAILABLE";
+    trips: number;
+    distance_km: number;
+    score: number | null;
 };
 
 type FleetDriversResponse = {
     data: {drivers: FleetDriver[]};
 };
 
-// function ScoreValue({score} : {score: number}){
-//     const color = score >= 60 ? "text-emerald-500" : "text-red-500";
-//     return <span className={`font-semibold ${color}`}> {score} </span>
-// }
+function ScoreValue({score} : {score: number | null}){
+    if (score === null){
+        return <span className="text-gray-500">No score yet</span>;
+    }
+    const color = score >= 60 ? "text-emerald-500" : "text-red-500";
+    return <span className={`font-semibold ${color}`}> {score} </span>
+}
 
 function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> void;}){
     return (
@@ -70,7 +75,7 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
                     <h3 className="text-lg font-bold text-gray-900">
                         {driver.name}
                     </h3>
-                    
+
                 </div>
 
                 <DriverMenu driverName = {driver.name} onDelete = {onDelete} onViewDetails = {onView}/>
@@ -93,7 +98,7 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
                     {driver.phoneNumber}
                 </span>
 
-                {/* <span className="font-medium text-gray-900">
+                <span className="font-medium text-gray-900">
                     Trips
                 </span>
                 <span className="text-gray-700">
@@ -105,7 +110,7 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
                 </span>
                 <span className="text-gray-700">
                     {driver.distanceKm} km
-                </span> */}
+                </span>
 
                 <span className="font-medium text-gray-900">
                     Status
@@ -114,14 +119,27 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
                     {driver.status}
                 </span>
 
-                {/* <span className="font-medium text-gray-900">
+                <span className="font-medium text-gray-900">
                     Score
                 </span>
-                <ScoreValue score = {driver.score} /> */}
+                <ScoreValue score = {driver.score} />
 
             </div>
         </div>
     );
+}
+
+function compareScores(a: Driver, b: Driver, direction: "asc" | "desc"){
+
+    if (a.score === null){
+        return b.score === null ? 0 : 1;
+    }
+
+    if (b.score === null){
+        return -1;
+    }
+
+    return direction === "asc" ? a.score - b.score : b.score - a.score;
 }
 
 export default function ManageDrivers(){
@@ -142,10 +160,10 @@ export default function ManageDrivers(){
     .sort((a,b) => {
         if (filters.sortBy === "name-asc") return a.name.localeCompare(b.name);
         if (filters.sortBy === "name-desc") return b.name.localeCompare(a.name);
-        // if (filters.sortBy === "score-desc") return b.score -a.score;
-        // if (filters.sortBy === "score-asc") return a.score -b.score;
-        // if (filters.sortBy === "distance-desc") return b.distanceKm -a.distanceKm;
-        // if (filters.sortBy === "distance-asc") return a.distanceKm - b.distanceKm;
+        if (filters.sortBy === "score-desc") return compareScores(a,b,"desc");
+        if (filters.sortBy === "score-asc") return compareScores(a,b,"asc");
+        if (filters.sortBy === "distance-desc") return b.distanceKm -a.distanceKm;
+        if (filters.sortBy === "distance-asc") return a.distanceKm - b.distanceKm;
         return 0;
     });
 
@@ -178,6 +196,9 @@ export default function ManageDrivers(){
                 phoneNumber: driver.phone_number ?? "Not provided",
                 profilePictureUrl: driver.profile_picture_url,
                 status: statusMap[driver.status],
+                trips: driver.trips,
+                distanceKm: driver.distance_km,
+                score: driver.score,
             })));
 
             setLoadError(null);
