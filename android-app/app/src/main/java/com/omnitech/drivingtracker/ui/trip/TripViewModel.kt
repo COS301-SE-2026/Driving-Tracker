@@ -182,4 +182,45 @@ class TripViewModel @Inject constructor(
             )
         }
     }
+
+    private val _scheduledTripsState = MutableStateFlow<UiState>(UiState.Idle)
+    val scheduledTripsState: StateFlow<UiState> = _scheduledTripsState
+
+    data class SuccessScheduledTrips(val scheduledTrips: List<com.omnitech.drivingtracker.data.models.ScheduledTripDto>) : UiState()
+
+    fun loadScheduledTrips() {
+        viewModelScope.launch {
+            _scheduledTripsState.value = UiState.Loading
+            tripRepository.getScheduledTrips().fold(
+                onSuccess = { trips ->
+                    _scheduledTripsState.value = SuccessScheduledTrips(trips)
+                },
+                onFailure = { exception ->
+                    _scheduledTripsState.value = UiState.Error(
+                        message = exception.message ?: unknownErrorVal
+                    )
+                }
+            )
+        }
+    }
+
+    fun startScheduledTrip(
+        scheduledTripId: String,
+        vehicleId: String,
+        latitude: Double,
+        longitude: Double
+    ) {
+        viewModelScope.launch {
+            _tripStartState.value = UiState.Loading
+            tripRepository.startScheduledTrip(scheduledTripId, vehicleId, latitude, longitude).fold(
+                onSuccess = { tripId ->
+                    _tripStartState.value = UiState.Success(tripId)
+                },
+                onFailure = { exception ->
+                    _tripStartState.value = UiState.Error(message = exception.message ?: unknownErrorVal)
+                }
+            )
+        }
+    }
+
 }
