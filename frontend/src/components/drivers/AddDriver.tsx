@@ -1,13 +1,21 @@
 "use client"
-import {useState} from "react";
+import {useState, type FormEvent} from "react";
 import {X} from "lucide-react";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 
+type DriverFormData = {
+    name: string;
+    surname: string;
+    email: string;
+    phoneNumber: string;
+    dob: string;
+};
+
 type AddDriverDialogProps = {
     open: boolean;
     onClose: ()=> void;
-    onSubmit: (data: {name: string; surname:string; email: string, phoneNumber: string, dob: string, licenseNumber: string}) => void;
+    onSubmit: (data: DriverFormData) => void | Promise<void>;
 };
 
 export default function AddDriver({open, onClose, onSubmit}: AddDriverDialogProps){
@@ -17,20 +25,31 @@ export default function AddDriver({open, onClose, onSubmit}: AddDriverDialogProp
     const [email, setEmail] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [dob, setDob] = useState("");
-    const [licenseNumber, setLicenseNumber] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (!open) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit({name,surname,email,phoneNumber,dob, licenseNumber});
-        setName("");
-        setSurname("");
-        setEmail("");
-        setPhoneNumber("");
-        setDob("");
-        setLicenseNumber("");
-        onClose();
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setError(null);
+        setIsSubmitting(true);
+
+        try{
+            await onSubmit({name,surname,email,phoneNumber,dob});
+            setName("");
+            setSurname("");
+            setEmail("");
+            setPhoneNumber("");
+            setDob("");
+            onClose();
+        }
+        catch (err){
+            setError(err instanceof Error ? err.message : "Could not add driver");
+        }
+        finally{
+            setIsSubmitting(false);
+        } 
     };
 
     return(
@@ -48,7 +67,7 @@ export default function AddDriver({open, onClose, onSubmit}: AddDriverDialogProp
                         />
                     </div>
 
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} disabled={isSubmitting} aria-label = "Close" className="text-gray-400 hover:text-gray-600">
                         <X size = {20}/>
                     </button>
                 </div>
@@ -105,21 +124,13 @@ export default function AddDriver({open, onClose, onSubmit}: AddDriverDialogProp
                         required className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400"/>
                     </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            License Number
-                        </label>
-                        <input value={licenseNumber}
-                        onChange={(e) => setLicenseNumber(e.target.value)}
-                        required className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400"/>
-                    </div>
-
+                    {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
                     <div className="mt-2 flex justify-end gap-3">
-                        <button type = "button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+                        <button type = "button" onClick={onClose} disabled={isSubmitting} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
                             Cancel
                         </button>
-                        <button type = "submit" className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600">
+                        <button type = "submit" disabled={isSubmitting} className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600">
                             Add Driver
                         </button>
                     </div>
