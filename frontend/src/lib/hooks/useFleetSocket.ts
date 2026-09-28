@@ -26,12 +26,17 @@ export interface HarshEventPayload{
     };
 }
 
+export interface TripEndedPayload{
+    tripId: string; 
+    driverId: string;
+}
+
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export function useFleetSocket(
     orgId: string | null,
     onLocationUpdate?: (data: LocationUpdatePayload) => void,
-    onTripEnded?: (driver_id: string) => void,
+    onTripEnded?: (data: TripEndedPayload) => void,
     onHarshEvent?: (data: HarshEventPayload) => void,
 ) {
     const socketRef = useRef<Socket | null>(null);
@@ -82,7 +87,7 @@ export function useFleetSocket(
             console.log("Received driver location update:", data);
 
             if(onTripEnded) {
-                onTripEnded(data.user_id);
+                onTripEnded({driverId: data.user_id, tripId: data.trip_id});
             }
         });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Search, UserRound } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import dynamic from "next/dynamic";
@@ -11,7 +11,7 @@ import type {
     HarshEventCounts,
 } from "@/components/fleet/type";
 import { tokenManager } from "@/lib/auth/tokenManager";
-import { useFleetSocket, LocationUpdatePayload, HarshEventPayload } from "@/lib/hooks/useFleetSocket";
+import { useFleetSocket, LocationUpdatePayload, HarshEventPayload, TripEndedPayload } from "@/lib/hooks/useFleetSocket";
 import { getDrivers, getFleetEvents } from "@/lib/driver-api";
 
 const FleetMap = dynamic(
@@ -102,17 +102,25 @@ export default function DashboardHomePage() {
     }
 
     const handleLocationUpdate = useCallback((data: LocationUpdatePayload) => {
+
+        if(endedTripIds.current.has(data.trip_id)){
+            return;
+        }
+
         const newPoint: [number, number] = [data.location.lng, data.location.lat];
 
         setDrivers((prevDrivers) => 
             prevDrivers.map((driver) => {
 
                 if(driver.id === data.user_id){
+
+                    console.log(`${driver.id} location update at ${Date.now()}`);
                     return {
                         ...driver, 
                         status: "On trip",
                         location: newPoint,
                         route: [...(driver.route ?? []), newPoint],
+                        speed: data.speed_kmh
                     };
                 }
 
@@ -121,15 +129,22 @@ export default function DashboardHomePage() {
         );
     }, []);
 
-    const handleTripEnded = useCallback((driverId: string) => {
+    const endedTripIds = useRef(new Set<string>());
 
+    const handleTripEnded = useCallback((data: TripEndedPayload) => {
+
+        endedTripIds.current.add(data.tripId);
+
+        console.log("Trip ended callback fired");
         setDrivers((prevDrivers) => 
             prevDrivers.map((driver) => {
 
-                if(driver.id === driverId){
+                if(driver.id === data.driverId){
+                    console.log(`${driver.id} trip ended`);
                     return {
                         ...driver, 
                         status: "Inactive",
+                        speed: undefined
                     };
                 }
 
@@ -251,7 +266,7 @@ export default function DashboardHomePage() {
 
             <DashboardNavbar />
 
-            {/* driver search ad driver cards section */}
+            {/* driver search and driver cards section */}
             <aside className="w-[190px] shrink-0 border-r border-black bg-white px-[18px] py-[26px]">
                 <div className="mx-auto mb-[50px] flex h-7 w-[122px] items-center rounded-full border border-black px-2">
                     <input 
@@ -306,18 +321,27 @@ export default function DashboardHomePage() {
                                     )}
                                 </span>
 
+                                
                                 <span className="flex flex-col gap-[3px] text-xs">
                                     <strong>{driver.name}</strong>
 
-                                    <small
-                                        className={
-                                            driver.status === "On trip"
-                                                ? "text-green-600"
-                                                : "text-red-600"
-                                        }
-                                    >
-                                        {driver.status}
-                                    </small>
+                                    <span className ="flex items-center gap-1.5">
+                                        <small
+                                            className={
+                                                driver.status === "On trip"
+                                                    ? "text-green-600"
+                                                    : "text-red-600"
+                                            }
+                                        >
+                                            {driver.status}
+                                        </small>
+
+                                        {driver.status === "On trip" && driver.speed !== undefined && (
+                                            <small className="text-slate-500">
+                                                ・{Math.round(driver.speed)} km/h
+                                            </small>
+                                        )}
+                                    </span>
                                 </span>
 
                             </button>

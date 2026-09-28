@@ -6,6 +6,7 @@ export type Driver = {
     status: string;
     location?: [number, number];
     route?: [number, number][];
+    speed?: number;
 };
 
 export type FleetDriver = {
