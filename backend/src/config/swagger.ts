@@ -571,6 +571,17 @@ const options: swaggerJsdoc.Options = {
                         org_id: { type: 'string', format: 'uuid', nullable: true, example: 'org-123' },
                         created_at: { type: 'string', format: 'date-time', example: '2026-09-01T08:30:00.000Z' },
                         status: { type: 'string', enum: ['AVAILABLE', 'ASSIGNED', 'UNAVAILABLE'], example: 'AVAILABLE' },
+                        trip_count: { type: 'number', example: 5 },
+                        assigned_driver: {
+                            type: 'object',
+                            required: ['user_id', 'name', 'surname'],
+                            properties: {
+                                user_id: { type: 'string', format: 'uuid', example: 'user-123' },
+                                name: { type: 'string', example: 'Jane' },
+                                surname: { type: 'string', example: 'Boyega' },
+                                profile_picture_url: { type: 'string', nullable: true, example: 'upload/profile-picture/user-123' },
+                            },
+                        }
                     },
                 },
                 FleetVehicleCreateResponse: {

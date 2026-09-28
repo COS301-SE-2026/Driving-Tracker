@@ -4,44 +4,32 @@ import type {
     ImageSearchResult,
     Vehicle,
 } from "@/components/vehicles/types"
+import { apiFetch } from "./auth/apiClient";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-function getHeaders(): HeadersInit {
-
-    const token = localStorage.getItem("access_token");
-
-    return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token ?? ""}`,
+interface FleetVehiclesResponse {
+    message: string;
+    data: {
+        vehicles: Vehicle[];
     };
-
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
+interface FleetDriversResponse {
+    message: string;
+    data: {
+        drivers: Driver[];
+    };
+}
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-
-        throw new Error(
-            error?.message ?? error?.error ?? "Request failed",
-        );
-    }
-
-    return response.json() as Promise<T>;
-
+interface AddVehicleResponse{
+    data: Vehicle;
+    warning: string | null;
 }
 
 export async function getVehicles(): Promise<Vehicle[]> {
 
-    const response = await fetch(
-        `${API_URL}/vehicle/get_all_vehicles`,
-        {
-            headers: getHeaders(),
-        },
-    );
+    const response = await apiFetch<FleetVehiclesResponse>("/fleet/fleet_vehicles");
 
-    return parseResponse<Vehicle[]>(response);
+    return response.data.vehicles;
 
 }
 
@@ -49,19 +37,12 @@ export async function createVehicle(
     input: CreateVehicleInput,
 ): Promise<Vehicle> {
 
-    const response = await fetch(
-        `${API_URL}/vehicle/assign_vehicle`,
-        {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(input),
-        },
-    );
+    const response = await apiFetch<AddVehicleResponse>("/fleet/add_fleet_vehicle",{
+        method: "POST",
+        body: JSON.stringify(input) 
+    });
 
-    const result = await parseResponse<{ data: Vehicle }>(response);
-
-    return result.data;
-
+    return response.data;
 }
 
 export async function searchVehicleImage(
@@ -76,52 +57,61 @@ export async function searchVehicleImage(
         year: String(year),
     });
 
-    const response = await fetch(
-        `${API_URL}/vehicle/image-search?${params.toString()}`,
-        {
-            headers: getHeaders(),
-        },
-    );
-
-    const result = await parseResponse<{
+    const response = await apiFetch<{
         data: ImageSearchResult | null;
-    }>(response);
+    }>(`/vehicle/image-search?${params.toString()}`);
 
-    return result.data;
+    return response.data;
 
 }
 
 export async function getDrivers(): Promise<Driver[]> {
 
-    const response = await fetch(
-        `${API_URL}/users/drivers`,
-        {
-            headers: getHeaders(),
-        },
-    );
+    const response = await apiFetch<FleetDriversResponse>("/fleet/fleet_drivers");
 
-    const result = await parseResponse<{ data: Driver[] }>(response);
-
-    return result.data;
+    return response.data.drivers;
 
 }
 
-export async function assignDriver(
+export async function updateVehicle(
     vehicleId: string,
-    driverId: string,
-): Promise<void> {
-
-    const response = await fetch(
-        `${API_URL}/vehicle/${vehicleId}/driver`,
+    input: CreateVehicleInput,
+): Promise<Vehicle>{
+    const result = await apiFetch<{ data: Vehicle }>(
+        `/fleet/vehicles/${vehicleId}`,
         {
-            method: "PUT",
-            headers: getHeaders(),
-            body: JSON.stringify({
-                driver_id: driverId,
-            }),
+            method: "PATCH",
+            body: JSON.stringify(input),
         },
     );
+    return result.data;
+}
 
-    await parseResponse(response);
+export async function deleteVehicle(vehicleId: string): Promise<void>{
+    await apiFetch(
+        `/fleet/vehicles/${vehicleId}`,
+        {
+            method: "DELETE",
+        },
+    );
+}
 
+export async function uploadVehicleImage(
+    vehicleId: string,
+    file: File,
+): Promise<string>{
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const result = await apiFetch<{
+        data: {
+            image_url: string;
+        };
+    }>(`/upload/fleet-vehicle/${vehicleId}`,
+        {
+            method: "POST",
+            body: formData,
+        });
+
+    return result.data.image_url;
 }

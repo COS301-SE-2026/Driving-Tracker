@@ -10,7 +10,7 @@ const fleet_router = Router();
 
 /**
  * @openapi
- * /api/fleet/add_organization:
+ * /fleet/add_organization:
  *   post:
  *     tags:
  *       - Fleet
@@ -83,7 +83,7 @@ fleet_router.post('/add_organization', verify_token, create_user_based_limiter()
 
 /**
  * @openapi
- * /api/fleet/add_fleet_vehicle:
+ * /fleet/add_fleet_vehicle:
  *   post:
  *     tags:
  *       - Fleet
@@ -184,7 +184,7 @@ fleet_router.post("/schedule_trip", verify_token, create_user_based_limiter(), f
 
 /**
  * @openapi
- * /api/fleet/:trip_id/start_scheduled_trip:
+ * /fleet/:trip_id/start_scheduled_trip:
  *   patch:
  *     tags: [Fleet]
  *     summary: Start a scheduled fleet trip
@@ -293,7 +293,7 @@ fleet_router.patch("/:trip_id/start_scheduled_trip", verify_token, create_user_b
 
 /**
  * @openapi
- * /api/fleet/add_driver:
+ * /fleet/add_driver:
  *   post:
  *     tags: [Fleet]
  *     summary: Add a driver to the organization
@@ -390,7 +390,7 @@ fleet_router.post("/add_driver", verify_token, create_user_based_limiter(), flee
 
 /**
  * @openapi
- * /api/fleet/fleet_drivers:
+ * /fleet/fleet_drivers:
  *   get:
  *     tags: [Fleet]
  *     summary: List organization fleet drivers
@@ -460,7 +460,7 @@ fleet_router.get('/fleet_drivers', verify_token, create_user_based_limiter(), fl
 
 /**
  * @openapi
- * /api/fleet/fleet_vehicles:
+ * /fleet/fleet_vehicles:
  *   get:
  *     tags: [Fleet]
  *     summary: List organization fleet vehicles
@@ -538,7 +538,7 @@ fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), f
 
 /**
  * @openapi
- * /api/fleet/fleet_trips:
+ * /fleet/fleet_trips:
  *   get:
  *     tags: [Fleet]
  *     summary: List fleet trips
@@ -618,6 +618,174 @@ fleet_router.get('/fleet_vehicles', verify_token, create_user_based_limiter(), f
  */
 fleet_router.get('/fleet_trips', verify_token, create_user_based_limiter(), fleet_controller.list_fleet_trips);
 
+/**
+ * @openapi
+ * /fleet/vehicles/{vehicle_id}:
+ *   patch:
+ *     tags:
+ *       - Fleet
+ *     summary: Update an organization fleet vehicle
+ *     description: Updates a fleet vehicle. Only organization administrators and managers may perform this action.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: vehicle_id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: vehicle-123
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Delivery Van 2
+ *               registration:
+ *                 type: string
+ *                 example: ABC-456
+ *               make:
+ *                 type: string
+ *                 example: Toyota
+ *               model:
+ *                 type: string
+ *                 example: Hilux
+ *               year:
+ *                 type: integer
+ *                 example: 2023
+ *               fuel_type:
+ *                 type: string
+ *                 example: DIESEL
+ *               fuel_tank:
+ *                 type: number
+ *                 example: 80
+ *     responses:
+ *       200:
+ *         description: Fleet vehicle updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - data
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/FleetVehicle'
+ *       400:
+ *         description: Invalid or missing vehicle fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: MISSING_REQUIRED_FIELDS
+ *               message: Make, model, year, fuel type, and fuel tank are required
+ *       401:
+ *         description: User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *       403:
+ *         description: User does not have permission to edit fleet vehicles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *               message: You do not have permission to edit fleet vehicles
+ *       404:
+ *         description: Fleet vehicle was not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: VEHICLE_NOT_FOUND
+ *               message: Fleet vehicle not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+fleet_router.patch("/vehicles/:vehicle_id", verify_token, create_user_based_limiter(), fleet_controller.update_fleet_vehicle,);
+
+/**
+ * @openapi
+ * /fleet/vehicles/{vehicle_id}:
+ *   delete:
+ *     tags:
+ *       - Fleet
+ *     summary: Remove a vehicle from the organization fleet
+ *     description: Removes a vehicle from the organization fleet. Only organization administrators and managers may perform this action.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: vehicle_id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: vehicle-123
+ *     responses:
+ *       200:
+ *         description: Fleet vehicle removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - message
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Fleet vehicle removed successfully
+ *       401:
+ *         description: User is not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *       403:
+ *         description: User does not have permission to remove fleet vehicles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: UNAUTHORIZED
+ *               message: You do not have permission to remove fleet vehicles
+ *       404:
+ *         description: Fleet vehicle was not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: VEHICLE_NOT_FOUND
+ *               message: Fleet vehicle not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+fleet_router.delete("/vehicles/:vehicle_id", verify_token, create_user_based_limiter(), fleet_controller.remove_fleet_vehicle,);
+fleet_router.delete('/drivers/:driver_id', verify_token, create_user_based_limiter(), fleet_controller.delete_fleet_driver);
 
 fleet_router.get('/fleet_harsh_events', verify_token, create_user_based_limiter(), fleet_controller.get_fleet_event_counts);
 

@@ -122,6 +122,56 @@ const fleet_controller = {
         }
     },
 
+    async delete_fleet_driver(req: AuthRequest, res: Response){
+
+        const manager_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const driver_id = req.params.driver_id;
+
+        if (!manager_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to delete fleet drivers', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+        
+        try{
+
+            await fleet_services.delete_fleet_driver(
+                manager_id, org_id!, driver_id,
+            );
+
+            return res.status(204).send();
+        }
+        catch (error: any){
+
+            if (error?.message === "Not authorized to delete fleet drivers"){
+                return res.status(403).json({
+                    error: "UNAUTHORIZED",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Fleet driver not found"){
+                return res.status(404).json({
+                    error: "DRIVER_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message?.includes("scheduled or active trips")){
+                return res.status(409).json({
+                    error: "DRIVER_HAS_PENDING_TRIPS",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
+
+        }
+    },
+
     async list_fleet_vehicles(req: AuthRequest, res: Response){
         const user_id = req.user?.sub;
         const org_id = req.user?.org_id;
@@ -513,10 +563,7 @@ const fleet_controller = {
         }
     },
     async get_fleet_event_counts(req: AuthRequest, res: Response){
-        const user_id = req.user?.sub;
-        const org_id = req.user?.org_id;
-        const org_role = req.user?.org_role;
-
+      
         if(!user_id){
             return res.status(401).json({
                 error: "UNAUTHORIZED"
@@ -563,7 +610,123 @@ const fleet_controller = {
             return res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve trip event counts" });
         }
         
-    }
+    },
+  
+    async update_fleet_vehicle(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+         
+        if(!user_id){
+            return res.status(401).json({ error: 'UNAUTHORIZED' });
+        }
+
+        if(!check_org_authorization(
+            res, 
+            org_role as OrganizationRole,
+            org_id,
+            "You do not have permission to edit fleet vehicles",
+            [OrganizationRole.ADMIN, OrganizationRole.MANAGER],
+        )){
+            return;
+        }
+
+        try{
+            const { vehicle_id } = req.params;
+            const {
+                name,
+                registration,
+                make,
+                model,
+                year,
+                fuel_type,
+                fuel_tank,
+            } = req.body;
+
+            if(!make || !model || !year || !fuel_type || !fuel_tank){
+                return res.status(400).json({
+                    error: "MISSING_REQUIRED_FIELDS",
+                    message: "Make, model, year, fuel type, fuel tank are required",
+                });
+            }
+
+            const vehicle = await fleet_services.update_fleet_vehicle(
+                user_id,
+                org_id!,
+                vehicle_id,
+                {
+                    name, 
+                    registration,
+                    make,
+                    model,
+                    year,
+                    fuel_type,
+                    fuel_tank,
+                },
+            );
+
+            return res.status(200).json({
+                data: vehicle,
+            });
+          
+        }catch(error:  any){
+            if(error.message === "Fleet vehicle not found"){
+                return res.status(404).json({
+                    error: "VEHICLE_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        }
+    },
+
+    async remove_fleet_vehicle(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({ error: 'UNAUTHORIZED' });
+        }
+
+        if(!check_org_authorization(
+            res, 
+            org_role as OrganizationRole,
+            org_id,
+            "You do not have permission to remove fleet vehicles",
+            [OrganizationRole.ADMIN, OrganizationRole.MANAGER],
+        )){
+            return;
+        }
+
+        try{
+            const { vehicle_id } = req.params;
+            const result = await fleet_services.remove_fleet_vehicle(
+                user_id,
+                org_id!,
+                vehicle_id,
+            );
+
+            return res.status(200).json(result);
+        }catch(error:  any){
+            if(error.message === "Fleet vehicle not found"){
+                return res.status(404).json({
+                    error: "VEHICLE_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        }
+    },
+
 };
 
 export default fleet_controller;

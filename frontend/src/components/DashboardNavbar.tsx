@@ -1,12 +1,14 @@
 "use client";
 
-import {Truck, Route as RouteIcon, Users, Settings, LogOut} from "lucide-react";
+import {Truck, Route as RouteIcon, Users, Settings, LogOut, Home} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
+import { logout } from "@/lib/auth/authService";
 
 const navItems = [
+    { key: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard/home"},
     { key: "vehicles", label: "Vehicles", icon: Truck, path: "/dashboard/vehicles"},
     { key: "routes", label: "Routes", icon: RouteIcon, path: "/dashboard/routes"},
     { key: "drivers", label: "Drivers", icon: Users, path: "/dashboard/drivers"},
@@ -18,7 +20,7 @@ export default function Sidebar(){
 
     return (
 
-        <div className="flex h-screen">
+        <div className="sticky top-0 z-40 flex h-screen shrink-0 self-start">
             <div className="flex w-16 flex-col items-center justify-between border-r border-sky-100 bg-sky-50 py-4">
                 <div className="flex flex-col items-center gap-10">
 
@@ -57,7 +59,7 @@ export default function Sidebar(){
                         <Settings size = {30} />
                     </button>
 
-                    <button className="text-black hover:text-red-500">
+                    <button type = "button" onClick = {()=> void logout()} aria-label= "Sign out" title = "Sign out" className="text-black hover:text-red-500">
                         <LogOut size = {30} />
                     </button>
 

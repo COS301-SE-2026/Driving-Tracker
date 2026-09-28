@@ -111,7 +111,7 @@ function getConnectionHandler(
 const mockServer = Server as unknown as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 const mockCheckTripAccess = check_trip_access as jest.MockedFunction<typeof check_trip_access>;
-const mockFleetServices = fleet_services as {
+const mockFleetServices = fleet_services as unknown as{
     get_org_id_for_trip: jest.MockedFunction<typeof fleet_services.get_org_id_for_trip>;
     get_view_permission: jest.MockedFunction<typeof fleet_services.get_view_permission>;
     add_organization: jest.MockedFunction<typeof fleet_services.add_organization>;
