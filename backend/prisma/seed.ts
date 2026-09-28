@@ -484,7 +484,86 @@ async function main() {
         seenContactPairs.add(pairKey);
     }
     console.log(`Seeded Trusted Contacts and Alert Preferences`);
+    console.log(`Seed fleet drivers & vehicles for "local dashboard Org"`);
+    let fleet_org = await prisma.organizations.findFirst({
+        where:{ name:'Local Dashboard Org'}
+    });
+    if (!fleet_org) {
+        fleet_org = await prisma.organizations.create({
+            data: { name: 'Local Dashboard Org' },
+        });
+    }
 
+    await prisma.organization_members.upsert({
+        where: { user_id: myLoginUser.user_id },
+        update: { org_id: fleet_org.org_id, role: 'ADMIN' },
+        create: {
+            org_id: fleet_org.org_id,
+            user_id: myLoginUser.user_id,
+            role: 'ADMIN',
+        },
+    });
+
+    const fleet_drivers = [
+        { name: 'Noah', surname: 'Beck', email: 'noah.beck@omnitech.com', username: 'noahbeck' },
+        { name: 'Sipho', surname: 'Man', email: 'sipho.man@omnitech.com', username: 'siphoman' },
+        { name: 'Ally', surname: 'Jackson', email: 'ally.jackson@omnitech.com', username: 'allyjackson' },
+        { name: 'Jane', surname: 'Doe', email: 'jane.doe@omnitech.com', username: 'janedoe' },
+    ];
+    for(const d of fleet_drivers){
+        const driver_user = await prisma.users.upsert({
+            where: {email:d.email},
+            update:{ email_verified: true,status:'ACTIVE'},
+            create: {
+                username: d.username,
+                name: d.name,
+                surname: d.surname,
+                email: d.email,
+                password_hash: hashedPassword,
+                role: 'USER',
+                dob: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }),
+                phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+                consent_status: true,
+                status: 'ACTIVE',
+                email_verified: true,
+            },
+        });    
+        await prisma.organization_members.upsert({
+            where: { user_id: driver_user.user_id },
+            update: { org_id: fleet_org.org_id, role: 'DRIVER' },
+            create: {
+                org_id: fleet_org.org_id,
+                user_id: driver_user.user_id,
+                role: 'DRIVER',
+            },
+        });
+    }
+    console.log(`seed ${fleet_drivers.length} fleet drivers for ${fleet_org.name}`);
+    const fleet_vehicles = [
+        { name: 'Car1', registration: 'TOY-101-GP', make: 'Toyota', model: 'Hilux', year: 2022, fuel_type: 'DIESEL', fuel_tank: 80 },
+        { name: 'Van1', registration: 'FRD-102-GP', make: 'Ford', model: 'Ranger', year: 2023, fuel_type: 'DIESEL', fuel_tank: 80 },
+        { name: 'Bakkie1', registration: 'NIS-103-GP', make: 'Nissan', model: 'NP200', year: 2021, fuel_type: 'PETROL', fuel_tank: 50 },
+    ];
+    for( const v of fleet_vehicles){
+        const existing_vehicle = await prisma.vehicles.findFirst({
+            where: {registration : v.registration},
+        });
+        if (!existing_vehicle) {
+            await prisma.vehicles.create({
+                data: {
+                    name: v.name,
+                    registration: v.registration,
+                    make: v.make,
+                    model: v.model,
+                    year: v.year,
+                    fuel_type: v.fuel_type,
+                    fuel_tank: v.fuel_tank,
+                    org_id: fleet_org.org_id,
+                },
+            });
+        }
+    }
+    console.log(`Seeded ${fleet_vehicles.length} fleet vehicles for ${fleet_org.name}`);
     //Creating Vehicles, Trips, Scores, Events and readings
     const trips = [];
     for (const user of users) {

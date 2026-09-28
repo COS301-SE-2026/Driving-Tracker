@@ -28,7 +28,21 @@ type Route = {
     driver: string;
     status: "Not Started" | "On Trip" | "Completed";
 };
+// type FleetDriver = {
+//     user_id: string;
+//     name: string;
+//     surname: string ;
+//     email : string;
+// };
+// type FleetVehicle ={
+//     vehicle_id: string ;
+//     registration: string; 
+//     make: string;
+//     model: string ;
+// };
+// type FleetTripApi ={
 
+// }
 //mocks
 const routes: Route[] = [
     {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
@@ -143,13 +157,29 @@ export default function Routes(){
     // };
     const handleAddRoute = async( data: RouteFormData) =>{
         try{
+            let driverId = data.driver;
+            let vehicleId = data.vehicle;
+
+            // Lookup driver & vehicle UUIDs if name string was passed
+            try {
+                const driversRes = await apiFetch<{ user_id: string; name: string; surname: string }[]>('/fleet/fleet_drivers');
+                const vehiclesRes = await apiFetch<{ vehicle_id: string; registration: string }[]>('/fleet/fleet_vehicles');
+
+                const foundDriver = driversRes?.find((d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver);
+                const foundVehicle = vehiclesRes?.find((v) => v.registration === data.vehicle || v.vehicle_id === data.vehicle);
+
+                if (foundDriver) driverId = foundDriver.user_id;
+                if (foundVehicle) vehicleId = foundVehicle.vehicle_id;
+            } catch (lookupErr: unknown) {
+                console.warn("UUID lookup skipped/fallback", lookupErr);
+            }
             const res = await apiFetch<{ data:{trip: {trip_id: string}}}>('/fleet/schedule_trip',{
                 method: 'POST',
                 body: JSON.stringify({
                     title: data.title,
                     task: data.task,
-                    driver_id: data.driver,
-                    vehicle_id: data.vehicle,
+                    driver_id: driverId,
+                    vehicle_id: vehicleId,
                     planned_start_time: new Date().toISOString(),
                     planned_start_location:{
                         address: data.stops[0].address,
@@ -170,6 +200,7 @@ export default function Routes(){
                     }))
                 })
             });
+            console.log("Trip created in database:", res);
              setRoutesList((prev) => [
                 ...prev,
                 {
