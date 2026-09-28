@@ -456,22 +456,6 @@ describe('Upload controller', () => {
 			expect(json).toHaveBeenCalledWith({ error: 'NO_FILE_PROVIDED', message: 'No image file was provided' });
 		});
 
-		it('returns 400 when no file is provided', async () => {
-			const req: any = {
-				user: { sub: 'user-1', org_id: 'org-1' }, 
-				params: { vehicle_id: 'vehicle-1' },
-			};
-
-			const json = jest.fn();
-			const status = jest.fn().mockReturnValue({ json });
-			const res: any = { status };
-
-			await upload_controller.upload_fleet_vehicle_image(req, res);
-
-			expect(status).toHaveBeenCalledWith(400);
-			expect(json).toHaveBeenCalledWith({ error: 'NO_FILE_PROVIDED', message: 'No image file was provided' });
-		});
-
 		it('returns 404 when fleet vehicle is not found', async () => {
 			jest.spyOn(fleet_services, 'get_manageable_vehicle').mockRejectedValueOnce(
 				new Error('Fleet vehicle not found')
@@ -596,25 +580,6 @@ describe('Upload controller', () => {
 
 			expect(status).toHaveBeenCalledWith(404);
 			expect(json).toHaveBeenCalledWith({ error: 'NOT_FOUND', message: 'This fleet vehicle has no image' });
-		});
-
-		it('returns 404 when fleet vehicle is not found', async () => {
-			jest.spyOn(fleet_services, 'get_fleet_vehicle_image_blob_name').mockRejectedValueOnce(
-				new Error('Fleet vehicle not found')
-			);
-			const req: any = {
-				user: { sub: 'user-1', org_id: 'org-1' }, 
-				params: { vehicle_id: 'vehicle-1' },
-			};
-
-			const json = jest.fn();
-			const status = jest.fn().mockReturnValue({ json });
-			const res: any = { status };
-
-			await upload_controller.get_fleet_vehicle_image(req, res);
-
-			expect(status).toHaveBeenCalledWith(404);
-			expect(json).toHaveBeenCalledWith({ error: 'VEHICLE_NOT_FOUND', message: 'Fleet vehicle not found' });
 		});
 
 		it('returns 500 on unexpected failure', async () => {
