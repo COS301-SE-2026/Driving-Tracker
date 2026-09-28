@@ -358,3 +358,36 @@ data class SocketLocationPayload(
     @SerializedName("recorded_at")
     val recordedAt: String,
 )
+
+//Scheduled trips DTOs for fleet drivers
+data class ScheduledTripDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("scheduled_trip_id") val scheduledTripId: String? = null,
+    @SerializedName("vehicle_id") val vehicleId: String? = null,
+    @SerializedName("vehicle_name") val vehicleName: String? = null,
+    @SerializedName("vehicle_registration") val vehicleRegistration: String? = null,
+    @SerializedName("origin") val origin: String? = null,
+    @SerializedName("destination") val destination: String? = null,
+    @SerializedName("start_latitude") val startLatitude: Double? = null,
+    @SerializedName("start_longitude") val startLongitude: Double? = null,
+    @SerializedName("destination_latitude") val destinationLatitude: Double? = null,
+    @SerializedName("destination_longitude") val destinationLongitude: Double? = null,
+    @SerializedName("scheduled_start_time") val scheduledStartTime: String? = null,
+    @SerializedName("scheduled_end_time") val scheduledEndTime: String? = null,
+    @SerializedName("notes") val notes: String? = null,
+    @SerializedName("status") val status: String? = "SCHEDULED",
+    @SerializedName("manager_name") val managerName: String? = null,
+) {
+    fun getEffectiveId(): String = scheduledTripId ?: id ?: ""
+}
+
+data class ScheduledTripsResponse(
+    val message: String? = null,
+    val data: List<ScheduledTripDto> = emptyList()
+)
+
+data class StartScheduledTripRequest(
+    @SerializedName("scheduled_trip_id") val scheduledTripId: String,
+    @SerializedName("data_source") val dataSource: String = "PHONE",
+    @SerializedName("start_location") val startLocation: LocationDto? = null,
+)
