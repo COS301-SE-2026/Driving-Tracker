@@ -140,10 +140,14 @@ export const fleet_services = {
                         profile_picture_url: true,
                         trips:{
                             where: {
-                                status: { in: ['IN_PROGRESS', 'SCHEDULED'] }
+                                status: { in: ['IN_PROGRESS', 'SCHEDULED', 'COMPLETED'] },
                             },
                             select: {
-                                status: true
+                                status: true,
+                                distance_km: true,
+                                trip_scores: {
+                                    select: {overall_score: true},
+                                },
                             },
                         },
                     }
@@ -156,6 +160,26 @@ export const fleet_services = {
             const active_trips = d.users.trips;
 
             let status = 'AVAILABLE'
+
+            const completedTrips = d.users.trips.filter(
+                (trip) => trip.status === "COMPLETED",
+            );
+
+            const totalDistanceKm = completedTrips.reduce(
+                (total, trip) => total + Number(trip.distance_km ?? 0), 0,
+            );
+
+            const scoreValues: number[] = [];
+
+            for (const trip of completedTrips){
+                for (const score of trip.trip_scores){
+                    if (score.overall_score !== null){
+                        scoreValues.push(Number(score.overall_score));
+                    }
+                }
+            }
+
+            const averageScore = scoreValues.length ? scoreValues.reduce((total, score) => total + score, 0) / scoreValues.length : null;
 
             if(active_trips.some(t => t.status === 'IN_PROGRESS')){
                 status = 'UNAVAILABLE';
@@ -173,8 +197,12 @@ export const fleet_services = {
                 phone_number: d.users.phone_number,
                 profile_picture_url: d.users.profile_picture_url,
                 joined_at: d.joined_at,
-                status
+                status,
+                trips: completedTrips.length,
+                distance_km: totalDistanceKm,
+                score: averageScore,
             }
+
         });
 
         return drivers_result;

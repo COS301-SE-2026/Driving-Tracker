@@ -258,6 +258,101 @@ describe('fleet services ', () => {
 
             expect(mock_prisma.organization_members.findMany).not.toHaveBeenCalled();
         });
+
+        it("returns completed trip count, distance, and average overall score", async ()=> {
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                role: "MANAGER",
+            });
+
+            mock_prisma.organization_members.findMany.mockResolvedValue([
+                {
+                    joined_at: new Date("2026-01-01"),
+                    users: {
+                        user_id: "driver-1",
+                        username: "driver1",
+                        name: "Jane",
+                        surname: "Doe",
+                        email: "jane@example.com",
+                        phone_number: "0878990494",
+                        profile_picture_url: null,
+                        trips: [
+                            {
+                                status: "COMPLETED",
+                                distance_km: 12.5, 
+                                trip_scores: [{overall_score: 80}],
+                            },
+                            {
+                                status: "COMPLETED",
+                                distance_km: 7.5, 
+                                trip_scores: [{overall_score: 60}],
+                            },
+                            {
+                                status: "SCHEDULED",
+                                distance_km: 100, 
+                                trip_scores: [{overall_score: 100}],
+                            },
+                            {
+                                status: "IN_PROGRESS",
+                                distance_km: 50, 
+                                trip_scores: [],
+                            },
+                        ],
+                    },
+                },
+            ]);
+            const [driver] = await fleet_services.list_fleet_drivers(
+                "manager-1", 
+                "org-1"
+            );
+            expect(driver).toMatchObject({
+                trips: 2,
+                distance_km: 20,
+                score: 70,
+                status: "UNAVAILABLE",
+            });
+        });
+
+        it("returns zero distance and null score when completed trips have no values", async()=>{
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                role: "MANAGER",
+            });
+
+            mock_prisma.organization_members.findMany.mockResolvedValue([
+                {
+                    joined_at: new Date("2026-01-01"),
+                    users: {
+                        user_id: "driver-id",
+                        username: "driver1",
+                        name: "Jane",
+                        surname: "Doe",
+                        email: "jane@example.com",
+                        phone_number: "0600000001",
+                        profile_picture_url: null,
+                        trips: [
+                            {
+                                status: "COMPLETED",
+                                distance_km: null,
+                                trip_scores: [{overall_score: null}],
+                            },
+                        ],
+                    },
+                },
+            ]);
+
+            const [driver] = await fleet_services.list_fleet_drivers(
+                "manager-1",
+                "org-1",
+            );
+
+            expect (driver).toMatchObject({
+                trips: 1,
+                distance_km: 0,
+                score: null,
+                status: "AVAILABLE",
+            });
+        });
     });
 
     describe("list_fleet_vehicles", () => {
