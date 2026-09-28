@@ -1,9 +1,9 @@
 "use client";
 
-import {useState} from "react";
-import {Search, ArrowRight} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, ArrowRight } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
-import FilterRoutes, {FilterState} from "@/components/routes/FilterRoutes"
+import FilterRoutes, { FilterState } from "@/components/routes/FilterRoutes";
 import AddRoute, { RouteFormData } from "@/components/routes/AddRoute";
 import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
@@ -28,22 +28,37 @@ type Route = {
     driver: string;
     status: "Not Started" | "On Trip" | "Completed";
 };
-// type FleetDriver = {
-//     user_id: string;
-//     name: string;
-//     surname: string ;
-//     email : string;
-// };
-// type FleetVehicle ={
-//     vehicle_id: string ;
-//     registration: string; 
-//     make: string;
-//     model: string ;
-// };
-// type FleetTripApi ={
-
-// }
-//mocks
+type FleetDriver = {
+    user_id: string;
+    name: string;
+    surname: string ;
+    email : string;
+};
+type FleetVehicle ={
+    vehicle_id: string ;
+    registration: string; 
+    make: string;
+    model: string ;
+};
+type FleetTripApi ={
+     trip_id: string;
+    status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
+    scheduled_for?: string;
+    title?: string;
+    planned_start_addr?: string;
+    planned_end_addr?: string;
+    vehicle_id?: string;
+    driver?: {
+        user_id: string;
+        name: string;
+        surname: string;
+    };
+    vehicles?: {
+        make: string;
+        model: string;
+    };
+};
+// //mocks
 const routes: Route[] = [
     {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
     {id: "2",title:"Egg delivery",task: "Sales",vehicle: "Car1",stops: [{id: "2-start", address: "Logistics house"},{id: "2-end", address: "Spar"}],startDestination: "Logistics house",endDestination: "Spar Baysvillage",driver: "Sipho Man",status: "On Trip"},
@@ -131,55 +146,86 @@ export default function Routes(){
 
     const [query, setQuery] = useState("");
     const [routesList, setRoutesList] = useState<Route[]>(routes);
+    const [driverList, setDriversList] = useState<FleetDriver[]>([]);
+    const [vehicleList, setVehiclesList]= useState<FleetVehicle[]>([]);
+
     const [filters, setFilters] = useState<FilterState>({status : [], sortBy: null});
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
+    // const [addOpen, setAddOpen] = useState(false);
 
+    const loadData = useCallback(async () =>{
+        try{
+            const [driversRes, vehiclesRes, tripsRes] = await Promise.all([
+                apiFetch<{ data: { drivers: FleetDriver[] } }>('/fleet/fleet_drivers'),
+                apiFetch<{ data: { vehicles: FleetVehicle[] } }>('/fleet/fleet_vehicles'),
+                apiFetch<{ data: { trips: FleetTripApi[] } }>('/fleet/fleet_trips')
+            ]);
+
+            const fetchedDrivers = driversRes?.data?.drivers ??[];
+            const fetchedVehicles = vehiclesRes?.data?.vehicles?? [];
+            const fetchedTrips = tripsRes?.data?.trips ?? [];
+
+            setDriversList(fetchedDrivers);
+            setVehiclesList(fetchedVehicles);
+
+            const mappedRoutes: Route[] = fetchedTrips.map((t)=> {
+                let status: Route["status"] = "Not Started";
+                if (t.status === "IN_PROGRESS") status = "On Trip";
+                if (t.status === "COMPLETED") status = "Completed";
+
+                const driverName = t.driver ? `${t.driver.name} ${t.driver.surname}`.trim() : "Unassigned";
+                const vehicleName = t.vehicles ? `${t.vehicles.make} ${t.vehicles.model}`.trim() : "Unassigned";
+
+                return{
+                    id: t.trip_id,
+                    title: t.title || "Scheduled Delivery",
+                    task: "Delivery",
+                    vehicle: vehicleName,
+                    stops: [
+                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" },
+                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination" }
+                    ],
+                    startDestination: t.planned_start_addr || "Start",
+                    endDestination: t.planned_end_addr || "Destination",
+                    driver: driverName,
+                    status
+                };
+            });
+            setRoutesList(mappedRoutes);
+        }catch(err){
+            console.error("Failed to load fleet data:", err);
+        }
+    },[]);
+
+    useEffect(()=>{
+        loadData();
+
+    }, [loadData]);
     const handleDeleteRoute = (id: string) => {
         setRoutesList((prev) => prev.filter((r) => r.id !== id));
     };
 
-    // const handleAddRoute = (data: RouteFormData)=> {
-    //     setRoutesList((prev) => [
-    //         ...prev,
-    //         {
-    //             id: crypto.randomUUID(),
-    //             title: data.title,
-    //             task: data.task,
-    //             vehicle: data.vehicle,
-    //             stops: data.stops,
-    //             startDestination: data.stops[0].address,
-    //             endDestination: data.stops[data.stops.length - 1].address,
-    //             driver: data.driver,
-    //             status: "Not Started",
-    //         },
-    //     ]);
-    // };
     const handleAddRoute = async( data: RouteFormData) =>{
         try{
-            let driverId = data.driver;
-            let vehicleId = data.vehicle;
+            const foundDriver = driverList.find(
+                (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
+            );
+            const foundVehicle = vehicleList.find(
+                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
+            );
 
-            // Lookup driver & vehicle UUIDs if name string was passed
-            try {
-                const driversRes = await apiFetch<{ user_id: string; name: string; surname: string }[]>('/fleet/fleet_drivers');
-                const vehiclesRes = await apiFetch<{ vehicle_id: string; registration: string }[]>('/fleet/fleet_vehicles');
-
-                const foundDriver = driversRes?.find((d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver);
-                const foundVehicle = vehiclesRes?.find((v) => v.registration === data.vehicle || v.vehicle_id === data.vehicle);
-
-                if (foundDriver) driverId = foundDriver.user_id;
-                if (foundVehicle) vehicleId = foundVehicle.vehicle_id;
-            } catch (lookupErr: unknown) {
-                console.warn("UUID lookup skipped/fallback", lookupErr);
+            if (!foundDriver || !foundVehicle) {
+                alert("Please select a valid driver and vehicle from your fleet.");
+                return;
             }
             const res = await apiFetch<{ data:{trip: {trip_id: string}}}>('/fleet/schedule_trip',{
                 method: 'POST',
                 body: JSON.stringify({
                     title: data.title,
                     task: data.task,
-                    driver_id: driverId,
-                    vehicle_id: vehicleId,
+                    driver_id: foundDriver.user_id,
+                    vehicle_id: foundVehicle.vehicle_id,
                     planned_start_time: new Date().toISOString(),
                     planned_start_location:{
                         address: data.stops[0].address,
@@ -201,36 +247,10 @@ export default function Routes(){
                 })
             });
             console.log("Trip created in database:", res);
-             setRoutesList((prev) => [
-                ...prev,
-                {
-                    id: res.data?.trip?.trip_id ?? crypto.randomUUID(),
-                    title: data.title,
-                    task: data.task,
-                    vehicle: data.vehicle,
-                    stops: data.stops,
-                    startDestination: data.stops[0].address,
-                    endDestination: data.stops[data.stops.length - 1].address,
-                    driver: data.driver,
-                    status: "Not Started",
-                },
-            ]);
+             await loadData();
+             setAddOpen(false);
         }catch(err){
             console.error("Failed to schedule trip", err);
-            setRoutesList((prev) => [
-                ...prev,
-                {
-                    id: crypto.randomUUID(),
-                    title: data.title,
-                    task: data.task,
-                    vehicle: data.vehicle,
-                    stops: data.stops,
-                    startDestination: data.stops[0].address,
-                    endDestination: data.stops[data.stops.length - 1].address,
-                    driver: data.driver,
-                    status: "Not Started",
-                },
-            ]);
         }
     }
 
