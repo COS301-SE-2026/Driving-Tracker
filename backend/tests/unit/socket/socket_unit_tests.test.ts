@@ -119,6 +119,7 @@ const mockFleetServices = fleet_services as {
     schedule_trip: jest.MockedFunction<typeof fleet_services.schedule_trip>;
     list_fleet_trips: jest.MockedFunction<typeof fleet_services.list_fleet_trips>;
     start_scheduled_trip: jest.MockedFunction<typeof fleet_services.start_scheduled_trip>;
+    get_user_org_id: jest.MockedFunction<typeof fleet_services.get_user_org_id>;
 };
 
 function getMockIo(): MockIo {
@@ -417,13 +418,14 @@ describe("socket", () => {
 
             const io = getMockIo();
 
-            await broadcast_trip_ended("trip-1");
+            await broadcast_trip_ended("trip-1", "org-1", "user-1");
 
-            expect(io.to).toHaveBeenCalledWith("trip:trip-1");
+            expect(io.to).toHaveBeenCalledWith(["trip:trip-1", "fleet:org-1"]);
 
             const tripRoom = io.to.mock.results[0].value as MockRoom;
             expect(tripRoom.emit).toHaveBeenCalledWith("trip_ended", {
                 trip_id: "trip-1",
+                user_id: "user-1",
             });
 
             expect(io.in).toHaveBeenCalledWith("trip:trip-1");

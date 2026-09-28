@@ -20,7 +20,8 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export function useFleetSocket(
     orgId: string | null,
-    onLocationUpdate?: (data: LocationUpdatePayload) => void
+    onLocationUpdate?: (data: LocationUpdatePayload) => void,
+    onTripEnded?: (driver_id: string) => void,
 ) {
     const socketRef = useRef<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -55,6 +56,14 @@ export function useFleetSocket(
 
             if(onLocationUpdate) {
                 onLocationUpdate(data);
+            }
+        });
+
+        socket.on("trip_ended", (data: { trip_id: string, user_id: string }) => {
+            console.log("Received driver location update:", data);
+
+            if(onTripEnded) {
+                onTripEnded(data.user_id);
             }
         });
 

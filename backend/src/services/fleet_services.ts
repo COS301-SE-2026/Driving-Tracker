@@ -60,6 +60,20 @@ export const fleet_services = {
         return org_id;
     },
 
+    async get_user_org_id(user_id: string): Promise<string | null> {
+
+        const user = await prisma.organization_members.findUnique({
+                where: {
+                    user_id
+                },
+                select: { org_id: true },
+        });
+
+        const org_id = user?.org_id?? null;
+
+        return org_id;
+    },
+
     async get_view_permission(user_id: string, org_id: string):Promise<boolean> {
 
         const member = await prisma.organization_members.findUnique({

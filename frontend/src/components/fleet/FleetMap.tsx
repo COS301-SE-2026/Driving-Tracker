@@ -113,12 +113,15 @@ export default function FleetMap({
                     iconOptions: {
                         image: "pin-round-blue",
                         allowOverlap: true,
+                        ignorePlacement: true,
                     },
                     textOptions: {
                         textField: ["get", "driverName"],
                         color: "#111827",
                         size: 12,
                         offset: [0, 1.5],
+                        allowOverlap: true,
+                        ignorePlacement: true,
                     },
                     filter: ["==", ["get", "type"], "driver"],
                 }),
@@ -243,11 +246,6 @@ function syncSource(source: atlas.source.DataSource, drivers: Driver[]){
         if(driver.location){
             if(existingMarker){
                 existingMarker.setCoordinates(driver.location);
-                existingMarker.setProperties({
-                    driverId: driver.id,
-                    driverName: driver.name,
-                    type: "driver",
-                });
             } else {
                 source.add(
                     new atlas.Shape(new atlas.data.Point(driver.location), markerId(driver.id), {

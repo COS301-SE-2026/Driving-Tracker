@@ -14,6 +14,7 @@ import { badges_leaderboard_services } from './badges_leaderboard_services';
 import { update_vehicle_efficiency } from '../utils/trip_counter';
 import leaderboard_services from './leaderboard_services';
 import { broadcast_trip_ended, force_revoke_trip_access } from '../socket';
+import { fleet_services } from './fleet_services';
 
 // Helper function to safely convert Decimal or number values to number
 export function to_number(value: any): number | null {
@@ -484,7 +485,15 @@ export const trips_services ={
             });
             console.log("updated the trip status");
 
-            await broadcast_trip_ended(data.trip_id);
+            try{
+
+            const org_id = await fleet_services.get_user_org_id(data.user_id);
+
+            await broadcast_trip_ended(data.trip_id, org_id, data.user_id);
+
+            } catch(err){
+                console.log("Failed to broadcast trip ended");
+            }
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({

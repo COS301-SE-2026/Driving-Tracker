@@ -87,16 +87,11 @@ export default function DashboardHomePage() {
 
     function toDisplayStatus(status: string): string {
 
-        switch(status) {
-            case "UNAVAILABLE":
-                return "On trip";
-            case "AVAILABLE":
-                return "Inactive";
-            case "ASSIGNED":
-                return "Assigned";
-            default:
-                return status;
-        }
+        if(status === "UNAVAILABLE"){
+            return "On trip";
+        } 
+
+        return "Inactive";
     }
 
     const handleLocationUpdate = useCallback((data: LocationUpdatePayload) => {
@@ -119,7 +114,24 @@ export default function DashboardHomePage() {
         );
     }, []);
 
-    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate);
+    const handleTripEnded = useCallback((driverId: string) => {
+
+        setDrivers((prevDrivers) => 
+            prevDrivers.map((driver) => {
+
+                if(driver.id === driverId){
+                    return {
+                        ...driver, 
+                        status: "Inactive",
+                    };
+                }
+
+                return driver;
+            })
+        );
+    }, []);
+
+    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate, handleTripEnded);
 
     useEffect(() => {
         async function loadFleetDashboard() {
@@ -254,7 +266,7 @@ export default function DashboardHomePage() {
                                         className={
                                             driver.status === "On trip"
                                                 ? "text-green-600"
-                                                : driver.status === "Assigned" ? "text-blue-600" : "text-red-600"
+                                                : "text-red-600"
                                         }
                                     >
                                         {driver.status}

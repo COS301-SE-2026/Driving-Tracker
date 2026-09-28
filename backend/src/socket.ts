@@ -181,16 +181,23 @@ export async function force_revoke_trip_access(trip_id: string, contact_user_id:
     });
 }
 
-export async function broadcast_trip_ended(trip_id: string){
+export async function broadcast_trip_ended(trip_id: string, org_id: string | null, user_id: string){
 
-    if(!io){ console.log("Attempted to broadcast end trip before Socket.io was initialized");
-         return; 
-        }
+    if(!io){ 
+        console.log("Attempted to broadcast end trip before Socket.io was initialized");
+        return; 
+    }
 
-    const room = `trip:${trip_id}`;
+    const trip_room = `trip:${trip_id}`;
 
-    io.to(room).emit('trip_ended', { trip_id });
+    const rooms = [trip_room];
 
-    io.in(room).socketsLeave(room);
+    if(org_id){
+        rooms.push(`fleet:${org_id}`);
+    }
+
+    io.to(rooms).emit('trip_ended', { trip_id, user_id });
+
+    io.in(trip_room).socketsLeave(trip_room);
     
 }
