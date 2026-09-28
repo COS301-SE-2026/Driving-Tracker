@@ -88,7 +88,11 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
     }
 
     fun saveOrgRole(role: String) {
-        prefs.edit { putString("org_role", null) ?: getOrgRoleFromToken() }
+        prefs.edit { putString("org_role", role) }
+    }
+
+    fun getOrgRole(): String? {
+        return prefs.getString("org_role", null) ?: getOrgRoleFromToken()
     }
 
     fun getOrgRoleFromToken(): String? {
@@ -98,7 +102,7 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
             if (parts.size < 2) return null
 
             val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
-            val jsonObject = Gson.fromJson(payload, JsonObject::class.java)
+            val jsonObject = Gson().fromJson(payload, JsonObject::class.java)
 
             jsonObject.get("org_role")?.asString
                 ?: jsonObject.get("orgRole")?.asString
