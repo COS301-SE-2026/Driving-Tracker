@@ -6,25 +6,27 @@ import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 
 type Stop = {id: string, address: string};
-type Status = "Not Started" | "On Trip" | "Completed";
+
+export type RouteOption = {id: string; label: string};
 
 export type RouteFormData = {
     title: string;
     task: string;
     driver: string;
+    driverId: string;
     vehicle: string;
+    vehicleId: string;
+    plannedStartTime: string;
     stops: Stop[];
-}
+};
 
 type addRouteDialogProps = {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data:
-        {title: string; task: string; driver: string;vehicle: string; stops: Stop[]; status: Status}
-    ) => void;
-    driverOptions: string[];
-    vehicleOptions: string[];
-    initialData?: RouteFormData;
+    onSubmit: (data: RouteFormData) => void | Promise<void>;
+    driverOptions: RouteOption[];
+    vehicleOptions: RouteOption[];
+    initialData?: Partial<RouteFormData>;
 };
 
 const emptyStops = (): Stop[] => [
@@ -40,17 +42,23 @@ export default function AddRoute(
 
     const [title, setTitle] = useState(initialData?.title ?? "");
     const [task, setTask] = useState(initialData?.task ?? "");
-    const [driver, setDriver] = useState(initialData?.driver ?? "");
-    const [vehicle, setVehicle] = useState(initialData?.vehicle ?? "");
     const [stops, setStops] = useState<Stop[]>(initialData?.stops ?? emptyStops());
+    const [driverId, setDriverId] = useState(initialData?. driverId ?? "");
+    const [vehicleId, setVehicleId] = useState(initialData?.vehicleId ?? "");
+    const [plannedStartTime, setPlannedStartTime] = useState(
+        initialData?.plannedStartTime ?? "",
+    );
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open){
             setTitle(initialData?.title ?? "");
             setTask(initialData?.task ?? "");
-            setDriver(initialData?.driver ?? "");
-            setVehicle(initialData?.vehicle ?? "");
+            setDriverId(initialData?.driverId ?? "");
+            setVehicleId(initialData?.vehicleId ?? "");
+            setPlannedStartTime(initialData?.plannedStartTime ?? "");
             setStops(initialData?.stops ?? emptyStops());
+            setSubmitError(null);
         }
     }, [open, initialData]);
 
@@ -79,8 +87,9 @@ export default function AddRoute(
     const resetForm = () => {
         setTitle("");
         setTask("");
-        setVehicle("");
-        setDriver("");
+        setDriverId("");
+        setVehicleId("");
+        setPlannedStartTime("");
         setStops(
             [
                 {id: crypto.randomUUID(), address: ""},
@@ -89,11 +98,24 @@ export default function AddRoute(
         );
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({title, task, driver, vehicle, stops, status: "Not Started"});
-        resetForm();
-        onClose();
+        setSubmitError(null);
+        
+        try{
+            await onSubmit({
+                title,task,
+                driver: driverOptions.find((option)=> option.id === driverId)?.label ?? "",
+                driverId,
+                vehicle: vehicleOptions.find((option) => option.id === vehicleId)?.label ?? "",
+                vehicleId,plannedStartTime,stops,
+            });
+            resetForm();
+            onClose();
+        }
+        catch (error){
+            setSubmitError(error instanceof Error ? error.message : "Could not schedule the route.");
+        }
     };
 
     return(
@@ -143,14 +165,14 @@ export default function AddRoute(
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             Driver
                         </label>
-                        <select value = {driver} onChange={(e) => setDriver(e.target.value)} required
+                        <select value = {driverId} onChange={(e) => setDriverId(e.target.value)} required
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400">
                                 <option value = "" disabled>
                                     Select a driver
                                 </option>
-                                {driverOptions.map((name) => (
-                                    <option key = {name} value={name}>
-                                        {name}
+                                {driverOptions.map((option) => (
+                                    <option key = {option.id} value={option.id}>
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
@@ -160,17 +182,29 @@ export default function AddRoute(
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             Vehicle
                         </label>
-                        <select value = {vehicle} onChange={(e) => setVehicle(e.target.value)} required
+                        <select value = {vehicleId} onChange={(e)=> setVehicleId(e.target.value)} required
                             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400">
                                 <option value = "" disabled>
                                     Select a vehicle
                                 </option>
-                                {vehicleOptions.map((name) => (
-                                    <option key = {name} value={name}>
-                                        {name}
+                                {vehicleOptions.map((option) => (
+                                    <option key = {option.id} value={option.id}>
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Time
+                        </label>
+                        <input
+                        type = "datetime-local"
+                        value = {plannedStartTime}
+                        onChange = {(e) => setPlannedStartTime(e.target.value)}
+                        required
+                        />
                     </div>
 
                     <div>
@@ -235,6 +269,12 @@ export default function AddRoute(
                         </button>
 
                     </div>
+
+                    {submitError && (
+                        <p role="alert" className="text-sm text-red-600">
+                            {submitError}
+                        </p>
+                    )}
 
                 </form>
             </div>
