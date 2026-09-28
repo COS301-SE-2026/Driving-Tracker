@@ -82,12 +82,12 @@ function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> 
 
             </div>
 
-            <div className="grid grid-cols-2 gap-y-2 text-sm">
+            <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
 
                 <span className="font-medium text-gray-900">
                     Email
                 </span>
-                <span className="text-gray-700">
+                <span className="min-w-0 break-all text-gray-700">
                     {driver.email}
                 </span>
 
