@@ -500,6 +500,121 @@ const fleet_controller = {
             
         }
     },
+
+    async update_fleet_vehicle(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({ error: 'UNAUTHORIZED' });
+        }
+
+        if(!check_org_authorization(
+            res, 
+            org_role as OrganizationRole,
+            org_id,
+            "You do not have permission to edit fleet vehicles",
+            [OrganizationRole.ADMIN, OrganizationRole.MANAGER],
+        )){
+            return;
+        }
+
+        try{
+            const { vehicle_id } = req.params;
+            const {
+                name,
+                registration,
+                make,
+                model,
+                year,
+                fuel_type,
+                fuel_tank,
+            } = req.body;
+
+            if(!make || !model || !year || !fuel_type || !fuel_tank){
+                return res.status(400).json({
+                    error: "MISSING_REQUIRED_FIELDS",
+                    message: "Make, model, year, fuel type, fuel tank are required",
+                });
+            }
+
+            const vehicle = await fleet_services.update_fleet_vehicle(
+                user_id,
+                org_id!,
+                vehicle_id,
+                {
+                    name, 
+                    registration,
+                    make,
+                    model,
+                    year,
+                    fuel_type,
+                    fuel_tank,
+                },
+            );
+
+            return res.status(200).json({
+                data: vehicle,
+            });
+        }catch(error:  any){
+            if(error.message === "Fleet vehicle not found"){
+                return res.status(404).json({
+                    error: "VEHICLE_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        }
+    },
+
+    async remove_fleet_vehicle(req: AuthRequest, res: Response){
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if(!user_id){
+            return res.status(401).json({ error: 'UNAUTHORIZED' });
+        }
+
+        if(!check_org_authorization(
+            res, 
+            org_role as OrganizationRole,
+            org_id,
+            "You do not have permission to remove fleet vehicles",
+            [OrganizationRole.ADMIN, OrganizationRole.MANAGER],
+        )){
+            return;
+        }
+
+        try{
+            const { vehicle_id } = req.params;
+            const result = await fleet_services.remove_fleet_vehicle(
+                user_id,
+                org_id!,
+                vehicle_id,
+            );
+
+            return res.status(200).json(result);
+        }catch(error:  any){
+            if(error.message === "Fleet vehicle not found"){
+                return res.status(404).json({
+                    error: "VEHICLE_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        }
+    },
+
 };
 
 export default fleet_controller;

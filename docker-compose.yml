@@ -109,6 +109,7 @@ services:
         context: ./frontend
         args:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY: ${NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY}
     ports:
         - "3001:3001"
     volumes:

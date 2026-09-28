@@ -14,6 +14,8 @@ jest.mock("../../../src/services/fleet_services", () =>({
         start_scheduled_trip: jest.fn(),
         list_fleet_trips: jest.fn(),
         schedule_trip: jest.fn(),
+        update_fleet_vehicle: jest.fn(),
+        remove_fleet_vehicle: jest.fn(),
     },
 }));
 
@@ -802,6 +804,205 @@ describe("Fleet controller", () =>{
             expectStatus(response, expectedStatus);
         });
         
+    });
+
+    describe("update_fleet_vehicle", () => {
+        const valid_update_body = {
+            name: "Updated Fleet Van",
+            registration: "REG-999",
+            make: "Toyota",
+            model: "Quantum",
+            year: 2022,
+            fuel_type: "DIESEL",
+            fuel_tank: 70.0
+        };
+
+        it("returns 401 when unauthorized", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ user: undefined, params: { vehicle_id: "v-1"}}),
+                response as any,
+        );
+
+            expectStatus(response, 401);
+        });
+
+        it("returns 403 when user does not have permission to edit fleet vehicles", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ 
+                    user: {sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER },
+                    params: { vehicle_id: "v-1"},
+                    body: valid_update_body,
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+        });
+
+        it("returns 400 when required fields are missing", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "v-1"},
+                    body: { make: "Toyota" },
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 400);
+            expect(response.json).toHaveBeenCalledWith(
+                expect.objectContaining({ error: "MISSING_REQUIRED_FIELDS"})
+            );
+        });
+
+        it("returns 200 when vehicle is successfully updated", async () => {
+            const updatedVehicle = { vehicle_id: "v-1", name: "Updated Fleet Van" };
+            mockFleetServices.update_fleet_vehicle.mockResolvedValueOnce(updatedVehicle as any);
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "v-1"},
+                    body: valid_update_body,
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 200);
+            expect(response.json).toHaveBeenCalledWith({ data: updatedVehicle });
+            expect(mockFleetServices.update_fleet_vehicle).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                "v-1",
+                valid_update_body,
+            );
+        });
+
+        it("returns 404 when vehicle is not found", async () => {
+            mockFleetServices.update_fleet_vehicle.mockRejectedValueOnce(new Error("Fleet vehicle not found"));
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "missing-v"},
+                    body: valid_update_body,
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 404);
+            expect(response.json).toHaveBeenCalledWith({ 
+                error: "VEHICLE_NOT_FOUND",
+                message: "Fleet vehicle not found",
+            });
+        });
+
+        it("returns 500 when vehicle service fails unexpectedly", async () => {
+            mockFleetServices.update_fleet_vehicle.mockRejectedValueOnce(new Error("Database crash"));
+            const response = makeResponse();
+
+            await fleet_controller.update_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "v-1"},
+                    body: valid_update_body,
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(response.json).toHaveBeenCalledWith({ 
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        });
+    });
+
+    describe("remove_fleet_vehicle", () => {
+        it("returns 401 when unauthorized", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.remove_fleet_vehicle(
+                makeRequest({ user: undefined, params: { vehicle_id: "v-1"}}),
+                response as any,
+        );
+            expectStatus(response, 401);
+        });
+
+        it("returns 403 when user does not have permission to remove fleet vehicles", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.remove_fleet_vehicle(
+                makeRequest({ 
+                    user: {sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER },
+                    params: { vehicle_id: "v-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+        });
+
+        it("returns 200 when vehicle is successfully removed", async () => {
+            const result = { message: "Fleet vehicle removed successfully" };
+            mockFleetServices.remove_fleet_vehicle.mockResolvedValueOnce(result as any);
+            const response = makeResponse();
+
+            await fleet_controller.remove_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "v-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 200);
+            expect(response.json).toHaveBeenCalledWith( result );
+            expect(mockFleetServices.remove_fleet_vehicle).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                "v-1",
+            );
+        });
+
+        it("returns 404 when fleet vehicle is not found", async () => {
+            mockFleetServices.remove_fleet_vehicle.mockRejectedValueOnce(new Error("Fleet vehicle not found"));
+            const response = makeResponse();
+
+            await fleet_controller.remove_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "missing-v"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 404);
+            expect(response.json).toHaveBeenCalledWith({ 
+                error: "VEHICLE_NOT_FOUND",
+                message: "Fleet vehicle not found",
+            });
+        });
+
+        it("returns 500 when vehicle service fails unexpectedly", async () => {
+            mockFleetServices.remove_fleet_vehicle.mockRejectedValueOnce(new Error("Database crash"));
+            const response = makeResponse();
+
+            await fleet_controller.remove_fleet_vehicle(
+                makeRequest({ 
+                    params: { vehicle_id: "v-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(response.json).toHaveBeenCalledWith({ 
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update fleet vehicle",
+            });
+        });
     });
 
 });
