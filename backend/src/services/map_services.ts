@@ -201,7 +201,7 @@ export const map_services ={
     },
     async search_address(data: search_address_request){
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
-        const url = `https://atlas.microsoft.com/search/fuzzy/json?api-version=1.0&query=${encodeURIComponent(data.address)}&subscription-key=${key}&language=en-US&limit=5`;
+        const url = `https://atlas.microsoft.com/search/fuzzy/json?api-version=1.0&query=${encodeURIComponent(data.address)}&subscription-key=${key}&language=en-US&countrySet=ZA&limit=5`;
     
 
         const response = await fetch(url);
