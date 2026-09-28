@@ -361,6 +361,49 @@ describe("socket", () => {
 
     });
 
+    describe("leave_fleet", () => {
+        it("leaves a fleet room", async () => {
+            
+            const socket = createSocket();
+
+            socket.data.fleet_org_id = "org-2";
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers.leave_fleet("org-2");
+
+            expect(socket.leave).toHaveBeenCalledWith("fleet:org-2");
+            expect(socket.data.fleet_org_id).toBe(null);
+        });
+
+        it("returns when socket fleet_org_id doesn't match parameter", async () => {
+            const socket = createSocket();
+
+            initSocket({} as any);
+
+            socket.data.fleet_org_id = "org-4";
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers.leave_fleet("org-1");
+
+            expect(socket.leave).not.toHaveBeenCalledWith("fleet:org-1");
+        });
+
+    });
+
     describe("join_fleet", () => {
         it("joins an admin or manager to fleet room", async () => {
             const socket = createSocket();

@@ -553,7 +553,7 @@ const fleet_controller = {
                 });
             }
 
-            if(error?.message?.includes("'You do not have permission to view fleet event stats'")){
+            if(error?.message?.includes("You do not have permission to view fleet event stats")){
 
                 return res.status(403).json({
                     error: "UNAUTHORIZED", message: error.message
