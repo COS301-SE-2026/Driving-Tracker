@@ -6,7 +6,8 @@ import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 import { apiFetch } from "@/lib/auth/apiClient";
 
-type Stop = {id: string, address: string};
+// type Stop = {id: string, address: string};
+type Stop = { id: string; address: string; lat?: number; lng?: number };
 type Status = "Not Started" | "On Trip" | "Completed";
 
 export type RouteFormData = {
@@ -42,7 +43,76 @@ const emptyStops = (): Stop[] => [
     {id: crypto.randomUUID(), address: ""},
     {id: crypto.randomUUID(), address: ""},
 ];
+export function AddressAutocompleteInput({ 
+    value, 
+    placeholder, 
+    onChange, 
+    onSelectAddress, }
+    : { 
+        value: string; 
+        placeholder: string; 
+        onChange: (val: string) => void; 
+        onSelectAddress: (addr: string, lat: number, lng: number) => void; 
+    }) { 
+    const [suggestions, setSuggestions] = useState<{ address: string; lat: number; lng: number }[]>([]); 
+    const [showDropdown, setShowDropdown] = useState(false);
+    useEffect(() => {
+        if (!value || value.trim().length < 3) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
 
+        const timer = setTimeout(async () => {
+            try {
+                const res = await apiFetch<{ data: { address: string; lat: number; lng: number }[] }>(
+                    `/map/search?address=${encodeURIComponent(value)}`
+                );
+                if (res.data?.length) {
+                    setSuggestions(res.data);
+                    setShowDropdown(true);
+                } else {
+                    setSuggestions([]);
+                }
+            } catch (err) {
+                console.error("Address search failed", err);
+            }
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [value]);
+
+    return (
+        <div className="relative w-full">
+            <input
+                value={value}
+                onChange={(e) => {
+                    onChange(e.target.value);
+                }}
+                placeholder={placeholder}
+                required
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+            />
+
+            {showDropdown && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {suggestions.map((item, idx) => (
+                        <div
+                            key={idx}
+                            onClick={() => {
+                                onSelectAddress(item.address, item.lat, item.lng);
+                                setShowDropdown(false);
+                            }}
+                            className="cursor-pointer px-3 py-2 text-xs font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 border-b border-gray-100 last:border-0"
+                        >
+                             {item.address}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 export function RouteRiskSelector({
     routes,
     selectedIndex,
@@ -130,9 +200,17 @@ export default function AddRoute(
         return null;
     }
 
-    const updateStop = (id: string, address: string) => {
+  const updateStopAddress = (id: string, address: string) => {
         setStops((prev) =>
-        prev.map((s) => (s.id === id ? {...s,address} : s)));
+            prev.map((s) => (s.id === id ? { ...s, address, lat: undefined, lng: undefined } : s))
+        );
+        setRouteOptions([]);
+    };
+
+    const updateStopCoordinates = (id: string, address: string, lat: number, lng: number) => {
+        setStops((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, address, lat, lng } : s))
+        );
         setRouteOptions([]);
     };
 
@@ -149,11 +227,11 @@ export default function AddRoute(
         prev.filter((s) => (s.id !== id )));
     };
     const handlePreviewRoutes = async () => {
-        const startAddr = stops[0]?.address?.trim();
-        const endAddr = stops[stops.length - 1]?.address?.trim();
+        const startStop = stops[0];
+        const endStop = stops[stops.length - 1];
 
-        if (!startAddr || !endAddr) {
-            setRouteError("Please enter both Start Location and Final Destination.");
+        if (!startStop?.address?.trim() || !endStop?.address?.trim()) {
+            setRouteError("Please select both Start Location and Final Destination from the dropdown suggestions.");
             return;
         }
 
@@ -161,23 +239,39 @@ export default function AddRoute(
         setRouteError(null);
 
         try {
-            const startRes = await apiFetch<{ data: { lat: number; lng: number }[] }>(
-                `/map/search?address=${encodeURIComponent(startAddr)}`
-            );
-            const endRes = await apiFetch<{ data: { lat: number; lng: number }[] }>(
-                `/map/search?address=${encodeURIComponent(endAddr)}`
-            );
+            let startLat = startStop.lat;
+            let startLng = startStop.lng;
+            let endLat = endStop.lat;
+            let endLng = endStop.lng;
 
-            const startCoord = startRes.data?.[0];
-            const endCoord = endRes.data?.[0];
+            // Fallback search if user typed custom address without selecting dropdown
+            if (!startLat || !startLng) {
+                const startRes = await apiFetch<{ data: { lat: number; lng: number }[] }>(
+                    `/map/search?address=${encodeURIComponent(startStop.address)}`
+                );
+                if (startRes.data?.[0]) {
+                    startLat = startRes.data[0].lat;
+                    startLng = startRes.data[0].lng;
+                }
+            }
 
-            if (!startCoord || !endCoord) {
-                setRouteError("Could not resolve coordinates for the entered addresses.");
+            if (!endLat || !endLng) {
+                const endRes = await apiFetch<{ data: { lat: number; lng: number }[] }>(
+                    `/map/search?address=${encodeURIComponent(endStop.address)}`
+                );
+                if (endRes.data?.[0]) {
+                    endLat = endRes.data[0].lat;
+                    endLng = endRes.data[0].lng;
+                }
+            }
+
+            if (!startLat || !startLng || !endLat || !endLng) {
+                setRouteError("Could not resolve coordinates for addresses. Please choose a location from the dropdown suggestions.");
                 return;
             }
 
             const routeRes = await apiFetch<{ data: { routes: RouteOption[] } }>(
-                `/map/route?start_lat=${startCoord.lat}&start_lng=${startCoord.lng}&dest_lat=${endCoord.lat}&dest_lng=${endCoord.lng}&include_alternative=true`
+                `/map/route?start_lat=${startLat}&start_lng=${startLng}&dest_lat=${endLat}&dest_lng=${endLng}&include_alternative=true`
             );
 
             if (routeRes.data?.routes?.length) {
@@ -187,13 +281,13 @@ export default function AddRoute(
                 setRouteError("No routes found between those locations.");
             }
         } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to calculate route alternatives.";
             console.error("Failed to fetch route alternatives", err);
-           
+            setRouteError(message);
         } finally {
             setLoadingRoutes(false);
         }
     };
-
     const resetForm = () => {
         setTitle("");
         setTask("");
@@ -340,13 +434,11 @@ export default function AddRoute(
                                         </div>
 
                                         <div className="flex flex-1 items-center gap-2">
-                                            <input
+                                            <AddressAutocompleteInput
                                                 value={stop.address}
-                                                onChange={(e) => updateStop(stop.id, e.target.value)}
-                                                placeholder={isFirst ? "Start Location" : isLast ? "Final destination" : "Stop"}
-                                                required
-                                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
-                                            />
+                                                placeholder={isFirst ? "Start Location": isLast ?"Final destination": "stop"}
+                                                onChange={(addr) => updateStopAddress(stop.id,addr)}
+                                                onSelectAddress={(addr, lat,lng)=> updateStopCoordinates(stop.id,addr,lat,lng)}/>
 
                                             {!isFirst && !isLast && (
                                                 <button

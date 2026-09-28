@@ -32,14 +32,16 @@ const map_controller = {
     },
     async suggested_route(req: AuthRequest, res: Response) {
         try{
-            const { start_lat, start_lng, dest_lat, dest_lng, include_alternatives } = req.query;
+            const { start_lat, start_lng, dest_lat, dest_lng, include_alternative } = req.query;
+            const isAlternative = include_alternative === 'true' || include_alternative === 'true';
 
+       
             const route_response = await map_services.suggested_routes({
                 start_lat: Number(start_lat),
                 start_lng: Number(start_lng),
                 dest_lat: Number(dest_lat),
                 dest_lng: Number(dest_lng),
-                include_alternative: include_alternatives === 'true' // Optional flag for Managers
+                include_alternative: isAlternative // Optional flag for Managers
             });
 
             res.status(200).json({
