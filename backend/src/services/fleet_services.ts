@@ -303,13 +303,15 @@ export const fleet_services = {
             throw new Error("Driver not available");
         }
 
-        const route = await map_services.suggested_routes({
-            start_lat: data.planned_start_location.lat,
-            start_lng: data.planned_start_location.lng,
-            dest_lat:  data.planned_end_location.lat,
-            dest_lng: data.planned_end_location.lng,
-            stops: data.stops ?? undefined
+        const routeRes = await map_services.suggested_routes({ 
+            start_lat: data.planned_start_location.lat, 
+            start_lng: data.planned_start_location.lng, 
+            dest_lat:  data.planned_end_location.lat, 
+            dest_lng: data.planned_end_location.lng, 
+            stops: data.stops ?? undefined 
         });
+
+        const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
 
 
         const BASE_BUFFER_SECONDS = 10*60;
@@ -442,12 +444,13 @@ export const fleet_services = {
             const dest_lng = to_number(scheduled_trip.planned_dest_lng);
 
             if (dest_lat && dest_lng) {
-                const route = await map_services.suggested_routes({
+                const routeRes = await map_services.suggested_routes({ 
                     start_lat: data.start_location.lat,
-                    start_lng: data.start_location.lng,
-                    dest_lat: dest_lat,
-                    dest_lng: dest_lng,
+                    start_lng: data.start_location.lng, 
+                    dest_lat: dest_lat, 
+                    dest_lng: dest_lng, 
                 });
+                const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
 
                 planned_distance_km = route.distance_km;
                 
