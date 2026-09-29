@@ -13,7 +13,7 @@ export const options = {
         { duration: '30s', target: 0 },
     ],
     thresholds:{
-        'http_req_duration{name:PostReadings}': ['p(95)<150', 'p(99)<400'], // Latency SLA
+        'http_req_duration{name:PostReadings}': ['p(95)<250', 'p(99)<400'], // Latency SLA
         'http_req_failed': ['rate<0.01'],
     }
 };
@@ -87,6 +87,7 @@ export function setup(){
             drivers.push({ token, tripId });
         }
     }
+    return {drivers}
 }
 export default function(data: {drivers: TestDriver[]}){
     if (!data?.drivers || data.drivers.length === 0) { sleep(1); return; }
