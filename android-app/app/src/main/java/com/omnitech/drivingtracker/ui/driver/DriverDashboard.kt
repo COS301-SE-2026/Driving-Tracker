@@ -71,7 +71,6 @@ fun DriverDashboard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Fleet Driver Mode", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Blue)
-                        Text("Assigned by Fleet Manager", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 }
             }

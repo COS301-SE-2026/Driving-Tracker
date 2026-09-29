@@ -401,7 +401,9 @@ class TripRepository @Inject constructor(
         scheduledTripId: String,
         vehicleId: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        destLat: Double? = null,
+        destLng: Double? = null
     ): Result<String> {
         return try {
             val response = api.startScheduledTrip(
@@ -431,6 +433,8 @@ class TripRepository @Inject constructor(
                 dataSource = "PHONE",
                 latitude = latitude,
                 longitude = longitude,
+                destLat = destLat,
+                destLng = destLng,
                 selectedContactIds = null
             )
         }
