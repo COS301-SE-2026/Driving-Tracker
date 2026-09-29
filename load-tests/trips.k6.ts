@@ -83,7 +83,7 @@ function provisionVehicle(token: string, runId: number, i: number) {
         registration: `K6-${runId.toString().slice(-4)}-${i}`,
         make: "Toyota",
         model: "Corolla",
-        year: 2017,
+        year: 2022,
         fuel_type: "Petrol",
         fuel_tank: 50,
         fuel_efficiency: 50

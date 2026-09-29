@@ -28,7 +28,7 @@ export const loadScenarios: Record<string, LoadScenario> = {
   },
   stress: {
     name: 'Stress Test',
-    vus: 25,
+    vus: 50,
     duration: '120s',
     rampUp: '30s',
     description: 'Stress test (50 concurrent users, 30s ramp-up)',
@@ -36,7 +36,7 @@ export const loadScenarios: Record<string, LoadScenario> = {
   spike: {
     name: 'Spike Test',
     vus: 100,
-    duration: '30s',
+    duration: '120s',
     description: 'Sudden spike to 100 concurrent users',
   },
 };
