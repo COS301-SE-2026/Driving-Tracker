@@ -291,7 +291,14 @@ export async function driver_profile(user_id: string, recent_trip_id: string): P
 
     // const raw = JSON.parse(response.text ?? "{}");
     // const classification = output_schema.parse(raw);
-    if (classification.driver_type !== "insufficient_data" && classification.driver_score != null) {
+
+	const effective_safety = classification.driver_score ?? scores.safety_score;
+	const effective_eco = scores.eco_score;
+	const effective_overall = (effective_safety != null && effective_eco != null)
+		? Math.round((effective_safety * 0.6) + (effective_eco * 0.4))
+		: (effective_safety ?? scores.overall_score);
+
+    if (classification.driver_type !== "insufficient_data" && effective_overall != null) {
         
         const existing_score = await prisma.trip_scores.findFirst({
             where: { trip_id: recent_trip_id }
@@ -309,7 +316,8 @@ export async function driver_profile(user_id: string, recent_trip_id: string): P
     return { 
         ...classification, 
         ...scores,
-        safety_score: classification.driver_score ?? scores.safety_score,
-        overall_score: classification.driver_score ?? scores.overall_score
+        safety_score: effective_safety,
+		eco_score: effective_eco,
+        overall_score: effective_overall
     } as driver_profile;;
 }
