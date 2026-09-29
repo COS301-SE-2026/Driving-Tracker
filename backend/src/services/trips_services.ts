@@ -354,12 +354,13 @@ export const trips_services ={
                 // Distance is computed server-side from Azure Maps, NOT taken from
                 // data.distance_km — a client-supplied distance can't be trusted for
                 // a number that feeds directly into the fuel-efficiency feature.
-                const route = await map_services.suggested_routes({
-                    start_lat: data.start_location.lat,
-                    start_lng: data.start_location.lng,
+               const routeRes = await map_services.suggested_routes({ 
+                    start_lat: data.start_location.lat, 
+                    start_lng: data.start_location.lng, 
                     dest_lat: data.end_location.lat,
                     dest_lng: data.end_location.lng,
                 });
+                const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
                 planned_distance_km = route.distance_km;
                 
                 fuel_est = ((to_number(vehicle_info?.fuel_efficiency) ??0) / 100) * planned_distance_km;

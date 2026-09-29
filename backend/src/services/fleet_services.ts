@@ -21,6 +21,7 @@ export interface schedule_trip_data{
         lat: number;
         lng: number;
     };
+    selected_points?: { lat: number; lng: number }[]; 
     stops?: {
         address: string;
         lat: number;
@@ -404,13 +405,15 @@ export const fleet_services = {
             throw new Error("Driver not available");
         }
 
-        const route = await map_services.suggested_routes({
-            start_lat: data.planned_start_location.lat,
-            start_lng: data.planned_start_location.lng,
-            dest_lat:  data.planned_end_location.lat,
-            dest_lng: data.planned_end_location.lng,
-            stops: data.stops ?? undefined
+        const routeRes = await map_services.suggested_routes({ 
+            start_lat: data.planned_start_location.lat, 
+            start_lng: data.planned_start_location.lng, 
+            dest_lat:  data.planned_end_location.lat, 
+            dest_lng: data.planned_end_location.lng, 
+            stops: data.stops ?? undefined 
         });
+
+        const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
 
 
         const BASE_BUFFER_SECONDS = 10*60;
@@ -436,6 +439,9 @@ export const fleet_services = {
         }
 
         const new_trip = await prisma.$transaction(async (tx) => { 
+            const chosenPoints = (data.selected_points && data.selected_points.length > 0)
+                ? data.selected_points
+                : route.points;
 
             const trip = await tx.trips.create({
                 data: {
@@ -443,6 +449,7 @@ export const fleet_services = {
                     vehicle_id: data.vehicle_id,
                     created_by: user_id,
                     status: 'SCHEDULED',
+                    route_polyline: chosenPoints as any,
                     description: data.description,
                     title: data.title,
                     scheduled_for: new_start,
@@ -471,13 +478,16 @@ export const fleet_services = {
                 },
             });
 
-            return trip;
+            return {
+                trip,
+                route: chosenPoints
+            };
 
         }); 
 
         return {
-            trip: new_trip,
-            route: route.points
+            trip: new_trip.trip,
+            route: new_trip.route
         };
     },
 
@@ -543,12 +553,13 @@ export const fleet_services = {
             const dest_lng = to_number(scheduled_trip.planned_dest_lng);
 
             if (dest_lat && dest_lng) {
-                const route = await map_services.suggested_routes({
+                const routeRes = await map_services.suggested_routes({ 
                     start_lat: data.start_location.lat,
-                    start_lng: data.start_location.lng,
-                    dest_lat: dest_lat,
-                    dest_lng: dest_lng,
+                    start_lng: data.start_location.lng, 
+                    dest_lat: dest_lat, 
+                    dest_lng: dest_lng, 
                 });
+                const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
 
                 planned_distance_km = route.distance_km;
                 
