@@ -875,8 +875,54 @@ export const fleet_services = {
         const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
         
         return vehicle.image_url;
+    },
+
+    async delete_fleet_trip(user_id: string, org_id: string, trip_id: string){
+
+        const permission = await this.get_view_permission(user_id, org_id);
+
+        if (!permission){
+            throw new Error("Not authorized to delete fleet trips");
+        }
+
+        if (!trip_id){
+            throw new Error("Fleet trip not found");
+        }
+
+        const trip = await prisma.trips.findFirst({
+            where: {
+                trip_id,
+                users: {
+                    org_memberships: {some: {org_id}},
+                },
+            },
+            select: {status: true},
+        });
+
+        if (!trip){
+            throw new Error("Fleet trip not found");
+        }
+
+        if (trip.status !== "SCHEDULED"){
+            throw new Error("Only scheduled trips can be deleted");
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.vehicle_live_status.updateMany({
+                where: {current_trip_id: trip_id},
+                data: {current_trip_id: null},
+            });
+
+            const result = await tx.trips.deleteMany({
+                where: {trip_id, status: "SCHEDULED"},
+            });
+
+            if (result.count === 0){
+                throw new Error("Only scheduled trips can be deleted");
+            }
+        });
     }
-    
+
 };
 
 

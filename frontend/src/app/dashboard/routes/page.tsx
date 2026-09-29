@@ -9,6 +9,7 @@ import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
 import PastRoutes from "@/components/routes/PastRoutes";
 import { apiFetch } from "@/lib/auth/apiClient";
+import { useRouter } from "next/navigation";
 
 type Stop = {
     id: string;
@@ -19,6 +20,7 @@ type Stop = {
 
 type Route = {
     id: string;
+    driverId?: string;
     title: string;
     task: string;
     vehicle: string;
@@ -87,11 +89,12 @@ function StatusPill({status} : {status: Route["status"]}){
     );
 }
 
-function RouteCard({route, onView, onEdit, onDelete}: {
+function RouteCard({route, onView, onEdit, onDelete, onViewProgress}: {
     route: Route;
     onView: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onViewProgress: () => void;
 }){
 
     return (
@@ -102,7 +105,7 @@ function RouteCard({route, onView, onEdit, onDelete}: {
                 </h3>
                 <div className="flex items-center gap-2">
                     {route.status === "On Trip" && (
-                        <button className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
+                        <button onClick = {onViewProgress} className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
                             View Progress
                             <ArrowRight size = {14}/>
                         </button>
@@ -153,6 +156,10 @@ export default function Routes(){
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
     // const [addOpen, setAddOpen] = useState(false);
+    const router = useRouter();
+    const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const loadData = useCallback(async () =>{
         try{
@@ -179,6 +186,7 @@ export default function Routes(){
 
                 return{
                     id: t.trip_id,
+                    driverId: t.driver?.user_id,
                     title: t.title || "Scheduled Delivery",
                     task: "Delivery",
                     vehicle: vehicleName,
@@ -202,8 +210,47 @@ export default function Routes(){
     useEffect(()=>{
         loadData();
     }, [loadData]);
-    const handleDeleteRoute = (id: string) => {
-        setRoutesList((prev) => prev.filter((r) => r.id !== id));
+
+    const handleDeleteRoute = async (id: string) => {
+        
+        const route = routesList.find((r) => r.id === id);
+        if (!route){
+            return;
+        }
+
+        if (route.status !== "Not Started"){
+            setLoadError("Only routes that haven't been started can be deleted");
+            return;
+        }
+
+        setDeleteError(null);
+        setRouteToDelete(route);
+    };
+
+    const confirmDeleteRoute = async () => {
+
+        if (!routeToDelete){
+            return;
+        }
+
+        setIsDeleting(true);
+        setDeleteError(null);
+
+        try{
+
+            await apiFetch(`/fleet/fleet_trips/${routeToDelete.id}`, {method: "DELETE"});
+
+            setRoutesList((prev) => prev.filter((r) => r.id !== routeToDelete.id));
+            setLoadError(null);
+            setRouteToDelete(null);
+        }
+        catch(err){
+            console.error("Failed to delete trip", err);
+            setDeleteError(err instanceof Error ? err.message : "Failed to delete route");
+        }
+        finally{
+            setIsDeleting(false);
+        }
     };
 
     const handleAddRoute = async( data: RouteFormData) =>{
@@ -358,6 +405,38 @@ export default function Routes(){
                     onSubmit={handleEditRoute} vehicleOptions={vehicleOptions} driverOptions={driverOptions}
                     initialData={editingRouteFormData} />
 
+                    {routeToDelete && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                            <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
+                                <h3 className="text-lg font-bold text-gray-900">
+                                    Delete route?
+                                </h3>
+                                <p className="mt-2 text-sm text-gray-600">
+                                    Are you sure you want to delete <span className="font-semibold">{routeToDelete.title}</span>? This action is permanent.
+                                </p>
+
+                                {deleteError && (
+                                    <p role="alert" className="mt-3 text-sm text-red-600">{deleteError}</p>
+                                )}
+
+                                <div className="mt-6 flex justify-end gap-3">
+                                    <button 
+                                    onClick={()=> setRouteToDelete(null)}
+                                    disabled={isDeleting}
+                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+                                        Cancel
+                                    </button>
+                                    
+                                    <button 
+                                    onClick={confirmDeleteRoute} disabled = {isDeleting}
+                                    className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600">
+                                        {isDeleting ? "Deleting..." : "Delete"}
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
+                    )}
+
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -378,7 +457,12 @@ export default function Routes(){
                         <RouteCard key = {route.id} route = {route}
                         onView = {() => setViewingRoute(route)}
                         onEdit={() => setEditingRoute(route)}
-                        onDelete = {() => handleDeleteRoute(route.id)} />
+                        onDelete = {() => handleDeleteRoute(route.id)}
+                        onViewProgress={() => {
+                            if (route.driverId){
+                                router.push(`/dashboard/home?driver=${route.driverId}`);
+                            }
+                        }} />
                     ))}
 
                 </div>

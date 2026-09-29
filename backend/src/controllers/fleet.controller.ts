@@ -731,6 +731,60 @@ const fleet_controller = {
         }
     },
 
+    async delete_fleet_trip(req: AuthRequest, res: Response){
+
+        const manager_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const trip_id = req.params.trip_id;
+
+        if (!trip_id){
+            return res.status(400).json({error: "MISSING_TRIP_ID", message: "Trip id is required"});
+        }
+
+        if (!manager_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to delete fleet trips', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+        
+        try{
+
+            await fleet_services.delete_fleet_trip(
+                manager_id, org_id!, trip_id,
+            );
+
+            return res.status(204).send();
+        }
+        catch (error: any){
+
+            if (error?.message === "Not authorized to delete fleet trips"){
+                return res.status(403).json({
+                    error: "UNAUTHORIZED",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Fleet trip not found"){
+                return res.status(404).json({
+                    error: "TRIP_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Only scheduled trips can be deleted"){
+                return res.status(409).json({
+                    error: "TRIP_NOT_DELETABLE",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
+
+        }
+    },
+
 };
 
 export default fleet_controller;
