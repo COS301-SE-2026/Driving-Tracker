@@ -135,7 +135,7 @@ auth_router.post("/register", register_limiter,auth_controller.register);
 
 /**
  * @openapi
- * /api/auth/register:
+ * /api/auth/fleet_register:
  *   post:
  *     tags:
  *       - Auth
@@ -243,6 +243,8 @@ auth_router.post("/register", register_limiter,auth_controller.register);
  *                 error:
  *                   type: string
  *                   example: INTERNAL_SERVER_ERROR
+ *                   message: Failed to create account or organization, please try again
+ * 
  */
 auth_router.post("/fleet_register", register_limiter, auth_controller.dashboard_register);
 
