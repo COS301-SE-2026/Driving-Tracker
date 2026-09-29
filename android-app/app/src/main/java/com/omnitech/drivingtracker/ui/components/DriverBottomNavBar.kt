@@ -34,7 +34,7 @@ fun DriverBottomNavBar(navController: NavController? = null, color: String = "")
                     )
                 },
                 label = { Text(text = "Home", color = if (color == "home") Blue else Color.Gray) },
-                selected = false,
+                selected = color == "home",
                 onClick = { navController?.navigate(Screen.DriverDashboard.route) }
             )
 
@@ -48,8 +48,12 @@ fun DriverBottomNavBar(navController: NavController? = null, color: String = "")
                     )
                 },
                 label = { Text(text = "Trips", color = if (color == "trip") Blue else Color.Gray) },
-                selected = false,
-                onClick = { navController?.navigate(Screen.DriverTrips.route) }
+                selected = color == "trip",
+                onClick = {
+                    navController?.navigate(Screen.DriverTrips.route) {
+                        popUpTo(Screen.DriverDashboard.route) { inclusive = false }
+                    }
+                }
             )
 
             NavigationBarItem(
@@ -61,8 +65,12 @@ fun DriverBottomNavBar(navController: NavController? = null, color: String = "")
                     )
                 },
                 label = { Text(text = "OBD", color = if (color == "obd") Blue else Color.Gray) },
-                selected = false,
-                onClick = { navController?.navigate(Screen.OBDMain.route) }
+                selected = color == "obd",
+                onClick = {
+                    navController?.navigate(Screen.OBDMain.route) {
+                        popUpTo(Screen.DriverDashboard.route) { inclusive = false }
+                    }
+                }
             )
 
             //More
@@ -75,8 +83,12 @@ fun DriverBottomNavBar(navController: NavController? = null, color: String = "")
                     )
                 },
                 label = { Text(text = "More", color = if (color == "more") Blue else Color.Gray) },
-                selected = false,
-                onClick = { navController?.navigate(Screen.DriverMore.route) }
+                selected = color == "more",
+                onClick = {
+                    navController?.navigate(Screen.DriverMore.route) {
+                        popUpTo(Screen.DriverDashboard.route) { inclusive = false }
+                    }
+                }
             )
         }
     }
