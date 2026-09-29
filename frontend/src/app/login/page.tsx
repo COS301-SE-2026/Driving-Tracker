@@ -1,18 +1,18 @@
 "use client";
 
-import {useState, type FormEvent} from "react";
+import {useState, type FormEvent, Suspense} from "react";
 import Image from "next/image";
 import {Eye, EyeOff, MapPin} from "lucide-react";
 import {BASE_PATH} from "@/lib/basePath";
 import {useRouter} from "next/navigation";
 import { login } from "@/lib/auth/authService";
+import { useSearchParams } from "next/navigation";
 
 export default function SignInPage(){
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [remember, setRemember] = useState(false);
     const [errors, setErrors] = useState<{email ?: string; password?: string}>({});
     const [submitting, setSubmitting] = useState(false);
     const router = useRouter();
@@ -65,6 +65,19 @@ export default function SignInPage(){
         }
     }
 
+    function VerifiedBanner() {
+        const searchParams = useSearchParams();
+        if(searchParams.get("verified") !== "true") return null;
+
+        return (
+            <div
+            role="status" 
+            className="mt-6 -mb-2 rounded-xl bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800">
+                Email verified successfully! You can now log in.
+            </div>
+        );
+    }
+
     return(
         <div className="min-h-screen w-full flex bg-white font-sans">
             {}
@@ -98,8 +111,12 @@ export default function SignInPage(){
                 </h1>
 
                 <p className="mt-1.5 text-white/80 text-sm">
-                Log in to see your latest trips and scores.
+                Log in to view and manage your fleet.
                 </p>
+
+                <Suspense fallback={null}>
+                    <VerifiedBanner />
+                </Suspense>
 
                 <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
                     <LoginField 
@@ -153,19 +170,10 @@ export default function SignInPage(){
                         )}
                     </div>
 
-                    <label className="flex items-center gap-2 text-sm text-white/90 select-none">
-                        <input
-                            type="checkbox"
-                            checked = {remember}
-                            onChange={(e)=> setRemember(e.target.checked)}
-                            className="h-4 w-4 rounded border-white/40 text-blue-600 focus:ring-white/70"/>
-                            Keep me logged in
-                    </label>
-
                     <button
                     type = "submit"
                     disabled = {submitting}
-                    className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#5678C2] shadow-sm transition hover:bg-white/90 activate:scale-[0.99] disabled:opacity-70 disabled:active:scale-100">
+                    className="!mt-6 w-full rounded-xl bg-white py-3 text-sm font-semibold text-[#5678C2] shadow-sm transition hover:bg-white/90 activate:scale-[0.99] disabled:opacity-70 disabled:active:scale-100">
                         {submitting ? "Signing in..." : "Sign in"}
                     </button>
 

@@ -112,8 +112,7 @@ async function resolve_username(
     return generate_unique_username(params.name, params.surname, tx);
 }
 
-async function send_verification_email(email: string, token: string){
-    const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${token}`;
+async function send_verification_email(email: string, verificationUrl: string){
     
     await sendAuthEmail(
         email,
@@ -128,12 +127,6 @@ async function send_verification_email(email: string, token: string){
 async function create_user_account(params: CreateUserParams, tx: Prisma.TransactionClient | typeof prisma = prisma){
 
     if(!params.consent_status) throw new ValidationError("You must accept the terms to register", "consent_status");
-
-    const username_result=username_schema.safeParse(params.username);
-    
-    if(!username_result.success){
-        throw new ValidationError(username_result.error.issues.at(0)?.message!,"username");
-    }
 
     const name_result=name_schema.safeParse(params.name);
     
@@ -237,13 +230,15 @@ export const auth_services = {
             email: normalized_email, username, name, surname, phone_number, dob, consent_status, password,
         });
 
-        send_verification_email(normalized_email, verificationToken);
+        const verificationUrl = `${process.env.APP_URL}/api/auth/verify_email?token=${verificationToken}`;
+
+        await send_verification_email(normalized_email, verificationUrl);
 
         return { user };
         
     },
 
-    async dashboard_register (register_data: { email: string, username: string, name: string, surname:string, password: string, phone_number: string, dob: string, consent_status: boolean }, organization_name: string)
+    async dashboard_register(register_data: { email: string; name: string; surname: string; password: string; phone_number: string; dob: string; }, organization_name: string)
     :Promise<{user: any}>{
 
 
@@ -265,6 +260,7 @@ export const auth_services = {
             const { user, verificationToken } = await create_user_account({
                 ...register_data,
                 email: normalized_email,
+                consent_status: true,
             }, tx);
 
             const organization = await tx.organizations.create({
@@ -285,7 +281,11 @@ export const auth_services = {
 
         });
 
-        send_verification_email(normalized_email, verificationToken);
+        const base_url = process.env.NODE_ENV === "development" ? "http://localhost:3000" : process.env.APP_URL;
+
+        const verificationUrl = `${base_url}/api/auth/verify_email?token=${verificationToken}&redirect=dashboard`;
+
+        await send_verification_email(normalized_email, verificationUrl);
 
         return { user };
         

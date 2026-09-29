@@ -135,6 +135,119 @@ auth_router.post("/register", register_limiter,auth_controller.register);
 
 /**
  * @openapi
+ * /api/auth/register:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     security: []
+ *     summary: Register a new fleet dashboard user
+ *     description: Creates a new fleet user account. Returns only a success message on success.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *               - surname
+ *               - phone_number
+ *               - dob
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: StrongPass123!
+ *               name:
+ *                 type: string
+ *                 example: John
+ *               surname:
+ *                 type: string
+ *                 example: Doe
+ *               phone_number:
+ *                 type: string
+ *                 example: "0123456789"
+ *               dob:
+ *                 type: string
+ *                 format: date
+ *                 example: "1995-06-15"
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - message
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Registration successful. Please verify your email before logging in.
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - error
+ *                 - message
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: INVALID_EMAIL
+ *                 message:
+ *                   type: string
+ *                   example: Invalid email address
+ *       409:
+ *         description: Email or username conflict
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - error
+ *                 - message
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: INVALID_EMAIL
+ *                 message:
+ *                   type: string
+ *                   example: You already have an account with this email address
+  *       429:
+ *         description: Too many registration attempts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitResponse'
+ *             example:
+ *               error: TOO_MANY_ATTEMPTS
+ *               message: Too many registration attempts, please try again later
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - error
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: INTERNAL_SERVER_ERROR
+ */
+auth_router.post("/fleet_register", register_limiter, auth_controller.dashboard_register);
+
+/**
+ * @openapi
  * /api/auth/login:
  *   post:
  *     tags:

@@ -37,6 +37,34 @@ const auth_controller={
         }
     },
 
+    async dashboard_register(req:Request, res: Response){
+
+        const {email, password, name, surname, phone_number, dob, organization_name }=req.body;
+
+        try{
+            await auth_services.dashboard_register({email, name, surname,password,phone_number,dob}, organization_name);
+
+            return res.status(201).json({
+                message: "Registration successful. Please verify your email before logging in."
+            });
+
+        }catch(err:any){
+
+            if(err instanceof ValidationError){
+                res.status(422).json({error: err.errorCode, message: err.message});
+                return;
+            }
+
+            if(err instanceof ConflictError){
+                res.status(409).json({error: err.errorCode, message: err.message});
+                return;
+            }
+
+            res.status(500).json({error:"INTERNAL_SERVER_ERROR", message: "Failed to create account or organization, please try again"});
+            return;
+            
+        }
+    },
     async login(req:Request, res: Response){
 
         const {identifier, password}=req.body;
@@ -162,8 +190,16 @@ const auth_controller={
                 message: "Verification token is required"
             });
         }
+
+        const redirect_target = typeof req.query.token === "string" ? req.query.redirect : "";
         try{
             await auth_services.verify_email(token);
+
+            if(redirect_target === "dashboard"){
+                const frontend_url = process.env.FRONTEND_URL || "http://localhost:3001";
+                return res.redirect(`${frontend_url}/login?verified=true`);
+            }
+
 			//302 status code
 			return res.redirect("driving-tracker://verify-success");
             //res.status(200).json({ message: "Email verified successfully"});
