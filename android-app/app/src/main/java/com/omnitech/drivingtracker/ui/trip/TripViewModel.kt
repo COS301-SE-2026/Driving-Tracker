@@ -208,11 +208,33 @@ class TripViewModel @Inject constructor(
         scheduledTripId: String,
         vehicleId: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        destLat: Double? = null,
+        destLng: Double? = null
     ) {
         viewModelScope.launch {
             _tripStartState.value = UiState.Loading
-            tripRepository.startScheduledTrip(scheduledTripId, vehicleId, latitude, longitude).fold(
+
+            var effectiveVehicleId = vehicleId
+
+            if (effectiveVehicleId.isBlank()) {
+                val vehiclesResult = tripRepository.getVehicles()
+                if (vehiclesResult.isSuccess) {
+                    val firstVehicle = vehiclesResult.getOrNull()?.firstOrNull()
+                    if (firstVehicle != null) {
+                        effectiveVehicleId = firstVehicle.vehicleId
+                    }
+                }
+            }
+
+            tripRepository.startScheduledTrip(
+                scheduledTripId = scheduledTripId,
+                vehicleId = effectiveVehicleId, 
+                latitude = latitude,
+                longitude = longitude,
+                destLat = destLat,
+                destLng = destLng
+            ).fold(
                 onSuccess = { tripId ->
                     _tripStartState.value = UiState.Success(tripId)
                 },
