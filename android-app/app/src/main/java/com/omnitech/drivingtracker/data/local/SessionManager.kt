@@ -6,10 +6,19 @@ import androidx.security.crypto.MasterKey
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.util.Base64
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface SessionManagerEntryPoint {
+    fun sessionManager(): SessionManager
+}
 
 @Singleton
 class SessionManager @Inject constructor(@ApplicationContext context: Context) {
