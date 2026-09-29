@@ -248,6 +248,33 @@ export default function RegisterPage(){
         );
 }
 
+function FieldShell({
+    label, id, error, children,
+} : {
+    label: string;
+    id: string; 
+    error?: string;
+    children: React.ReactNode;
+}){
+    return(
+        <div>
+            <label htmlFor={id} className="text-sm font-semibold text-slate-800">
+                {label}
+            </label>
+
+            {children}
+
+            {
+                error && (
+                    <p id = {`${id}-error`} 
+                    className="mt-1.5 text-xs font-medium text-red-100 bg-red-500/20 rounded px-2 py-1 w-fit">
+                        {error}
+                    </p>
+                )
+            }
+        </div>
+    );
+}
 
 function RegisterField({
     label, id, type, value, onChange, error, placeholder, autoComplete,
@@ -262,11 +289,8 @@ function RegisterField({
     autoComplete?: string;
 }){
     return(
-        <div>
-            <label htmlFor={id} className="text-sm font-semibold text-slate-800">
-                {label}
-            </label>
 
+        <FieldShell label = {label} id = {id} error = {error}>
             <input
             id = {id}
             type = {type}
@@ -278,15 +302,7 @@ function RegisterField({
             aria-describedby = {error ? `${id}-error` : undefined}
             className = {`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-2 focus:ring-white/70 ${error ? "border-red-400" : "border-transparent"}`}
             />
-            {
-                error && (
-                    <p id = {`${id}-error`} 
-                    className="mt-1.5 text-xs font-medium text-red-100 bg-red-50 0/20 rounded px-2 py-1 w-fit">
-                        {error}
-                    </p>
-                )
-            }
-        </div>
+        </FieldShell>
     );
 }
 
@@ -303,37 +319,25 @@ function PasswordField({
     autoComplete?: string;
 }){
     return(
-        <div>
-            <label htmlFor={id} className="text-sm font-semibold text-slate-800">
-                {label}
-            </label>
-
+        <FieldShell label = {label} id={id} error = {error}>
             <div className="mt-1.5 relative">
-            <input
-            id = {id}
-            type = {show ? "text" : "password"}
-            value = {value}
-            onChange = {(e) => onChange(e.target.value)}
-            placeholder = "•••••••••••••"
-            autoComplete= {autoComplete}
-            aria-invalid  ={!!error}
-            aria-describedby = {error ? `${id}-error` : undefined}
-            className = {`mt-1.5 w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-2 focus:ring-white/70 ${error ? "border-red-400" : "border-transparent"}`}
-            />
-            <button type="button" onClick={onToggleShow}
-            aria-label = {show ? "Hide password" : "Show password"}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-700">
-                {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
+                <input
+                id = {id}
+                type = {show ? "text" : "password"}
+                value = {value}
+                onChange = {(e) => onChange(e.target.value)}
+                placeholder = "•••••••••••••"
+                autoComplete= {autoComplete}
+                aria-invalid  ={!!error}
+                aria-describedby = {error ? `${id}-error` : undefined}
+                className = {`mt-1.5 w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-2 focus:ring-white/70 ${error ? "border-red-400" : "border-transparent"}`}
+                />
+                <button type="button" onClick={onToggleShow}
+                aria-label = {show ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-700">
+                    {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
             </div>
-            {
-                error && (
-                    <p id = {`${id}-error`} 
-                    className="mt-1.5 text-xs font-medium text-red-100 bg-red-50 0/20 rounded px-2 py-1 w-fit">
-                        {error}
-                    </p>
-                )
-            }
-        </div>
+        </FieldShell>
     );
 }
