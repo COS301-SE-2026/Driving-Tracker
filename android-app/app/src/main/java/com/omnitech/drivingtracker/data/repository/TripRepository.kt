@@ -388,7 +388,8 @@ class TripRepository @Inject constructor(
     suspend fun getScheduledTrips(): Result<List<ScheduledTripDto>> {
         return try {
             val response = api.getScheduledTrips()
-            Result.success(response.data)
+            val tripsList = response.data?.trips ?: emptyList()
+            Result.success(tripsList)
         } catch (e: HttpException) {
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch scheduled trips"))
