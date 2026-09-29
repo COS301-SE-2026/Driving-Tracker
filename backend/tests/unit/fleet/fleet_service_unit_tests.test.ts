@@ -613,6 +613,45 @@ describe('fleet services ', () => {
                 route: [{ lat: -26.1, lng: 28.1 }],
             });
         });
+        it("uses user-selected points for route_polyline when selected_points are provided", async() =>{
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                joined_at: new Date("2026-01-01"),
+                users: {trips: []}
+            });
+            mock_prisma.trips.create.mockResolvedValue({
+                trip_id: "trip-custom-polyline",
+                status: "SCHEDULED"
+            });
+            const customPoints = [
+                { lat: -26.1000, lng: 28.1000 },
+                { lat: -26.1500, lng: 28.1500 },
+                { lat: -26.2000, lng: 28.2000 },
+            ];
+
+            const customScheduleData = {
+                ...schedule_data,
+                selected_points: customPoints,
+            };
+            const result = await fleet_services.schedule_trip(
+                "manager-1",
+                "org-1",
+                customScheduleData,
+            );
+
+            // Verify chosenPoints passed selected_points to prisma.trips.create
+            expect(mock_prisma.trips.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        route_polyline: customPoints,
+                    }),
+                }),
+            );
+
+            expect(result).toEqual({
+                trip: { trip_id: "trip-custom-polyline", status: "SCHEDULED" },
+                route: customPoints,
+            });
+        });
 
         it("rejects a driver who already has an active trip", async () => {
             mock_prisma.organization_members.findUnique.mockResolvedValue({
