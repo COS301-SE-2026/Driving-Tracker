@@ -790,5 +790,7 @@ fleet_router.delete('/drivers/:driver_id', verify_token, create_user_based_limit
 fleet_router.get('/fleet_harsh_events', verify_token, create_user_based_limiter(), fleet_controller.get_fleet_event_counts);
 fleet_router.delete('/fleet_trips/:trip_id', verify_token, create_user_based_limiter(), fleet_controller.delete_fleet_trip);
 
+fleet_router.patch('/fleet_trips/:trip_id', verify_token, create_user_based_limiter(), fleet_controller.edit_scheduled_trip);
+
 
 export default fleet_router;

@@ -785,6 +785,100 @@ const fleet_controller = {
         }
     },
 
+    async edit_scheduled_trip(req: AuthRequest, res: Response){
+
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const {trip_id} = req.params;
+
+        if (!trip_id){
+            return res.status(400).json({error: "MISSING_TRIP_ID", message: "Trip id is required"});
+        }
+
+        if (!user_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to edit scheduled trips', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+
+        const{
+            vehicle_id,
+            driver_id,
+            planned_start_time,
+            title,
+            task,
+            description, 
+            planned_start_location,
+            planned_end_location,
+            stops,
+            selected_points
+        } = req.body;
+        
+        try{
+
+            const trip = await fleet_services.edit_scheduled_trip(user_id, org_id!, trip_id, {
+                vehicle_id,
+                driver_id,
+                planned_start_time,
+                title,
+                description : task ?? description, 
+                planned_start_location,
+                planned_end_location,
+                stops,
+                selected_points
+            });
+
+            return res.status(200).json({
+                message: "Scheduled trip updated successfully",
+                data: trip,
+            });
+        }
+        catch (error: any){
+
+            if(error?.message?.includes("Scheduled trip not found")){
+                return res.status(404).json({error: "TRIP_NOT_FOUND", message: error.message});
+            }
+
+            if(error?.message?.includes("Driver not found")){
+                return res.status(404).json({error: "DRIVER_NOT_FOUND", message: error.message});
+            }
+
+            if(error?.message?.includes("Only scheduled trips can be edited")){
+                return res.status(409).json({error: "TRIP_NOT_EDITABLE", message: error.message});
+            }
+
+            if(error?.message?.includes("Driver not available")){
+                return res.status(409).json({error: "DRIVER_NOT_AVAILABLE", message: "Driver currently has an active trip"});
+            }
+
+            if(error?.message?.includes("Driver has a scheduled trip that overlaps this time")){
+                return res.status(409).json({error: "DRIVER_NOT_AVAILABLE", message: "Driver is not available during the scheduled time"});
+            }
+
+            if(error?.message?.includes("Missing required fields")){
+                return res.status(422).json({error: "MISSING_REQUIRED_FIELDS", message: error.message});
+            }
+
+            if(error?.message?.includes("Unknown start location")){
+                return res.status(422).json({error: "INVALID_START_LOCATION", message: "Invalid start location"});
+            }
+
+            if(error?.message?.includes("Unknown end location")){
+                return res.status(422).json({error: "INVALID_END_LOCATION", message: "Invalid end location"});
+            }
+
+            if(error?.message?.includes("Unknown stop coordinates")){
+                return res.status(422).json({error: "INVALID_STOP", message: "Invalid coordinates for one or more stops"});
+            }
+            
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Failed to update scheduled trip"});
+
+        }
+    },
+
 };
 
 export default fleet_controller;
