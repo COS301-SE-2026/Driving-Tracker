@@ -185,3 +185,16 @@ export default function (data: AuthedUser[]): void {
 
     sleep(2);
 }
+export function teardown(data:AuthedUser[]): void{
+    if(!data || data.length === 0) return ;
+    for( const user of data){
+        if(!user.token) continue;
+        const delRes =http.post(`${BASE_URL}/users/me/delete`, null,{
+            headers: {
+                'Authorization': `Bearer ${user.token}`,
+            },
+        });
+        console.log(`[Teardown] deleted user (${user.email} : status ${delRes.status})`);
+    }
+
+} 
