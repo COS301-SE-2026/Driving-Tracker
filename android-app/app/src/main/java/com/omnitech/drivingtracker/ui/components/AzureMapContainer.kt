@@ -91,7 +91,9 @@ fun AzureMapContainer(
     nearbyPois: List<MapPoiItem>? = null,
     tripEvents: List<TripEventDto>? = null
 ) {
+    var isMapReady by remember { mutableStateOf(false) }
     var isMapStable by remember { mutableStateOf(false) }
+    val isMapAvailable = isMapReady || isMapStable
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var hasInitialized by remember { mutableStateOf(false) }
     var lastCameraLat by remember {mutableStateOf(0.0)}
@@ -152,8 +154,8 @@ fun AzureMapContainer(
             webViewRef?.evaluateJavascript("javascript:window.setPlannedRoute('$pointsJson')", null)
         }
     }
-    LaunchedEffect(actualRoute, isMapStable) {
-        if (isMapStable && !actualRoute.isNullOrEmpty()) {
+    LaunchedEffect(actualRoute, isMapAvailable) {
+        if (isMapAvailable && !actualRoute.isNullOrEmpty()) {
             val pointsJson = Gson().toJson(actualRoute)
             webViewRef?.evaluateJavascript("javascript:window.setActualRoute('$pointsJson')", null)
         }
@@ -222,11 +224,15 @@ fun AzureMapContainer(
                 addJavascriptInterface(
                     MapJavascriptInterface(
                         webView = this,
-                        onReady = { Log.d("AzureMap", "Kotlin: Map reported READY") },
+                        onReady = {
+                            Log.d("AzureMap", "Kotlin: Map reported READY")
+                            isMapReady = true
+                            onMapReady()
+                        },
                         onStable = {
                             Log.d("AzureMap", "Kotlin: Map reported STABLE")
                             isMapStable = true
-                            onMapReady()
+//                            onMapReady()
                         },
                         onError = { Log.e("AzureMap", "Error from JS: $it") },
                         poiClickHandler = { name, lat, lng -> latestOnPoiClick(name, lat, lng) }
