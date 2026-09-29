@@ -363,22 +363,54 @@ data class SocketLocationPayload(
 data class ScheduledTripDto(
     @SerializedName("id") val id: String? = null,
     @SerializedName("scheduled_trip_id") val scheduledTripId: String? = null,
+    @SerializedName("route_id") val routeId: String? = null,
+    @SerializedName("assigned_route_id") val assignedRouteId: String? = null,
+    @SerializedName("trip_id") val tripId: String? = null,
+
     @SerializedName("vehicle_id") val vehicleId: String? = null,
     @SerializedName("vehicle_name") val vehicleName: String? = null,
     @SerializedName("vehicle_registration") val vehicleRegistration: String? = null,
+    @SerializedName("registration") val registration: String? = null,
+
     @SerializedName("origin") val origin: String? = null,
+    @SerializedName("start_address") val startAddress: String? = null,
+    @SerializedName("start_location") val startLocationName: String? = null,
+
     @SerializedName("destination") val destination: String? = null,
+    @SerializedName("end_address") val endAddress: String? = null,
+    @SerializedName("destination_location") val destinationLocationName: String? = null,
+
     @SerializedName("start_latitude") val startLatitude: Double? = null,
+    @SerializedName("start_lat") val startLat: Double? = null,
     @SerializedName("start_longitude") val startLongitude: Double? = null,
+    @SerializedName("start_lng") val startLng: Double? = null,
+
     @SerializedName("destination_latitude") val destinationLatitude: Double? = null,
+    @SerializedName("dest_lang") val destLat: Double? = null,
     @SerializedName("destination_longitude") val destinationLongitude: Double? = null,
+    @SerializedName("dest_lng") val destLng: Double? = null,
+
+
     @SerializedName("scheduled_start_time") val scheduledStartTime: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
+    @SerializedName("scheduled_time") val scheduledTime: String? = null,
+
     @SerializedName("scheduled_end_time") val scheduledEndTime: String? = null,
     @SerializedName("notes") val notes: String? = null,
+    @SerializedName("description") val description: String? = null,
     @SerializedName("status") val status: String? = "SCHEDULED",
-    @SerializedName("manager_name") val managerName: String? = null,
+    @SerializedName("manager_name") val managerName: String? = null
 ) {
-    fun getEffectiveId(): String = scheduledTripId ?: id ?: ""
+    fun getEffectiveId(): String = scheduledTripId ?: assignedRouteId ?: routeId ?: tripId ?: id ?: ""
+    fun getEffectiveOrigin(): String = origin ?: startAddress ?: startLocationName ?: "Origin"
+    fun getEffectiveDestination(): String = destination ?: endAddress ?: destinationLocationName ?: "Destination"
+    fun getEffectiveVehicleRegistration(): String = vehicleRegistration ?: registration ?: ""
+    fun getEffectiveStartTime(): String = scheduledStartTime ?: startTime ?: scheduledTime ?: ""
+    fun getEffectiveNotes(): String = notes ?: description ?: ""
+    fun getEffectiveStartLat(): Double? = startLatitude ?: startLat
+    fun getEffectiveStartLng(): Double? = startLongitude ?: startLng
+    fun getEffectiveDestLat(): Double? = destinationLatitude ?: destLat
+    fun getEffectiveDestLng(): Double? = destinationLongitude ?: destLng
 }
 
 data class ScheduledTripsResponse(
