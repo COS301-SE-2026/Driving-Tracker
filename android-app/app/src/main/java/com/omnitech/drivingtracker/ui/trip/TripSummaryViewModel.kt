@@ -190,8 +190,32 @@ class TripSummaryViewModel @Inject constructor(
     fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
+            val localReadings = repository.getTripReadings(tripId)
+            val fullPath = if (localReadings.isNotEmpty()){
+                localReadings.map { LocationDto(it.latitude, it.longitude) }
+            }else{
+                path
+            }
+
+            var calculatedDistance = 0.0
+            for(i in 0 until fullPath.size - 1){
+                val p1 = fullPath[i]
+                val p2 = fullPath[i+1]
+                if(p1.lat != null && p1.lng != null && p2.lat != null && p2.lng != null){
+                    val results = FloatArray(1)
+                    android.location.Location.distanceBetween(p1.lat, p1.lng, p2.lat, p2.lng, results)
+                    calculatedDistance += results[0]
+                }
+            }
+
+            val actualDistanceKm = if(calculatedDistance > 0){
+                calculatedDistance / 1000.0
+            }else{
+                distance ?: 0.0
+            }
+
             val geoJson = GeoJsonLineString(
-                coordinates = path.mapNotNull { loc ->
+                coordinates = fullPath.mapNotNull { loc ->
                     if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
@@ -206,7 +230,7 @@ class TripSummaryViewModel @Inject constructor(
                 tripId = tripId,
                 endTime = endTime,
                 status = status,
-                distanceKm = distance,
+                distanceKm = actualDistanceKm,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
                 fuelLevelEnd = currentFuel,

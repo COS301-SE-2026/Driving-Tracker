@@ -323,16 +323,16 @@ fun LiveTrip(
                 triggerEndTrip(obdFuel)
             }
             // Pass the actual totals to the ViewModel
-            viewModel.endTrip(
-                tripId = tripId,
-                latitude = liveMetrics.latitude,
-                longitude = liveMetrics.longitude,
-                distance = liveDistance,
-                durationMinutes = liveDurationMinutes,
-                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
-                fuelLevelEnd = obdFuel,
-                path = tripPath
-            )
+//            viewModel.endTrip(
+//                tripId = tripId,
+//                latitude = liveMetrics.latitude,
+//                longitude = liveMetrics.longitude,
+//                distance = liveDistance,
+//                durationMinutes = liveDurationMinutes,
+//                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
+//                fuelLevelEnd = obdFuel,
+//                path = tripPath
+//            )
         },
         navController = navController,
         destination = destinationLoc,
