@@ -1,6 +1,6 @@
 //load tests for the readings end points 
 import http from 'k6/http';
-import { check, group, sleep } from 'k6';
+import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.API_URL || 'http://api-nfr:3000';
 
@@ -20,6 +20,16 @@ export const options = {
 interface TestDriver {
     token: string;
     tripId: string;
+}
+function getSecureCoordinateOffset():number{
+    const array = new Uint8Array(1);
+    crypto.getRandomValues(array);
+    return (array[0] % 100) * 0.0001; 
+}
+function getSecureRandomInt(min: number, max: number): number { 
+    const array = new Uint32Array(1); 
+    crypto.getRandomValues(array); 
+    return min + (array[0] % (max - min + 1));
 }
 function registerUser(runId: number, i: number) {
     const email = `loadtest_${runId}_${i}@omnitech.com`;
@@ -97,10 +107,10 @@ export default function(data: {drivers: TestDriver[]}){
         recorded_at: new Date().toISOString(),
         data_source: "PHONE",
         location: {
-            lat: -26.2041 + (Math.random() * 0.01),
-            lng: 28.0473 + (Math.random() * 0.01),
+            lat: -26.2041 + getSecureCoordinateOffset(),
+            lng: 28.0473 + getSecureCoordinateOffset(),
         },
-        speed_kmh: 60 + (Math.random() * 20),
+        speed_kmh: getSecureRandomInt(60,80),
         accelerometer: 0.1,
         gyroscope_x: 0.01,
         gyroscope_y: 0.02,
@@ -123,11 +133,12 @@ export default function(data: {drivers: TestDriver[]}){
     sleep(1);
 }
 export function teardown(data: { drivers: TestDriver[]}){
-    if(!data || !data.drivers || data.drivers.length === 0) return ;
+    if(!data.drivers || data.drivers.length === 0) return ;
     
     for (const driver of data.drivers) {
         if (!driver.token) continue;
-        const res = http.post(`${BASE_URL}/users/me/delete`, null, {
+        const res = http.post(`${BASE_URL}/users/me/delete`,
+        JSON.stringify({ password: "MySecretPassword123!" }), {
             headers: {
                 'Authorization': `Bearer ${driver.token}`,
             },

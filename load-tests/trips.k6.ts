@@ -189,7 +189,8 @@ export function teardown(data:AuthedUser[]): void{
     if(!data || data.length === 0) return ;
     for( const user of data){
         if(!user.token) continue;
-        const delRes =http.post(`${BASE_URL}/users/me/delete`, null,{
+        const delRes =http.post(`${BASE_URL}/users/me/delete`,             
+        JSON.stringify({ password: "MySecretPassword123!" }),{
             headers: {
                 'Authorization': `Bearer ${user.token}`,
             },
