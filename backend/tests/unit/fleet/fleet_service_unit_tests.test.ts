@@ -28,6 +28,10 @@ jest.mock('../../../src/db/prisma', () => {
 			findFirst: jest.fn(),
 			update: jest.fn(),
         },
+        trip_events: {
+            groupBy: jest.fn(),
+            findMany: jest.fn(),
+        },
         $transaction: jest.fn(async (callback: (client: typeof prisma) => unknown) => 
             callback(prisma),
         ),
@@ -829,6 +833,66 @@ describe('fleet services ', () => {
                     start_location: { lat: -26.1, lng: 28.1 },
                 }),
             ).rejects.toThrow("Driver not found");
+        });
+
+    });
+
+    describe("get_fleet_event_counts", () => {
+
+        beforeEach(async()=> jest.clearAllMocks());
+
+        it("throws when start_date is invalid", async () => {
+
+            await expect(
+                fleet_services.get_fleet_event_counts("user-1","org-1", {
+                    start_date: new Date("invalid-date"),
+                })
+            ).rejects.toThrow("Invalid start date");
+        });
+
+        it("throws when end_date is invalid", async () => {
+
+            await expect(
+                fleet_services.get_fleet_event_counts("user-1","org-1", {
+                    end_date: new Date("wrong-date"),
+                })
+            ).rejects.toThrow("Invalid end date");
+        });
+
+        it("throws an error when user does not have view permission", async () => {
+            jest.spyOn(fleet_services, "get_view_permission").mockResolvedValue(false);
+
+            await expect(
+                fleet_services.get_fleet_event_counts("nonmember-1","org-1", {})
+            ).rejects.toThrow("You do not have permission to view fleet event stats");
+
+        });
+
+        it("returns formatted event counts", async () => {
+            jest.spyOn(fleet_services, "get_view_permission").mockResolvedValue(true);
+
+            mock_prisma.trip_events.groupBy.mockResolvedValueOnce([
+                { type: "HARSH_BRAKE", _count: { type: 12 } },
+                { type: "HARSH_ACCELERATION", _count: { type: 5 } },
+                { type: "SHARP_CORNER", _count: { type: 2 } },
+            ]);
+
+            const result = await fleet_services.get_fleet_event_counts("user-1", "org-1", {});
+
+            expect(result).toEqual({
+                harsh_brake: 12,
+                harsh_acceleration: 5,
+                sharp_corner: 2,
+                crash_like: 0,
+            });
+
+            expect(mock_prisma.trip_events.groupBy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    by: ["type"],
+                    _count: { type: true },
+                })
+            );
+
         });
 
     });

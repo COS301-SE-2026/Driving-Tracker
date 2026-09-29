@@ -61,6 +61,20 @@ export const fleet_services = {
         return org_id;
     },
 
+    async get_user_org_id(user_id: string): Promise<string | null> {
+
+        const user = await prisma.organization_members.findUnique({
+                where: {
+                    user_id
+                },
+                select: { org_id: true },
+        });
+
+        const org_id = user?.org_id?? null;
+
+        return org_id;
+    },
+
     async get_view_permission(user_id: string, org_id: string):Promise<boolean> {
 
         const member = await prisma.organization_members.findUnique({
@@ -691,6 +705,65 @@ export const fleet_services = {
 
         return result;
     },
+
+    async get_fleet_event_counts(user_id: string, org_id: string, date_filter: { start_date?: Date, end_date?: Date}){
+
+        if (date_filter?.start_date && isNaN(date_filter?.start_date.getTime())) {
+            throw new ValidationError("Invalid start date", "start_date");
+        }
+        if (date_filter?.end_date && isNaN(date_filter?.end_date.getTime())) {
+            throw new ValidationError("Invalid end date", "end_date");
+        }
+
+        const start_date = date_filter.start_date || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const end_date = date_filter.end_date || new Date();
+
+        const permission = await this.get_view_permission(user_id, org_id);
+
+        if(!permission){
+            throw new Error('You do not have permission to view fleet event stats');
+        }
+
+        const valid_event_types = ["HARSH_BRAKE", "HARSH_ACCELERATION", "SHARP_CORNER", "CRASH_LIKE"];
+
+        const event_counts = await prisma.trip_events.groupBy({
+            by: ['type'],
+            _count: {
+                type: true,
+            },
+            where: {
+                recorded_at: {
+                    gte: start_date,
+                    lte: end_date,
+                },
+                type: {
+                    in: valid_event_types,
+                },
+                trips: {
+                    users: {
+                        org_memberships: {
+                            some: {
+                                org_id: org_id,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        const counts_map: Record<string, number> = Object.fromEntries(
+            valid_event_types.map((type)=> [type.toLowerCase(), 0])
+        );
+
+        for(const item of event_counts){
+            if(item.type){
+                counts_map[item.type.toLowerCase()] = item._count.type;
+            }
+        }
+
+        return counts_map
+    },
+  
     async get_manageable_vehicle(
         user_id: string,
         org_id: string,

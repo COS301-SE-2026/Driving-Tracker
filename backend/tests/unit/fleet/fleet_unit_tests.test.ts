@@ -14,6 +14,7 @@ jest.mock("../../../src/services/fleet_services", () =>({
         start_scheduled_trip: jest.fn(),
         list_fleet_trips: jest.fn(),
         schedule_trip: jest.fn(),
+        get_fleet_event_counts: jest.fn(),
         update_fleet_vehicle: jest.fn(),
         remove_fleet_vehicle: jest.fn(),
         delete_fleet_driver: jest.fn(),
@@ -808,6 +809,110 @@ describe("Fleet controller", () =>{
         
     });
 
+    describe("get_fleet_event_counts", () => {
+
+        const mockCounts = {
+            harsh_brake: 10,
+            harsh_acceleration: 4,
+            sharp_corner: 1,
+            crash_like: 0,
+        }
+
+        it("returns 401 when unauthenticated", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.get_fleet_event_counts(
+                makeRequest({ user: undefined }),
+                response as any
+            );
+          
+          expectStatus(response, 401);
+        });
+      
+      it("returns 403 when user is driver", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.get_fleet_event_counts(
+                makeRequest({ user: { sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER } }),
+                response as any
+              );
+
+            expectStatus(response, 403);
+        });
+      
+      it("returns 200 and event counts when successful with query dates", async () => {
+
+            mockFleetServices.get_fleet_event_counts.mockResolvedValueOnce(mockCounts as any);
+
+            const response = makeResponse();
+
+            await fleet_controller.get_fleet_event_counts(
+                makeRequest({
+                    query: { 
+                        start_date: "2026-10-01T00:00:00Z" ,
+                        end_date: "2026-10-05T00:00:00Z"
+                    }
+                }),
+                response as any
+            );
+
+            expectStatus(response, 200);
+
+            expect(response.json).toHaveBeenCalledWith({
+                message: "Trip event counts retrieved successfully",
+                data: mockCounts,
+            });
+
+            expect(mockFleetServices.get_fleet_event_counts).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                {
+                    start_date: new Date("2026-10-01T00:00:00Z") ,
+                    end_date: new Date("2026-10-05T00:00:00Z"),
+                }
+            );
+
+            
+        });
+
+        it.each([
+            [ "ValidationError",
+                new ValidationError("Invalid start date", "start_date"),
+                422,
+                "INVALID_START_DATE"
+            ],
+            [
+                "Permission Error",
+                new Error("You do not have permission to view fleet event stats"),
+                403,
+                "UNAUTHORIZED"
+            ],
+            [
+                "Internal Error",
+                new Error("Database offline"),
+                500,
+                "INTERNAL_SERVER_ERROR"
+            ],
+
+        ])("maps %s to status %i", async(_name, serviceError, expectedStatus, expecteErrorCode)=>{
+            mockFleetServices.get_fleet_event_counts.mockRejectedValueOnce(serviceError);
+
+            const response = makeResponse();
+            await fleet_controller.get_fleet_event_counts(
+                makeRequest({ query: {}}),
+                response as any
+            );
+
+            expectStatus(response, expectedStatus);
+            expect(response.json).toHaveBeenCalledWith(
+                expect.objectContaining({ error: expecteErrorCode })
+            );
+        });
+        
+    });
+      
     describe("update_fleet_vehicle", () => {
         const valid_update_body = {
             name: "Updated Fleet Van",
@@ -830,6 +935,7 @@ describe("Fleet controller", () =>{
             expectStatus(response, 401);
         });
 
+      
         it("returns 403 when user does not have permission to edit fleet vehicles", async () => {
             const response = makeResponse();
 
@@ -844,6 +950,7 @@ describe("Fleet controller", () =>{
 
             expectStatus(response, 403);
         });
+
 
         it("returns 400 when required fields are missing", async () => {
             const response = makeResponse();
