@@ -115,7 +115,9 @@ fun DriverTrips(
                                         scheduledTripId = trip.getEffectiveId(),
                                         vehicleId = trip.vehicleId ?: "",
                                         latitude = currentLat,
-                                        longitude = currentLng
+                                        longitude = currentLng,
+                                        destLat = trip.getEffectiveDestLat(),
+                                        destLng = trip.getEffectiveDestLng()
                                     )
                                 }
                             )
@@ -144,7 +146,7 @@ fun ScheduledTripCard(
                 Icon(Icons.Default.LocationOn, contentDescription = null, tint = Blue)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${trip.origin ?: "Start"} -> ${trip.destination ?: "Destination"}",
+                    text = "${trip.getEffectiveOrigin()} -> ${trip.getEffectiveDestination()}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -152,25 +154,30 @@ fun ScheduledTripCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (!trip.vehicleName.isNullOrEmpty() || !trip.vehicleRegistration.isNullOrEmpty()) {
+            val vehicleText = listOfNotNull(
+                trip.vehicleName.takeIf { !it.isNullOrEmpty() },
+                trip.getEffectiveVehicleRegistration().takeIf { it.isNotEmpty() }
+            ).joinToString(" - ")
+
+            if (vehicleText.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Vehicle: ${trip.vehicleName ?: ""} (${trip.vehicleRegistration ?: ""})",
+                        text = "Assigned Vehicle: $vehicleText",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            if (!trip.scheduledStartTime.isNullOrEmpty()) {
+            if (trip.getEffectiveStartTime().isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Scheduled: ${trip.scheduledStartTime}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(text = "Scheduled: ${trip.getEffectiveStartTime()}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
 
-            if (!trip.notes.isNullOrEmpty()) {
+            if (trip.getEffectiveNotes().isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Notes: ${trip.notes}", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                Text(text = "Notes: ${trip.getEffectiveNotes()}", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
