@@ -69,7 +69,7 @@ class TripRepository @Inject constructor(
             roadEventBuffer.clear()
             copy
         }
-        if (unsynced.isEmpty()) return Result.success(null)
+        if (unsynced.isEmpty() && eventsToSync.isEmpty()) return Result.success(null)
 
         try{
 
