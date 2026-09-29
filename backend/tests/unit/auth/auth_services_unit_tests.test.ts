@@ -488,6 +488,9 @@ describe("Auth services.add_driver_to_org", () => {
                 where: {
                     email: "driver@example.com",
                 },
+                select: {
+                    user_id: true,
+                }
             });
 
             expect(mock_prisma.users.create).toHaveBeenCalledWith(
@@ -537,7 +540,9 @@ describe("Auth services.add_driver_to_org", () => {
             role: "MANAGER",
             organizations: { name: "Fleet One" },
         });
+
         mock_prisma.users.findFirst.mockResolvedValue(null);
+
         mock_prisma.users.create.mockResolvedValue({
             user_id: "driver-1",
             email: "driver@example.com",
@@ -555,6 +560,9 @@ describe("Auth services.add_driver_to_org", () => {
         expect(mock_prisma.users.findFirst).toHaveBeenCalledWith({
             where: {
                 email: "driver@example.com",
+            },
+            select: {
+                user_id: true
             },
         });
 
