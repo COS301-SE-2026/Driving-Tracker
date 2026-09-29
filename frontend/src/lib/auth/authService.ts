@@ -8,6 +8,16 @@ interface AuthResponse {
     refresh_token: string;
 }
 
+interface RegisterRequest {
+    name: string;
+    surname: string;
+    email: string;
+    phone_number: string;
+    dob: string;
+    password: string;
+    organization_name: string;
+}
+
 export async function login(identifier: string, password: string): Promise<void> {
     const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
@@ -30,6 +40,23 @@ export async function login(identifier: string, password: string): Promise<void>
 
     tokenManager.setAccessToken(data.token);
     refreshTokenStorage.set(data.refresh_token);
+}
+
+export async function register(reqObj: RegisterRequest): Promise<string> {
+
+    const res = await fetch(`${API_BASE_URL}/api/auth/fleet_register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqObj),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if(!res.ok) {
+        throw new Error(data.message ?? "Signup failed");
+    }
+
+    return data.message ?? "Registration successful. Please verify your email."
 
 }
 

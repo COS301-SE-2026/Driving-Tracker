@@ -4,6 +4,7 @@ import {useState, type FormEvent} from "react";
 import Image from "next/image";
 import {Eye, EyeOff, MapPin} from "lucide-react";
 import { BASE_PATH } from "@/lib/basePath";
+import { register } from "@/lib/auth/authService";
 
 type FormState = {
     organizationName: string;
@@ -35,6 +36,8 @@ export default function RegisterPage(){
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     function update<K extends keyof FormState>(key: K, value: FormState[K]){
         setForm((prev) => ({...prev, [key]: value}));
@@ -98,10 +101,29 @@ export default function RegisterPage(){
         if (!validate()){
             return;
         }
+
         setSubmitting(true);
+        setErrors({});
+        setSuccessMessage("");
+        setFormError("");
 
         try{
-            await new Promise((r) => setTimeout(r, 600));
+            setErrors({});
+            setFormError("");
+            const message = await register({
+                name: form.name,
+                surname: form.surname,
+                email: form.email,
+                dob: form.dob,
+                password: form.confirmPassword,
+                phone_number: form.phoneNumber,
+                organization_name: form.organizationName
+            });
+
+            setSuccessMessage(message);
+            
+        }catch (error){
+            setFormError(error instanceof Error ? error.message : "Unable to register");
         }
         finally{
             setSubmitting(false);
@@ -171,7 +193,7 @@ export default function RegisterPage(){
                             value = {form.phoneNumber}
                             onChange = {(v)=> update("phoneNumber",v)}
                             error = {errors.phoneNumber}
-                            placeholder = ""
+                            placeholder = "0201234567"
                         />
                         
 
@@ -239,6 +261,17 @@ export default function RegisterPage(){
                         Log In
                         </a>
                         </p>
+                        {formError && (
+                            <p role="alert" className="text-sm text-red-100">
+                                {formError}
+                            </p>
+                        )}
+
+                        {successMessage && (
+                            <p role="alert" className="rounded-xl bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800">
+                                {successMessage}
+                            </p>
+                        )}
                     </form>
     
                     </div>
@@ -277,7 +310,7 @@ function FieldShell({
 }
 
 function RegisterField({
-    label, id, type, value, onChange, error, placeholder, autoComplete,
+    label, id, type, value, onChange, error, placeholder, autoComplete
 } : {
     label: string;
     id: string;
