@@ -9,8 +9,10 @@ jest.mock('../../../src/db/prisma', () => {
         trips: {
             findUnique: jest.fn(),
             findUniqueOrThrow: jest.fn(),
+            findFirst: jest.fn(),
             findMany: jest.fn(),
             updateMany: jest.fn(),
+            deleteMany: jest.fn(),
             create: jest.fn(),
 
         },
@@ -27,6 +29,9 @@ jest.mock('../../../src/db/prisma', () => {
             findUnique: jest.fn(),
 			findFirst: jest.fn(),
 			update: jest.fn(),
+        },
+        vehicle_live_status: {
+            updateMany: jest.fn(),
         },
         trip_events: {
             groupBy: jest.fn(),
@@ -840,6 +845,7 @@ describe('fleet services ', () => {
     describe("get_fleet_event_counts", () => {
 
         beforeEach(async()=> jest.clearAllMocks());
+        afterEach(() => {jest.restoreAllMocks()});
 
         it("throws when start_date is invalid", async () => {
 
@@ -1066,6 +1072,137 @@ describe('fleet services ', () => {
 			expect(blobName).toBe("vehicle-blob.png");
 		});
 	});
+
+    describe("delete_fleet_trip", () => {
+
+        const as_manager = () => mock_prisma.organization_members.findUnique.mockResolvedValue({role: "MANAGER"});
+
+        it("deletes a scheduled trip in the manager's organization", async () => {
+            as_manager();
+            
+            mock_prisma.trips.findFirst.mockResolvedValue({status: "SCHEDULED"});
+            mock_prisma.vehicle_live_status.updateMany.mockResolvedValue({count: 0});
+            mock_prisma.trips.deleteMany.mockResolvedValue({count: 1});
+
+            await expect(
+                fleet_services.delete_fleet_trip("manager-1", "org-1", "trip-1"),
+            ).resolves.toBeUndefined();
+
+            expect(mock_prisma.trips.deleteMany).toHaveBeenCalledWith({
+                where: {trip_id: "trip-1", status: "SCHEDULED"},
+            });
+        });
+
+        it ("only looks up trips that belong to the manager's organization", async () => {
+            as_manager();
+            
+            mock_prisma.trips.findFirst.mockResolvedValue({status: "SCHEDULED"});
+            mock_prisma.vehicle_live_status.updateMany.mockResolvedValue({count: 0});
+            mock_prisma.trips.deleteMany.mockResolvedValue({count: 1});
+
+            await fleet_services.delete_fleet_trip("manager-1", "org-1", "trip-1");
+
+            expect (mock_prisma.trips.findFirst).toHaveBeenCalledWith({
+                where: {
+                    trip_id: "trip-1",
+                    users: {org_memberships: {some: {org_id: "org-1"}}},
+                },
+                select: {status: true},
+            });
+        });
+
+        it ("clears current_trip_id on live vehicle status before deleting", async () => {
+            as_manager();
+            
+            mock_prisma.trips.findFirst.mockResolvedValue({status: "SCHEDULED"});
+            mock_prisma.vehicle_live_status.updateMany.mockResolvedValue({count: 1});
+            mock_prisma.trips.deleteMany.mockResolvedValue({count: 1});
+
+            await fleet_services.delete_fleet_trip("manager-1", "org-1", "trip-1");
+
+            expect (mock_prisma.vehicle_live_status.updateMany).toHaveBeenCalledWith({
+                where: {
+                    current_trip_id: "trip-1",
+                },
+                data: {current_trip_id: null},
+            });
+        });
+
+        it ("rejects a caller who is not an organization manager or admin", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValue({role: "DRIVER"});
+
+            await expect(
+                fleet_services.delete_fleet_trip("driver-1", "org-1", "trip-1"),
+            ).rejects.toThrow("Not authorized to delete fleet trips");
+
+            expect(mock_prisma.trips.findFirst).not.toHaveBeenCalled();
+            expect(mock_prisma.trips.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it ("rejects a caller who is not a member of the organization", async () => {
+            mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+
+            await expect(
+                fleet_services.delete_fleet_trip("stranger-1", "org-1", "trip-1"),
+            ).rejects.toThrow("Not authorized to delete fleet trips");
+
+            expect(mock_prisma.trips.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            [""],
+            [undefined as unknown as string],
+        ])("rejects a missing trip id (%p) without touching the database", async (trip_id) => {
+            as_manager();
+
+            await expect(
+                fleet_services.delete_fleet_trip("manager-1", "org-1", trip_id),
+            ).rejects.toThrow("Fleet trip not found");
+
+            expect(mock_prisma.trips.findFirst).not.toHaveBeenCalled();
+            expect(mock_prisma.trips.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it ("rejects a trip that does not exist or is in another organization", async () => {
+
+            as_manager();
+            mock_prisma.trips.findFirst.mockResolvedValue(null);
+
+            await expect(
+                fleet_services.delete_fleet_trip("manager-1", "org-1", "trip-1"),
+            ).rejects.toThrow("Fleet trip not found");
+
+            expect(mock_prisma.trips.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            ["IN_PROGRESS"],
+            ["COMPLETED"],
+        ])("rejects deleting a %s trip", async (status) => {
+            as_manager();
+            mock_prisma.trips.findFirst.mockResolvedValue({status});
+
+            await expect(
+                fleet_services.delete_fleet_trip("manager-1","org-1","trip-1"),
+            ).rejects.toThrow("Only scheduled trips can be deleted");
+
+            expect(mock_prisma.vehicle_live_status.updateMany).not.toHaveBeenCalled();
+            expect(mock_prisma.trips.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it("rejects when the trip was started between the check and the delete", async() => {
+            as_manager();
+
+
+            mock_prisma.trips.findFirst.mockResolvedValue({status: "SCHEDULED"});
+            mock_prisma.vehicle_live_status.updateMany.mockResolvedValue({count: 0});
+            mock_prisma.trips.deleteMany.mockResolvedValue({count:0});
+
+            await expect(
+                fleet_services.delete_fleet_trip("manager-1", "org-1", "trip-1"),
+            ).rejects.toThrow("Only scheduled trips can be deleted");
+        });
+    });
 });
 
 
