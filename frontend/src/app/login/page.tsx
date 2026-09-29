@@ -104,7 +104,7 @@ export default function SignInPage(){
             </div>
 
             <div className="flex-1 flex items-center justify-center px-6 py-12 bg-slate-50">
-                <div className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#6C93D6] to-[#5678C2] p-8 sm:p-10 shadow-2xl shadow-blue-900/20">
+                <div className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#8FE0DE] to-[#4FB9C4] p-8 sm:p-10 shadow-2xl shadow-blue-900/20">
 
                 <h1 className="text-white text-3xl font-bold tracking-tight">
                     Welcome back!

@@ -4,6 +4,7 @@ import {useState, type FormEvent} from "react";
 import Image from "next/image";
 import {Eye, EyeOff, MapPin} from "lucide-react";
 import { BASE_PATH } from "@/lib/basePath";
+import { register } from "@/lib/auth/authService";
 
 type FormState = {
     organizationName: string;
@@ -35,6 +36,8 @@ export default function RegisterPage(){
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
     const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     function update<K extends keyof FormState>(key: K, value: FormState[K]){
         setForm((prev) => ({...prev, [key]: value}));
@@ -98,10 +101,30 @@ export default function RegisterPage(){
         if (!validate()){
             return;
         }
+
         setSubmitting(true);
+        setErrors({});
+        setSuccessMessage("");
+        setFormError("");
 
         try{
-            await new Promise((r) => setTimeout(r, 600));
+            setErrors({});
+            setFormError("");
+            const message = await register({
+                name: form.name,
+                surname: form.surname,
+                email: form.email,
+                dob: form.dob,
+                password: form.confirmPassword,
+                phone_number: form.phoneNumber,
+                organization_name: form.organizationName
+            });
+
+            setSuccessMessage(message);
+            setForm(initialForm);
+            
+        }catch (error){
+            setFormError(error instanceof Error ? error.message : "Unable to register");
         }
         finally{
             setSubmitting(false);
@@ -134,15 +157,15 @@ export default function RegisterPage(){
                 </div>
     
                 <div className="flex-1 md:h-full md:overflow-y-auto bg-slate-50">
-                    <div className="min-h-full flex items-center justify-center px-6 py-12">
-                    <div className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#6C93D6] to-[#5678C2] p-8 sm:p-10 shadow-2xl shadow-blue-900/20">
+                    <div className="min-h-full flex items-center justify-center px-6 py-4">
+                    <div className="w-full max-w-md rounded-3xl bg-gradient-to-br from-[#8FE0DE] to-[#4FB9C4] p-6 sm:p-7 shadow-2xl shadow-blue-900/20">
     
                     <h1 className="text-white text-3xl font-bold tracking-tight">
                         Welcome!
                     </h1>
     
     
-                    <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+                    <form className="mt-4 space-y-3" onSubmit={handleSubmit} noValidate>
                         <RegisterField 
                         label = "Organization Name"
                         id = "organizationName"
@@ -171,7 +194,7 @@ export default function RegisterPage(){
                             value = {form.phoneNumber}
                             onChange = {(v)=> update("phoneNumber",v)}
                             error = {errors.phoneNumber}
-                            placeholder = ""
+                            placeholder = "0201234567"
                         />
                         
 
@@ -239,6 +262,17 @@ export default function RegisterPage(){
                         Log In
                         </a>
                         </p>
+                        {formError && (
+                            <p role="alert" className="text-sm text-red-100">
+                                {formError}
+                            </p>
+                        )}
+
+                        {successMessage && (
+                            <p role="status" className="rounded-xl bg-emerald-100 px-4 py-3 text-sm font-medium text-emerald-800">
+                                {successMessage}
+                            </p>
+                        )}
                     </form>
     
                     </div>
@@ -277,7 +311,7 @@ function FieldShell({
 }
 
 function RegisterField({
-    label, id, type, value, onChange, error, placeholder, autoComplete,
+    label, id, type, value, onChange, error, placeholder, autoComplete
 } : {
     label: string;
     id: string;
