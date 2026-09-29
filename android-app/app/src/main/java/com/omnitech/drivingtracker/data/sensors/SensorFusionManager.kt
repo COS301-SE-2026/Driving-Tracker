@@ -127,10 +127,12 @@ class SensorFusionManager @Inject constructor(
             val stdDev = sqrt(verticalWindow.map { (it-mean) * (it-mean) }.average()).toFloat()
 
             if(abs(zAcc-mean) > (stdDev * POTHOLE_SIGMA_FACTOR) && abs(zAcc) > 7.0f){
+                Log.d(TAG, "POTHOLE_EVENT (IMPACT): zAcc=$zAcc mean=$mean stdDev=$stdDev at ${location.latitude}, ${location.longitude}")
                 tripRepository.bufferRoadEvent(
                     RoadEvent(location.latitude, location.longitude, abs(zAcc), "IMPACT")
                 )
             }else if(stdDev > 2.5f){
+                Log.d(TAG, "POTHOLE_EVENT (ROUGH): zAcc=$zAcc mean=$mean stdDev=$stdDev at ${location.latitude}, ${location.longitude}")
                 tripRepository.bufferRoadEvent(
                     RoadEvent(location.latitude, location.longitude, abs(zAcc), "ROUGH")
                 )
@@ -192,8 +194,8 @@ class SensorFusionManager @Inject constructor(
             Sensor.TYPE_LINEAR_ACCELERATION -> {
                 linearAccel = event.values.clone()
                 checkForLinearEvents()
-                val speed = currentLocation?.speed ?: 0f
-                processRoadQuality(event.values[2], speed, currentLocation)
+                val speedKmh = (currentLocation?.speed ?: 0f) * 3.6f
+                processRoadQuality(event.values[2], speedKmh, currentLocation)
             }
             Sensor.TYPE_ROTATION_VECTOR -> {
                 rotationVector = event.values.clone()
@@ -205,6 +207,8 @@ class SensorFusionManager @Inject constructor(
             Sensor.TYPE_ACCELEROMETER ->{
                 if (linearAccelSensor == null) {
                     linearAccel = event.values.clone()
+                    val speedKmh = (currentLocation?.speed ?: 0f) * 3.6f
+                    processRoadQuality(event.values[2], speedKmh, currentLocation)
                 }
             }
         }
