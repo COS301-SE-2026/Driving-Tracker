@@ -38,6 +38,7 @@ export interface get_directions_request {
     dest_lat: number;
     dest_lng: number;
     stops?: { lat: number; lng: number; stop_order: number; }[];
+    include_alternative?: boolean;
 };
 
 export interface route_summary{
@@ -46,6 +47,14 @@ export interface route_summary{
     traffic_delay_seconds: number;
     points: { lat: number; lng: number }[];// points that that will display the shortest route
 };
+export interface route_option extends route_summary{
+    route_index: number;
+    name: string;
+    pothole_count: number;
+    harsh_brake_hotspot_count: number;
+    risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+export type suggested_routes_response = route_summary | { routes: route_option[] };
 
 export interface RoadDefectQuery{
     lat: number;
@@ -109,11 +118,11 @@ export const map_services ={
             auth_type: "subscriptionKey"
         };
     },
-    async suggested_routes(data: get_directions_request):Promise<route_summary>{
+    async suggested_routes(data: get_directions_request):Promise<suggested_routes_response>{
         // console.log("Does it reatch to azure ?")
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY;
         //const query = `${data.start_lat},${data.start_lng}:${data.dest_lat},${data.dest_lng}`;
-
+        const max_alternatives = data.include_alternative ? 3: 0 ;
         const sorted_stops = [...(data.stops ?? [])].sort(
             (a, b) => (a.stop_order ?? 0) - (b.stop_order ?? 0)
         );
@@ -132,6 +141,7 @@ export const map_services ={
             `&query=${encodeURIComponent(query)}` +
             `&subscription-key=${key}` +
             `&travelMode=car` +
+            `&maxAlternatives=${max_alternatives}`+
             `&traffic=true`;
  
         let response: Response;
@@ -154,28 +164,50 @@ export const map_services ={
             throw new Error(`Unexpected Azure Maps response shape: ${parsed.error.message}`);
         }
 
-        const route = parsed.data.routes[0];
-        const summary = route.summary;
-        
-        // Map Azure points to  lat/lng format
-        const points = route.legs.flatMap(leg =>
-            leg.points.map(p => ({
-                lat: p.latitude,
-                lng: p.longitude
-            }))
-        );
+       if (!data.include_alternative) {
+            // Legacy single-route return for regular app drivers
+            const route = parsed.data.routes[0];
+            return {
+                distance_km: route.summary.lengthInMeters / 1000,
+                travel_time_seconds: route.summary.travelTimeInSeconds,
+                traffic_delay_seconds: route.summary.trafficDelayInSeconds ?? 0,
+                points: route.legs.flatMap(leg => leg.points.map(p => ({ lat: p.latitude, lng: p.longitude })))
+            };
+        }
+        //multi-route return for manager 
+        const allHotspots = await map_services.get_all_hotspots();
 
-        return {
-            distance_km: summary.lengthInMeters / 1000,
-            travel_time_seconds: summary.travelTimeInSeconds,
-            traffic_delay_seconds: summary.trafficDelayInSeconds ?? 0,
-            points: points // Return the path
-        };
+        const routeOptions: route_option[] = parsed.data.routes.map((route, idx) => {
+        const points = route.legs.flatMap(leg => leg.points.map(p => ({ lat: p.latitude, lng: p.longitude })));
 
+        // Count hotspots near this route polyline
+        const hotspotsOnRoute = allHotspots.filter(h =>
+            points.some(pt => calculate_distance(Number(h.latitude), Number(h.longitude), pt.lat, pt.lng) <= 100)
+        ).length;
+        let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+        if (hotspotsOnRoute > 2) {
+            riskLevel = 'HIGH';
+        } else if (hotspotsOnRoute > 0) {
+            riskLevel = 'MEDIUM';
+        }
+
+            return {
+                route_index: idx,
+                name: idx === 0 ? "Primary / Fastest Route" : `Alternative Route ${idx}`,
+                distance_km: route.summary.lengthInMeters / 1000,
+                travel_time_seconds: route.summary.travelTimeInSeconds,
+                traffic_delay_seconds: route.summary.trafficDelayInSeconds ?? 0,
+                pothole_count: 0, 
+                harsh_brake_hotspot_count: hotspotsOnRoute,
+                risk_level: riskLevel,
+                points
+            };
+        });
+        return {routes: routeOptions};
     },
     async search_address(data: search_address_request){
         const key = azure_maps_config.AZURE_MAPS_SUBSCRIPTION_KEY
-        const url = `https://atlas.microsoft.com/search/fuzzy/json?api-version=1.0&query=${encodeURIComponent(data.address)}&subscription-key=${key}&language=en-US&limit=5`;
+        const url = `https://atlas.microsoft.com/search/fuzzy/json?api-version=1.0&query=${encodeURIComponent(data.address)}&subscription-key=${key}&language=en-US&countrySet=ZA&limit=5`;
     
 
         const response = await fetch(url);

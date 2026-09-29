@@ -1,19 +1,20 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {Search, ArrowRight} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, ArrowRight } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
-import FilterRoutes, {FilterState} from "@/components/routes/FilterRoutes"
+import FilterRoutes, { FilterState } from "@/components/routes/FilterRoutes";
 import AddRoute, { RouteFormData } from "@/components/routes/AddRoute";
 import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
 import PastRoutes from "@/components/routes/PastRoutes";
-import {apiFetch} from "@/lib/auth/apiClient";
-
+import { apiFetch } from "@/lib/auth/apiClient";
 
 type Stop = {
     id: string;
     address: string;
+    lat?: number; 
+    lng?: number;
 };
 
 type Route = {
@@ -27,34 +28,42 @@ type Route = {
     driver: string;
     status: "Not Started" | "On Trip" | "Completed";
 };
-
-type FleetTrip = {
-    trip_id: string;
-    title: string | null;
-    description: string | null;
-    status: string | null;
-    planned_start_addr: string | null;
-    planned_end_addr: string | null;
-    vehicles: {make: string | null; model: string | null} | null;
-    driver?: {name: string | null; surname: string | null};
-};
-
 type FleetDriver = {
     user_id: string;
-    name: string | null;
-    surname: string | null;
+    name: string;
+    surname: string ;
+    email : string;
 };
-
-type FleetVehicle = {
-    vehicle_id: string;
-    make: string | null;
-    model: string | null;
+type FleetVehicle ={
+    vehicle_id: string ;
+    registration: string; 
+    make: string;
+    model: string ;
 };
-
-type FleetTripsResponse = {data: {trips: FleetTrip[]}};
-type FleetDriversResponse = {data: {drivers: FleetDriver[]}};
-type FleetVehiclesResponse = {data: {vehicles: FleetVehicle[]}};
-
+type FleetTripApi ={
+     trip_id: string;
+    status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
+    scheduled_for?: string;
+    title?: string;
+    planned_start_addr?: string;
+    planned_end_addr?: string;
+    vehicle_id?: string;
+    driver?: {
+        user_id: string;
+        name: string;
+        surname: string;
+    };
+    vehicles?: {
+        make: string;
+        model: string;
+    };
+};
+// //mocks
+const routes: Route[] = [
+    {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
+    {id: "2",title:"Egg delivery",task: "Sales",vehicle: "Car1",stops: [{id: "2-start", address: "Logistics house"},{id: "2-end", address: "Spar"}],startDestination: "Logistics house",endDestination: "Spar Baysvillage",driver: "Sipho Man",status: "On Trip"},
+    {id: "3",title:"Shirts delivery",task: "Sales",vehicle: "Car1",stops: [{id: "3-start", address: "Logistics house"},{id: "3-end", address: "PNP Hatfield"}],startDestination: "Logistics house",endDestination: "PNP Clothing",driver: "Ally Jackson",status: "Completed"},
+];
 
 function StatusPill({status} : {status: Route["status"]}){
 
@@ -136,133 +145,114 @@ function RouteCard({route, onView, onEdit, onDelete}: {
 export default function Routes(){
 
     const [query, setQuery] = useState("");
-    const [routesList, setRoutesList] = useState<Route[]>([]);
+    const [routesList, setRoutesList] = useState<Route[]>(routes);
+    const [driverList, setDriversList] = useState<FleetDriver[]>([]);
+    const [vehicleList, setVehiclesList]= useState<FleetVehicle[]>([]);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [filters, setFilters] = useState<FilterState>({status : [], sortBy: null});
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
-    const [drivers, setDrivers] = useState<FleetDriver[]>([]);
-    const [vehicles, setVehicles] = useState<FleetVehicle[]>([]);
-    const [loadError, setLoadError] = useState<string | null>(null);
+    // const [addOpen, setAddOpen] = useState(false);
 
-    useEffect(() => {
+    const loadData = useCallback(async () =>{
+        try{
+            const [driversRes, vehiclesRes, tripsRes] = await Promise.all([
+                apiFetch<{ data: { drivers: FleetDriver[] } }>('/fleet/fleet_drivers'),
+                apiFetch<{ data: { vehicles: FleetVehicle[] } }>('/fleet/fleet_vehicles'),
+                apiFetch<{ data: { trips: FleetTripApi[] } }>('/fleet/fleet_trips')
+            ]);
 
-        let cancelled = false;
+            const fetchedDrivers = driversRes?.data?.drivers ??[];
+            const fetchedVehicles = vehiclesRes?.data?.vehicles?? [];
+            const fetchedTrips = tripsRes?.data?.trips ?? [];
 
-        Promise.all([
-            apiFetch<FleetTripsResponse>("/fleet/fleet_trips"),
-            apiFetch<FleetDriversResponse>("/fleet/fleet_drivers"),
-            apiFetch<FleetVehiclesResponse>("/fleet/fleet_vehicles"),
-        ])
-        .then(([tripResult, driverResult, vehicleResult]) => {
-            if (cancelled){
-                return;
-            }
+            setDriversList(fetchedDrivers);
+            setVehiclesList(fetchedVehicles);
 
-            setDrivers(driverResult.data.drivers);
-            setVehicles(vehicleResult.data.vehicles);
+            const mappedRoutes: Route[] = fetchedTrips.map((t)=> {
+                let status: Route["status"] = "Not Started";
+                if (t.status === "IN_PROGRESS") status = "On Trip";
+                if (t.status === "COMPLETED") status = "Completed";
 
-            setRoutesList(
-                tripResult.data.trips.map((trip) => {
+                const driverName = t.driver ? `${t.driver.name} ${t.driver.surname}`.trim() : "Unassigned";
+                const vehicleName = t.vehicles ? `${t.vehicles.make} ${t.vehicles.model}`.trim() : "Unassigned";
 
-                    const statusMap: Record<string, Route["status"]> = {
-                        SCHEDULED: "Not Started",
-                        IN_PROGRESS: "On Trip",
-                        COMPLETED: "Completed",
-                        ABORTED: "Completed",
-                    };
+                return{
+                    id: t.trip_id,
+                    title: t.title || "Scheduled Delivery",
+                    task: "Delivery",
+                    vehicle: vehicleName,
+                    stops: [
+                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" },
+                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination" }
+                    ],
+                    startDestination: t.planned_start_addr || "Start",
+                    endDestination: t.planned_end_addr || "Destination",
+                    driver: driverName,
+                    status
+                };
+            });
+            setRoutesList(mappedRoutes);
+        }catch(err){
+            console.error("Failed to load fleet data:", err);
+            setLoadError(err instanceof Error ? err.message : "Failed to load fleet data");
+        }
+    },[]);
 
-                    const status = statusMap[trip.status ?? ""] ?? "Not Started";
-
-                    return{
-                        id: trip.trip_id,
-                        title: trip.title ?? "Scheduled Trip",
-                        task: trip.description ?? "",
-                        vehicle: [trip.vehicles?.make, trip.vehicles?.model]
-                        .filter(Boolean)
-                        .join(" ") || "Unknown vehicle",
-                        stops: [
-                            {id: `${trip.trip_id}-start`, address: trip.planned_start_addr ?? ""},
-                            {id: `${trip.trip_id}-end`, address: trip.planned_end_addr ?? ""},
-                        ],
-                        startDestination: trip.planned_start_addr ?? "",
-                        endDestination: trip.planned_end_addr ?? "",
-                        driver: trip.driver
-                        ? [trip.driver.name, trip.driver.surname].filter(Boolean).join(" ") : "Unknown driver",
-                        status,
-                    };
-                }),
-            );
-            setLoadError(null);
-        })
-        .catch((error: unknown) => {
-            if (!cancelled){
-                setLoadError(error instanceof Error ? error.message : "Could not load routes");
-            }
-        });
-
-        return ()=> {
-            cancelled = true;
-        };
-    }, []);
-
+    useEffect(()=>{
+        loadData();
+    }, [loadData]);
     const handleDeleteRoute = (id: string) => {
         setRoutesList((prev) => prev.filter((r) => r.id !== id));
     };
 
-    const handleAddRoute = async (data: RouteFormData)=> {
-        const resolveAddress = async (address: string) => {
-            const result = await apiFetch<{
-                data: {address: string; lat: number; lng: number}[];
-            }>(`/map/search?address=${encodeURIComponent(address)}`);
+    const handleAddRoute = async( data: RouteFormData) =>{
+        try{
+            const foundDriver = driverList.find(
+                (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
+            );
+            const foundVehicle = vehicleList.find(
+                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
+            );
 
-            if (!result.data.length){
-                throw new Error(`Could not find address: ${address}`);
+            if (!foundDriver || !foundVehicle) {
+                alert("Please select a valid driver and vehicle from your fleet.");
+                return;
             }
-
-            return result.data[0];
-        };
-
-        const locations = await Promise.all(
-            data.stops.map((stop) => resolveAddress(stop.address)),
-        );
-
-        const start = locations[0];
-        const end = locations[locations.length - 1];
-
-        const result = await apiFetch<{
-            data: {trip: {trip_id: string}};
-        }>("/fleet/schedule_trip", {
-            method: "POST",
-            body: JSON.stringify({
-                driver_id: data.driverId,
-                vehicle_id: data.vehicleId,
-                planned_start_time: new Date(data.plannedStartTime).toISOString(),
-                title: data.title,
-                task: data.task,
-                planned_start_location: start,
-                planned_end_location: end,
-                stops: locations.slice(1,-1).map((stop, index) => ({
-                    ...stop,
-                    stop_order: index + 1,
-                })),
-            }),
-        });
-
-        setRoutesList((previous) => [
-            ...previous,
-            {
-                id: result.data.trip.trip_id,
-                title: data.title,
-                task: data.task,
-                vehicle: data.vehicle,
-                stops: data.stops,
-                startDestination: start.address,
-                endDestination: end.address,
-                driver: data.driver,
-                status: "Not Started",
-            },
-        ]);
-    };
+            const res = await apiFetch<{ data:{trip: {trip_id: string}}}>('/fleet/schedule_trip',{
+                method: 'POST',
+                body: JSON.stringify({
+                    title: data.title,
+                    task: data.task,
+                    driver_id: foundDriver.user_id,
+                    vehicle_id: foundVehicle.vehicle_id,
+                    planned_start_time: new Date().toISOString(),
+                    planned_start_location:{
+                        address: data.stops[0].address,
+                        lat: data.stops[0].lat ?? 0,
+                        lng: data.stops[0].lng ?? 0,
+                    },
+                    planned_end_location:{
+                        address: data.stops[data.stops.length - 1].address,
+                        lat: data.stops[data.stops.length - 1].lat ?? 0,
+                        lng: data.stops[data.stops.length - 1].lng ?? 0,
+                    },
+                    selected_points: data.selected_points,
+                    stops: data.stops.map((s, idx) => ({
+                        address: s.address,
+                        lat: s.lat ?? 0,
+                        lng: s.lng ?? 0,
+                        stop_order: idx + 1,
+                    }))
+                })
+            });
+            console.log("Trip created in database:", res);
+             await loadData();
+             setAddOpen(false);
+        }catch(err){
+            console.error("Failed to schedule trip", err);
+        }
+    }
 
     const handleEditRoute = (data: RouteFormData) => {
 
@@ -317,17 +307,26 @@ export default function Routes(){
 
     const [addOpen, setAddOpen] = useState(false);
 
-    const driverOptions = drivers.map(
-        (driver) => ({
-            id: driver.user_id,
-            label: [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
-    }));
+    const driverOptions = driverList.map(
+        (driver) => 
+            [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
+    );
 
-    const vehicleOptions = vehicles.map(
-        (vehicle) => ({
-            id: vehicle.vehicle_id,
-            label: [vehicle.make, vehicle.model].filter(Boolean).join(" ") || vehicle.vehicle_id,
-    }));
+    const vehicleOptions = vehicleList.map(
+        (vehicle) => 
+            [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||vehicle.vehicle_id,
+    );
+
+    const editingRouteFormData: RouteFormData | undefined = editingRoute
+    ? {
+          title: editingRoute.title,
+          task: editingRoute.task,
+          driver: editingRoute.driver,
+          vehicle: editingRoute.vehicle,
+          stops: editingRoute.stops,
+          plannedStartTime: new Date().toISOString().slice(0, 16),
+      }
+    : undefined
 
     return(
         <div className="flex">
@@ -357,7 +356,7 @@ export default function Routes(){
                     <AddRoute open={addOpen} onClose={()=>setAddOpen(false)} onSubmit={handleAddRoute} driverOptions={driverOptions} vehicleOptions={vehicleOptions}/>
                     <AddRoute open = {editingRoute !== null} onClose={()=>setEditingRoute(null)}
                     onSubmit={handleEditRoute} vehicleOptions={vehicleOptions} driverOptions={driverOptions}
-                    initialData={editingRoute ?? undefined} />
+                    initialData={editingRouteFormData} />
 
                     <div className="flex items-center gap-3">
                         <div className="relative">

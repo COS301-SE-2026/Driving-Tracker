@@ -30,22 +30,25 @@ const map_controller = {
             });
         }
     },
-    async suggested_route(req:AuthRequest, res: Response){
+    async suggested_route(req: AuthRequest, res: Response) {
         try{
-            const { start_lat, start_lng, dest_lat, dest_lng } = req.query;
+            const { start_lat, start_lng, dest_lat, dest_lng, include_alternative } = req.query;
+            const isAlternative = include_alternative === 'true';
 
+       
             const route_response = await map_services.suggested_routes({
                 start_lat: Number(start_lat),
                 start_lng: Number(start_lng),
                 dest_lat: Number(dest_lat),
-                dest_lng: Number(dest_lng)
+                dest_lng: Number(dest_lng),
+                include_alternative: isAlternative // Optional flag for Managers
             });
 
             res.status(200).json({
                 message: "Suggested route retrieved",
                 data: route_response
             });
-        }catch(error: any){
+        }catch (error: any){
             res.status(500).json({ error: "INTERNAL_SERVER_ERROR", message: error.message });
         }
     },

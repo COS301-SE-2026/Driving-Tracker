@@ -13,7 +13,8 @@ import { format, addHours } from 'date-fns';
 import { badges_leaderboard_services } from './badges_leaderboard_services';
 import { update_vehicle_efficiency } from '../utils/trip_counter';
 import leaderboard_services from './leaderboard_services';
-import { broadcast_trip_ended, force_revoke_trip_access } from '../socket';
+import { broadcast_harsh_event, broadcast_trip_ended, force_revoke_trip_access } from '../socket';
+import { fleet_services } from './fleet_services';
 
 // Helper function to safely convert Decimal or number values to number
 export function to_number(value: any): number | null {
@@ -354,12 +355,13 @@ export const trips_services ={
                 // Distance is computed server-side from Azure Maps, NOT taken from
                 // data.distance_km — a client-supplied distance can't be trusted for
                 // a number that feeds directly into the fuel-efficiency feature.
-                const route = await map_services.suggested_routes({
-                    start_lat: data.start_location.lat,
-                    start_lng: data.start_location.lng,
+               const routeRes = await map_services.suggested_routes({ 
+                    start_lat: data.start_location.lat, 
+                    start_lng: data.start_location.lng, 
                     dest_lat: data.end_location.lat,
                     dest_lng: data.end_location.lng,
                 });
+                const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
                 planned_distance_km = route.distance_km;
                 
                 fuel_est = ((to_number(vehicle_info?.fuel_efficiency) ??0) / 100) * planned_distance_km;
@@ -484,7 +486,15 @@ export const trips_services ={
             });
             console.log("updated the trip status");
 
-            await broadcast_trip_ended(data.trip_id);
+            try{
+
+                const org_id = await fleet_services.get_user_org_id(data.user_id);
+
+                await broadcast_trip_ended(data.trip_id, org_id, data.user_id);
+
+            } catch(err){
+                console.log("Failed to broadcast trip ended");
+            }
 
              // Create/Update trip scores
             const existing_score = await prisma.trip_scores.findFirst({
@@ -955,7 +965,7 @@ export const trips_services ={
             }
         });
 
-        //Get contacts who had the ship shared with them
+        //Get contacts who had the trip shared with them
         const { contact_user_ids, contact_ids } = await get_trip_shared_contacts(data.trip_id);
 
         if (contact_user_ids.length > 0){
@@ -995,7 +1005,21 @@ export const trips_services ={
             await notification_services.send_trip_alert_notification(fcm_tokens, data.trip_id, alert_type, message);
 
         }
-        
+
+        try{
+
+            const org_id = await fleet_services.get_user_org_id(data.user_id);
+
+            await broadcast_harsh_event(org_id, {
+                trip_id: data.trip_id,
+                user_id: data.user_id,
+                event_type: data.event_type,
+                location: data.location
+            });
+
+        } catch(err){
+            console.log("Failed to broadcast harsh event");
+        }
         
         return {
             data: {

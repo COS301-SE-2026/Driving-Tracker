@@ -9,7 +9,7 @@ jest.mock('../../../src/db/prisma', () => ({
 }));
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
-import { map_services } from '../../../src/services/map_services';
+import { map_services,route_summary } from '../../../src/services/map_services';
 import prisma from '../../../src/db/prisma';
 
 
@@ -67,7 +67,63 @@ describe('Map services suggested routes ', ()=>{
             },
         ],
     };// the response that azure would provide but it is mocked now 
+    it('Returns alternative routes with calculated risk levels and hotspot counts when inlcude_alternative is true', async ()=>{
+        mock_prisma.trip_events.findMany.mockResolvedValue([
+            { event_id: 'e1', type: 'HARSH_BRAKE', latitude: -25.75, longitude: 28.24, recorded_at: new Date() },
+            { event_id: 'e2', type: 'HARSH_BRAKE', latitude: -25.7501, longitude: 28.2401, recorded_at: new Date() },
+            { event_id: 'e3', type: 'HARSH_BRAKE', latitude: -25.7502, longitude: 28.2402, recorded_at: new Date() },
+        ]);
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true, 
+                json: async () => azure_route_response,
+            })
+        );
+        const result = await map_services.suggested_routes({
+            start_lat: -25.7461,
+            start_lng: 28.2313,
+            dest_lat: -25.75,
+            dest_lng: 28.24,
+            include_alternative: true,
+        });
+        expect('routes' in result).toBe(true);
+        if ('routes' in result) {
+            expect(result.routes).toHaveLength(1);
+            expect(result.routes[0]).toEqual(
+                expect.objectContaining({
+                    route_index: 0,
+                    name: 'Primary / Fastest Route',
+                    distance_km: 12.5,
+                    travel_time_seconds: 900,
+                    traffic_delay_seconds: 60,
+                    harsh_brake_hotspot_count: 3,
+                    risk_level: 'HIGH', 
+                })
+            );
+        }
+    });
+    it('calculates LOW risk level when no hotspots exist along the route', async ()=>{
+        mock_prisma.trip_events.findMany.mockResolvedValue([]);
 
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => azure_route_response
+            })
+        );
+        const result = await map_services.suggested_routes({
+            start_lat: -25.7461,
+            start_lng: 28.2313,
+            dest_lat: -25.75,
+            dest_lng: 28.24,
+            include_alternative: true,
+        });
+
+        if ('routes' in result) {
+            expect(result.routes[0].risk_level).toBe('LOW');
+            expect(result.routes[0].harsh_brake_hotspot_count).toBe(0);
+        }
+    });
     it('return a mapped route summary on success', async()=>{
         mock_fetch.mockResolvedValue(
             make_response({
@@ -115,7 +171,8 @@ describe('Map services suggested routes ', ()=>{
             dest_lat:3 ,
             dest_lng: 4
         });
-        expect(result.traffic_delay_seconds).toBe(0);
+        // expect(result.traffic_delay_seconds).toBe(0);
+        expect((result as route_summary).traffic_delay_seconds).toBe(0);
     });
 
     it('throws a clear error when fetch itself fails', async() =>{

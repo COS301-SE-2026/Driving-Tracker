@@ -1,59 +1,47 @@
 "use client"
 
-import { FormEvent, useEffect, useState, useRef } from "react";
-import { ImagePlus, LoaderCircle, X } from "lucide-react";
-import {
-    createVehicle,
-    searchVehicleImage,
-    uploadVehicleImage,
-} from "@/lib/vehicle-api";
-import type { Vehicle } from "./types";
+import { FormEvent, useEffect, useState } from "react";
+import { LoaderCircle, X } from "lucide-react";
+import { updateVehicle } from "@/lib/vehicle-api";
+import type{CreateVehicleInput, Vehicle} from "./types";
+
 
 type Props = {
-    open: boolean;
+    vehicle: Vehicle | null;
     onClose: () => void;
-    onCreated: (vehicle: Vehicle) => void;
+    onUpdated: (vehicle: Vehicle) => void;
 };
 
-export default function AddVehicleDialog({
-    open,
+export default function EditVehicleDialog({
+    vehicle,
     onClose,
-    onCreated,
+    onUpdated,
 }: Props) {
 
-    const [make, setMake] = useState("");
     const [name, setName] = useState("");
     const [registration, setRegistration] = useState("");
+    const [make, setMake] = useState("");
     const [model, setModel] = useState("");
     const [year, setYear] = useState("");
     const [fuelType, setFuelType] = useState("PETROL");
     const [fuelTank, setFuelTank] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
-    const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (!open) {
-            setMake("");
-            setName("");
-            setRegistration("");
-            setModel("");
-            setYear("");
-            setFuelType("PETROL");
-            setFuelTank("");
-            setError("");
-            setSelectedImage(null);
+        if (!vehicle) return; 
 
-            if(imageInputRef.current){
-                imageInputRef.current.value = "";
-            }
-        }
-    }, [open]);
+        setName(vehicle.name ?? "");
+        setRegistration(vehicle.registration ?? "");
+        setMake(vehicle.make ?? "");
+        setModel(vehicle.model ?? "");
+        setYear(vehicle.year?.toString() ?? "");
+        setFuelType(vehicle.fuel_type ??"PETROL");
+        setFuelTank(vehicle.fuel_tank?.toString() ?? "");
+        setError("");
+    }, [vehicle]);
 
-    if (!open) {
-        return null;
-    }
+    if (!vehicle) return null;
 
     async function handleSubmit(
         event: FormEvent<HTMLFormElement>,
@@ -61,62 +49,39 @@ export default function AddVehicleDialog({
 
         event.preventDefault();
 
-        const numericYear = Number(year);
-        const numericTank = Number(fuelTank);
+        const input: CreateVehicleInput = {
+            name: name.trim(),
+            registration: registration.trim(),
+            make: make.trim(),
+            model: model.trim(),
+            year: Number(year),
+            fuel_type: fuelType,
+            fuel_tank: Number(fuelTank),
+        };
 
-        if (
-            !make.trim() || !model.trim() || !Number.isInteger(numericYear) || numericTank <= 0
-        ) {
-            setError(
-                "Make, model, year, fuel type, and tank size are required."
-            );
+        if(
+            !input.make || !input.model || !Number.isInteger(input.year) || input.fuel_tank <= 0
+        ){
+            setError("Make, model, year, and fuel tank are required.");
             return;
         }
 
         setIsSubmitting(true);
         setError("");
 
-        try {
-            //creating the vehicle in the db
-            const vehicle = await createVehicle({
-                name: name?.trim(),
-                registration: registration?.trim(),
-                make: make.trim(),
-                model: model.trim(),
-                year: numericYear,
-                fuel_type: fuelType,
-                fuel_tank: numericTank,
-            });
+        try{
+            const updatedVehicle = await updateVehicle(
+                vehicle!.vehicle_id,
+                input,
+            )
 
-            let imageUrl = vehicle.image_url ?? null;
-
-            if(selectedImage){
-                imageUrl = await uploadVehicleImage(
-                    vehicle.vehicle_id,
-                    selectedImage,
-                );
-            }else{
-                const image = await searchVehicleImage(
-                    make.trim(),
-                    model.trim(),
-                    numericYear,
-                );
-
-                imageUrl = image?.image_url ?? null;
-            }
-
-            //adding image URL to the new card immediately
-            onCreated({
-                ...vehicle,
-                image_url: imageUrl,
-            });
-
+            onUpdated(updatedVehicle);
             onClose();
         } catch (submitError) {
             setError(
                 submitError instanceof Error
                     ? submitError.message
-                    : "Could not add vehicle.",
+                    : "Could not update vehicle.",
             );
         } finally {
             setIsSubmitting(false);
@@ -129,11 +94,11 @@ export default function AddVehicleDialog({
             <div
                 role="dialog"
                 aria-modal="true"
-                className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+                className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6 shadow-2xl"
             >
                 <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-xl font-bold">
-                        Add Vehicle
+                        Edit Vehicle
                     </h2>
 
                     <button
@@ -156,7 +121,6 @@ export default function AddVehicleDialog({
                         <input
                             value={name}
                             onChange={(event) => setName(event.target.value)}
-                            placeholder="Delivery Truck 1"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
                         />
                     </label>
@@ -166,7 +130,6 @@ export default function AddVehicleDialog({
                         <input
                             value={registration}
                             onChange={(event) => setRegistration(event.target.value)}
-                            placeholder="FGF123GP"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
                         />
                     </label>
@@ -176,7 +139,6 @@ export default function AddVehicleDialog({
                         <input
                             value={make}
                             onChange={(event) => setMake(event.target.value)}
-                            placeholder="Mercedes-Benz"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
                         />
                     </label>
@@ -186,7 +148,6 @@ export default function AddVehicleDialog({
                         <input
                             value={model}
                             onChange={(event) => setModel(event.target.value)}
-                            placeholder="Actros"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
                         />
                     </label>
@@ -199,7 +160,6 @@ export default function AddVehicleDialog({
                             max={new Date().getFullYear() + 1}
                             value={year}
                             onChange={(event) => setYear(event.target.value)}
-                            placeholder="2022"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-sky-500"
                         />
                     </label>
@@ -227,7 +187,6 @@ export default function AddVehicleDialog({
                                 step="0.1"
                                 value={fuelTank}
                                 onChange={(event) => setFuelTank(event.target.value)}
-                                placeholder="50"
                                 className="w-full rounded-l-md border border-slate-300 px-3 py-2"
                             />
                             <span className="flex items-center rounded-r-md border border-l-0 border-slate-100 px-3 text-sm">
@@ -236,35 +195,6 @@ export default function AddVehicleDialog({
                         </div>
                         
                     </label>
-
-                    <div className="space-y-2">
-                        <input
-                            ref={imageInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            className="hidden"
-                            onChange={(event) => {
-                                const file = event.target.files?.[0] ?? null;
-                                setSelectedImage(file);
-                            }}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => imageInputRef.current?.click()}
-                            className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
-                        >
-                            <ImagePlus size={18} />
-                            {selectedImage
-                                ? "Change image"
-                                : "Choose vehicle image"}
-                        </button>
-
-                        {selectedImage && (
-                            <p className="truncate text-xs text-slate-500">
-                                {selectedImage.name}
-                            </p>
-                        )}
-                    </div>
 
                     {error && (
                         <p className="text-sm text-red-600">
@@ -285,8 +215,8 @@ export default function AddVehicleDialog({
                         )}
 
                         {isSubmitting
-                            ? "Adding vehicle..."
-                            : "Add vehicle"}
+                            ? "Saving..."
+                            : "Save changes"}
                     </button>
                 </form>
             </div>

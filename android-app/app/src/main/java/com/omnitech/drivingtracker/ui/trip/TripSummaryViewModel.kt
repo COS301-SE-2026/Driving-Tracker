@@ -92,8 +92,9 @@ class TripSummaryViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getMapToken().onSuccess { data ->
                 _mapToken.value = data.token
-            }.onFailure {
-                _mapToken.value = null
+            }.onFailure { exception ->
+                Log.e("TripSummaryVM", "Failed to fetch map token: ${exception.message}")
+                _mapToken.value = ""
             }
         }
     }

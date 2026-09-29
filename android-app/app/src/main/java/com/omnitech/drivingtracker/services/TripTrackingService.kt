@@ -358,22 +358,24 @@ class TripTrackingService: Service() {
         // Update Fatigue and Stop Monitors
         updateMonitors(currentSpeed, reading, recordedAt)
 
-        //Handle Safety Prompts
-        resolveSafetyPromptIfMoving(currentSpeed)
-
-        //Update Fatigue and Stop Monitors
-        updateMonitors(currentSpeed, reading, recordedAt)
-
         lastKnownSpeed = currentSpeed
 
-        //Distance Filter
-        if (shouldSkipReading(reading.latitude, reading.longitude)) return
+        val now = System.currentTimeMillis()
+        if(now - lastSocketUpdateMillis >= SOCKET_UPDATE_INTERVAL_MS) {
+            lastSocketUpdateMillis = now
 
-        lastSavedLat = reading.latitude
-        lastSavedLng = reading.longitude
+            //Emit live location over WebSocket
+            sendSocketUpdate(reading, tripId, currentSpeed)
 
-        //Map and Save
-        saveReading(tripId, reading, recordedAt, obdConnected)
+            //Distance Filter
+            if (shouldSkipReading(reading.latitude, reading.longitude)) return
+
+            lastSavedLat = reading.latitude
+            lastSavedLng = reading.longitude
+
+            //Map and Save
+            saveReading(tripId, reading, recordedAt, obdConnected)
+        }
     }
 
     private fun parseTimestamp(timestamp: String): Long = runCatching {
@@ -390,6 +392,24 @@ class TripTrackingService: Service() {
                 }
             }
         }
+    }
+
+    private fun sendSocketUpdate(reading: FusedReading, tripId: String, currentSpeed: Float){
+
+
+            socketManager.sendLocationUpdate(
+                SocketLocationPayload(
+                    tripId = tripId,
+                    location = LocationDto(
+                        lat = reading.latitude,
+                        lng = reading.longitude
+                    ),
+                    speedKmh = currentSpeed,
+                    heading = reading.heading,
+                    recordedAt = reading.timestamp
+                )
+            )
+
     }
 
     private fun updateMonitors(speed: Float, reading: FusedReading, recordedAt: Long) {

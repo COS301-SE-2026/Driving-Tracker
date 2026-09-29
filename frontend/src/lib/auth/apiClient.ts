@@ -23,8 +23,12 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
     const accessToken = tokenManager.getAccessToken();
 
     const headers = new Headers(options.headers);
-    headers.set("Content-Type", "application/json");
-    if(accessToken){
+    if(options.body instanceof FormData){
+        headers.delete("Content-Type");
+    }else{
+        headers.set("Content-Type", "application/json");
+    }
+        if(accessToken){
         headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
@@ -62,4 +66,22 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     if(res.status === 204) return undefined as T; 
 
     return res.json();
+}
+
+export async function apiFetchBlob(
+    path: string,
+    options: RequestInit = {},
+): Promise<Blob> {
+    const res = await request(path, options);
+
+    if(!res.ok){
+        const body: ApiErrorBody = await res.json().catch(() => ({}));
+
+        throw new ApiError(
+            res.status,
+            body.message ?? "Request failed",
+            body.error,
+        );
+    }
+    return res.blob();
 }

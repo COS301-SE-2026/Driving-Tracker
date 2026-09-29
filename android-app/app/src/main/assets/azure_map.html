@@ -75,7 +75,7 @@
             if(!map || !poiDatasource) return;
 
             try{
-                var pois = JSON.parse(poisJson);
+                var pois = parseJsonIfNeeded(poisJson);
                 var features = pois.map(function(poi) {
                     return new atlas.data.Feature(new atlas.data.Point([poi.longitude, poi.latitude]),  {
                         name: poi.name,
@@ -91,7 +91,7 @@
         window.setPotholes = function(potholesJson){
             if(!map || !potholeDatasource) return;
             try{
-                var defects = JSON.parse(potholesJson);
+                var defects = parseJsonIfNeeded(potholesJson);
                 var features = defects.map(function(d){
                     return new atlas.data.Feature(
                         new atlas.data.Point([d.lng, d.lat]),
@@ -133,7 +133,7 @@
         window.setPlannedRoute = function(pointsJson) {
             if (!plannedDatasource) return;
             try {
-                var points = JSON.parse(pointsJson);
+                var points = parseJsonIfNeeded(pointsJson);
                 var path = points.map(function(p) { return [p.lng, p.lat]; });
                 plannedDatasource.setShapes([new atlas.data.LineString(path)]);
             } catch (e) {
@@ -162,7 +162,7 @@
         window.setHotspots = function(eventsJson) {
             if (!map || !hotspotDatasource) return;
             try {
-                var events = JSON.parse(eventsJson);
+                var events = parseJsonIfNeeded(eventsJson);
                 var features = events.map(function(e) {
                     if (e.longitude == null || e.latitude == null) return null;
                     return new atlas.data.Feature(new atlas.data.Point([e.longitude, e.latitude]), {
@@ -258,6 +258,14 @@
                             lineJoin: 'round'
                         }));
 
+                        if (pendingActualRoute) { setActualRoute(pendingActualRoute); pendingActualRoute = null; }
+                        if (pendingPlannedRoute) { setPlannedRoute(pendingPlannedRoute); pendingPlannedRoute = null; }
+                        if (pendingDetourRoute) { setDetourRoute(pendingDetourRoute); pendingDetourRoute = null; }
+                        if (pendingHotspots) { setHotspots(pendingHotspots); pendingHotspots = null; }
+                        if (pendingPotholes) { setPotholes(pendingPotholes); pendingPotholes = null; }
+                        if (pendingNearbyPois) { setNearbyPois(pendingNearbyPois); pendingNearbyPois = null; }
+                        if (pendingDestination) { setDestination(pendingDestination.lat, pendingDestination.lng); pendingDestination = null; }
+
                         map.events.add('click', poiLayer, function (e) {
                             if(e.shapes && e.shapes.length > 0){
                                 var properties  = e.shapes[0].getProperties();
@@ -285,12 +293,53 @@
                 }
             });
         };
-        window.setActualRoute = function(pointsJson) {
-            if (!datasource) return;
-            try {
-                var points = JSON.parse(pointsJson);
 
-                routePath = points.map(function(p) { return [p.lng, p.lat]; });
+        function parseJsonIfNeeded(data) {
+            var result = data;
+            while (typeof result === 'string') {
+                try {
+                    var parsed = JSON.parse(result);
+                    if (parsed === result) break;
+                    result = parsed;
+                } catch (e) {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        var pendingActualRoute = null;
+        var pendingPlannedRoute = null;
+        var pendingDetourRoute = null;
+        var pendingHotspots = null;
+        var pendingPotholes = null;
+        var pendingNearbyPois = null;
+        var pendingDestination = null;
+
+        function extractCoord(p) {
+            if (!p) return null;
+            if (Array.isArray(p) && p.length >= 2) {
+                var lng = Number(p[0]), lat = Number(p[1]);
+                if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+            }
+            var lat = Number(p.lat !== undefined ? p.lat : (p.latitude !== undefined ? p.latitude : p.y));
+            var lng = Number(p.lng !== undefined ? p.lng : (p.longitude !== undefined ? p.longitude : (p.long !== undefined ? p.long : p.x)));
+            if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+            return null;
+        }
+
+        window.setActualRoute = function(pointsJson) {
+            if (!datasource){
+                pendingActualRoute = pointsJson;
+                return;
+            }
+            try {
+                var points = parseJsonIfNeeded(pointsJson);
+                if(!Array.isArray(points)) return;
+
+                routePath = points
+                .map(extractCoord)
+                .filter(function(coord) { return coord !== null; });
 
                 if (routePath.length > 0) {
                     // Immediately draw the line on the map
@@ -299,6 +348,27 @@
                     var lastPoint = routePath[routePath.length - 1];
                     lastLng = lastPoint[0];
                     lastLat = lastPoint[1];
+
+                    var startPoint = routePath[0];
+                    updateMarker(startPoint[1], startPoint[0]);
+
+                    if(routePath.length > 1){
+                        var endPoint = routePath[routePath.length - 1];
+                        setDestination(endPoint[1], endPoint[0]);
+                    }
+
+                    if(routePath.length === 1){
+                        map.setCamera({
+                            center: routePath[0],
+                            zoom: 14
+                        });
+                    }else{
+                        var bbox = atlas.data.BoundingBox.fromData(new atlas.data.LineString(routePath));
+                        map.setCamera({
+                            bounds: bbox,
+                            padding: 40
+                        });
+                    }
                 }
             } catch (e) {
                 console.error("JS: Error parsing actual route: " + e.message);
@@ -308,7 +378,7 @@
         window.setDetourRoute = function(pointsJson) {
             if(!secondaryRouteDatasource) return;
 
-            var points = JSON.parse(pointsJson);
+            var points = parseJsonIfNeeded(pointsJson);
             var path = points.map(function(p) { return [p.lng, p.lat]; });
             secondaryRouteDatasource.setShapes([new atlas.data.LineString(path)]);
         };
