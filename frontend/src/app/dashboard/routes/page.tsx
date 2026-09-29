@@ -301,23 +301,63 @@ export default function Routes(){
         }
     }
 
-    const handleEditRoute = (data: RouteFormData) => {
+    const handleEditRoute = async (data: RouteFormData) => {
 
         if (!editingRoute){
             return;
         }
 
-        setRoutesList((prev) => 
-            prev.map((route) =>
-            route.id === editingRoute.id ?
-        {
-            ...route, ...data,
-            startDestination: data.stops[0].address,
-            endDestination: data.stops[data.stops.length - 1].address,
-        } : route
-        ));
-        setEditingRoute(null);
-    };
+        try{
+
+            const foundDriver = driverList.find(
+                (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
+            );
+
+            const foundVehicle = vehicleList.find(
+                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
+            );
+
+            if (!foundDriver || !foundVehicle){
+                alert("Please select a valid driver and vehicle from your fleet");
+                return;
+            }
+
+            await apiFetch(`/fleet/fleet_trips/${editingRoute.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    title: data.title,
+                    task: data.task,
+                    driver_id: foundDriver.user_id,
+                    vehicle_id: foundVehicle.vehicle_id,
+                    planned_start_time: data.plannedStartTime ? new Date(data.plannedStartTime).toISOString() : new Date().toISOString(),
+                    planned_start_location: {
+                        address: data.stops[0].address,
+                        lat: data.stops[0].lat ?? 0,
+                        lng: data.stops[0].lng ?? 0,
+                    },
+                    planned_end_location: {
+                        address: data.stops[data.stops.length - 1].address,
+                        lat: data.stops[data.stops.length - 1].lat ?? 0,
+                        lng: data.stops[data.stops.length - 1].lng ?? 0,
+                    },
+                    selected_points: data.selected_points,
+                    stops: data.stops.map((s, idx) => ({
+                        address: s.address,
+                        lat: s.lat ?? 0,
+                        lng: s.lng ?? 0,
+                        stop_order: idx + 1,
+                    }))
+                })
+            });
+
+            await loadData();
+            setEditingRoute(null);
+    }
+    catch (err){
+        console.error("Failed to edit route", err);
+        alert(err instanceof Error ? err.message : "Failed to edit route");
+    }
+};
 
     const filtered = routesList
     .filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
