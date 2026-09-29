@@ -563,6 +563,10 @@ const fleet_controller = {
         }
     },
     async get_fleet_event_counts(req: AuthRequest, res: Response){
+
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
       
         if(!user_id){
             return res.status(401).json({
