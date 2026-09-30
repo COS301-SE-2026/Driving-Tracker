@@ -81,7 +81,7 @@ The system operates across three layers:
 
 ---
 ## Deployed Pages
-[Landing Page (Including Brand Style Guide)](https://cos301-se-2026.github.io/Driving-Tracker/)
+[Landing Page (Including Brand Style Guide and Dashboard)](https://driving-tracker-git-main-omnitech3.vercel.app/)
 
 ---
 
