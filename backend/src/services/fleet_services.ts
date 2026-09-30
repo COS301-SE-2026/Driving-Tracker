@@ -523,7 +523,7 @@ export const fleet_services = {
 
             const start_time = new Date(data.start_time);
 
-            if(isNaN(start_time.getTime())){
+            if(Number.isNaN(start_time.getTime())){
                 throw new Error("Invalid start time");
             }
 
@@ -608,10 +608,10 @@ export const fleet_services = {
 
     async list_fleet_trips(user_id: string, org_id: string, filters: { driver_id?: string, status?: string, start_date?: Date, end_date?: Date }){
 
-        if (filters?.start_date && isNaN(filters?.start_date.getTime())) {
+        if (filters?.start_date && Number.isNaN(filters?.start_date.getTime())) {
             throw new ValidationError("Invalid start date", "start_date");
         }
-        if (filters?.end_date && isNaN(filters?.end_date.getTime())) {
+        if (filters?.end_date && Number.isNaN(filters?.end_date.getTime())) {
             throw new ValidationError("Invalid end date", "end_date");
         }
 
@@ -708,10 +708,10 @@ export const fleet_services = {
 
     async get_fleet_event_counts(user_id: string, org_id: string, date_filter: { start_date?: Date, end_date?: Date}){
 
-        if (date_filter?.start_date && isNaN(date_filter?.start_date.getTime())) {
+        if (date_filter?.start_date && Number.isNaN(date_filter?.start_date.getTime())) {
             throw new ValidationError("Invalid start date", "start_date");
         }
-        if (date_filter?.end_date && isNaN(date_filter?.end_date.getTime())) {
+        if (date_filter?.end_date && Number.isNaN(date_filter?.end_date.getTime())) {
             throw new ValidationError("Invalid end date", "end_date");
         }
 

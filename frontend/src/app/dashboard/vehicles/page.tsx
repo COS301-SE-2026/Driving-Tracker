@@ -37,7 +37,7 @@ export default function VehiclesPage() {
             }
         }
 
-        loadVehicles();
+        void loadVehicles();
     }, []);
 
 	const availableStatuses = useMemo(() => {

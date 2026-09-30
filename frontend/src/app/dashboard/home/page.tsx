@@ -254,7 +254,7 @@ export default function DashboardHomePage() {
             }
         }
 
-        loadFleetDashboard();
+        void loadFleetDashboard();
     }, []);
 
     //filtering driver cards by the search input

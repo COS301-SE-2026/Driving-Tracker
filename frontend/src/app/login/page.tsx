@@ -28,7 +28,7 @@ export default function SignInPage(){
         if (!email.trim()){
             next.email = "Enter your email address";
         }
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        else if (!/^\S+@\S+\.\S+$/.test(email)){
             next.email = "Please enter a valid email address"
         }
 
