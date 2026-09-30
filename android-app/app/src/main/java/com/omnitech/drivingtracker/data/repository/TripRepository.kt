@@ -28,6 +28,8 @@ class TripRepository @Inject constructor(
         return tripReadingDao.getTripReadings(tripId)
     }
 
+    fun getTripReadingsFlow(tripId: String) = tripReadingDao.getTripReadingsFlow(tripId)
+
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
 
     suspend fun markEventAsSynced(eventId: Int) = tripEventDao.markAsSynced(eventId)

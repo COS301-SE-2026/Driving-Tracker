@@ -152,6 +152,8 @@ fun AzureMapContainer(
         if (isMapStable && !plannedRoute.isNullOrEmpty()) {
             val pointsJson = Gson().toJson(plannedRoute)
             webViewRef?.evaluateJavascript("javascript:window.setPlannedRoute('$pointsJson')", null)
+        }else{
+            webViewRef?.evaluateJavascript("javascript:window.clearPlannedRoute()", null)
         }
     }
     LaunchedEffect(actualRoute, isMapAvailable) {

@@ -21,6 +21,10 @@ import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlin.collections.emptyList
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOf
 
 
 @HiltViewModel
@@ -54,8 +58,6 @@ class TripSummaryViewModel @Inject constructor(
 
     private val _globalHotspots = MutableStateFlow<List<TripEventDto>>(emptyList())
     private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
-
-    val tripPath: StateFlow<List<LocationDto>> = _tripPath
 
     val nearbyPois = tripStateManager.nearbyPois
 
@@ -177,6 +179,14 @@ class TripSummaryViewModel @Inject constructor(
     private val _observedTripId = MutableStateFlow<String?>(null)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val tripPath: StateFlow<List<LocationDto>> = _observedTripId.flatMapLatest { id ->
+        if(id == null) flowOf(emptyList())
+        else repository.getTripReadingsFlow(id).map { readings ->
+            readings.map{ LocationDto(it.latitude, it.longitude) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val localEvents = _observedTripId.flatMapLatest{id ->
         if(id == null) kotlinx.coroutines.flow.flowOf(emptyList())
         else repository.getLocalEventsFlow(id)
@@ -190,8 +200,32 @@ class TripSummaryViewModel @Inject constructor(
     fun endTrip(tripId: String,latitude: Double?, longitude: Double?,distance: Double?,durationMinutes: Int?,fuelEstimate: Double?,fuelLevelEnd:Float?,path: List<LocationDto>) {
         viewModelScope.launch {
             _endTripState.value = UiState.Loading
+            val localReadings = repository.getTripReadings(tripId)
+            val fullPath = if (localReadings.isNotEmpty()){
+                localReadings.map { LocationDto(it.latitude, it.longitude) }
+            }else{
+                path
+            }
+
+            var calculatedDistance = 0.0
+            for(i in 0 until fullPath.size - 1){
+                val p1 = fullPath[i]
+                val p2 = fullPath[i+1]
+                if(p1.lat != null && p1.lng != null && p2.lat != null && p2.lng != null){
+                    val results = FloatArray(1)
+                    android.location.Location.distanceBetween(p1.lat, p1.lng, p2.lat, p2.lng, results)
+                    calculatedDistance += results[0]
+                }
+            }
+
+            val actualDistanceKm = if(calculatedDistance > 0){
+                calculatedDistance / 1000.0
+            }else{
+                distance ?: 0.0
+            }
+
             val geoJson = GeoJsonLineString(
-                coordinates = path.mapNotNull { loc ->
+                coordinates = fullPath.mapNotNull { loc ->
                     if (loc.lat != null && loc.lng != null) listOf(loc.lng, loc.lat) else null
                 }
             )
@@ -206,7 +240,7 @@ class TripSummaryViewModel @Inject constructor(
                 tripId = tripId,
                 endTime = endTime,
                 status = status,
-                distanceKm = distance,
+                distanceKm = actualDistanceKm,
                 durationMinutes = durationMinutes,
                 fuelEstimate = fuelEstimate,
                 fuelLevelEnd = currentFuel,

@@ -113,6 +113,12 @@
             }
         };
 
+        window.clearPlannedRoute = function(){
+            if(plannedDatasoure){
+                plannedDatasource.clear();
+            }
+        };
+
         window.setDestination = function(lat, lng) {
             if (!map) return;
             var latN = Number.parseFloat(lat), lngN = Number.parseFloat(lng);
@@ -330,7 +336,6 @@
 
         window.setActualRoute = function(pointsJson) {
             if (!datasource){
-                pendingActualRoute = pointsJson;
                 return;
             }
             try {
@@ -344,31 +349,6 @@
                 if (routePath.length > 0) {
                     // Immediately draw the line on the map
                     datasource.setShapes([new atlas.data.LineString(routePath)]);
-                    // Update lastLat/lastLng so the red dot and camera are in sync
-                    var lastPoint = routePath[routePath.length - 1];
-                    lastLng = lastPoint[0];
-                    lastLat = lastPoint[1];
-
-                    var startPoint = routePath[0];
-                    updateMarker(startPoint[1], startPoint[0]);
-
-                    if(routePath.length > 1){
-                        var endPoint = routePath[routePath.length - 1];
-                        setDestination(endPoint[1], endPoint[0]);
-                    }
-
-                    if(routePath.length === 1){
-                        map.setCamera({
-                            center: routePath[0],
-                            zoom: 14
-                        });
-                    }else{
-                        var bbox = atlas.data.BoundingBox.fromData(new atlas.data.LineString(routePath));
-                        map.setCamera({
-                            bounds: bbox,
-                            padding: 40
-                        });
-                    }
                 }
             } catch (e) {
                 console.error("JS: Error parsing actual route: " + e.message);
