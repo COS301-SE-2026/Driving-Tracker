@@ -307,7 +307,7 @@ export async function driver_profile(user_id: string, recent_trip_id: string): P
         if (existing_score) {
             await prisma.trip_scores.update({
                 where: { score_id: existing_score.score_id },
-                data: { overall_score: classification.driver_score }
+                data: { overall_score: effective_overall }
             });
         }
         
