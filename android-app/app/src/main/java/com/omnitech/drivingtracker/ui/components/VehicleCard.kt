@@ -5,7 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -28,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.omnitech.drivingtracker.ui.obd.Vehicle
 import com.omnitech.drivingtracker.ui.components.VehicleImage
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
@@ -100,11 +104,13 @@ fun VehicleCard(
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
-                        modifier = Modifier.background(Color.White).clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier
+                            .background(Color.White)
+                            .clip(RoundedCornerShape(8.dp))
                     ) {
 
                         DropdownMenuItem(
-                            text = { Text("Edit Name", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                            text = { Text("Edit Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
                             onClick = {
                                 showMenu = false
                                 onEditNameClick()
@@ -188,27 +194,36 @@ fun VehicleCard(
 }
 
 @Composable
-fun EditNameDialog(
+fun EditVehicleDialog(
     vehicle: Vehicle,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, String?, String, String, Int, String) -> Unit
 ){
-
-    var text by remember { mutableStateOf(vehicle.name) }
+    var name by remember { mutableStateOf(vehicle.name) }
+    var registration by remember { mutableStateOf(vehicle.registration ?: "") }
+    var make by remember { mutableStateOf(vehicle.brand) }
+    var model by remember { mutableStateOf(vehicle.model) }
+    var year by remember { mutableStateOf(vehicle.year?.toString() ?: "") }
+    var fuelType by remember { mutableStateOf(vehicle.fuelType ?: "PETROL") }
+    var fuelTank by remember { mutableStateOf(50.0f.toString()) } // still might make it user side instead of obd
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Name") },
+        title = { Text("Edit Vehicle") },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("New Name") },
-                singleLine = true
-            )
+            Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+               OutlinedTextField(value = registration, onValueChange = { registration = it }, label = { Text("Registration") })
+               OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
+               OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
+               OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Year") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+//               OutlinedTextField(value = fuelTank, onValueChange = { fuelTank = it }, label = { Text("Tank Size") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+           }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }) { Text("Save") }
+            TextButton(onClick = {
+                onConfirm(name, registration, make, model, year.toIntOrNull() ?: 0, fuelType)
+            }) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }

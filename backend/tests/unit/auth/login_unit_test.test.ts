@@ -20,6 +20,9 @@ jest.mock('../../../src/db/prisma', () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    organization_members: {
+        findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -33,6 +36,12 @@ describe('Auth login endpoint',()=>{
         jest.spyOn(auth_services,'login').mockResolvedValueOnce({
             user: createMockUser(),
             refresh_token: 'refresh-1',
+            user_org: {
+                user_id: 'user-1',
+                role: 'ADMIN',
+                org_id: 'org-1',
+                joined_at: new Date('2026-01-15')
+            },
         });
 
         const req: any = {

@@ -1,7 +1,19 @@
+jest.mock('../../../src/db/prisma', () => ({
+    __esModule: true,
+    default: {
+        $queryRaw: jest.fn(),
+        trip_events: {
+            findMany: jest.fn(),
+        },
+    },
+}));
+
 import {describe, it, expect, jest, beforeEach} from '@jest/globals';
-import { map_services } from '../../../src/services/map_services';
+import { map_services,route_summary } from '../../../src/services/map_services';
+import prisma from '../../../src/db/prisma';
 
 
+const mock_prisma = prisma as any ;// mockng the prisma database 
 const mock_fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 globalThis.fetch = mock_fetch; //mocking the global fetch API 
 
@@ -55,7 +67,63 @@ describe('Map services suggested routes ', ()=>{
             },
         ],
     };// the response that azure would provide but it is mocked now 
+    it('Returns alternative routes with calculated risk levels and hotspot counts when inlcude_alternative is true', async ()=>{
+        mock_prisma.trip_events.findMany.mockResolvedValue([
+            { event_id: 'e1', type: 'HARSH_BRAKE', latitude: -25.75, longitude: 28.24, recorded_at: new Date() },
+            { event_id: 'e2', type: 'HARSH_BRAKE', latitude: -25.7501, longitude: 28.2401, recorded_at: new Date() },
+            { event_id: 'e3', type: 'HARSH_BRAKE', latitude: -25.7502, longitude: 28.2402, recorded_at: new Date() },
+        ]);
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true, 
+                json: async () => azure_route_response,
+            })
+        );
+        const result = await map_services.suggested_routes({
+            start_lat: -25.7461,
+            start_lng: 28.2313,
+            dest_lat: -25.75,
+            dest_lng: 28.24,
+            include_alternative: true,
+        });
+        expect('routes' in result).toBe(true);
+        if ('routes' in result) {
+            expect(result.routes).toHaveLength(1);
+            expect(result.routes[0]).toEqual(
+                expect.objectContaining({
+                    route_index: 0,
+                    name: 'Primary / Fastest Route',
+                    distance_km: 12.5,
+                    travel_time_seconds: 900,
+                    traffic_delay_seconds: 60,
+                    harsh_brake_hotspot_count: 3,
+                    risk_level: 'HIGH', 
+                })
+            );
+        }
+    });
+    it('calculates LOW risk level when no hotspots exist along the route', async ()=>{
+        mock_prisma.trip_events.findMany.mockResolvedValue([]);
 
+        mock_fetch.mockResolvedValue(
+            make_response({
+                ok: true,
+                json: async () => azure_route_response
+            })
+        );
+        const result = await map_services.suggested_routes({
+            start_lat: -25.7461,
+            start_lng: 28.2313,
+            dest_lat: -25.75,
+            dest_lng: 28.24,
+            include_alternative: true,
+        });
+
+        if ('routes' in result) {
+            expect(result.routes[0].risk_level).toBe('LOW');
+            expect(result.routes[0].harsh_brake_hotspot_count).toBe(0);
+        }
+    });
     it('return a mapped route summary on success', async()=>{
         mock_fetch.mockResolvedValue(
             make_response({
@@ -103,7 +171,8 @@ describe('Map services suggested routes ', ()=>{
             dest_lat:3 ,
             dest_lng: 4
         });
-        expect(result.traffic_delay_seconds).toBe(0);
+        // expect(result.traffic_delay_seconds).toBe(0);
+        expect((result as route_summary).traffic_delay_seconds).toBe(0);
     });
 
     it('throws a clear error when fetch itself fails', async() =>{
@@ -375,3 +444,94 @@ describe('map services get reverse geocode', ()=>{
   
 });
 
+describe('Map services get_road_defects', () => {
+    beforeEach(async () => jest.clearAllMocks());
+
+    it('returns road defects within search radius sorted by distance', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7461, lng: 28.2313, reports: 4, avg_severity: 3.5 },
+            { lat: -25.7465, lng: 28.2313, reports: 3, avg_severity: 4.0 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            radius_m: 100,
+        });
+
+        expect(result.length).toBe(2);
+        expect(result[0].distance_m).toBeLessThan(result[1].distance_m);
+        expect(result[0].reports).toBe(4);
+    });
+
+    it('filters out defects outside the requested radius', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7461, lng: 28.2313, reports: 5, avg_severity: 2.0 },
+            { lat: -25.7550, lng: 28.2313, reports: 3, avg_severity: 4.5 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            radius_m: 100,
+        });
+
+        expect(result.length).toBe(1);
+        expect(result[0].lat).toBe(-25.7461);
+    });
+
+    it('filters out defects that are behind the vehicle when heading is provided', async () => {
+        const mock_db_candidates = [
+            { lat: -25.7450, lng: 28.2313, reports: 3, avg_severity: 3.0 },
+            { lat: -25.7470, lng: 28.2313, reports: 4, avg_severity: 4.0 },
+        ];
+
+        jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mock_db_candidates as any);
+        const result = await map_services.get_road_defects({
+            lat: -25.7461,
+            lng: 28.2313,
+            heading: 0,
+            radius_m: 200,
+        });
+
+        expect(result.length).toBe(1);
+        expect(result[0].lat).toBe(-25.7450);
+    });
+});
+
+describe('Map services get_all_hotspots with grouping', () =>{
+    beforeEach(()=>{jest.clearAllMocks()});
+    it("Returns only clustered hotspots (3+ within 500m) and filters isolated ones", async () => {
+        const now = new Date();
+        const mock_data = [
+            
+            { event_id: 'c1', type: 'HARSH_BRAKE', latitude: -26.143000, longitude: 27.842000, recorded_at: now },
+            { event_id: 'c2', type: 'HARSH_BRAKE', latitude: -26.143001, longitude: 27.842001, recorded_at: now },
+            { event_id: 'c3', type: 'HARSH_BRAKE', latitude: -26.143002, longitude: 27.842002, recorded_at: now },
+            
+            { event_id: 'i1', type: 'HARSH_ACCELERATION', latitude: -26.200000, longitude: 27.900000, recorded_at: now }
+        ];
+        
+        mock_prisma.trip_events.findMany.mockResolvedValue(mock_data);
+
+        const result = await map_services.get_all_hotspots();
+
+        // Should return only the 3 cluster points, not the isolated one
+        expect(result.length).toBe(3);
+        expect(result.map(r => r.event_id)).not.toContain('i1');
+        expect(result[0]).toEqual({
+            event_id: 'c1',
+            event_type: 'HARSH_BRAKE',
+            latitude: -26.143000,
+            longitude: 27.842000,
+            time_stamp: now
+        });
+    });
+    it('throws error when database query fails', async () => {
+        mock_prisma.trip_events.findMany.mockRejectedValue(new Error('Prisma error'));
+
+        await expect(map_services.get_all_hotspots()).rejects.toThrow('Prisma error');
+    });
+});

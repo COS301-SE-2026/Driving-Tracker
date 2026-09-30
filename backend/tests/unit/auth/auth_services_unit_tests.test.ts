@@ -2,11 +2,22 @@ jest.mock('../../../src/db/prisma', () => ({
     __esModule: true,
     default: {
         users: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
+            findUnique: jest.fn(),
+            findFirst: jest.fn(),
+            findMany: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
         },
+        organization_members: {
+            findUnique: jest.fn(),
+            create: jest.fn(),
+        },
+        organizations: {
+            create: jest.fn(),
+        },
+        $transaction: jest.fn(async (callback: (tx: typeof prisma) => unknown) =>
+            callback(prisma),
+        ),
     },
 }));
 
@@ -38,8 +49,6 @@ import { auth_services } from '../../../src/services/auth_services';
 import bcrypt from 'bcrypt';
 import { sendAuthEmail } from '../../../src/utils/email';
 import { ValidationError } from '../../../src/utils/errors';
-import { refreshToken } from 'firebase-admin/app';
-import { mock } from 'node:test';
 
 const mock_prisma = prisma as any;
 const mock_bcrypt = bcrypt as any;
@@ -138,6 +147,10 @@ describe('Auth services.login', () => {
             username: 'testuser',
             email_verified: true,
         });
+
+        mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+
+
         mock_bcrypt.compare.mockResolvedValue(true);
 
         const result = await auth_services.login('test@example.com', 'Password123!');
@@ -340,6 +353,7 @@ describe('Auth services.reset_password', () => {
         expect(mock_prisma.users.update).toHaveBeenCalledWith({
             where: { user_id: 'u3' },
             data: {
+                email_verified: true,
                 password_hash: 'new_hashed_pw',
                 password_reset_token: null,
                 reset_token_exp: null,
@@ -378,5 +392,365 @@ describe('Auth services profile picture', () => {
     });
 });
 
+
+describe("Auth services.add_driver_to_org", () => {
+
+    const driver_data = {
+        email: "driver@example.com",
+        username: "driver123",
+        name: "Jane",
+        surname: "Doe",
+        phone_number: "0123456789",
+        dob: "1990-01-01",
+    };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mock_bcrypt.hash.mockResolvedValue("hashed-password");
+    });
+
+    it("rejects users who are not managers or admins", async () => {
+        mock_prisma.organization_members.findUnique.mockResolvedValue({
+            role: "DRIVER",
+            organizations: {
+                name: "Fleet One",
+            },
+        });
+
+        await expect(
+            auth_services.add_driver_to_org(
+                "driver-1",
+                "org-1",
+                driver_data,
+            ),
+        ).rejects.toMatchObject({
+            name: "ExtendedError",
+            errorCode: "UNAUTHORIZED",
+            message: "Not authorized to add drivers",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organization_members.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects users who are not organization members", async () => {
+        mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+
+        await expect(
+            auth_services.add_driver_to_org(
+                "user-1",
+                "org-1",
+                driver_data,
+            ),
+        ).rejects.toMatchObject({
+            errorCode: "UNAUTHORIZED",
+        });
+    });
+
+    it.each(["MANAGER", "ADMIN"])(
+        "adds a driver when the manager has the %s role",
+        async (role) => {
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                role,
+                organizations: {
+                    name: "Fleet One",
+                },
+            });
+
+            mock_prisma.users.findFirst.mockResolvedValue(null);
+            mock_prisma.users.create.mockResolvedValue({
+                user_id: "driver-1",
+                email: "driver@example.com",
+                username: "driver123",
+                name: "Jane",
+                surname: "Doe",
+            });
+
+            mock_prisma.organization_members.create.mockResolvedValue({
+                org_id: "org-1",
+                user_id: "driver-1",
+                role: "DRIVER",
+            });
+
+            mock_prisma.users.update.mockResolvedValue({
+                user_id: "driver-1",
+            });
+
+            const result = await auth_services.add_driver_to_org(
+                "manager-1",
+                "org-1",
+                driver_data,
+            );
+
+            expect(result).toEqual({
+                user: expect.objectContaining({
+                    user_id: "driver-1",
+                }),
+            });
+
+            expect(mock_prisma.users.findFirst).toHaveBeenCalledWith({
+                where: {
+                    email: "driver@example.com",
+                },
+                select: {
+                    user_id: true,
+                }
+            });
+
+            expect(mock_prisma.users.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        email: "driver@example.com",
+                        username: "driver123",
+                        name: "Jane",
+                        surname: "Doe",
+                        phone_number: "0123456789",
+                        consent_status: true,
+                    }),
+                }),
+            );
+
+            expect(mock_prisma.organization_members.create).toHaveBeenCalledWith({
+                data: {
+                    org_id: "org-1",
+                    user_id: "driver-1",
+                    role: "DRIVER",
+                },
+            });
+
+            expect(mock_prisma.users.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {
+                        user_id: "driver-1",
+                    },
+                    data: expect.objectContaining({
+                        verification_token: null,
+                        password_reset_token: expect.any(String),
+                        reset_token_exp: expect.any(Date),
+                    }),
+                }),
+            );
+
+            expect(mock_sendAuthEmail).toHaveBeenCalledWith(
+                "driver@example.com",
+                "Setup your Driving Tracker account for Fleet One",
+                expect.stringContaining("You've been added to Fleet One"),
+            );
+        },
+    );
+
+    it("normalizes the driver's email", async () => {
+        mock_prisma.organization_members.findUnique.mockResolvedValue({
+            role: "MANAGER",
+            organizations: { name: "Fleet One" },
+        });
+
+        mock_prisma.users.findFirst.mockResolvedValue(null);
+
+        mock_prisma.users.create.mockResolvedValue({
+            user_id: "driver-1",
+            email: "driver@example.com",
+        });
+
+        await auth_services.add_driver_to_org(
+            "manager-1",
+            "org-1",
+            {
+                ...driver_data,
+                email: "  DRIVER@EXAMPLE.COM ",
+            },
+        );
+
+        expect(mock_prisma.users.findFirst).toHaveBeenCalledWith({
+            where: {
+                email: "driver@example.com",
+            },
+            select: {
+                user_id: true
+            },
+        });
+
+        expect(mock_prisma.users.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    email: "driver@example.com",
+                }),
+            }),
+        );
+    });
+
+    it("propagates validation errors for invalid driver data", async () => {
+        mock_prisma.organization_members.findUnique.mockResolvedValue({
+            role: "MANAGER",
+            organizations: { name: "Fleet One" },
+        });
+
+        await expect(
+            auth_services.add_driver_to_org(
+                "manager-1",
+                "org-1",
+                {
+                    ...driver_data,
+                    phone_number: "invalid",
+                },
+            ),
+        ).rejects.toMatchObject({
+            name: "ValidationError",
+            field: "phone",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organization_members.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects an existing email address", async () => {
+        mock_prisma.organization_members.findUnique.mockResolvedValue({
+            role: "MANAGER",
+            organizations: { name: "Fleet One" },
+        });
+
+        mock_prisma.users.findFirst.mockResolvedValue({
+            user_id: "existing-user",
+            email: "driver@example.com",
+        });
+
+        await expect(
+            auth_services.add_driver_to_org(
+                "manager-1",
+                "org-1",
+                driver_data,
+            ),
+        ).rejects.toMatchObject({
+            name: "ConflictError",
+            field: "email",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organization_members.create).not.toHaveBeenCalled();
+    });
+});
+
+describe("Auth services.dashboard_register", () => {
+
+    const admin_data = {
+        email: "admin@example.com",
+        name: "Mick",
+        surname: "Jagger",
+        phone_number: "0873227391",
+        dob: "2000-05-05",
+        password: "myPassword123!"
+    };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mock_bcrypt.hash.mockResolvedValue("hashed-password");
+    });
+
+    it("normalizes the users's email", async () => {
+
+        mock_prisma.organizations.create.mockResolvedValue({
+            name: "BIG ORG",
+        });
+
+        mock_prisma.organization_members.create.mockResolvedValue({
+            role: "ADMIN",
+            organizations: { name: "BIG ORG" },
+        });
+
+        mock_prisma.users.findFirst.mockResolvedValue(null);
+
+        mock_prisma.users.findMany.mockResolvedValue([]);
+
+        mock_prisma.users.create.mockResolvedValue({
+            user_id: "admin-1",
+            email: "admin@example.com",
+        });
+
+        await auth_services.dashboard_register(
+            {
+                ...admin_data,
+                email: "  ADMIN@EXAMPLE.COM ",
+            },
+            "BIG ORG"
+        );
+
+        expect(mock_prisma.users.findFirst).toHaveBeenCalledWith({
+            where: {
+                email: "admin@example.com",
+            },
+            select: {
+                user_id: true
+            },
+        });
+
+        expect(mock_prisma.users.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    email: "admin@example.com",
+                }),
+            }),
+        );
+
+    });
+
+    it("propagates validation errors for invalid admin data", async () => {
+
+        await expect(
+            auth_services.dashboard_register(
+                {
+                    ...admin_data,
+                    name: "",
+                },
+                "BIG ORG"
+            ),
+        ).rejects.toMatchObject({
+            name: "ValidationError",
+            field: "name",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organizations.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid password", async () => {
+
+        await expect(
+            auth_services.dashboard_register(
+                {
+                    ...admin_data,
+                    password: "badpassword"
+                },
+                "BIG ORG"
+            ),
+        ).rejects.toMatchObject({
+            name: "ValidationError",
+            field: "password",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organization_members.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects an existing email address", async () => {
+
+        mock_prisma.users.findFirst.mockResolvedValue({
+            user_id: "existing-user",
+            email: "admin@example.com",
+        });
+
+        await expect(
+            auth_services.dashboard_register(
+                admin_data,
+                "BIG ORG"
+            ),
+        ).rejects.toMatchObject({
+            name: "ConflictError",
+            field: "email",
+        });
+
+        expect(mock_prisma.users.create).not.toHaveBeenCalled();
+        expect(mock_prisma.organizations.create).not.toHaveBeenCalled();
+    });
+});
 
 

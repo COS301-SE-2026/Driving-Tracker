@@ -9,6 +9,7 @@ const { refresh } = auth_controller;
 import { auth_services } from '../../../src/services/auth_services';
 import { ExtendedError} from '../../../src/utils/errors';
 import { createMockUser } from './mock_user';
+import { OrganizationRole } from '@prisma/client';
 
 
 describe('Auth refresh endpoint', () => {
@@ -30,6 +31,13 @@ describe('Auth refresh endpoint', () => {
         jest.spyOn(auth_services, 'refresh').mockResolvedValueOnce({
             user: createMockUser(),
             new_refresh_token: 'new-refresh-1',
+            user_org: {
+                user_id: 'user-1',
+                org_id: 'org-1',
+                role: OrganizationRole.ADMIN,
+                joined_at: new Date(),
+
+            }
         });
         const req: any = { body: { refresh_token: 'old-refresh-1' } };
         const json = jest.fn();

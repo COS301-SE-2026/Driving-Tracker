@@ -4,13 +4,14 @@ import com.omnitech.drivingtracker.data.api.ApiErrorParser
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.AddVehicleResponse
 import com.omnitech.drivingtracker.data.models.AssignVehicleRequest
-import com.omnitech.drivingtracker.data.models.UpdateVehicleNameRequest
+//import com.omnitech.drivingtracker.data.models.UpdateVehicleRequest
 import com.omnitech.drivingtracker.data.models.FuelComparisonData
 import com.omnitech.drivingtracker.services.ApiService
 import javax.inject.Inject
 import com.omnitech.drivingtracker.data.models.VehicleDto
 import okhttp3.MultipartBody
 import com.omnitech.drivingtracker.data.models.FuelAnalyticsDto
+import com.omnitech.drivingtracker.data.models.UpdateVehicleRequest
 import retrofit2.HttpException
 
 class VehicleRepository  @Inject constructor(private val apiService: ApiService){
@@ -33,8 +34,8 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         Result.failure(e)
     }
 
-    suspend fun updateVehicleName(vehicleId: String, name: String): Result<Unit> = try {
-        apiService.updateVehicleName(vehicleId, UpdateVehicleNameRequest(name))
+    suspend fun updateVehicle(vehicleId: String, req: UpdateVehicleRequest): Result<Unit> = try {
+        apiService.updateVehicle(vehicleId, req)
         Result.success(Unit)
     }catch (e: HttpException){
         val error = ApiErrorParser.parse(e)

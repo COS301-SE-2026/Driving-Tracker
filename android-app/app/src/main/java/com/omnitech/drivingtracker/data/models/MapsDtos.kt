@@ -39,6 +39,29 @@ data class MapPoiRequest(
     val limit: Int?
 )
 
+data class RoadDefectsResponse(
+    val message: String,
+    val data: RoadDefectsData
+)
+
+data class RoadDefectsData(
+    @SerializedName("radius_m")
+    val radiusMeters: Double,
+    val defects: List<RoadDefectItem>
+)
+
+data class RoadDefectItem(
+    val lat: Double,
+    val lng: Double,
+    val reports: Int,
+    @SerializedName("avg_severity")
+    val avgSeverity: Double,
+    @SerializedName("distance_m")
+    val distanceMeters: Double,
+    @SerializedName("bearing_deg")
+    val bearingDegrees: Double
+)
+
 enum class PoiType(val value: String){
     PETROL("petrol"),
     REST_AREA("rest_area"),
@@ -47,3 +70,4 @@ enum class PoiType(val value: String){
 
     override fun toString() = value
 }
+data class HotspotsResponse( val data: List<TripEventDto> )

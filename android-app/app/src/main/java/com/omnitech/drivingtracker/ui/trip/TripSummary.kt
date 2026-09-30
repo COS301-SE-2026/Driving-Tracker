@@ -37,6 +37,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.ZoneId
 import com.omnitech.drivingtracker.data.models.LocationDto
+import kotlin.collections.mapNotNull
 
 data class TripSummaryData(
     val date: String = "25 April 2026 • 12:45",
@@ -62,7 +63,7 @@ fun TripSummary(
     viewModel: TripSummaryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
+    val globalHotspots by viewModel.globalHotspots.collectAsState()
     val mapToken by viewModel.mapTokenState.collectAsState()
     val tripPath by viewModel.tripPath.collectAsState()
 
@@ -72,6 +73,9 @@ fun TripSummary(
             viewModel.loadTripPath(tripId)
             viewModel.fetchMapToken()
         }
+    }
+    LaunchedEffect(Unit){
+        viewModel.loadGlobalHotspots()
     }
 
     when (val state = uiState) {
@@ -94,14 +98,26 @@ fun TripSummary(
             }catch(e: Exception){
                 trip.startedAt
             }
-            val dbPath = trip.routePolyline?.coordinates?.map {
-                LocationDto(it[1], it[0]) // GeoJSON is [lng, lat], convert to [lat, lng]
+            val dbPath = trip.routePolyline?.coordinates?.mapNotNull { coord ->
+                if(coord.size >= 2 && coord[0] != null && coord[1] != null){
+                    LocationDto(coord[1], coord[0]) // GeoJSON is [lng, lat], convert to [lat, lng]
+                }else null
             } ?: emptyList()
+
+            val eventPath = trip.events.mapNotNull { ev ->
+                if (ev.latitude != null && ev.longitude != null) {
+                    LocationDto(lat = ev.latitude, lng = ev.longitude)
+                } else null
+            }
 
             val start = trip.startAddress ?: "Unknown Start"
             val end = trip.endAddress ?: "Unknown End Address"
 
-            val displayPath = if (tripPath.isEmpty()) dbPath else tripPath
+            val displayPath = when {
+                tripPath.isNotEmpty() -> tripPath
+                dbPath.isNotEmpty() -> dbPath
+                else -> eventPath
+            }
 
             val mappedData = TripSummaryData(
                 date = formattedDate,
@@ -126,7 +142,8 @@ fun TripSummary(
             TripSummaryContent(trip = mappedData,
                 navController = navController,
                 mapToken = mapToken,
-                tripPath = displayPath
+                tripPath = displayPath,
+                globalHotspots = globalHotspots
             )
         }
         else -> Unit
@@ -138,10 +155,11 @@ fun TripSummaryContent(
     trip: TripSummaryData,
     navController: NavController? = null,
     mapToken: String? = null,
-    tripPath: List<LocationDto> = emptyList()
+    tripPath: List<LocationDto> = emptyList(),
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList()
 ) {
     val hasValidPath = tripPath.isNotEmpty()
-    val canShowMap = mapToken != null && hasValidPath
+    val canShowMap = !mapToken.isNullOrEmpty()
     StandardScreen(
         navController = navController,
         title = "Trip Summary",
@@ -183,25 +201,49 @@ fun TripSummaryContent(
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFFD0D8E0))
         ) {
-            if (canShowMap) {
-                AzureMapContainer(
-                    subscriptionKey = mapToken!!,
-                    actualRoute = tripPath,
-                    isInteractive = true, // DISABLES SCROLL  here,
-                    zoom = 13,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                // Fallback UI (Placeholder + Spinner)
-                Image(
-                    painter = painterResource(id = R.drawable.map),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().alpha(0.6f)
-                )
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center).size(24.dp)
-                )
+            when{
+                canShowMap -> {
+
+                    val startLoc = tripPath.firstOrNull()
+                    val endLoc = tripPath.lastOrNull()
+
+                    AzureMapContainer(
+                        subscriptionKey = mapToken!!,
+                        latitude = startLoc?.lat ?: -25.7479,
+                        longitude = startLoc?.lng ?: 28.2293,
+                        destination = endLoc,
+                        actualRoute = tripPath,
+                        tripEvents = globalHotspots,
+                        isInteractive = true, // DISABLES SCROLL  here,
+                        zoom = 13,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                mapToken == null -> {
+                    // Fallback UI (Placeholder + Spinner)
+                    Image(
+                        painter = painterResource(id = R.drawable.map),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().alpha(0.6f)
+                    )
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center).size(24.dp)
+                    )
+                }else -> {
+                    Image(
+                        painter = painterResource(id = R.drawable.map),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().alpha(0.6f)
+                    )
+                    Text(
+                        text = "Map unavailable",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.DarkGray,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
 

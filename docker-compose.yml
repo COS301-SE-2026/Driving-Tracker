@@ -109,6 +109,7 @@ services:
         context: ./frontend
         args:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY: ${NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY:-${AZURE_MAPS_SUBSCRIPTION_KEY}}
     ports:
         - "3001:3001"
     volumes:
@@ -118,6 +119,7 @@ services:
     environment:
         PORT: 3001
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY: ${NEXT_PUBLIC_AZURE_MAPS_SUBSCRIPTION_KEY:-${AZURE_MAPS_SUBSCRIPTION_KEY}}
 
   api-test:
     build: ./backend
@@ -177,6 +179,7 @@ services:
       - ./backend/.env.test
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD}
       NODE_ENV: test
     depends_on:
       db:

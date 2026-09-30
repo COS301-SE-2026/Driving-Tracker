@@ -1,0 +1,433 @@
+"use client";
+
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Search, UserRound } from "lucide-react";
+import DashboardNavbar from "@/components/DashboardNavbar"
+import dynamic from "next/dynamic";
+import type {
+    Driver,
+    FleetStats,
+    HarshEventCounts,
+} from "@/components/fleet/type";
+import { tokenManager } from "@/lib/auth/tokenManager";
+import { useFleetSocket, LocationUpdatePayload, HarshEventPayload, TripEndedPayload } from "@/lib/hooks/useFleetSocket";
+import { getDrivers, getFleetEvents } from "@/lib/driver-api";
+
+const FleetMap = dynamic(
+    () => import("@/components/fleet/FleetMap"),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex h-full w-full items-center justify-center bg-slate-100">
+                <span className="text-sm text-slate-500">
+                    Loading map...
+                </span>
+            </div>
+        ),
+    },
+);
+
+//temporary fallback data
+// const fallbackDrivers: Driver[] = [
+//     {
+//         id: "driver-1",
+//         name: "Sipho M",
+//         status: "On trip",
+//         location: [28.2179, -25.7545],
+//         route: [
+//             [28.1881, -25.7466],
+//             [28.2049, -25.7526],
+//             [28.2179, -25.7545],
+//             [28.2293, -25.7479],
+//         ],
+//     },
+//     {
+//         id: "driver-2",
+//         name: "Jane V",
+//         status: "Inactive",
+//         location: [28.2477, -25.7566],
+//         route: [
+//             [28.2312, -25.7466],
+//             [28.2477, -25.7566],
+//             [28.2601, -25.7625],
+//         ],
+//     },
+//     {
+//         id: "driver-3",
+//         name: "Thando S",
+//         status: "On trip",
+//         location: [28.1897, -25.8553],
+//         route: [
+//             [28.2113, -25.7906],
+//             [28.1965, -25.8281],
+//             [28.1897, -25.8553],
+//             [28.1889, -25.8601],
+//         ],
+//     },
+    
+// ];
+
+// const fallbackStats: FleetStats = {
+//     harshBraking: 8,
+//     harshAcceleration: 2,
+//     idleDrivers: 1,
+//     tripsInProgress: 2,
+// };
+
+export default function DashboardHomePage() {
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    //const [stats, setStats] = useState<FleetStats>(fallbackStats);
+    const [search, setSearch] = useState("");
+    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null,);
+    const [isLoading, setIsLoading] = useState(true);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [harshEventStats, setHarshEventStats] = useState<HarshEventCounts>({
+        harsh_brake: 0,
+        harsh_acceleration: 0,
+        sharp_corner: 0,
+        crash_like: 0
+    });
+
+    const claims = tokenManager.getClaims();
+    const orgId = claims?.org_id ?? null;
+
+    function toDisplayStatus(status: string): string {
+
+        if(status === "UNAVAILABLE"){
+            return "On trip";
+        } 
+
+        return "Inactive";
+    }
+
+    const handleLocationUpdate = useCallback((data: LocationUpdatePayload) => {
+
+        if(endedTripIds.current.has(data.trip_id)){
+            return;
+        }
+
+        const newPoint: [number, number] = [data.location.lng, data.location.lat];
+
+        setDrivers((prevDrivers) => 
+            prevDrivers.map((driver) => {
+
+                if(driver.id === data.user_id){
+
+                    console.log(`${driver.id} location update at ${Date.now()}`);
+                    return {
+                        ...driver, 
+                        status: "On trip",
+                        location: newPoint,
+                        route: [...(driver.route ?? []), newPoint],
+                        speed: data.speed_kmh
+                    };
+                }
+
+                return driver;
+            })
+        );
+    }, []);
+
+    const endedTripIds = useRef(new Set<string>());
+
+    const handleTripEnded = useCallback((data: TripEndedPayload) => {
+
+        endedTripIds.current.add(data.tripId);
+
+        console.log("Trip ended callback fired");
+        setDrivers((prevDrivers) => 
+            prevDrivers.map((driver) => {
+
+                if(driver.id === data.driverId){
+                    console.log(`${driver.id} trip ended`);
+                    return {
+                        ...driver, 
+                        status: "Inactive",
+                        speed: undefined
+                    };
+                }
+
+                return driver;
+            })
+        );
+    }, []);
+
+    const handleHarshEvent = useCallback((event: HarshEventPayload) => {
+
+        setHarshEventStats((prevStats) => {
+            
+            const eventType = event.event_type;
+
+            switch(eventType){
+                case "HARSH_BRAKE":
+                    return {
+                        ...prevStats,
+                        harsh_brake: prevStats.harsh_brake + 1,
+                    };
+
+                case "HARSH_ACCELERATION":
+                    return {
+                        ...prevStats,
+                        harsh_acceleration: prevStats.harsh_acceleration + 1,
+                    };
+
+                case "CRASH_LIKE":
+                    return {
+                        ...prevStats,
+                        crash_like: prevStats.crash_like + 1,
+                    };
+
+                default: 
+                    return prevStats;
+            }
+        });
+
+    }, []);
+
+    const { isConnected } = useFleetSocket(orgId, handleLocationUpdate, handleTripEnded, handleHarshEvent);
+
+    //Stats use drivers and independant harsh event endpoint
+    const stats: FleetStats = useMemo(() => {
+
+        const tripsInProgress = drivers.filter((d) => d.status === "On trip").length;
+
+        return {
+            tripsInProgress,
+            idleDrivers: drivers.length - tripsInProgress,
+            harshBraking: harshEventStats.harsh_brake,
+            crashLike: harshEventStats.crash_like,
+            harshAcceleration: harshEventStats.harsh_acceleration,
+        };
+    }, [drivers, harshEventStats]);
+
+    useEffect(() => {
+        async function loadFleetDashboard() {
+
+            try {
+
+                const fleetDrivers = await getDrivers();
+
+                const harshEvents = await getFleetEvents();
+
+                // const response = await apiFetch(`${apiUrl}/admin/fleet/dashboard`, {
+                //     headers: {
+                //         Authorization: `Bearer ${accessToken ?? ""}`,
+                //     },
+                // });
+
+                // if (!response.ok) {
+                //     throw new Error("Unabel to load fleet dashboard data");
+                // }
+
+                // const result = (await response.json()) as {
+                //     data?: FleetDashboardResponse;
+                // } & FleetDashboardResponse;
+
+                //supports both {  data: {...} } and direct API responses
+                // const dashboard = result.data ?? result;
+
+                // setDrivers(dashboard.drivers);
+                // setStats(dashboard.stats);
+
+                const displayDrivers: Driver[] = fleetDrivers.map((d) => ({
+                    id: d.user_id,
+                    name: `${d.name} ${d.surname}`,
+                    image: d.profile_picture_url,
+                    status: toDisplayStatus(d.status),
+                    location: undefined,
+                    route: undefined,
+                }));
+
+                
+                setDrivers(displayDrivers);
+                setHarshEventStats(harshEvents);
+                setApiError(null);
+            } catch (error) {
+                setApiError(
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to load dashboard data."
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        void loadFleetDashboard();
+    }, []);
+
+    //filtering driver cards by the search input
+    const filteredDrivers = useMemo(() => {
+        const normalizedSearch = search.trim().toLowerCase();
+
+        if (!normalizedSearch) {
+            return drivers;
+        }
+
+        return drivers.filter((driver) => driver.name.toLowerCase().includes(normalizedSearch),);
+    }, [drivers, search]);
+
+    return (
+        <main className="flex h-screen w-full overflow-hidden bg-white">
+
+            <DashboardNavbar />
+
+            {/* driver search and driver cards section */}
+            <aside className="w-[190px] shrink-0 border-r border-black bg-white px-[18px] py-[26px]">
+                <div className="mx-auto mb-[50px] flex h-7 w-[122px] items-center rounded-full border border-black px-2">
+                    <input 
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search"
+                        aria-label="Search drivers"
+                        className="w-full bg-transparent text-[11px] outline-none"
+                    />
+
+                    <Search size={15} aria-hidden="true" />
+                </div>
+
+                {/* Live Socket Status Indicator */}
+                <div className="mb-4 flex items-center gap-2 px-1 text-[10px]">
+                    <span className={`h-2 w-2 rounded-full ${ isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-400" }`} />
+                    <span className="text-gray-500"> 
+                        {isConnected ? "Live GPS Connected" : "GPS Disconnected"}
+                    </span> 
+                </div>
+
+                <div className="flex flex-col gap-5">
+                    {filteredDrivers.map((driver) => {
+                        const isSelected = selectedDriverId === driver.id;
+
+                        return (
+                            <button 
+                                key={driver.id}
+                                type="button"
+                                onClick={() => setSelectedDriverId(driver.id)}
+                                aria-pressed={isSelected}
+                                className={`flex min-h-12 w-36 items-center gap-2 rounded-[11px] bg-[#e8f8ff] p-2 text-left transition ${
+                                    isSelected
+                                        ? "border-2 border-[#0095ff] shadow-[0_0_0_2px_#c8edff]"
+                                        : "border border-black"
+                                }`}
+                            >
+                                {/* profile image or fallback user icon */}
+                                <span className="grid h-[27px] w-[27px] shrink-0 place-items-center overflow-hidden rounded-full bg-white text-indigo-500">
+                                    {driver.image ? (
+                                        <Image
+                                            src={driver.image}
+                                            alt={`${driver.name} profile`}
+                                            width={27}
+                                            height={27}
+                                            unoptimized
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <UserRound size={17} aria-hidden="true" />
+                                    )}
+                                </span>
+
+                                
+                                <span className="flex flex-col gap-[3px] text-xs">
+                                    <strong>{driver.name}</strong>
+
+                                    <span className ="flex items-center gap-1.5">
+                                        <small
+                                            className={
+                                                driver.status === "On trip"
+                                                    ? "text-green-600"
+                                                    : "text-red-600"
+                                            }
+                                        >
+                                            {driver.status}
+                                        </small>
+
+                                        {driver.status === "On trip" && driver.speed !== undefined && (
+                                            <small className="text-slate-500">
+                                                ・{Math.round(driver.speed)} km/h
+                                            </small>
+                                        )}
+                                    </span>
+                                </span>
+
+                            </button>
+                        );
+                    })}
+
+                    {!isLoading && filteredDrivers.length === 0 && (
+                        <p className="px-2 text-xs text-slate-500">No drivers found.</p>
+                    )}
+                </div>
+
+                {apiError && (
+                    <p className="mt-6 px-2 text-xs text-slate-500">
+                        Showing fallback dashboard data.
+                    </p>
+                )}
+            </aside>
+
+            {/* Main map and stats area */}
+            <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+                <div className="h-3/4 min-h-0 border-b-2 border-[#159fe9]">
+                    <FleetMap
+                        drivers={drivers}
+                        selectedDriverId={selectedDriverId}
+                    />
+                </div>
+
+                {/* Stats */}
+                <section className="h-1/4 shrink-0 overflow-auto px-[26px] py-4">
+                    <h1 className="mb-6 text-[25px] font-bold">Events &amp; Stats</h1>
+
+                    <div className="grid grid-cols-2 items-center gap-6 text-center md:grid-cols-5">
+                        <StatItem 
+                            label="Harsh Braking"
+                            value={stats.harshBraking}
+                        />
+
+                        <StatItem 
+                            label="Harsh Acceleration"
+                            value={stats.harshAcceleration}
+                        />
+
+                        <StatItem 
+                            label="Crash Like"
+                            value={stats.crashLike}
+                        />
+
+                        <StatItem 
+                            label="Idle Drivers"
+                            value={stats.idleDrivers}
+                        />
+
+                        <div className="mx-auto flex min-h-[90px] w-[110px] flex-col justify-center gap-2 rounded-[11px] border border-[#1b2730] bg-[#e8f8ff] text-[13px]">
+                            <span>Trips in progress</span>
+
+                            <strong className="text-[20px] font-normal text-green-600">
+                                {stats.tripsInProgress}
+                            </strong>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        
+        </main>
+    );
+}
+
+//stats item
+function StatItem({
+    label,
+    value,
+}: {
+    label: string;
+    value: number;
+}) {
+    return (
+        <div className="flex flex-col gap-1 text-[13px]">
+            <span>{label}</span>
+            <strong className="text-[20px] font-normal">{value}</strong>
+        </div>
+    )
+}

@@ -407,4 +407,139 @@ map_router.get('/nearby/pois', verify_token, create_trip_reading_limiter() ,map_
  *               message: Failed to fetch address
  */
 map_router.get('/address/reverse', verify_token, create_trip_reading_limiter() ,map_controller.get_address_reverse);
+
+/**
+ * @openapi
+ * /map/road_defects:
+ *   get:
+ *     tags:
+ *       - Maps
+ *     summary: Get nearby validated road defects (potholes) along driver route
+ *     description: Retrieves crowdsourced road defects detected within a specified radius (default 100m) near the given GPS coordinates. If heading is provided, filters for defects ahead of the vehicle.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Current latitude of driver (-90 to 90)
+ *         example: -25.7461
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Current longitude of driver (-180 to 180)
+ *         example: 28.2313
+ *       - in: query
+ *         name: heading
+ *         required: false
+ *         schema:
+ *           type: number
+ *         description: Compass heading in degrees (0 to 359.99) to filter defects ahead of driver
+ *         example: 45.0
+ *       - in: query
+ *         name: radius
+ *         required: false
+ *         schema:
+ *           type: number
+ *           default: 100
+ *         description: Search radius in meters (default 100m)
+ *         example: 100
+ *       - in: query
+ *         name: min_reports
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 3
+ *         description: Minimum distinct user reports required to validate a defect
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Road defects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoadDefectsResponse'
+ *       400:
+ *         description: Invalid coordinates or heading
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         description: Rate limit triggered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitResponse'
+ */
+map_router.get('/road_defects', verify_token, create_trip_reading_limiter(), map_controller.get_road_defects);
+
+/**
+ * @openapi
+ * /api/maps/hotspots:
+ *   get:
+ *     tags:
+ *       - Maps
+ *     summary: Get clustered community hotspots
+ *     description: Returns community-wide hotspots for harsh events (braking/acceleration). Points are only included if they are part of a cluster of 3 or more events within a 500m radius.
+ *     responses:
+ *       200:
+ *         description: Clustered hotspots retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - data
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     required:
+ *                       - event_id
+ *                       - event_type
+ *                       - latitude
+ *                       - longitude
+ *                       - time_stamp
+ *                     properties:
+ *                       event_id:
+ *                         type: string
+ *                         format: uuid
+ *                         example: "1022d96b-56e2-40fe-8df2-4b08bb51b503"
+ *                       event_type:
+ *                         type: string
+ *                         enum: [HARSH_BRAKE, HARSH_ACCELERATION]
+ *                         example: "HARSH_BRAKE"
+ *                       latitude:
+ *                         type: number
+ *                         example: -26.145389
+ *                       longitude:
+ *                         type: number
+ *                         example: 27.838202
+ *                       time_stamp:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2024-09-03T10:00:00Z"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: INTERNAL_SERVER_ERROR
+ *               message: Failed to fetch hotspots
+ */
+map_router.get("/hotspots", map_controller.get_hotspots);
 export default map_router;

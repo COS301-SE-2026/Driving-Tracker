@@ -34,7 +34,6 @@ import com.omnitech.drivingtracker.ui.components.TopBar
 import com.omnitech.drivingtracker.ui.components.BottomNavBar
 import com.omnitech.drivingtracker.ui.components.VehicleCard
 import com.omnitech.drivingtracker.ui.components.AddVehicleButton
-import com.omnitech.drivingtracker.ui.components.EditNameDialog
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import com.omnitech.drivingtracker.ui.components.AddVehicleDialog
 import com.omnitech.drivingtracker.ui.theme.*
@@ -53,6 +52,7 @@ import java.util.UUID
 import com.omnitech.drivingtracker.Screen
 import android.net.Uri
 import com.omnitech.drivingtracker.BuildConfig
+import com.omnitech.drivingtracker.ui.components.EditVehicleDialog
 import com.omnitech.drivingtracker.ui.components.NotificationFeedbackPill
 import com.omnitech.drivingtracker.ui.components.YourTopBar
 import kotlinx.coroutines.delay
@@ -207,11 +207,12 @@ fun Vehicles(
 
     //Edit Name Dialog
     vehicleToEditName?.let { vehicle ->
-        EditNameDialog(
+        EditVehicleDialog(
             vehicle = vehicle,
             onDismiss = { vehicleToEditName = null },
-            onConfirm = { newName ->
-                viewModel.updateVehicleName(vehicle.id, newName)
+            onConfirm = { name, registration, make, model, year, fuelType ->
+                viewModel.updateVehicle(vehicle.id, vehicle.name,vehicle.registration
+                                        ,vehicle.brand, vehicle.model, vehicle.year?:0, vehicle.fuelType?:"")
                 vehicleToEditName = null
             }
         )

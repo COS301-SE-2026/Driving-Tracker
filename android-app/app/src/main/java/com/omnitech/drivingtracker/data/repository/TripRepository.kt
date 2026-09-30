@@ -23,9 +23,12 @@ class TripRepository @Inject constructor(
     private val tripDao: TripDao,
     private val sessionManager: SessionManager
     ){
+    private val roadEventBuffer = mutableListOf<RoadEvent>()
     suspend fun getTripReadings(tripId: String): List<TripReadingEntity>{
         return tripReadingDao.getTripReadings(tripId)
     }
+
+    fun getTripReadingsFlow(tripId: String) = tripReadingDao.getTripReadingsFlow(tripId)
 
     suspend fun saveEventLocally(event: TripEventEntity) = tripEventDao.insertEvent(event)
 
@@ -39,10 +42,36 @@ class TripRepository @Inject constructor(
 
     suspend fun saveTripLocally(trip: TripEntity) = tripDao.insertTrip(trip)
 
+    suspend fun getRoadDefects(
+        lat: Double,
+        lng: Double,
+        heading: Double? = null,
+        radius: Int = 100
+    ): Result<RoadDefectsData> {
+        return try{
+            val response = api.getRoadDefects(lat, lng, heading, radius)
+            Result.success(response.data)
+        }catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
+    fun bufferRoadEvent(event: RoadEvent){
+        synchronized(roadEventBuffer){
+            roadEventBuffer.add(event)
+        }
+    }
+
     //Sends unsynced readings in room db to backend
     suspend fun syncPendingReadings(tripId: String): Result<BatchReadingResponse?>{
         val unsynced = tripReadingDao.getUnsyncedTripReadings(tripId)
-        if (unsynced.isEmpty()) return Result.success(null)
+
+        val eventsToSync = synchronized(roadEventBuffer){
+            val copy = roadEventBuffer.toList()
+            roadEventBuffer.clear()
+            copy
+        }
+        if (unsynced.isEmpty() && eventsToSync.isEmpty()) return Result.success(null)
 
         try{
 
@@ -68,7 +97,9 @@ class TripRepository @Inject constructor(
                     throttle_position = entity.throttlePosition,
                     dtc_codes = entity.dtcCodes?: emptyList()
                 )
-            })
+            },
+                roadEvents = eventsToSync
+            )
             //Batch upload
             val response = api.recordBatchReadings(tripId, request)
 
@@ -82,6 +113,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             return Result.failure(ApiException(error.error, error.message ?: "Failed to start trip"))
         }catch(e: Exception){
+            synchronized(roadEventBuffer){ roadEventBuffer.addAll(eventsToSync)}
             throw e
         }
 
@@ -116,6 +148,15 @@ class TripRepository @Inject constructor(
         }
         catch (e: Exception) {
             Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+        }
+    }
+    suspend fun getGlobalHotspots(): Result<List<TripEventDto>> {
+        return try {
+            val response = api.getHotspots()
+            Result.success(response.data)
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepo", "Failed to fetch community hotspots: ${e.message}")
+            Result.failure(e)
         }
     }
     suspend fun startTrip(

@@ -49,6 +49,9 @@ jest.mock('../../../src/db/prisma', () => {
         findMany: jest.fn(),
         createMany: jest.fn()
     };
+    const road_quality_events = {
+        createMany: jest.fn(),
+    };
     const trip_events = {
         create: jest.fn(),
     };
@@ -80,6 +83,7 @@ jest.mock('../../../src/db/prisma', () => {
             trusted_contacts,
             unexpected_stop_events,
             unusual_duration_events,
+            road_quality_events,
         })),
         users,
         trips,
@@ -91,6 +95,7 @@ jest.mock('../../../src/db/prisma', () => {
         trusted_contacts,
         unexpected_stop_events,
         unusual_duration_events,
+        road_quality_events,
         },
     };
 });
@@ -1175,10 +1180,26 @@ describe('Trips services.record_batch_trip_readings', () => {
                     throttle_position: 50,
                     dtc_codes: [],
                 },
-            ]
+            ], 
+            []
             );
 
         expect(mock_prisma.trip_readings.createMany).toHaveBeenCalled();
+    });
+
+    it('saves road quality events when provided in the batch', async () => {
+        mock_prisma.trips.findUnique.mockResolvedValue({ trip_id: 't1', user_id: 'u1', });
+        
+        mock_prisma.road_quality_events.createMany.mockResolvedValue({ count: 1 });
+
+        const roadEvents = [{ lat: -25.7, lng: 28.2, intensity: 8.5, type: 'IMPACT' }];
+        await trips_services.record_batch_trip_readings('u1', 't1', [], roadEvents);
+
+        expect(mock_prisma.road_quality_events.createMany).toHaveBeenCalledWith({
+            data: expect.arrayContaining([
+                expect.objectContaining({ event_type: 'IMPACT', intensity: 8.5, latitude: -25.7, longitude: 28.2 })
+            ])
+        });
     });
 
     it('throws when trip not found', async () => {
@@ -1217,7 +1238,8 @@ describe('Trips services.record_batch_trip_readings', () => {
                     throttle_position: 50,
                     dtc_codes: [],
                 },
-            ]
+            ], 
+            []
             )
         ).rejects.toThrow('Trip not found');
     });
@@ -1261,7 +1283,8 @@ describe('Trips services.record_batch_trip_readings', () => {
                     throttle_position: 50,
                     dtc_codes: [],
                 },
-            ]
+            ],
+            []
             )
         ).rejects.toThrow('You do not own this trip');
     });

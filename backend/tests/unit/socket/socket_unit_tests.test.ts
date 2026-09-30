@@ -52,6 +52,7 @@ import {
     initSocket,
     force_revoke_trip_access,
     broadcast_trip_ended,
+    broadcast_harsh_event,
 } from "../../../src/socket";
 import { check_trip_access } from "../../../src/middleware/trip_access";
 import { fleet_services } from "../../../src/services/fleet_services";
@@ -110,9 +111,17 @@ function getConnectionHandler(
 const mockServer = Server as unknown as jest.Mock;
 const mockVerify = jwt.verify as jest.Mock;
 const mockCheckTripAccess = check_trip_access as jest.MockedFunction<typeof check_trip_access>;
-const mockFleetServices = fleet_services as {
+const mockFleetServices = fleet_services as unknown as{
     get_org_id_for_trip: jest.MockedFunction<typeof fleet_services.get_org_id_for_trip>;
     get_view_permission: jest.MockedFunction<typeof fleet_services.get_view_permission>;
+    add_organization: jest.MockedFunction<typeof fleet_services.add_organization>;
+    list_fleet_drivers: jest.MockedFunction<typeof fleet_services.list_fleet_drivers>;
+    list_fleet_vehicles: jest.MockedFunction<typeof fleet_services.list_fleet_vehicles>;
+    schedule_trip: jest.MockedFunction<typeof fleet_services.schedule_trip>;
+    list_fleet_trips: jest.MockedFunction<typeof fleet_services.list_fleet_trips>;
+    start_scheduled_trip: jest.MockedFunction<typeof fleet_services.start_scheduled_trip>;
+    get_user_org_id: jest.MockedFunction<typeof fleet_services.get_user_org_id>;
+    get_fleet_event_counts: jest.MockedFunction<typeof fleet_services.get_fleet_event_counts>;
 };
 
 function getMockIo(): MockIo {
@@ -240,7 +249,6 @@ describe("socket", () => {
             const socket = createSocket();
 
             mockCheckTripAccess.mockResolvedValue("owner");
-            mockFleetServices.get_org_id_for_trip.mockResolvedValue("org-1");
 
             initSocket({} as any);
 
@@ -259,7 +267,7 @@ describe("socket", () => {
             );
             expect(socket.join).toHaveBeenCalledWith("trip:trip-1");
             expect(socket.data.trip_id).toBe("trip-1");
-            expect(socket.data.org_id).toBe("org-1");
+            expect(socket.data.org_id).toBe(null);
             expect(socket.data.is_trip_owner).toBe(true);
         });
 
@@ -309,6 +317,164 @@ describe("socket", () => {
         });
     });
 
+    describe("leave_trip", () => {
+        it("leaves a trip room", async () => {
+            
+            const socket = createSocket();
+
+            socket.data.trip_id = "trip-1";
+            socket.data.org_id = "org-1";
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers["leave_trip"]("trip-1");
+
+            expect(socket.leave).toHaveBeenCalledWith("trip:trip-1");
+            expect(socket.data.trip_id).toBe(null);
+            expect(socket.data.org_id).toBe(null);
+            expect(socket.data.is_trip_owner).toBe(undefined);
+        });
+
+        it("returns when socket trip id doesn't match", async () => {
+            const socket = createSocket();
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers.leave_trip("trip-2");
+
+            expect(socket.leave).not.toHaveBeenCalledWith("trip:trip-1");
+        });
+
+    });
+
+    describe("leave_fleet", () => {
+        it("leaves a fleet room", async () => {
+            
+            const socket = createSocket();
+
+            socket.data.fleet_org_id = "org-2";
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers.leave_fleet("org-2");
+
+            expect(socket.leave).toHaveBeenCalledWith("fleet:org-2");
+            expect(socket.data.fleet_org_id).toBe(null);
+        });
+
+        it("returns when socket fleet_org_id doesn't match parameter", async () => {
+            const socket = createSocket();
+
+            initSocket({} as any);
+
+            socket.data.fleet_org_id = "org-4";
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers.leave_fleet("org-1");
+
+            expect(socket.leave).not.toHaveBeenCalledWith("fleet:org-1");
+        });
+
+    });
+
+    describe("join_fleet", () => {
+        it("joins an admin or manager to fleet room", async () => {
+            const socket = createSocket();
+
+            mockFleetServices.get_view_permission.mockResolvedValue(true);
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers["join_fleet"]("org-1");
+
+            expect(socket.join).toHaveBeenCalledWith("fleet:org-1");
+            expect(socket.data.fleet_org_id).toBe("org-1");
+        });
+
+        it("rejects a user without fleet view permission", async () => {
+            const socket = createSocket();
+
+            socket.data.fleet_org_id = null;
+
+            mockFleetServices.get_view_permission.mockResolvedValue(false);
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers["join_fleet"]("org-1");
+
+            expect(socket.emit).toHaveBeenCalledWith("error", {
+                code: "FORBIDDEN",
+                event: "join_fleet",
+                message: "You do not have permission to view this fleet"
+            });
+
+            expect(socket.join).not.toHaveBeenCalledWith("fleet:org-1");
+        });
+
+        it("rejects joining another fleet when already viewing a fleet", async () => {
+            const socket = createSocket();
+            socket.data.fleet_org_id = "org-1";
+
+            initSocket({} as any);
+
+            const io = getMockIo();
+            const connectionHandler = getConnectionHandler(io);
+
+            connectionHandler(socket);
+
+            const handlers = getSocketHandlers(socket);
+
+            await handlers["join_fleet"]("org-1");
+
+            expect(socket.emit).toHaveBeenCalledWith("error", {
+                code: "ALREADY_IN_FLEET",
+                event: "join_fleet",
+                message: "Leave current fleet view before joining another",
+            });
+        });
+    });
+
     describe("location:update", () => {
         it("broadcasts a valid location update from the trip owner", async () => {
             const socket = createSocket();
@@ -325,6 +491,7 @@ describe("socket", () => {
             const handlers = getSocketHandlers(socket);
             const data = {
                 trip_id: "trip-1",
+                user_id: "user-1",
                 location: {
                     lat: -29.85,
                     lng: 31.02,
@@ -411,16 +578,48 @@ describe("socket", () => {
 
             const io = getMockIo();
 
-            await broadcast_trip_ended("trip-1");
+            await broadcast_trip_ended("trip-1", "org-1", "user-1");
 
-            expect(io.to).toHaveBeenCalledWith("trip:trip-1");
+            expect(io.to).toHaveBeenCalledWith(["trip:trip-1", "fleet:org-1"]);
 
             const tripRoom = io.to.mock.results[0].value as MockRoom;
             expect(tripRoom.emit).toHaveBeenCalledWith("trip_ended", {
                 trip_id: "trip-1",
+                user_id: "user-1",
             });
 
             expect(io.in).toHaveBeenCalledWith("trip:trip-1");
+        });
+
+        it("broadcasts when a harsh event is sent", async () => {
+            initSocket({} as any);
+
+            const io = getMockIo();
+
+            await broadcast_harsh_event("org-1", 
+                {
+                    trip_id: "trip-1",
+                    user_id: "user-1",
+                    event_type: "HARSH_BRAKE",
+                    location: {
+                        lat: -25.1,
+                        lng: 28.1
+                    },
+            });
+
+            expect(io.to).toHaveBeenCalledWith(["trip:trip-1", "fleet:org-1"]);
+
+            const tripRoom = io.to.mock.results[0].value as MockRoom;
+            expect(tripRoom.emit).toHaveBeenCalledWith("harsh_event", {
+                trip_id: "trip-1",
+                user_id: "user-1",
+                event_type: "HARSH_BRAKE",
+                location: {
+                    lat: -25.1,
+                    lng: 28.1
+                },
+            });
+
         });
     });
 });

@@ -20,7 +20,7 @@ interface AuthedSocket extends Socket {
     }
 }
 
-interface LocationUpdatePayload {
+interface LocationUpdateInput {
     trip_id: string;
     location: {
         lat: number;
@@ -29,6 +29,20 @@ interface LocationUpdatePayload {
     speed_kmh?: number;
     heading?: number;
     recorded_at: string;
+}
+
+export interface HarshEventPayload{
+    trip_id: string;
+    user_id: string;
+    event_type: string;
+    location: {
+        lat: number;
+        lng: number;
+    };
+}
+
+interface LocationUpdatePayload extends LocationUpdateInput {
+    user_id: string;
 }
 
 export function initSocket(httpServer: HttpServer){
@@ -48,6 +62,7 @@ export function initSocket(httpServer: HttpServer){
             const payload = jwt.verify(token, ACCESS_SECRET) as unknown as AppJwtPayload;
             socket.data.user_id = payload.sub;
             socket.data.role = payload.role;
+            socket.data.org_id = payload.org_id;
 
             next();
         }catch(err: any){
@@ -65,6 +80,8 @@ export function initSocket(httpServer: HttpServer){
 
         socket.on('join_trip', async (trip_id: string)=> {
 
+            console.log("join_trip received: ", trip_id);
+
             if(socket.data.trip_id){
                 return socket.emit('error', {code: 'ALREADY_IN_TRIP', event: 'join_trip', message: 'Leave current trip before joining another'})
             }
@@ -73,13 +90,12 @@ export function initSocket(httpServer: HttpServer){
 
             if(!access) return socket.emit('error', {code: 'FORBIDDEN', event: 'join_trip'});
 
-            const org_id = await fleet_services.get_org_id_for_trip(trip_id);
-            
-            socket.data.org_id = org_id;
             socket.data.trip_id = trip_id;
             socket.data.is_trip_owner = access === 'owner';
 
             socket.join(`trip:${trip_id}`);
+
+            console.log("Trip joined: ", trip_id);
         });
 
         socket.on('leave_trip', (trip_id: string) => {
@@ -109,6 +125,8 @@ export function initSocket(httpServer: HttpServer){
             socket.data.fleet_org_id = org_id;
 
             socket.join(`fleet:${org_id}`);
+
+            console.log("Fleet joined");
         });
 
         socket.on('leave_fleet', (org_id: string) => {
@@ -119,7 +137,7 @@ export function initSocket(httpServer: HttpServer){
             socket.data.fleet_org_id = null;
         });
 
-        socket.on('location:update', async (data: LocationUpdatePayload ) => {
+        socket.on('location:update', async (data: LocationUpdateInput ) => {
 
 
             if(!socket.data.is_trip_owner){
@@ -130,15 +148,19 @@ export function initSocket(httpServer: HttpServer){
                 return socket.emit('error', {code: 'INVALID_PAYLOAD', event: 'location:update'});
             }
 
+            const payload: LocationUpdatePayload = {
+                ...data,
+                user_id: socket.data.user_id,
+            };
+
             const rooms = [`trip:${data.trip_id}`];
 
             if(socket.data.org_id){
                 rooms.push(`fleet:${socket.data.org_id}`);
             }
 
-            io.to(rooms).emit('location:update', data);
+            io.to(rooms).emit('location:update', payload);
 
-            console.log("location:update received: ",data.location.lat,":",data.location.lng);
 
             //TODO: store vehicle latest location without await
 
@@ -169,16 +191,40 @@ export async function force_revoke_trip_access(trip_id: string, contact_user_id:
     });
 }
 
-export async function broadcast_trip_ended(trip_id: string){
+export async function broadcast_trip_ended(trip_id: string, org_id: string | null, user_id: string){
 
-    if(!io){ console.log("Attempted to broadcast end trip before Socket.io was initialized");
-         return; 
-        }
+    if(!io){ 
+        console.log("Attempted to broadcast end trip before Socket.io was initialized");
+        return; 
+    }
 
-    const room = `trip:${trip_id}`;
+    const trip_room = `trip:${trip_id}`;
 
-    io.to(room).emit('trip_ended', { trip_id });
+    const rooms = [trip_room];
 
-    io.in(room).socketsLeave(room);
+    if(org_id){
+        rooms.push(`fleet:${org_id}`);
+    }
+
+    io.to(rooms).emit('trip_ended', { trip_id, user_id });
+
+    io.in(trip_room).socketsLeave(trip_room);
     
+}
+
+export async function broadcast_harsh_event(org_id: string | null, payload: HarshEventPayload){
+
+    if(!io){
+        console.log("Attempted to broadcast harsh event before Socket.io was initialized");
+        return;
+    }
+
+    const rooms = [`trip:${payload.trip_id}`];
+
+    if(org_id){
+        rooms.push(`fleet:${org_id}`);
+    }
+
+    io.to(rooms).emit('harsh_event', payload);
+    console.log(`Broadcasted harsh event [${payload.event_type}]`)
 }

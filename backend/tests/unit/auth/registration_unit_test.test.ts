@@ -1,8 +1,8 @@
 import { describe, expect, it, jest,beforeEach } from '@jest/globals';
 import auth_controller from '../../../src/controllers/auth.controller';
-const { register,login } = auth_controller;
+const { register, dashboard_register } = auth_controller;
 import { auth_services } from '../../../src/services/auth_services';
-import { ConflictError, ValidationError } from '../../../src/utils/errors';
+import { ConflictError, ExtendedError, ValidationError } from '../../../src/utils/errors';
 
 
 
@@ -20,6 +20,33 @@ jest.mock('../../../src/db/prisma', () => ({
     },
   },
 }));
+
+const valid_body = {
+    email: "admin@example.com",
+    password: "Password123!",
+    name: "Test",
+    surname: "Admin",
+    phone_number: "0821234567",
+    dob: "1990-01-01",
+    consent_status: true,
+    organization_name: "Acme Fleet",
+}
+
+const make_res = () =>{
+        const json = jest.fn();
+        const status = jest.fn().mockReturnValue({ json});
+        return{ res: { status } as any, status, json };
+    };
+
+function make_req(overrides: Record<string, unknown> = {}): any {
+    return { body: { ...valid_body, ...overrides }};
+}
+
+async function call_controller(overrides: Record<string, unknown> = {}){
+    const { res, status, json } = make_res();
+    await dashboard_register(make_req(overrides), res);
+    return { status, json };
+}
 
 describe('Auth register endpoint',()=>{
     beforeEach(async()=> jest.clearAllMocks());
@@ -118,6 +145,75 @@ describe('Auth register endpoint',()=>{
 
         expect(status_surname).toHaveBeenCalledWith(422);
         expect(json_surname).toHaveBeenCalledWith(expect.objectContaining({ error: 'INVALID_SURNAME' }));
+    });
+});
+
+describe("Auth dashboard register endpoint", () => {
+    const service = jest.spyOn(auth_services, "dashboard_register");
+    
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it("returns 201 and a verification message on success", async () => {
+        service.mockResolvedValueOnce({ user: { user_id: "user-1" }});
+
+        const { status, json } = await call_controller();
+
+        expect(status).toHaveBeenCalledWith(201);
+        expect(json).toHaveBeenCalledWith({
+            message: "Registration successful. Please verify your email before logging in.",
+        });
+    });
+
+    it("passes the user fields and organization name to the service seperately", async () => {
+        service.mockResolvedValueOnce({ user: { user_id: "user-1" }});
+
+        await call_controller();
+
+        const { organization_name, consent_status, ...user_fields } = valid_body;
+
+        expect(service).toHaveBeenCalledWith(user_fields, organization_name);
+    });
+
+    it.each([
+        ["name", "INVALID_NAME"],
+        ["surname", "INVALID_SURNAME"],
+        ["organization_name", "INVALID_ORGANIZATION_NAME"],
+    ])("returns 422 when the service throws a validation error on %s", async (field, code)=> {
+        service.mockRejectedValueOnce(new ValidationError("Invalid input", field));
+
+        const { status, json } = await call_controller();
+
+        expect(status).toHaveBeenCalledWith(422);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: code }));
+    });
+
+    it("returns 409 when the service throws a conflict error", async () => {
+        service.mockRejectedValueOnce(new ConflictError("Email already exists", "email"));
+
+        const { status, json } = await call_controller();
+
+        expect(status).toHaveBeenCalledWith(409);
+
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ 
+            error: "EMAIL_TAKEN"
+        }));
+    });
+
+    it.each([
+        ["an ExtendedError", new ExtendedError("Failed to create organization", "INTERNAL_SERVER_ERROR")],
+        ["an unexpected Error", new Error("connection lost")],
+    ])("returns 500 when the service throws %s", async (_label, error)=>{
+        service.mockRejectedValueOnce(error);
+
+        const { status, json } = await call_controller();
+
+        expect(status).toHaveBeenCalledWith(500);
+        expect(json).toHaveBeenCalledWith({
+            error: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create account or organization, please try again",
+        });
     });
 });
 

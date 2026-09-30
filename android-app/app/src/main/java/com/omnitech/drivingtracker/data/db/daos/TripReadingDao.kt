@@ -18,6 +18,10 @@ interface TripReadingDao {
     @Query("SELECT * FROM trip_readings WHERE trip_id = :tripId ORDER BY recorded_at ASC")
     suspend fun getTripReadings(tripId: String): List<TripReadingEntity>
 
+    @Query("SELECT * FROM trip_readings WHERE trip_id = :tripId ORDER BY recorded_at ASC")
+    fun getTripReadingsFlow(tripId: String): kotlinx.coroutines.flow.Flow<List<TripReadingEntity>>
+
+
     @Query("SELECT * FROM trip_readings WHERE trip_id = :tripId AND synced=0 ORDER BY recorded_at ASC")
     suspend fun getUnsyncedTripReadings(tripId: String): List<TripReadingEntity>
 

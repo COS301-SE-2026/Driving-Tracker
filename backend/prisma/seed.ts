@@ -20,6 +20,12 @@ function getSAloc() {
         lng: faker.number.float({ min: SACords.lng.min, max: SACords.lng.max, fractionDigits: 6 })
     };
 }
+function getTestLoc() {
+    return {
+        lat: faker.number.float({ min: -26.148, max: -26.138, fractionDigits: 6 }),
+        lng: faker.number.float({ min: 27.837, max: 27.847, fractionDigits: 6 })
+    };
+}
 
 async function main() {
 
@@ -43,7 +49,7 @@ async function main() {
             surname: 'Omnitech',
             email : 'omnitech@gmail.com',
             password_hash : hashedPassword,
-            role: 'USER',
+            role: 'ADMIN',
             dob: faker.date.birthdate({ min: 18, max: 75, mode: 'age' }),
             phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
             consent_status: true,
@@ -51,6 +57,38 @@ async function main() {
             email_verified: true,
         }
     });
+
+    const membership = await prisma.organization_members.findUnique({
+        where: {user_id: myLoginUser.user_id},
+    });
+
+    if (membership){
+        await prisma.organization_members.update(
+            {
+                where: {user_id: myLoginUser.user_id},
+                data: {role: 'ADMIN'},
+            }
+        );
+    }
+    else {
+        let organization = await prisma.organizations.findFirst({
+            where: {name: 'Local Dashboard Org'},
+        });
+
+        if (!organization){
+            organization = await prisma.organizations.create({
+                data: {name: 'Local Dashboard Org'},
+            });
+        }
+
+        await prisma.organization_members.create({
+            data: {
+                org_id: organization.org_id,
+                user_id: myLoginUser.user_id,
+                role: 'ADMIN',
+            },
+        });
+    }
 
     const myLoginUser2 = await prisma.users.upsert({
         where: { email: 'dan.harbor@gmail.com' },
@@ -446,7 +484,86 @@ async function main() {
         seenContactPairs.add(pairKey);
     }
     console.log(`Seeded Trusted Contacts and Alert Preferences`);
+    console.log(`Seed fleet drivers & vehicles for "local dashboard Org"`);
+    let fleet_org = await prisma.organizations.findFirst({
+        where:{ name:'Local Dashboard Org'}
+    });
+    if (!fleet_org) {
+        fleet_org = await prisma.organizations.create({
+            data: { name: 'Local Dashboard Org' },
+        });
+    }
 
+    await prisma.organization_members.upsert({
+        where: { user_id: myLoginUser.user_id },
+        update: { org_id: fleet_org.org_id, role: 'ADMIN' },
+        create: {
+            org_id: fleet_org.org_id,
+            user_id: myLoginUser.user_id,
+            role: 'ADMIN',
+        },
+    });
+
+    const fleet_drivers = [
+        { name: 'Noah', surname: 'Beck', email: 'noah.beck@omnitech.com', username: 'noahbeck' },
+        { name: 'Sipho', surname: 'Man', email: 'sipho.man@omnitech.com', username: 'siphoman' },
+        { name: 'Ally', surname: 'Jackson', email: 'ally.jackson@omnitech.com', username: 'allyjackson' },
+        { name: 'Jane', surname: 'Doe', email: 'jane.doe@omnitech.com', username: 'janedoe' },
+    ];
+    for(const d of fleet_drivers){
+        const driver_user = await prisma.users.upsert({
+            where: {email:d.email},
+            update:{ email_verified: true,status:'ACTIVE'},
+            create: {
+                username: d.username,
+                name: d.name,
+                surname: d.surname,
+                email: d.email,
+                password_hash: hashedPassword,
+                role: 'USER',
+                dob: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }),
+                phone_number: `+27${faker.number.int({ min: 600000000, max: 899999999 })}`,
+                consent_status: true,
+                status: 'ACTIVE',
+                email_verified: true,
+            },
+        });    
+        await prisma.organization_members.upsert({
+            where: { user_id: driver_user.user_id },
+            update: { org_id: fleet_org.org_id, role: 'DRIVER' },
+            create: {
+                org_id: fleet_org.org_id,
+                user_id: driver_user.user_id,
+                role: 'DRIVER',
+            },
+        });
+    }
+    console.log(`seed ${fleet_drivers.length} fleet drivers for ${fleet_org.name}`);
+    const fleet_vehicles = [
+        { name: 'Car1', registration: 'TOY-101-GP', make: 'Toyota', model: 'Hilux', year: 2022, fuel_type: 'DIESEL', fuel_tank: 80 },
+        { name: 'Van1', registration: 'FRD-102-GP', make: 'Ford', model: 'Ranger', year: 2023, fuel_type: 'DIESEL', fuel_tank: 80 },
+        { name: 'Bakkie1', registration: 'NIS-103-GP', make: 'Nissan', model: 'NP200', year: 2021, fuel_type: 'PETROL', fuel_tank: 50 },
+    ];
+    for( const v of fleet_vehicles){
+        const existing_vehicle = await prisma.vehicles.findFirst({
+            where: {registration : v.registration},
+        });
+        if (!existing_vehicle) {
+            await prisma.vehicles.create({
+                data: {
+                    name: v.name,
+                    registration: v.registration,
+                    make: v.make,
+                    model: v.model,
+                    year: v.year,
+                    fuel_type: v.fuel_type,
+                    fuel_tank: v.fuel_tank,
+                    org_id: fleet_org.org_id,
+                },
+            });
+        }
+    }
+    console.log(`Seeded ${fleet_vehicles.length} fleet vehicles for ${fleet_org.name}`);
     //Creating Vehicles, Trips, Scores, Events and readings
     const trips = [];
     for (const user of users) {
@@ -531,13 +648,13 @@ async function main() {
                     },
 
                     trip_events: {
-                        create: Array.from({ length: 2 }).map(() => {
-                            const eventLoc = getSAloc();
+                        create: Array.from({ length: 5 }).map(() => {
+                            const eventLoc = getTestLoc(); // Use the test location
                             return {
-                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION', 'SHARP_CORNER']),
+                                type: faker.helpers.arrayElement(['HARSH_BRAKE', 'HARSH_ACCELERATION']),
                                 latitude: eventLoc.lat,
                                 longitude: eventLoc.lng,
-                                severity: faker.number.float({ min: 1, max: 10, fractionDigits: 2 }),
+                                severity: faker.number.float({ min: 5, max: 10, fractionDigits: 2 }),
                                 sensor_source: 'ACCELEROMETER',
                                 recorded_at: faker.date.recent()
                             }
@@ -613,6 +730,43 @@ async function main() {
         }
     }
     console.log(`Seeded alerts, notifications and trip location shares`);
+
+    console.log('Seeding Road Quality Events (Potholes)...')
+
+    const potholeLocations = [
+        { lat: -25.7482, lng: 28.2354, label: 'Burnett St & Festival St (Near UP Campus)' },
+        { lat: -25.7461, lng: 28.2313, label: 'Francis Baard St & Grosvenor St' },
+        { lat: -25.7510, lng: 28.2388, label: 'Park St & Jan Shoba St' },
+        { lat: -25.7445, lng: 28.2335, label: 'Pretorius St & Hilda St' },
+        { lat: -25.7430, lng: 28.2370, label: 'Arcadia St & Richard St' },
+        { lat: -25.7525, lng: 28.2410, label: 'South St & End St (Hatfield Gautrain)' },
+        { lat: -25.7558, lng: 28.2295, label: 'Lynnwood Rd & Roper St (UP Gate)' },
+        { lat: -25.7502, lng: 28.2360, label: 'Prospect St & Festival St' }
+    ];
+
+    if(users.length >= 3 && allTrips.length > 0){
+        for(const loc of potholeLocations){
+            const reporters = users.slice(0, 3);
+
+            for(let i= 0; i < reporters.length; i++){
+                const user = reporters[i];
+                const userTrip = allTrips.find(t => t.user_id === user.user_id) ?? allTrips[i%allTrips.length]; 
+            
+                await prisma.road_quality_events.create({
+                    data: {
+                        user_id: user.user_id,
+                        trip_id: userTrip.trip_id,
+                        latitude: loc.lat,
+                        longitude: loc.lng,
+                        intensity: faker.number.float({ min: 6.5, max: 9.8, fractionDigits: 2 }),
+                        event_type: 'IMPACT',
+                        created_at: new Date()
+                    }
+                });
+            }
+        }
+        console.log(`Seeded ${potholeLocations.length} verified potholes around Hatfield`)
+    }
 
     console.log('Seeding finished successfully');
 
