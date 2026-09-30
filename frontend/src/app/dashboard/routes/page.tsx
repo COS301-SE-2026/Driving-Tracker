@@ -48,7 +48,11 @@ type FleetTripApi ={
     scheduled_for?: string;
     title?: string;
     planned_start_addr?: string;
+    planned_start_lat?: number | string;
+    planned_start_lng?: number | string;
     planned_end_addr?: string;
+    planned_dest_lat?: number | string;
+    planned_dest_lng?: number | string;
     vehicle_id?: string;
     driver?: {
         user_id: string;
@@ -184,6 +188,11 @@ export default function Routes(){
                 const driverName = t.driver ? `${t.driver.name} ${t.driver.surname}`.trim() : "Unassigned";
                 const vehicleName = t.vehicles ? `${t.vehicles.make} ${t.vehicles.model}`.trim() : "Unassigned";
 
+                const startLat = t.planned_start_lat != null ? Number(t.planned_start_lat) : undefined;
+                const startLng = t.planned_start_lng != null ? Number(t.planned_start_lng) : undefined;
+                const destLat = t.planned_dest_lat != null ? Number(t.planned_dest_lat) : undefined;
+                const destLng = t.planned_dest_lng != null ? Number(t.planned_dest_lng) : undefined;
+
                 return{
                     id: t.trip_id,
                     driverId: t.driver?.user_id,
@@ -191,8 +200,8 @@ export default function Routes(){
                     task: "Delivery",
                     vehicle: vehicleName,
                     stops: [
-                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" },
-                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination" }
+                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" , lat: startLat, lng: startLng},
+                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination", lat: destLat, lng: destLng }
                     ],
                     startDestination: t.planned_start_addr || "Start",
                     endDestination: t.planned_end_addr || "Destination",
@@ -309,6 +318,21 @@ export default function Routes(){
 
         try{
 
+            const resolvedStops = await Promise.all(data.stops.map(async (stop) => {
+                if (stop.lat && stop.lng) return stop;
+                if (!stop.address?.trim()) return stop;
+                try{
+                    const res = await apiFetch<{data: {lat: Number; lng: number}[]}>(
+                        `/map/search?address=${encodeURIComponent(stop.address)}`
+                    );
+                    if (res.data?.[0]) return {...stop, lat: res.data[0].lat, lng: res.data[0].lng};
+                }
+                catch (e){
+                    console.error("Geocoding failed", e);
+                }
+                return stop;
+            }));
+
             const foundDriver = driverList.find(
                 (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
             );
@@ -322,6 +346,13 @@ export default function Routes(){
                 return;
             }
 
+            const startStop = resolvedStops[0];
+            const endStop = resolvedStops[resolvedStops.length - 1];
+
+            if (!startStop.lat || !startStop.lng || !endStop.lat || !endStop.lng){
+                throw new Error("Could not determine valid coordinates for start or end location.");
+            }
+
             await apiFetch(`/fleet/fleet_trips/${editingRoute.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify({
@@ -331,14 +362,14 @@ export default function Routes(){
                     vehicle_id: foundVehicle.vehicle_id,
                     planned_start_time: data.plannedStartTime ? new Date(data.plannedStartTime).toISOString() : new Date().toISOString(),
                     planned_start_location: {
-                        address: data.stops[0].address,
-                        lat: data.stops[0].lat ?? 0,
-                        lng: data.stops[0].lng ?? 0,
+                        address: startStop.address,
+                        lat: startStop.lat,
+                        lng: startStop.lng,
                     },
                     planned_end_location: {
-                        address: data.stops[data.stops.length - 1].address,
-                        lat: data.stops[data.stops.length - 1].lat ?? 0,
-                        lng: data.stops[data.stops.length - 1].lng ?? 0,
+                        address: endStop.address,
+                        lat: endStop.lat,
+                        lng: endStop.lng,
                     },
                     selected_points: data.selected_points,
                     stops: data.stops.map((s, idx) => ({

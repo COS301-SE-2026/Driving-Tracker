@@ -357,23 +357,30 @@ export default function AddRoute(
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const chosen = routeOptions[selectedRouteIndex];
+        setSubmitError(null);
 
-        onSubmit({
-            title,
-            task,
-            driverId,
-            vehicleId,
-            driver,
-            vehicle,
-            plannedStartTime,
-            stops,
-            status: "Not Started",
-            selected_points: chosen?.points,
-            risk_level: chosen?.risk_level
-        });
+        try{
+            await onSubmit({
+                title,
+                task,
+                driverId,
+                vehicleId,
+                driver,
+                vehicle,
+                plannedStartTime,
+                stops,
+                status: "Not Started",
+                selected_points: chosen?.points,
+                risk_level: chosen?.risk_level
+            });
+            resetForm();
+            onClose();
 
-        resetForm();
-        onClose();
+        }
+        catch(err:unknown){
+            const msg = err instanceof Error ? err.message : "Failed to save route";
+            setSubmitError(msg);
+        }
     };
 
     return (
