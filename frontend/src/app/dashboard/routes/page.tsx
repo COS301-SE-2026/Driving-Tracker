@@ -68,6 +68,13 @@ type FleetTripApi ={
         model: string;
     };
 };
+const formatVehicleName = (vehicle: FleetVehicle) => {
+    const makeModel = `${vehicle.make} ${vehicle.model}`.trim();
+
+    return vehicle.registration
+        ? `${makeModel} (${vehicle.registration})`
+        : makeModel || vehicle.vehicle_id;
+}
 // //mocks
 const routes: Route[] = [
     {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
@@ -271,18 +278,21 @@ export default function Routes(){
     const handleAddRoute = async( data: RouteFormData) =>{
         try{
             const foundDriver = driverList.find(
-                (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
+                (driver) => 
+                    driver.user_id === data.driverId ||
+                    driver.user_id === editingRoute.driverId ||
+                    `${driver.name} ${driver.surname}`.trim() ===data.driver.trim()
+
             );
             const foundVehicle = vehicleList.find((vehicle) => {
-                const makeModel = `${vehicle.make} ${vehicle.model}`.trim();
-                const makeModelRegistration = `${makeModel} (${vehicle.registration})`.trim();
                 const selected = data.vehicle.trim().toLowerCase();
                 
                 return (
-                    makeModelRegistration.toLowerCase() === selected || 
-                    makeModel.toLowerCase() === selected ||
-                    vehicle.registration.toLowerCase() === selected ||
-                    vehicle.vehicle_id.toLowerCase() === selected
+                    vehicle.vehicle_id === data.vehicleId ||
+                    vehicle.vehicle_id === editingRoute.vehicleId ||
+                    formatVehicleName(vehicle).toLowercase() === selected ||
+                    `${vehicle.make} ${vehicle.model}`.trim().toLowerCase() === selected
+                    vehicle.registration.toLowerCase() === selected
                 );
             });
 
@@ -426,17 +436,37 @@ export default function Routes(){
     });
 
     const editingRouteFormData = useMemo<RouteFormData | undefined>(
-        () =>
-            editingRoute ? {
+        () => {
+            if (!editingRoute) {
+                return undefined;
+            }
+
+            const selectedDriver = driverList.find(
+                (driver) => driver.user_id === editingRoute.driverId
+            );
+
+            const selectedVehicle = vehicleList.find(
+                (vehicle) => vehicle.vehicle_id === editingRoute.vehicleId
+            );
+
+            return {
+                
                 title: editingRoute.title,
                 task: editingRoute.task,
-                driver: editingRoute.driver,
+                driver: selectedDriver
+                    ? `${selectedDriver.name} ${selectedDriver.surname}`.trim()
+                    : editingRoute.driver,
                 driverId: editingRoute.driverId,
-                vehicle: editingRoute.vehicle,
+                vehicle: selectedVehicle
+                    ? formatVehicleName(selectedVehicle)
+                    : editingRoute.vehicle,
                 vehicleId: editingRoute.vehicleId,
                 stops: editingRoute.stops,
                 plannedStartTime: toLocalDatetimePickerValue(editingRoute.scheduledFor),
-            } : undefined, [editingRoute]
+            };
+        },
+        [editingRoute, driverList, vehicleList]
+            
     );
 
     const activeRoutes = filtered.filter(
@@ -453,13 +483,7 @@ export default function Routes(){
             [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
     );
 
-    const vehicleOptions = vehicleList.map((vehicle) => {
-        const makeModel = `${vehicle.make} ${vehicle.model}`.trim();
-
-        return vehicle.registration
-            ? `${makeModel} (${vehicle.registration})`
-            : makeModel || vehicle.vehicle_id;
-    });
+    const vehicleOptions = vehicleList.map(formatVehicleName);
 
     return(
         <div className="flex">
