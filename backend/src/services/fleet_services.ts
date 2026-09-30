@@ -456,6 +456,10 @@ export const fleet_services = {
             const chosenPoints = (data.selected_points && data.selected_points.length > 0)
                 ? data.selected_points
                 : route.points;
+            const geoJsonPolyline = {
+                type: "LineString",
+                coordinates: chosenPoints.map(p => [p.lng, p.lat])
+            };
 
             const trip = await tx.trips.create({
                 data: {
@@ -463,7 +467,7 @@ export const fleet_services = {
                     vehicle_id: data.vehicle_id,
                     created_by: user_id,
                     status: 'SCHEDULED',
-                    route_polyline: chosenPoints as any,
+                    route_polyline: geoJsonPolyline as any,
                     description: data.description,
                     title: data.title,
                     scheduled_for: new_start,
@@ -608,10 +612,10 @@ export const fleet_services = {
 
     async list_fleet_trips(user_id: string, org_id: string, filters: { driver_id?: string, status?: string, start_date?: Date, end_date?: Date }){
 
-        if (filters?.start_date && isNaN(filters?.start_date.getTime())) {
+        if (filters?.start_date && Number.isNaN(filters?.start_date.getTime())) {
             throw new ValidationError("Invalid start date", "start_date");
         }
-        if (filters?.end_date && isNaN(filters?.end_date.getTime())) {
+        if (filters?.end_date && Number.isNaN(filters?.end_date.getTime())) {
             throw new ValidationError("Invalid end date", "end_date");
         }
 
