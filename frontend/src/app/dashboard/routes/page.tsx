@@ -10,6 +10,7 @@ import ViewRoute from "@/components/routes/ViewRoute";
 import PastRoutes from "@/components/routes/PastRoutes";
 import { apiFetch } from "@/lib/auth/apiClient";
 import { useRouter } from "next/navigation";
+import { toLocalDatetimePickerValue } from "@/lib/dateUtils";
 
 type Stop = {
     id: string;
@@ -30,6 +31,7 @@ type Route = {
     endDestination: string;
     driver: string;
     status: "Not Started" | "On Trip" | "Completed";
+    scheduledFor?: string;
 };
 type FleetDriver = {
     user_id: string;
@@ -48,6 +50,7 @@ type FleetTripApi ={
     status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
     scheduled_for?: string;
     title?: string;
+    description?: string,
     planned_start_addr?: string;
     planned_start_lat?: number | string;
     planned_start_lng?: number | string;
@@ -199,7 +202,7 @@ export default function Routes(){
                     driverId: t.driver?.user_id,
                     vehicleId: t.vehicle_id,
                     title: t.title || "Scheduled Delivery",
-                    task: "Delivery",
+                    task: t.description || "Delivery",
                     vehicle: vehicleName,
                     stops: [
                         { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" , lat: startLat, lng: startLng},
@@ -208,7 +211,8 @@ export default function Routes(){
                     startDestination: t.planned_start_addr || "Start",
                     endDestination: t.planned_end_addr || "Destination",
                     driver: driverName,
-                    status
+                    status,
+                    scheduledFor: t.scheduled_for
                 };
             });
             setRoutesList(mappedRoutes);
@@ -431,7 +435,7 @@ export default function Routes(){
                 vehicle: editingRoute.vehicle,
                 vehicleId: editingRoute.vehicleId,
                 stops: editingRoute.stops,
-                plannedStartTime: new Date().toISOString().slice(0,16),
+                plannedStartTime: toLocalDatetimePickerValue(editingRoute.scheduledFor),
             } : undefined, [editingRoute]
     );
 

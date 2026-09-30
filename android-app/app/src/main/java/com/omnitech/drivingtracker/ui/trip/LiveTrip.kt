@@ -120,7 +120,8 @@ fun LiveTrip(
     }
     val context = LocalContext.current
     val sessionManager = remember(context) { com.omnitech.drivingtracker.data.local.SessionManager(context) }
-    val isOrgDriver = remember { sessionManager.isDriver() || !sessionManager.getOrgRole().isNullOrEmpty() }
+    val isOrgDriver = remember {val role = sessionManager.getOrgRole()
+        role != null && role.equals("DRIVER", ignoreCase = true)}
     val showShareButton = !isOrgDriver
 
     val tripPath by viewModel.tripPath.collectAsState()
