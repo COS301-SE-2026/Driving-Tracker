@@ -14,7 +14,11 @@ jest.mock('../../../src/db/prisma', () => {
             updateMany: jest.fn(),
             deleteMany: jest.fn(),
             create: jest.fn(),
+            update: jest.fn(),
 
+        },
+        trip_stops: {
+            deleteMany: jest.fn(),
         },
         organizations: {
             create: jest.fn(),
@@ -1203,6 +1207,130 @@ describe('fleet services ', () => {
             ).rejects.toThrow("Only scheduled trips can be deleted");
         });
     });
+
+    describe("edit_scheduled_trip", () => {
+
+		it("updates a scheduled trip successfully", async() => {
+            mock_prisma.trips.findFirst.mockResolvedValue({
+                trip_id: "trip-1",
+                user_id: "driver-1",
+                vehicle_id: "veh-1",
+                status: "SCHEDULED",
+                title: "Old Title",
+                description: "Old Desc",
+                scheduled_for: new Date("2026-09-23T10:00:00Z"),
+                planned_start_addr: "10 Canary Way",
+                planned_start_lat: -26.1,
+                planned_start_lng: 28.1,
+                planned_end_addr: "24 Avery Way",
+                planned_dest_lat: -26.2,
+                planned_dest_lng: 28.2,
+                trips_stops: [],
+            });
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                joined_at: new Date("2026-01-01"),
+                users: {trips: []},
+            });
+
+            mock_prisma.trip_stops.deleteMany.mockResolvedValue({count: 0});
+            mock_prisma.trips.update.mockResolvedValue({
+                trip_id: "trip-1",
+                status: "SCHEDULED",
+                title: "Updated Title",
+            });
+
+            const result = await fleet_services.edit_scheduled_trip("manager-1", "org-1", "trip-1", {
+                title: "Updated Title",
+                stops: [],
+            });
+
+            expect(mock_prisma.trips.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {trip_id: "trip-1"},
+                    data: expect.objectContaining({
+                        title: "Updated Title",
+                    }),
+                }),
+            );
+
+            expect(result).toEqual({
+                trip: {trip_id: "trip-1", status: "SCHEDULED", title: "Updated Title"},
+                route: [{lat: -26.1, lng: 28.1}],
+            });
+        });
+
+        it ("throws an error if scheduled trip is not found", async()=> {
+            mock_prisma.trips.findFirst.mockResolvedValue(null);
+
+            await expect(
+                fleet_services.edit_scheduled_trip("manager-1", "org-1", "trip-999", {title: "New Title"})
+            ).rejects.toThrow("Scheduled trip not found");
+        });
+
+        it ("throws an error if trip is not in SCHEDULED status", async()=> {
+            mock_prisma.trips.findFirst.mockResolvedValue({
+                trip_id: "trip-1",
+                status: "IN_PROGRESS",
+            });
+
+            await expect(
+                fleet_services.edit_scheduled_trip("manager-1", "org-1", "trip-1", {title: "New Title"})
+            ).rejects.toThrow("Only scheduled trips can be edited");
+        });
+
+        it ("throws an error if driver is not found", async ()=> {
+            mock_prisma.trips.findFirst.mockResolvedValue({
+                trip_id: "trip-1",
+                status: "SCHEDULED",
+                user_id: "driver-1",
+                vehicle_id: "veh-1",
+                planned_start_lat: -26.1,
+                planned_start_lng: 28.1,
+                planned_dest_lat: -26.2,
+                planned_dest_lng: 28.2,
+            });
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue(null);
+
+            await expect(
+                fleet_services.edit_scheduled_trip("manager-1", "org-1", "trip-1", {driver_id: "missing-driver"})
+            ).rejects.toThrow("Driver not found");
+        });
+
+        it ("throws an error if driver has an overlapping scheduled trip", async () => {
+            mock_prisma.trips.findFirst.mockResolvedValue({
+                trip_id: "trip-1",
+                status: "SCHEDULED",
+                user_id: "driver-1",
+                vehicle_id: "veh-1",
+                scheduled_for: new Date("2026-09-23T10:00:00Z"),
+                planned_start_lat: -26.1,
+                planned_start_lng: 28.1,
+                planned_dest_lat: -26.2,
+                planned_dest_lng: 28.2,
+            });
+
+            mock_prisma.organization_members.findUnique.mockResolvedValue({
+                users: {
+                    trips: [
+                        {
+                            trip_id: "other-trip",
+                            status: "SCHEDULED",
+                            scheduled_for: new Date("2026-09-23T10:10:00Z"),
+                            scheduled_end: new Date("2026-09-23T11:10:00Z"),
+                        },
+                    ],
+                },
+            });
+
+            await expect(
+                fleet_services.edit_scheduled_trip("manager-1", "org-1", "trip-1", {
+                    planned_start_time: "2026-09-23T10:00:00Z",
+                })
+            ).rejects.toThrow("Driver has a scheduled trip that overlaps this time");
+        });
+	});
 });
 
 
