@@ -21,6 +21,7 @@ type Stop = {
 type Route = {
     id: string;
     driverId?: string;
+    vehicleId?: string;
     title: string;
     task: string;
     vehicle: string;
@@ -196,6 +197,7 @@ export default function Routes(){
                 return{
                     id: t.trip_id,
                     driverId: t.driver?.user_id,
+                    vehicleId: t.vehicle_id,
                     title: t.title || "Scheduled Delivery",
                     task: "Delivery",
                     vehicle: vehicleName,
@@ -316,13 +318,12 @@ export default function Routes(){
             return;
         }
 
-        try{
 
             const resolvedStops = await Promise.all(data.stops.map(async (stop) => {
                 if (stop.lat && stop.lng) return stop;
                 if (!stop.address?.trim()) return stop;
                 try{
-                    const res = await apiFetch<{data: {lat: Number; lng: number}[]}>(
+                    const res = await apiFetch<{data: {lat: number; lng: number}[]}>(
                         `/map/search?address=${encodeURIComponent(stop.address)}`
                     );
                     if (res.data?.[0]) return {...stop, lat: res.data[0].lat, lng: res.data[0].lng};
@@ -342,8 +343,7 @@ export default function Routes(){
             );
 
             if (!foundDriver || !foundVehicle){
-                alert("Please select a valid driver and vehicle from your fleet");
-                return;
+                throw new Error("Please select a valid driver and vehicle from your fleet.");
             }
 
             const startStop = resolvedStops[0];
@@ -372,7 +372,7 @@ export default function Routes(){
                         lng: endStop.lng,
                     },
                     selected_points: data.selected_points,
-                    stops: data.stops.map((s, idx) => ({
+                    stops: resolvedStops.map((s, idx) => ({
                         address: s.address,
                         lat: s.lat ?? 0,
                         lng: s.lng ?? 0,
@@ -383,11 +383,7 @@ export default function Routes(){
 
             await loadData();
             setEditingRoute(null);
-    }
-    catch (err){
-        console.error("Failed to edit route", err);
-        alert(err instanceof Error ? err.message : "Failed to edit route");
-    }
+    
 };
 
     const filtered = routesList
@@ -422,7 +418,9 @@ export default function Routes(){
                 title: editingRoute.title,
                 task: editingRoute.task,
                 driver: editingRoute.driver,
+                driverId: editingRoute.driverId,
                 vehicle: editingRoute.vehicle,
+                vehicleId: editingRoute.vehicleId,
                 stops: editingRoute.stops,
                 plannedStartTime: new Date().toISOString().slice(0,16),
             } : undefined, [editingRoute]
