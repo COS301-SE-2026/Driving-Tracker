@@ -297,7 +297,7 @@ const fleet_controller = {
                 });
             }
 
-            if(error.message.includes("Invalid stop coordinates")){
+            if(error.message.includes("Invalid stop coordinates") || error?.message?.includes("Unknown stop coordinates")){
                 res.status(422).json({
                     error: "INVALID_STOP",
                     message: "Invalid coordinates for one or more stops"
@@ -728,6 +728,154 @@ const fleet_controller = {
                 error: "INTERNAL_SERVER_ERROR",
                 message: "Failed to update fleet vehicle",
             });
+        }
+    },
+
+    async delete_fleet_trip(req: AuthRequest, res: Response){
+
+        const manager_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const trip_id = req.params.trip_id;
+
+        if (!trip_id){
+            return res.status(400).json({error: "MISSING_TRIP_ID", message: "Trip id is required"});
+        }
+
+        if (!manager_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to delete fleet trips', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+        
+        try{
+
+            await fleet_services.delete_fleet_trip(
+                manager_id, org_id!, trip_id,
+            );
+
+            return res.status(204).send();
+        }
+        catch (error: any){
+
+            if (error?.message === "Not authorized to delete fleet trips"){
+                return res.status(403).json({
+                    error: "UNAUTHORIZED",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Fleet trip not found"){
+                return res.status(404).json({
+                    error: "TRIP_NOT_FOUND",
+                    message: error.message,
+                });
+            }
+
+            if (error?.message === "Only scheduled trips can be deleted"){
+                return res.status(409).json({
+                    error: "TRIP_NOT_DELETABLE",
+                    message: error.message,
+                });
+            }
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR"});
+
+        }
+    },
+
+    async edit_scheduled_trip(req: AuthRequest, res: Response){
+
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+        const {trip_id} = req.params;
+
+        if (!trip_id){
+            return res.status(400).json({error: "MISSING_TRIP_ID", message: "Trip id is required"});
+        }
+
+        if (!user_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if(!check_org_authorization(res, org_role as OrganizationRole, org_id
+            , 'You do not have the permissions to edit scheduled trips', [OrganizationRole.ADMIN, OrganizationRole.MANAGER],)){  return; }
+
+        const{
+            vehicle_id,
+            driver_id,
+            planned_start_time,
+            title,
+            task,
+            description, 
+            planned_start_location,
+            planned_end_location,
+            stops,
+            selected_points
+        } = req.body;
+        
+        try{
+
+            const trip = await fleet_services.edit_scheduled_trip(user_id, org_id!, trip_id, {
+                vehicle_id,
+                driver_id,
+                planned_start_time,
+                title,
+                description : task ?? description, 
+                planned_start_location,
+                planned_end_location,
+                stops,
+                selected_points
+            });
+
+            return res.status(200).json({
+                message: "Scheduled trip updated successfully",
+                data: trip,
+            });
+        }
+        catch (error: any){
+
+            if(error?.message?.includes("Scheduled trip not found")){
+                return res.status(404).json({error: "TRIP_NOT_FOUND", message: error.message});
+            }
+
+            if(error?.message?.includes("Driver not found")){
+                return res.status(404).json({error: "DRIVER_NOT_FOUND", message: error.message});
+            }
+
+            if(error?.message?.includes("Only scheduled trips can be edited")){
+                return res.status(409).json({error: "TRIP_NOT_EDITABLE", message: error.message});
+            }
+
+            if(error?.message?.includes("Driver not available")){
+                return res.status(409).json({error: "DRIVER_NOT_AVAILABLE", message: "Driver currently has an active trip"});
+            }
+
+            if(error?.message?.includes("Driver has a scheduled trip that overlaps this time")){
+                return res.status(409).json({error: "DRIVER_NOT_AVAILABLE", message: "Driver is not available during the scheduled time"});
+            }
+
+            if(error?.message?.includes("Missing required fields")){
+                return res.status(422).json({error: "MISSING_REQUIRED_FIELDS", message: error.message});
+            }
+
+            if(error?.message?.includes("Unknown start location")){
+                return res.status(422).json({error: "INVALID_START_LOCATION", message: "Invalid start location"});
+            }
+
+            if(error?.message?.includes("Unknown end location")){
+                return res.status(422).json({error: "INVALID_END_LOCATION", message: "Invalid end location"});
+            }
+
+            if(error?.message?.includes("Invalid stop coordinates") || error?.message?.includes("Unknown stop coordinates")){
+                return res.status(422).json({error: "INVALID_STOP", message: "Invalid coordinates for one or more stops"});
+            }
+            
+
+            return res.status(500).json({error: "INTERNAL_SERVER_ERROR", message: "Failed to update scheduled trip"});
+
         }
     },
 

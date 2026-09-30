@@ -202,6 +202,13 @@ export default function DashboardHomePage() {
     }, [drivers, harshEventStats]);
 
     useEffect(() => {
+        const driver = new URLSearchParams(window.location.search).get("driver");
+        if (driver){
+            setSelectedDriverId(driver);
+        }
+    }, []);
+
+    useEffect(() => {
         async function loadFleetDashboard() {
 
             try {
