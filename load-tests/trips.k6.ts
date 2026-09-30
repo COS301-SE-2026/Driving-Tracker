@@ -83,7 +83,7 @@ function provisionVehicle(token: string, runId: number, i: number) {
         registration: `K6-${runId.toString().slice(-4)}-${i}`,
         make: "Toyota",
         model: "Corolla",
-        year: 2017,
+        year: 2022,
         fuel_type: "Petrol",
         fuel_tank: 50,
         fuel_efficiency: 50
@@ -133,7 +133,7 @@ export function setup(): AuthedUser[] {
     return authed;
 }
 
-export default function (data: AuthedUser[]): void {
+export default function loadStartAndEnd(data: AuthedUser[]): void {
     const me = data[(__VU - 1) % data.length];
 
     if (!me || !me.token) {
@@ -185,3 +185,18 @@ export default function (data: AuthedUser[]): void {
 
     sleep(2);
 }
+export function teardown(data:AuthedUser[]): void{
+    if(!data || data.length === 0) return ;
+    for( const user of data){
+        if(!user.token) continue;
+        const delRes =http.post(`${BASE_URL}/users/me/delete`,             
+        JSON.stringify({ password: "MySecretPassword123!" }),{
+            headers: {
+                'Content-Type':'application/json',
+                'Authorization': `Bearer ${user.token}`,
+            },
+        });
+        console.log(`[Teardown] deleted user (${user.email} : status ${delRes.status})`);
+    }
+
+} 
