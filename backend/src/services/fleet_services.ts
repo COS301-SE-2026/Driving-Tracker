@@ -1080,8 +1080,14 @@ export const fleet_services = {
 
         const updated_trip = await prisma.$transaction(async (tx) => {
 
-            const chosenPoints = (data.selected_points && data.selected_points.length > 0) ?
-            data.selected_points : route.points;
+            const chosenPoints = (data.selected_points && data.selected_points.length > 0)
+                ? data.selected_points
+                : route.points;
+
+            const geoJsonPolyline = {
+                type: "LineString",
+                coordinates: chosenPoints.map(p => [p.lng, p.lat])
+            };
 
             if (data.stops !== undefined){
                 await tx.trip_stops.deleteMany({
@@ -1099,7 +1105,7 @@ export const fleet_services = {
                     description: target_description,
                     scheduled_for: new_start,
                     scheduled_end: new_end,
-                    route_polyline: chosenPoints as any,
+                    route_polyline: geoJsonPolyline as any,
                     planned_start_addr: start_loc.address,
                     planned_start_lat: start_loc.lat,
                     planned_start_lng: start_loc.lng,

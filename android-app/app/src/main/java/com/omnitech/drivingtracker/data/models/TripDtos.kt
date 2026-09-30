@@ -366,6 +366,7 @@ data class ScheduledTripDto(
     @SerializedName("route_id") val routeId: String? = null,
     @SerializedName("assigned_route_id") val assignedRouteId: String? = null,
     @SerializedName("trip_id") val tripId: String? = null,
+    @SerializedName("vehicles") val vehicle: VehicleData? = null,
 
     @SerializedName("vehicle_id") val vehicleId: String? = null,
     @SerializedName("vehicle_name") val vehicleName: String? = null,
@@ -391,9 +392,8 @@ data class ScheduledTripDto(
     @SerializedName("dest_lng") val destLng: Double? = null,
 
 
-    @SerializedName("scheduled_start_time") val scheduledStartTime: String? = null,
+    @SerializedName("scheduled_for") val scheduledFor: String? = null,
     @SerializedName("start_time") val startTime: String? = null,
-    @SerializedName("scheduled_time") val scheduledTime: String? = null,
 
     @SerializedName("scheduled_end_time") val scheduledEndTime: String? = null,
     @SerializedName("notes") val notes: String? = null,
@@ -409,13 +409,19 @@ data class ScheduledTripDto(
     fun getEffectiveOrigin(): String = plannedStartAddr ?: origin ?: "Origin"
     fun getEffectiveDestination(): String = plannedEndAddr ?: destination ?: "Destination"
     fun getEffectiveVehicleRegistration(): String = vehicleRegistration ?: registration ?: ""
-    fun getEffectiveStartTime(): String = scheduledStartTime ?: startTime ?: scheduledTime ?: ""
+    fun getEffectiveStartTime(): String = scheduledFor ?: startTime ?: ""
     fun getEffectiveNotes(): String = notes ?: description ?: ""
     fun getEffectiveStartLat(): Double? = startLatitude ?: startLat
     fun getEffectiveStartLng(): Double? = startLongitude ?: startLng
     fun getEffectiveDestLat(): Double? = destinationLatitude ?: destLat
     fun getEffectiveDestLng(): Double? = destinationLongitude ?: destLng
 }
+
+data class VehicleData(
+    val make: String,
+    val model: String,
+    val year: String,
+)
 
 data class ScheduledTripsResponse(
     val message: String? = null,

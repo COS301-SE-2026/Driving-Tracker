@@ -33,6 +33,7 @@ import com.omnitech.drivingtracker.ui.theme.Blue
 import com.omnitech.drivingtracker.ui.theme.Green
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
 import com.omnitech.drivingtracker.ui.components.MinimizedTrip
+import com.omnitech.drivingtracker.utils.formateScheduledDate
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -170,11 +171,11 @@ fun ScheduledTripCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             val vehicleText = listOfNotNull(
-                trip.vehicleName.takeIf { !it.isNullOrEmpty() },
-                trip.getEffectiveVehicleRegistration().takeIf { it.isNotEmpty() }
-            ).joinToString(" - ")
+                trip.vehicle?.make?.takeIf { it.isNotBlank() },
+                trip.vehicle?.model?.takeIf { it.isNotBlank() }
+            ).joinToString(" ")
 
-            if (vehicleText.isNotEmpty()) {
+            if (vehicleText.isNotBlank()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -187,12 +188,12 @@ fun ScheduledTripCard(
 
             if (trip.getEffectiveStartTime().isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Scheduled: ${trip.getEffectiveStartTime()}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(text = "Scheduled: ${formateScheduledDate( trip.getEffectiveStartTime())}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
 
             if (trip.getEffectiveNotes().isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Notes: ${trip.getEffectiveNotes()}", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                Text(text = "Task: ${trip.getEffectiveNotes()}", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
