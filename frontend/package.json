@@ -17,9 +17,9 @@
     "animejs": "^4.5.0",
     "azure-maps-control": "^3.7.4",
     "lucide-react": "^1.47.0",
-    "next": "15.3.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "next": "15.3.6",
+    "react": "^19",
+    "react-dom": "^19",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
@@ -29,7 +29,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.3.1",
+    "eslint-config-next": "^15",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
