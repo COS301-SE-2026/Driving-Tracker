@@ -51,6 +51,7 @@ import java.time.Instant
 import kotlin.String
 import com.omnitech.drivingtracker.data.models.TripEventDto
 import com.omnitech.drivingtracker.utils.VoiceAlertManager
+import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow
 
 @AndroidEntryPoint
 class TripTrackingService: Service() {
@@ -133,7 +134,11 @@ class TripTrackingService: Service() {
         const val ACTION_START_TRIP = "ACTION_START_TRIP"
         const val ACTION_STOP_TRIP = "ACTION_STOP_TRIP"
 
+        private val _activeTripIdState = MutableStateFlow<String?>(null)
+        val activeTripIdState: StateFlow<String?> = _activeTripIdState.asStateFlow()
+
         fun startTrip(context: Context, tripId: String) {
+            _activeTripIdState.value = tripId
             val intent = Intent(context, TripTrackingService::class.java).apply {
                 action = ACTION_START_TRIP
                 putExtra("EXTRA_TRIP_ID", tripId)
@@ -142,6 +147,7 @@ class TripTrackingService: Service() {
         }
 
         fun stopTrip(context: Context) {
+            _activeTripIdState.value = null
             val intent = Intent(context, TripTrackingService::class.java).apply {
                 action = ACTION_STOP_TRIP
             }
@@ -619,6 +625,7 @@ class TripTrackingService: Service() {
 
     private fun stopEverything(){
         Log.d(TAG, "Stopping all tracking tasks")
+        _activeTripIdState.value = null
         serviceScope.launch {
             if (isObdConnected()) {
                 obdManager.fetchFuelLevel()

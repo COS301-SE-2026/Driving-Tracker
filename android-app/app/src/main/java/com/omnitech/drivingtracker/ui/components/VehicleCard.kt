@@ -33,14 +33,16 @@ import com.omnitech.drivingtracker.ui.components.VehicleImage
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import java.sql.Driver
 
 @Composable
 fun VehicleCard(
     vehicle: Vehicle,
     onDrivingInfoClick: () -> Unit,
-    onEditNameClick: () -> Unit,
-    onEditImageClick: () -> Unit,
-    onRemoveClick: () -> Unit
+    onEditNameClick: (() -> Unit)? = null,
+    onEditImageClick: (() -> Unit)? = null,
+    onRemoveClick: (() -> Unit)? = null,
+    isDriver: Boolean = false
 ) {
 
     var showMenu by remember { mutableStateOf(false) }
@@ -109,25 +111,31 @@ fun VehicleCard(
                             .clip(RoundedCornerShape(8.dp))
                     ) {
 
-                        DropdownMenuItem(
-                            text = { Text("Edit Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                            onClick = {
-                                showMenu = false
-                                onEditNameClick()
-                            }
-                        )
+                        if (!isDriver && onEditNameClick != null) {
+                            DropdownMenuItem(
+                                text = { Text("Edit Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                                onClick = {
+                                    showMenu = false
+                                    onEditNameClick()
+                                }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                        }
 
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
-                        DropdownMenuItem(
-                            text = { Text("Edit Image", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                            onClick = {
-                                showMenu = false
-                                onEditImageClick()
-                            }
-                        )
 
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                        if (!isDriver && onEditImageClick != null){
+                            DropdownMenuItem(
+                                text = { Text("Edit Image", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                                onClick = {
+                                    showMenu = false
+                                    onEditImageClick()
+                                }
+                            )
+
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                        }
+
 
                         DropdownMenuItem(
                             text = { Text("Driving Info", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
@@ -139,13 +147,15 @@ fun VehicleCard(
 
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
 
-                        DropdownMenuItem(
-                            text = { Text("Remove Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                            onClick = {
-                                showMenu = false
-                                onRemoveClick()
-                            }
-                        )
+                        if (!isDriver && onRemoveClick != null){
+                            DropdownMenuItem(
+                                text = { Text("Remove Vehicle", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                                onClick = {
+                                    showMenu = false
+                                    onRemoveClick()
+                                }
+                            )   
+                        }
 
                     }
 

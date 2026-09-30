@@ -18,6 +18,8 @@ jest.mock("../../../src/services/fleet_services", () =>({
         update_fleet_vehicle: jest.fn(),
         remove_fleet_vehicle: jest.fn(),
         delete_fleet_driver: jest.fn(),
+        delete_fleet_trip: jest.fn(),
+        edit_scheduled_trip: jest.fn(),
     },
 }));
 
@@ -39,6 +41,7 @@ import { vehicle_services } from "../../../src/services/vehicle.services";
 import { auth_services } from "../../../src/services/auth_services";
 import { before } from "node:test";
 import { response } from "express";
+import { title } from "process";
 
 const mockFleetServices = fleet_services as jest.Mocked<typeof fleet_services>;
 const mockVehicleServices = vehicle_services as jest.Mocked<typeof vehicle_services>;
@@ -1206,6 +1209,262 @@ describe("Fleet controller", () =>{
         });
 
         
+    });
+
+    describe("delete_fleet_trip", () => {
+        
+        it("returns 401 when unauthenticated", async()=> {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({user: undefined, params: { trip_id: "trip-1"}}),
+                response as any,
+            );
+
+            expectStatus(response, 401);
+            expect (mockFleetServices.delete_fleet_trip).not.toHaveBeenCalled();
+        });
+
+        it("returns 400 and does not call the service when trip_id is missing", async ()=> {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({params: {}}),
+                response as any,
+            );
+
+            expectStatus(response, 400);
+            expect(response.json).toHaveBeenCalledWith({
+                error: "MISSING_TRIP_ID",
+                message: "Trip id is required",
+            });
+
+            expect(mockFleetServices.delete_fleet_trip).not.toHaveBeenCalled();
+        });
+
+        it("returns 403 when user does not have permission to delete fleet trips", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({
+                    user: {sub: "user-1", org_id: "org-1", org_role: OrganizationRole.DRIVER},
+                    params: {trip_id: "trip-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+            expect(mockFleetServices.delete_fleet_trip).not.toHaveBeenCalled();
+        });
+
+        it ("returns 500 for an inconsistent session", async () => {
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({
+                    user: {sub: "user-1", org_id: "org-1", org_role: undefined},
+                    params: {trip_id: "trip-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(mockFleetServices.delete_fleet_trip).not.toHaveBeenCalled();
+        });
+
+        it("returns 204 when the trip is successfully deleted", async () => {
+
+            mockFleetServices.delete_fleet_trip.mockResolvedValueOnce(undefined as never);
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({
+                    params: {trip_id: "trip-1"},
+                }),
+                response as any,
+            );
+
+            expect(mockFleetServices.delete_fleet_trip).toHaveBeenCalledWith(
+                "user-1", "org-1", "trip-1",
+            );
+
+            expectStatus(response, 204);
+            expect(response.send).toHaveBeenCalled();
+        });
+
+        it.each([
+
+            ["Not authorized to delete fleet trips", 403, "UNAUTHORIZED"],
+            ["Fleet trip not found", 404, "TRIP_NOT_FOUND"],
+            ["Only scheduled trips can be deleted", 409, "TRIP_NOT_DELETABLE"],
+
+        ])("maps service error '%s' to %i", async (message, status, error) => {
+            
+            mockFleetServices.delete_fleet_trip.mockRejectedValueOnce(new Error(message),);
+            const response = makeResponse();
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({params: {trip_id: "trip-1"}}),
+                response as any,
+            );
+
+            expectStatus(response, status);
+            expect(response.json).toHaveBeenCalledWith({error, message});
+        });
+
+        it("maps unexpected errors to 500", async () => {
+
+            mockFleetServices.delete_fleet_trip.mockRejectedValueOnce(
+                new Error("Database crash"),
+            );
+
+            const response = makeResponse();
+
+            await fleet_controller.delete_fleet_trip(
+                makeRequest({
+                    params: {trip_id: "trip-1"},
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(response.json).toHaveBeenCalledWith({
+                error: "INTERNAL_SERVER_ERROR",
+            });
+        });
+
+        
+    });
+
+    describe("edit_scheduled_trip", () => {
+
+        it("returns 400 when trip_id is missing", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({ 
+                    params: { trip_id: ""}
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 400);
+            expect(response.json).toHaveBeenCalledWith(
+                { error: "MISSING_TRIP_ID",
+                    message: "Trip id is required"
+                }
+            );
+        });
+
+        it("returns 401 for unauthenticated request", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({ 
+                    user: {sub: undefined, org_id: "org-1", org_role: "MANAGER"}, 
+                    params: { trip_id: "trip-1"}
+                }),
+                response as any,
+        );
+
+            expectStatus(response, 401);
+        });
+
+      
+        it("returns 403 when user does not have permissions", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({ 
+                    user: {sub: "user-1", org_id: "org-1", org_role: "DRIVER" },
+                    params: { trip_id: "trip-1"}
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+        });
+
+        it("returns 200 when scheduled trip is successfully updated", async () => {
+            const updatedTrip = { trip_id: "trip-1", name: "Updated Bread Run" };
+            mockFleetServices.edit_scheduled_trip.mockResolvedValueOnce(updatedTrip as any);
+            const response = makeResponse();
+
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({ 
+                    params: { trip_id: "trip-1"},
+                    body: {
+                        title: "Updated Bread Run",
+                        vehicle_id: "veh-1",
+                        driver_id: "driver-1"
+                    },
+                }),
+                response as any,
+            );
+
+            expect(mockFleetServices.edit_scheduled_trip).toHaveBeenCalledWith(
+                "user-1",
+                "org-1",
+                "trip-1",
+                expect.objectContaining({
+                    title: "Updated Bread Run",
+                    vehicle_id: "veh-1",
+                    driver_id: "driver-1"
+                })
+            );
+
+            expectStatus(response, 200);
+            expect(response.json).toHaveBeenCalledWith({
+                message: "Scheduled trip updated successfully",
+                data: updatedTrip
+            });
+        });
+
+        it.each([
+            ["Scheduled trip not found", 404, "TRIP_NOT_FOUND"],
+            ["Driver not found", 404, "DRIVER_NOT_FOUND"],
+            ["Only scheduled trips can be edited", 409, "TRIP_NOT_DELETABLE"],
+            ["Driver not available", 409, "DRIVER_NOT_AVAILABLE"],
+            ["Driver has a scheduled trip that overlaps this time", 409, "DRIVER_NOT_AVAILABLE"],
+            ["Missing required fields", 422, "MISSING_REQUIRED_FIELDS"],
+            ["Unknown start location", 422, "INVALID_START_LOCATION"],
+            ["Unknown end location", 422, "INVALID_END_LOCATION"],
+            ["Unknown stop coordinates", 422, "INVALID_STOP"],
+
+        ])("maps service error '%s' to status %i", async(message, status, error) => {
+            mockFleetServices.edit_scheduled_trip.mockRejectedValueOnce(new Error(message));
+
+            const response = makeResponse();
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({
+                    params: {trip_id: "trip-1"},
+                    body: {title: "New Title"}
+                }),
+                response as any
+            );
+            expectStatus(response, status);
+        });
+
+        it("returns 500 on unexpected service failure", async () => {
+            mockFleetServices.edit_scheduled_trip.mockRejectedValueOnce(new Error("Database crash"));
+            const response = makeResponse();
+
+            await fleet_controller.edit_scheduled_trip(
+                makeRequest({ 
+                    params: { trip_id: "trip-1"}
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 500);
+            expect(response.json).toHaveBeenCalledWith({ 
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to update scheduled trip",
+            });
+        });
     })
 
 });

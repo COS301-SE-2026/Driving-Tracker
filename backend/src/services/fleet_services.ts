@@ -456,6 +456,10 @@ export const fleet_services = {
             const chosenPoints = (data.selected_points && data.selected_points.length > 0)
                 ? data.selected_points
                 : route.points;
+            const geoJsonPolyline = {
+                type: "LineString",
+                coordinates: chosenPoints.map(p => [p.lng, p.lat])
+            };
 
             const trip = await tx.trips.create({
                 data: {
@@ -463,7 +467,7 @@ export const fleet_services = {
                     vehicle_id: data.vehicle_id,
                     created_by: user_id,
                     status: 'SCHEDULED',
-                    route_polyline: chosenPoints as any,
+                    route_polyline: geoJsonPolyline as any,
                     description: data.description,
                     title: data.title,
                     scheduled_for: new_start,
@@ -875,8 +879,268 @@ export const fleet_services = {
         const vehicle = await this.get_manageable_vehicle(user_id, org_id, vehicle_id);
         
         return vehicle.image_url;
-    }
-    
+    },
+
+    async delete_fleet_trip(user_id: string, org_id: string, trip_id: string){
+
+        const permission = await this.get_view_permission(user_id, org_id);
+
+        if (!permission){
+            throw new Error("Not authorized to delete fleet trips");
+        }
+
+        if (!trip_id){
+            throw new Error("Fleet trip not found");
+        }
+
+        const trip = await prisma.trips.findFirst({
+            where: {
+                trip_id,
+                users: {
+                    org_memberships: {some: {org_id}},
+                },
+            },
+            select: {status: true},
+        });
+
+        if (!trip){
+            throw new Error("Fleet trip not found");
+        }
+
+        if (trip.status !== "SCHEDULED"){
+            throw new Error("Only scheduled trips can be deleted");
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.vehicle_live_status.updateMany({
+                where: {current_trip_id: trip_id},
+                data: {current_trip_id: null},
+            });
+
+            const result = await tx.trips.deleteMany({
+                where: {trip_id, status: "SCHEDULED"},
+            });
+
+            if (result.count === 0){
+                throw new Error("Only scheduled trips can be deleted");
+            }
+        });
+    },
+
+    async edit_scheduled_trip(user_id: string, org_id: string, trip_id: string, data: Partial<schedule_trip_data>){
+
+        if(!user_id || !trip_id){
+            throw new Error("Missing required fields");
+        }
+
+        const existing_trip = await prisma.trips.findFirst({
+            where: {
+                trip_id,
+                users: {
+                    org_memberships: {
+                        some: {org_id}
+                    }
+                }
+            },
+            include: {
+                trip_stops: {orderBy: {stop_order: 'asc'}}
+            }
+        });
+
+        if (!existing_trip){
+            throw new Error("Scheduled trip not found");
+        }
+
+        if (existing_trip.status !== "SCHEDULED"){
+            throw new Error("Only scheduled trips can be edited");
+        }
+
+        const target_vehicle_id = data.vehicle_id ?? existing_trip.vehicle_id;
+        const target_driver_id = data.driver_id ?? existing_trip.user_id;
+        const target_title = data.title ?? existing_trip.title;
+        const target_description = data.description ?? existing_trip.description;
+
+        if (!target_vehicle_id || !target_driver_id){
+            throw new Error("Missing required fields");
+        }
+
+        const start_loc = data.planned_start_location ?? {
+            address: existing_trip.planned_start_addr ?? "",
+            lat: to_number(existing_trip.planned_start_lat) ?? 0,
+            lng: to_number(existing_trip.planned_start_lng) ?? 0,
+        };
+
+        const end_loc = data.planned_end_location ?? {
+            address: existing_trip.planned_end_addr ?? "",
+            lat: to_number(existing_trip.planned_dest_lat) ?? 0,
+            lng: to_number(existing_trip.planned_dest_lng) ?? 0,
+        };
+
+        if (!start_loc.lat || !start_loc.lng){
+            throw new Error("Unknown start location");
+        }
+
+        if (!end_loc.lat || !end_loc.lng){
+            throw new Error("Unknown end location");
+        }
+
+        let formatted_stops = data.stops;
+
+        if (formatted_stops && formatted_stops.length > 0){
+
+            for (const stop of formatted_stops){
+                if (!Number.isFinite(stop.lat) || !Number.isFinite(stop.lng)){
+                    throw new Error("Invalid stop coordinates");
+                }
+            }
+            formatted_stops = formatted_stops.sort((a,b) => (a.stop_order ?? 0) - (b.stop_order ?? 0))
+
+            .map((stop, index) => ({
+                ...stop,
+                stop_order: index + 1
+            }));
+        }
+
+        const driver = await prisma.organization_members.findUnique({
+            where: {
+                user_id: target_driver_id,
+                org_id,
+                role: OrganizationRole.DRIVER
+            },
+
+            select: {
+                joined_at: true,
+                users: {
+                    select: {
+                        trips: {
+                            where: {
+                                status: {in: ['IN_PROGRESS', 'SCHEDULED']}
+                            },
+                            select: {
+                                trip_id: true,
+                                status: true,
+                                scheduled_for: true,
+                                scheduled_end: true,
+                            },
+                        },
+                    }
+                }
+            }
+        });
+
+        if (!driver){
+            throw new Error("Driver not found");
+        }
+
+        const driver_trips = driver.users.trips;
+        const has_active_trip = driver_trips.some(t => t.status === "IN_PROGRESS" && t.trip_id !== trip_id);
+
+        if (has_active_trip){
+            throw new Error("Driver not available");
+        }
+
+        const start_time_str = data.planned_start_time ?? existing_trip.scheduled_for?.toISOString();
+
+        if (!start_time_str){
+            throw new Error("Missing required fields");
+        }
+
+        const routeRes = await map_services.suggested_routes({
+            start_lat: start_loc.lat,
+            start_lng: start_loc.lng,
+            dest_lat: end_loc.lat,
+            dest_lng: end_loc.lng,
+            stops: formatted_stops ?? undefined
+        });
+
+        const route = 'routes' in routeRes ? routeRes.routes[0] : routeRes;
+
+        const BASE_BUFFER_SECONDS = 10 * 60;
+        const PER_STOP_BUFFER_SECONDS = 5 *60;
+        const stop_count = formatted_stops?.length ?? (existing_trip.trip_stops?.length ?? 0);
+        const buffer_seconds = BASE_BUFFER_SECONDS + (stop_count * PER_STOP_BUFFER_SECONDS);
+        const total_seconds = route.travel_time_seconds + buffer_seconds;
+
+        const new_start = new Date(start_time_str);
+        const new_end = new Date(new_start.getTime() + total_seconds * 1000);
+
+        const scheduled = driver_trips.filter(t => t.status === 'SCHEDULED' && t.trip_id !== trip_id);
+
+        const has_overlap = scheduled.some( t=> {
+
+            if (!t.scheduled_for || !t.scheduled_end){
+                return false;
+            }
+            return new_start < t.scheduled_end && t.scheduled_for < new_end;
+        });
+
+        if (has_overlap){
+            throw new Error("Driver has a scheduled trip that overlaps this time");
+        }
+
+        const updated_trip = await prisma.$transaction(async (tx) => {
+
+            const chosenPoints = (data.selected_points && data.selected_points.length > 0)
+                ? data.selected_points
+                : route.points;
+
+            const geoJsonPolyline = {
+                type: "LineString",
+                coordinates: chosenPoints.map(p => [p.lng, p.lat])
+            };
+
+            if (data.stops !== undefined){
+                await tx.trip_stops.deleteMany({
+                    where: {trip_id}
+                });
+            }
+
+            const trip = await tx.trips.update({
+
+                where: {trip_id},
+                data: {
+                    user_id: target_driver_id,
+                    vehicle_id: target_vehicle_id,
+                    title: target_title,
+                    description: target_description,
+                    scheduled_for: new_start,
+                    scheduled_end: new_end,
+                    route_polyline: geoJsonPolyline as any,
+                    planned_start_addr: start_loc.address,
+                    planned_start_lat: start_loc.lat,
+                    planned_start_lng: start_loc.lng,
+                    planned_end_addr: end_loc.address,
+                    planned_dest_lat: end_loc.lat,
+                    planned_dest_lng: end_loc.lng,
+                    end_latitude: end_loc.lat,
+                    end_longitude: end_loc.lng,
+                    ...(formatted_stops && formatted_stops.length > 0 ? {
+                        trip_stops: {
+                            create: formatted_stops.map((stop) => ({
+                                stop_order: stop.stop_order,
+                                address: stop.address,
+                                latitude: stop.lat,
+                                longitude: stop.lng,
+                            }))
+                        }
+                    } : {})
+                },
+
+                include: {
+                    trip_stops: {
+                        orderBy: {stop_order: 'asc'}
+                    }
+                }
+            });
+
+            return{
+                trip, route: chosenPoints
+            };
+        });
+
+        return updated_trip;
+    },
+
 };
 
 

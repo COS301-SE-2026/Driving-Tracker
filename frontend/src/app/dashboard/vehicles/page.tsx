@@ -84,7 +84,11 @@ export default function VehiclesPage() {
         <main className="flex min-h-screen bg-white">
             <DashboardNavbar />
 
-            <section className="min-w-0 flex-1 px-3 py-8 md:px-4">
+            <section className="min-w-0 flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
+                <h1 className="text-4xl text-center font-extrabold text-gray-900">
+                    Vehicles
+                </h1>
+                <div className="mt-4 border-t border-gray-200 pt-3 mb-6" />
                 <header className="mb-8 flex items-center gap-8">
                     <div className="flex h-7 w-[177px] items-center rounded-full border border-black px-3">
                         <input

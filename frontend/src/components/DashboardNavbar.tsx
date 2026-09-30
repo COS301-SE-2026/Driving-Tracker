@@ -1,6 +1,6 @@
 "use client";
 
-import {Truck, Route as RouteIcon, Users, Settings, LogOut, Home} from "lucide-react";
+import {Truck, Route as RouteIcon, Users, LogOut, Home} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -54,10 +54,6 @@ export default function Sidebar(){
                 </div>
 
                 <div className="flex flex-col items-center gap-5 border-t border-sky-200 pt-5">
-
-                    <button className="text-black hover:text-sky-500">
-                        <Settings size = {30} />
-                    </button>
 
                     <button type = "button" onClick = {()=> void logout()} aria-label= "Sign out" title = "Sign out" className="text-black hover:text-red-500">
                         <LogOut size = {30} />

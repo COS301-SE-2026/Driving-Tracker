@@ -3,28 +3,41 @@ package com.omnitech.drivingtracker.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.omnitech.drivingtracker.R
 import com.omnitech.drivingtracker.ui.theme.Blue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-
 import androidx.navigation.NavController
 import com.omnitech.drivingtracker.Screen
+import com.omnitech.drivingtracker.data.local.SessionManagerEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun BottomNavBar(navController: NavController? = null, color: String = "") {
 
-    Column() {
+    val context = LocalContext.current
+    val sessionManager = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SessionManagerEntryPoint::class.java
+        ).sessionManager()
+    }
+
+    if (sessionManager.isDriver()) {
+        DriverBottomNavBar(navController = navController, color = color)
+        return
+    }
+
+    Column {
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 1.dp,
@@ -49,7 +62,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                         color = if (color == "home") Blue else Color.Gray
                     )
                 },
-                selected = false,
+                selected = color == "home",
                 onClick = { navController?.navigate(Screen.Dashboard.route) }
             )
 
@@ -63,7 +76,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                     )
                 },
                 label = { Text(text = "Trips", color = if (color == "trip") Blue else Color.Gray) },
-                selected = false,
+                selected = color == "trip",
                 onClick = { navController?.navigate(Screen.Trips.route) }
             )
 
@@ -83,7 +96,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                         color = if (color == "ach") Blue else Color.Gray
                     )
                 },
-                selected = false,
+                selected = color == "ach",
                 onClick = { navController?.navigate(Screen.Achievements.route) }
             )
 
@@ -103,7 +116,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                         color = if (color == "obd") Blue else Color.Gray
                     )
                 },
-                selected = false,
+                selected = color == "obd",
                 onClick = { navController?.navigate(Screen.OBDMain.route) }
             )
 
@@ -122,7 +135,7 @@ fun BottomNavBar(navController: NavController? = null, color: String = "") {
                         color = if (color == "more") Blue else Color.Gray
                     )
                 },
-                selected = false,
+                selected = color == "more",
                 onClick = { navController?.navigate(Screen.More.route) }
             )
 

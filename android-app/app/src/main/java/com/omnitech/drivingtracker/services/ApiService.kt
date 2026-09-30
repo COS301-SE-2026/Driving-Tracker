@@ -230,4 +230,13 @@ interface ApiService{
     suspend fun deleteAccount(
         @Body request: DeleteAccountRequest
     )
+
+    @GET("fleet/fleet_trips?status=SCHEDULED")
+    suspend fun getScheduledTrips(): ScheduledTripsResponse
+
+    @PATCH("fleet/{trip_id}/start_scheduled_trip")
+    suspend fun startScheduledTrip(
+        @Path("trip_id") tripId: String,
+        @Body body: StartScheduledTripRequest
+    ): StartTripResponse
 }

@@ -46,7 +46,7 @@ function ScoreValue({score} : {score: number | null}){
         return <span className="text-gray-500">No score yet</span>;
     }
     const color = score >= 60 ? "text-emerald-500" : "text-red-500";
-    return <span className={`font-semibold ${color}`}> {score} </span>
+    return <span className={`font-semibold ${color}`}> {Math.round(score)} </span>
 }
 
 function DriverCard({driver, onView, onDelete} : {driver : Driver; onView: ()=> void; onDelete: ()=> Promise<void>;}){
