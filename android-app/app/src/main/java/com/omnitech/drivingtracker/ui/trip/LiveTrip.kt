@@ -100,6 +100,8 @@ fun LiveTrip(
     val activeShares by contactsViewModel.activeShares.collectAsState()
     var showActiveViewersDialog by remember { mutableStateOf(false) }
 
+    var liveTripPoints by remember { mutableStateOf<List<LocationDto>>(emptyList())}
+
     val locationPermissionState = com.google.accompanist.permissions.rememberMultiplePermissionsState(
         listOf(
             android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -126,6 +128,25 @@ fun LiveTrip(
             voiceAlertManager.shutdown()
         }
     }
+
+    LaunchedEffect(tripPath) {
+        if(tripPath.isNotEmpty() && liveTripPoints.isEmpty()){
+            liveTripPoints = tripPath
+        }
+    }
+
+    LaunchedEffect(liveMetrics.latitude, liveMetrics.longitude) {
+        val lat = liveMetrics.latitude
+        val lng = liveMetrics.longitude
+        if(lat != 0.0 && lng != 0.0){
+            val newPoint = LocationDto(lat, lng)
+            val lastPoint = liveTripPoints.lastOrNull()
+            if(lastPoint == null || (lastPoint.lat != lat || lastPoint.lng != lng)){
+                liveTripPoints = liveTripPoints + newPoint
+            }
+        }
+    }
+
     //monitor the prox of hotspots and play voice alert
     LaunchedEffect(liveMetrics,globalHotspots) {
         val lat = liveMetrics.latitude
@@ -154,7 +175,7 @@ fun LiveTrip(
 
     val liveDistance = remember(tripPath){
         var total = 0.0
-        for(i in 0 until tripPath.size-1){
+        for(i in 0 until tripPath.size - 1){
             val start = tripPath[i]
             val end = tripPath[i + 1]
             if (start.lat != null && start.lng != null && end.lat != null && end.lng != null) {
@@ -245,7 +266,7 @@ fun LiveTrip(
             durationMinutes = liveDurationMinutes,
             fuelEstimate = currentTrip?.fuelEstimate ?: 0.0,
             fuelLevelEnd = finalFuel ,// PASS TO VM
-            path = tripPath
+            path = liveTripPoints
         )
     }
     var isMinimized by remember {mutableStateOf(false)}

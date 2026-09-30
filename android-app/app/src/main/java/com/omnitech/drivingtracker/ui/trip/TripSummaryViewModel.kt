@@ -21,6 +21,10 @@ import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlin.collections.emptyList
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOf
 
 
 @HiltViewModel
@@ -54,8 +58,6 @@ class TripSummaryViewModel @Inject constructor(
 
     private val _globalHotspots = MutableStateFlow<List<TripEventDto>>(emptyList())
     private val _tripPath = MutableStateFlow<List<LocationDto>>(emptyList())
-
-    val tripPath: StateFlow<List<LocationDto>> = _tripPath
 
     val nearbyPois = tripStateManager.nearbyPois
 
@@ -175,6 +177,14 @@ class TripSummaryViewModel @Inject constructor(
     }
 
     private val _observedTripId = MutableStateFlow<String?>(null)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val tripPath: StateFlow<List<LocationDto>> = _observedTripId.flatMapLatest { id ->
+        if(id == null) flowOf(emptyList())
+        else repository.getTripReadingsFlow(id).map { readings ->
+            readings.map{ LocationDto(it.latitude, it.longitude) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val localEvents = _observedTripId.flatMapLatest{id ->
