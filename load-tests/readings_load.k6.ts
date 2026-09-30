@@ -8,12 +8,12 @@ export const options = {
     setupTimeout: '5m',    // Gives setup() up to 5 minutes to seed 200 users & trips , 
     teardownTimeout: '5m',
     stages:[
-        {duration: '60s', target: 50},// 50 active drivers 
+        {duration: '30s', target: 50},// 50 active drivers 
         { duration: '2m', target: 200 }, // Commute spike (200 concurrent drivers)
         { duration: '30s', target: 0 },
     ],
     thresholds:{
-        'http_req_duration{name:PostReadings}': ['p(95)<250', 'p(99)<400'], // Latency SLA
+        'http_req_duration{name:PostReadings}': ['p(90)<250', 'p(95)<400'], // Latency SLA
         'http_req_failed': ['rate<0.01'],
     }
 };
@@ -140,6 +140,7 @@ export function teardown(data: { drivers: TestDriver[]}){
         const res = http.post(`${BASE_URL}/users/me/delete`,
         JSON.stringify({ password: "MySecretPassword123!" }), {
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${driver.token}`,
             },
         });

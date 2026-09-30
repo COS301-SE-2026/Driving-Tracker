@@ -192,6 +192,7 @@ export function teardown(data:AuthedUser[]): void{
         const delRes =http.post(`${BASE_URL}/users/me/delete`,             
         JSON.stringify({ password: "MySecretPassword123!" }),{
             headers: {
+                'Content-Type':'application/json',
                 'Authorization': `Bearer ${user.token}`,
             },
         });
