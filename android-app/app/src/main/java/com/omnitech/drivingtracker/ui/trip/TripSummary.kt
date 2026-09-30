@@ -41,7 +41,8 @@ import kotlin.collections.mapNotNull
 
 data class TripSummaryData(
     val date: String = "25 April 2026 • 12:45",
-    val route: String = "Home → Office",
+    val startAddress: String = "Home",
+    val endAddress: String = "Office",
     val score: Int = 80,
     val rating: String = "Good",
     val distance: String = "18.6 km",
@@ -121,7 +122,8 @@ fun TripSummary(
 
             val mappedData = TripSummaryData(
                 date = formattedDate,
-                route = "Trip from $start to $end",
+                startAddress = start,
+                endAddress = end,
                 score = trip.scores?.overallScore?.toInt() ?: 0,
                 rating = when {
                     (trip.scores?.overallScore ?: 0.0) >= 80 -> "Great"
@@ -165,12 +167,89 @@ fun TripSummaryContent(
         title = "Trip Summary",
         bottomBarColor = "trip"
     ){
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(trip.date, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(trip.route, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 5.dp)) {
+            Text(
+                text = trip.date,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
 
+            // Start Location Row
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .background(Color(0xFFE53935), androidx.compose.foundation.shape.CircleShape)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "START",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Text(
+                        text = trip.startAddress,
+                        style = MaterialTheme.typography.headlineSmall, // Larger text size
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // Vertical Connecting Line & 'to' Pill
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .width(2.dp)
+                        .height(28.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+                Spacer(modifier = Modifier.width(20.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "to",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+            // Destination Location Row
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .background(Color(0xFFE53935), androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(0xFF4CAF50), androidx.compose.foundation.shape.CircleShape)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "DESTINATION",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Text(
+                        text = trip.endAddress,
+                        style = MaterialTheme.typography.headlineSmall, // Larger text size
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         //Trip Score
         Card(
             modifier = Modifier
