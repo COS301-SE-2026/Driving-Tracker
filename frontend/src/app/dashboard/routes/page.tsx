@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo} from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, ArrowRight } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import FilterRoutes, { FilterState } from "@/components/routes/FilterRoutes";
@@ -9,7 +9,6 @@ import RouteMenu from "@/components/routes/RouteMenu";
 import ViewRoute from "@/components/routes/ViewRoute";
 import PastRoutes from "@/components/routes/PastRoutes";
 import { apiFetch } from "@/lib/auth/apiClient";
-import { useRouter } from "next/navigation";
 
 type Stop = {
     id: string;
@@ -20,8 +19,6 @@ type Stop = {
 
 type Route = {
     id: string;
-    driverId?: string;
-    vehicleId?: string;
     title: string;
     task: string;
     vehicle: string;
@@ -49,11 +46,7 @@ type FleetTripApi ={
     scheduled_for?: string;
     title?: string;
     planned_start_addr?: string;
-    planned_start_lat?: number | string;
-    planned_start_lng?: number | string;
     planned_end_addr?: string;
-    planned_dest_lat?: number | string;
-    planned_dest_lng?: number | string;
     vehicle_id?: string;
     driver?: {
         user_id: string;
@@ -63,6 +56,7 @@ type FleetTripApi ={
     vehicles?: {
         make: string;
         model: string;
+		registration?: string;
     };
 };
 // //mocks
@@ -94,12 +88,11 @@ function StatusPill({status} : {status: Route["status"]}){
     );
 }
 
-function RouteCard({route, onView, onEdit, onDelete, onViewProgress}: {
+function RouteCard({route, onView, onEdit, onDelete}: {
     route: Route;
     onView: () => void;
     onEdit: () => void;
     onDelete: () => void;
-    onViewProgress: () => void;
 }){
 
     return (
@@ -110,7 +103,7 @@ function RouteCard({route, onView, onEdit, onDelete, onViewProgress}: {
                 </h3>
                 <div className="flex items-center gap-2">
                     {route.status === "On Trip" && (
-                        <button onClick = {onViewProgress} className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
+                        <button className="flex items-center gap-1 text-xs font-semibold text-sky-500 hover:text-sky-600">
                             View Progress
                             <ArrowRight size = {14}/>
                         </button>
@@ -161,10 +154,6 @@ export default function Routes(){
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
     // const [addOpen, setAddOpen] = useState(false);
-    const router = useRouter();
-    const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const loadData = useCallback(async () =>{
         try{
@@ -187,23 +176,19 @@ export default function Routes(){
                 if (t.status === "COMPLETED") status = "Completed";
 
                 const driverName = t.driver ? `${t.driver.name} ${t.driver.surname}`.trim() : "Unassigned";
-                const vehicleName = t.vehicles ? `${t.vehicles.make} ${t.vehicles.model}`.trim() : "Unassigned";
-
-                const startLat = t.planned_start_lat != null ? Number(t.planned_start_lat) : undefined;
-                const startLng = t.planned_start_lng != null ? Number(t.planned_start_lng) : undefined;
-                const destLat = t.planned_dest_lat != null ? Number(t.planned_dest_lat) : undefined;
-                const destLng = t.planned_dest_lng != null ? Number(t.planned_dest_lng) : undefined;
+                const vehicleName = t.vehicles ? `${t.vehicles.make} ${t.vehicles.model} ${
+                    t.vehicles.registration ? `(${t.vehicles.registration})` : ""
+                }`.trim() 
+                : "Unassigned";
 
                 return{
                     id: t.trip_id,
-                    driverId: t.driver?.user_id,
-                    vehicleId: t.vehicle_id,
                     title: t.title || "Scheduled Delivery",
                     task: "Delivery",
                     vehicle: vehicleName,
                     stops: [
-                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" , lat: startLat, lng: startLng},
-                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination", lat: destLat, lng: destLng }
+                        { id: `${t.trip_id}-start`, address: t.planned_start_addr || "Start" },
+                        { id: `${t.trip_id}-end`, address: t.planned_end_addr || "Destination" }
                     ],
                     startDestination: t.planned_start_addr || "Start",
                     endDestination: t.planned_end_addr || "Destination",
@@ -221,47 +206,8 @@ export default function Routes(){
     useEffect(()=>{
         loadData();
     }, [loadData]);
-
-    const handleDeleteRoute = async (id: string) => {
-        
-        const route = routesList.find((r) => r.id === id);
-        if (!route){
-            return;
-        }
-
-        if (route.status !== "Not Started"){
-            setLoadError("Only routes that haven't been started can be deleted");
-            return;
-        }
-
-        setDeleteError(null);
-        setRouteToDelete(route);
-    };
-
-    const confirmDeleteRoute = async () => {
-
-        if (!routeToDelete){
-            return;
-        }
-
-        setIsDeleting(true);
-        setDeleteError(null);
-
-        try{
-
-            await apiFetch(`/fleet/fleet_trips/${routeToDelete.id}`, {method: "DELETE"});
-
-            setRoutesList((prev) => prev.filter((r) => r.id !== routeToDelete.id));
-            setLoadError(null);
-            setRouteToDelete(null);
-        }
-        catch(err){
-            console.error("Failed to delete trip", err);
-            setDeleteError(err instanceof Error ? err.message : "Failed to delete route");
-        }
-        finally{
-            setIsDeleting(false);
-        }
+    const handleDeleteRoute = (id: string) => {
+        setRoutesList((prev) => prev.filter((r) => r.id !== id));
     };
 
     const handleAddRoute = async( data: RouteFormData) =>{
@@ -269,8 +215,18 @@ export default function Routes(){
             const foundDriver = driverList.find(
                 (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
             );
-            const foundVehicle = vehicleList.find(
-                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
+            const foundVehicle = vehicleList.find((v) => {
+				const makeModelReg = `${v.make} ${v.model} (${v.registration})`.trim();
+				const makeModel = `${v.make} ${v.model}`.trim();
+				const selected = data.vehicle.trim();
+				return (
+					makeModelReg.toLowerCase() === selected.toLowerCase() ||
+					makeModel.toLowerCase() === selected.toLowerCase() ||
+					v.registration === selected ||
+					v.vehicle_id === selected
+				);
+			}
+				
             );
 
             if (!foundDriver || !foundVehicle) {
@@ -312,79 +268,23 @@ export default function Routes(){
         }
     }
 
-    const handleEditRoute = async (data: RouteFormData) => {
+    const handleEditRoute = (data: RouteFormData) => {
 
         if (!editingRoute){
             return;
         }
 
-
-            const resolvedStops = await Promise.all(data.stops.map(async (stop) => {
-                if (stop.lat && stop.lng) return stop;
-                if (!stop.address?.trim()) return stop;
-                try{
-                    const res = await apiFetch<{data: {lat: number; lng: number}[]}>(
-                        `/map/search?address=${encodeURIComponent(stop.address)}`
-                    );
-                    if (res.data?.[0]) return {...stop, lat: res.data[0].lat, lng: res.data[0].lng};
-                }
-                catch (e){
-                    console.error("Geocoding failed", e);
-                }
-                return stop;
-            }));
-
-            const foundDriver = driverList.find(
-                (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
-            );
-
-            const foundVehicle = vehicleList.find(
-                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
-            );
-
-            if (!foundDriver || !foundVehicle){
-                throw new Error("Please select a valid driver and vehicle from your fleet.");
-            }
-
-            const startStop = resolvedStops[0];
-            const endStop = resolvedStops[resolvedStops.length - 1];
-
-            if (!startStop.lat || !startStop.lng || !endStop.lat || !endStop.lng){
-                throw new Error("Could not determine valid coordinates for start or end location.");
-            }
-
-            await apiFetch(`/fleet/fleet_trips/${editingRoute.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    title: data.title,
-                    task: data.task,
-                    driver_id: foundDriver.user_id,
-                    vehicle_id: foundVehicle.vehicle_id,
-                    planned_start_time: data.plannedStartTime ? new Date(data.plannedStartTime).toISOString() : new Date().toISOString(),
-                    planned_start_location: {
-                        address: startStop.address,
-                        lat: startStop.lat,
-                        lng: startStop.lng,
-                    },
-                    planned_end_location: {
-                        address: endStop.address,
-                        lat: endStop.lat,
-                        lng: endStop.lng,
-                    },
-                    selected_points: data.selected_points,
-                    stops: resolvedStops.map((s, idx) => ({
-                        address: s.address,
-                        lat: s.lat ?? 0,
-                        lng: s.lng ?? 0,
-                        stop_order: idx + 1,
-                    }))
-                })
-            });
-
-            await loadData();
-            setEditingRoute(null);
-    
-};
+        setRoutesList((prev) => 
+            prev.map((route) =>
+            route.id === editingRoute.id ?
+        {
+            ...route, ...data,
+            startDestination: data.stops[0].address,
+            endDestination: data.stops[data.stops.length - 1].address,
+        } : route
+        ));
+        setEditingRoute(null);
+    };
 
     const filtered = routesList
     .filter((r) => r.title.toLowerCase().includes(query.toLowerCase()))
@@ -412,20 +312,6 @@ export default function Routes(){
         return 0;
     });
 
-    const editingRouteFormData = useMemo<RouteFormData | undefined>(
-        () =>
-            editingRoute ? {
-                title: editingRoute.title,
-                task: editingRoute.task,
-                driver: editingRoute.driver,
-                driverId: editingRoute.driverId,
-                vehicle: editingRoute.vehicle,
-                vehicleId: editingRoute.vehicleId,
-                stops: editingRoute.stops,
-                plannedStartTime: new Date().toISOString().slice(0,16),
-            } : undefined, [editingRoute]
-    );
-
     const activeRoutes = filtered.filter(
         (route) => route.status !== "Completed"
     )
@@ -441,9 +327,27 @@ export default function Routes(){
     );
 
     const vehicleOptions = vehicleList.map(
-        (vehicle) => 
-            [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||vehicle.vehicle_id,
+        (vehicle) => {
+			const makeModel =    [vehicle.make, vehicle.model].filter(Boolean).join(" ");
+			if (vehicle.registration) {
+				return `${makeModel} (${vehicle.registration})`;
+			}
+
+			return makeModel ||vehicle.vehicle_id;
+		}
+          
     );
+
+    const editingRouteFormData: RouteFormData | undefined = editingRoute
+    ? {
+          title: editingRoute.title,
+          task: editingRoute.task,
+          driver: editingRoute.driver,
+          vehicle: editingRoute.vehicle,
+          stops: editingRoute.stops,
+          plannedStartTime: new Date().toISOString().slice(0, 16),
+      }
+    : undefined
 
     return(
         <div className="flex">
@@ -475,38 +379,6 @@ export default function Routes(){
                     onSubmit={handleEditRoute} vehicleOptions={vehicleOptions} driverOptions={driverOptions}
                     initialData={editingRouteFormData} />
 
-                    {routeToDelete && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                            <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
-                                <h3 className="text-lg font-bold text-gray-900">
-                                    Delete route?
-                                </h3>
-                                <p className="mt-2 text-sm text-gray-600">
-                                    Are you sure you want to delete <span className="font-semibold">{routeToDelete.title}</span>? This action is permanent.
-                                </p>
-
-                                {deleteError && (
-                                    <p role="alert" className="mt-3 text-sm text-red-600">{deleteError}</p>
-                                )}
-
-                                <div className="mt-6 flex justify-end gap-3">
-                                    <button 
-                                    onClick={()=> setRouteToDelete(null)}
-                                    disabled={isDeleting}
-                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
-                                        Cancel
-                                    </button>
-                                    
-                                    <button 
-                                    onClick={confirmDeleteRoute} disabled = {isDeleting}
-                                    className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600">
-                                        {isDeleting ? "Deleting..." : "Delete"}
-                                    </button>
-                                </div>
-                            </div>
-                            </div>
-                    )}
-
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -527,12 +399,7 @@ export default function Routes(){
                         <RouteCard key = {route.id} route = {route}
                         onView = {() => setViewingRoute(route)}
                         onEdit={() => setEditingRoute(route)}
-                        onDelete = {() => handleDeleteRoute(route.id)}
-                        onViewProgress={() => {
-                            if (route.driverId){
-                                router.push(`/dashboard/home?driver=${route.driverId}`);
-                            }
-                        }} />
+                        onDelete = {() => handleDeleteRoute(route.id)} />
                     ))}
 
                 </div>
