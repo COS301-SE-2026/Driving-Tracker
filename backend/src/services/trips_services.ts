@@ -15,6 +15,7 @@ import { update_vehicle_efficiency } from '../utils/trip_counter';
 import leaderboard_services from './leaderboard_services';
 import { broadcast_harsh_event, broadcast_trip_ended, force_revoke_trip_access } from '../socket';
 import { fleet_services } from './fleet_services';
+import { OrganizationRole } from '@prisma/client';
 
 // Helper function to safely convert Decimal or number values to number
 export function to_number(value: any): number | null {
@@ -447,7 +448,7 @@ export const trips_services ={
             throw error;
         }
     },
-    async end_trip(data:end_trip){
+    async end_trip(data:end_trip, org_role?: string | null){
         console.log("Ending trip");
         if(!data.trip_id || !data.user_id){
             throw new Error("Missing required fields");
@@ -540,11 +541,15 @@ export const trips_services ={
                 });
             }
 
-            setImmediate(() => {
-                void leaderboard_services
-                    .update_user_leaderboards(data.user_id)
-                    .catch((err) => { console.error('Leaderboard update failed', err)});
-            });
+            if(org_role !== OrganizationRole.DRIVER ){
+
+                setImmediate(() => {
+                    void leaderboard_services
+                        .update_user_leaderboards(data.user_id)
+                        .catch((err) => { console.error('Leaderboard update failed', err)});
+                });
+
+            }
 
             console.log("scores computed and ready to return");
             //getting the user info
@@ -568,13 +573,16 @@ export const trips_services ={
             }
             console.log("eval completed ");
 
-            try {
-                await badges_leaderboard_services.evaluate({
-                    user_id: data.user_id,
-                    trip_id: data.trip_id,
-                });
-            } catch (badgeError){
-                console.error("Badge evaluation failed", badgeError)
+            if(org_role !== OrganizationRole.DRIVER){
+
+                try {
+                    await badges_leaderboard_services.evaluate({
+                        user_id: data.user_id,
+                        trip_id: data.trip_id,
+                    });
+                } catch(badgeError){
+                    console.error("Badge evaluation failed", badgeError)
+                }
             }
 
             console.log(driverProfile);
