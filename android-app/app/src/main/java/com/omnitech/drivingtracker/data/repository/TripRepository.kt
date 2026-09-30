@@ -407,11 +407,15 @@ class TripRepository @Inject constructor(
         destLng: Double? = null
     ): Result<String> {
         return try {
+            val isoStartTime = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }.format(java.util.Date())
+
             val response = api.startScheduledTrip(
                 scheduledTripId,
                 StartScheduledTripRequest(
-                    scheduledTripId = scheduledTripId,
-                    dataSource = "PHONE",
+                    vehicleId = vehicleId,
+                    startTime = isoStartTime,
                     startLocation = LocationDto(lat = latitude, lng = longitude)
                 )
             )

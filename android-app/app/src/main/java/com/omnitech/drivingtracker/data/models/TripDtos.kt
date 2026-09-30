@@ -423,7 +423,8 @@ data class ScheduledTripsResponse(
 )
 data class ScheduledTripsData( val trips: List<ScheduledTripDto> = emptyList() )
 data class StartScheduledTripRequest(
-    @SerializedName("scheduled_trip_id") val scheduledTripId: String,
-    @SerializedName("data_source") val dataSource: String = "PHONE",
+    @SerializedName("vehicle_id") val vehicleId: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
     @SerializedName("start_location") val startLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start") val fuelLevelStart: Float? = null,
 )

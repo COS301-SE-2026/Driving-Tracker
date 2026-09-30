@@ -234,7 +234,7 @@ interface ApiService{
     @GET("fleet/fleet_trips?status=SCHEDULED")
     suspend fun getScheduledTrips(): ScheduledTripsResponse
 
-    @PATCH("fleet/{trip_id}/start_scheduled_tri")
+    @PATCH("fleet/{trip_id}/start_scheduled_trip")
     suspend fun startScheduledTrip(
         @Path("trip_id") tripId: String,
         @Body body: StartScheduledTripRequest

@@ -179,11 +179,10 @@ fun LiveTrip(
         }
     }
 
-    LaunchedEffect(uiState, mapToken, liveMetrics) {
+    LaunchedEffect(uiState, mapToken, liveMetrics, plannedRoute) {
         val state = uiState
-        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
+        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute.isNullOrEmpty()) {
             val trip = state.trip
-
 
             if (trip.destinationLatitude != null && trip.destinationLongitude != null) {
 

@@ -154,6 +154,14 @@ class TripSummaryViewModel @Inject constructor(
             repository.getTripSummary(tripId).fold(
                 onSuccess = { trip ->
                     _uiState.value = UiState.Success(trip)
+
+                    val savedPolyline = trip.routePolyline?.coordinates
+                    if(!savedPolyline.isNullOrEmpty()){
+                        val points = savedPolyline.mapNotNull{ coord ->
+                            if(coord.size >= 2) LocationDto(lat = coord[1], lng = coord[0]) else null
+                        }
+                        _plannedRoute.value = points
+                    }
                 },
                 onFailure = { exception ->
                     when (exception) {
