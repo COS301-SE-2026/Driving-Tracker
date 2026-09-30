@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo} from "react";
 import { Search, ArrowRight } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import FilterRoutes, { FilterState } from "@/components/routes/FilterRoutes";
@@ -385,6 +385,18 @@ export default function Routes(){
         return 0;
     });
 
+    const editingRouteFormData = useMemo<RouteFormData | undefined>(
+        () =>
+            editingRoute ? {
+                title: editingRoute.title,
+                task: editingRoute.task,
+                driver: editingRoute.driver,
+                vehicle: editingRoute.vehicle,
+                stops: editingRoute.stops,
+                plannedStartTime: new Date().toISOString().slice(0,16),
+            } : undefined, [editingRoute]
+    );
+
     const activeRoutes = filtered.filter(
         (route) => route.status !== "Completed"
     )
@@ -403,17 +415,6 @@ export default function Routes(){
         (vehicle) => 
             [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||vehicle.vehicle_id,
     );
-
-    const editingRouteFormData: RouteFormData | undefined = editingRoute
-    ? {
-          title: editingRoute.title,
-          task: editingRoute.task,
-          driver: editingRoute.driver,
-          vehicle: editingRoute.vehicle,
-          stops: editingRoute.stops,
-          plannedStartTime: new Date().toISOString().slice(0, 16),
-      }
-    : undefined
 
     return(
         <div className="flex">

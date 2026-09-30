@@ -869,7 +869,7 @@ const fleet_controller = {
                 return res.status(422).json({error: "INVALID_END_LOCATION", message: "Invalid end location"});
             }
 
-            if(error?.message?.includes("Unknown stop coordinates")){
+            if(error?.message?.includes("Invalid stop coordinates")){
                 return res.status(422).json({error: "INVALID_STOP", message: "Invalid coordinates for one or more stops"});
             }
             

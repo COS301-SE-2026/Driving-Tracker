@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef} from "react";
 import {X,Plus,Trash2,Circle,Route as RouteIcon, Loader2} from "lucide-react";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
@@ -62,38 +62,63 @@ export function AddressAutocompleteInput({
     }) { 
     const [suggestions, setSuggestions] = useState<{ address: string; lat: number; lng: number }[]>([]); 
     const [showDropdown, setShowDropdown] = useState(false);
+    const userTyped = useRef(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
+        if (!userTyped.current){
+            return;
+        }
         if (!value || value.trim().length < 3) {
             setSuggestions([]);
             setShowDropdown(false);
             return;
         }
 
+        let cancelled = false;
         const timer = setTimeout(async () => {
             try {
                 const res = await apiFetch<{ data: { address: string; lat: number; lng: number }[] }>(
                     `/map/search?address=${encodeURIComponent(value)}`
                 );
+                if (cancelled || !userTyped.current){
+                    return;
+                }
                 if (res.data?.length) {
                     setSuggestions(res.data);
                     setShowDropdown(true);
                 } else {
                     setSuggestions([]);
+                    setShowDropdown(false);
                 }
             } catch (err) {
                 console.error("Address search failed", err);
             }
         }, 350);
 
-        return () => clearTimeout(timer);
+        return () => {cancelled = true; clearTimeout(timer);};
     }, [value]);
 
+    useEffect(()=> {
+        const handler = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)){
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
     return (
-        <div className="relative w-full">
+        <div ref = {containerRef} className="relative w-full">
             <input
                 value={value}
                 onChange={(e) => {
+                    userTyped.current = true;
                     onChange(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === "Escape") setShowDropdown(false);
                 }}
                 placeholder={placeholder}
                 required
@@ -107,10 +132,12 @@ export function AddressAutocompleteInput({
                             type="button"
                             key={idx}
                             onClick={() => {
+                                userTyped.current = false;
+                                setSuggestions([]);
                                 onSelectAddress(item.address, item.lat, item.lng);
                                 setShowDropdown(false);
                             }}
-                            className="cursor-pointer px-3 py-2 text-xs font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 border-b border-gray-100 last:border-0"
+                            className="block w-full cursor-pointer px-3 py-2 text-left text-xs font-medium text-gray-700 hover:bg-sky-50 hover:text-sky-700 border-b border-gray-100 last:border-0"
                         >
                              {item.address}
                         </button>
