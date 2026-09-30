@@ -399,11 +399,15 @@ data class ScheduledTripDto(
     @SerializedName("notes") val notes: String? = null,
     @SerializedName("description") val description: String? = null,
     @SerializedName("status") val status: String? = "SCHEDULED",
-    @SerializedName("manager_name") val managerName: String? = null
+    @SerializedName("manager_name") val managerName: String? = null,
+    @SerializedName("planned_start_addr")
+    val plannedStartAddr: String? = null,
+    @SerializedName("planned_end_addr")
+    val plannedEndAddr: String? = null,
 ) {
     fun getEffectiveId(): String = scheduledTripId ?: assignedRouteId ?: routeId ?: tripId ?: id ?: ""
-    fun getEffectiveOrigin(): String = origin ?: startAddress ?: startLocationName ?: "Origin"
-    fun getEffectiveDestination(): String = destination ?: endAddress ?: destinationLocationName ?: "Destination"
+    fun getEffectiveOrigin(): String = plannedStartAddr ?: origin ?: "Origin"
+    fun getEffectiveDestination(): String = plannedEndAddr ?: destination ?: "Destination"
     fun getEffectiveVehicleRegistration(): String = vehicleRegistration ?: registration ?: ""
     fun getEffectiveStartTime(): String = scheduledStartTime ?: startTime ?: scheduledTime ?: ""
     fun getEffectiveNotes(): String = notes ?: description ?: ""
@@ -415,11 +419,12 @@ data class ScheduledTripDto(
 
 data class ScheduledTripsResponse(
     val message: String? = null,
-    val data: List<ScheduledTripDto> = emptyList()
+    val data: ScheduledTripsData? = null
 )
-
+data class ScheduledTripsData( val trips: List<ScheduledTripDto> = emptyList() )
 data class StartScheduledTripRequest(
-    @SerializedName("scheduled_trip_id") val scheduledTripId: String,
-    @SerializedName("data_source") val dataSource: String = "PHONE",
+    @SerializedName("vehicle_id") val vehicleId: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
     @SerializedName("start_location") val startLocation: LocationDto? = null,
+    @SerializedName("fuel_level_start") val fuelLevelStart: Float? = null,
 )

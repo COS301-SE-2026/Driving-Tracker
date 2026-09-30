@@ -32,6 +32,7 @@ import com.omnitech.drivingtracker.ui.components.StandardScreen
 import com.omnitech.drivingtracker.ui.theme.Blue
 import com.omnitech.drivingtracker.ui.theme.Green
 import com.omnitech.drivingtracker.ui.trip.TripViewModel
+import com.omnitech.drivingtracker.ui.components.MinimizedTrip
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -45,6 +46,8 @@ fun DriverTrips(
 
     val locationPermissionsState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    val activeTripId by TripTrackingService.activeTripIdState.collectAsState()
 
     var currentLat by remember { mutableDoubleStateOf(0.0) }
     var currentLng by remember { mutableDoubleStateOf(0.0) }
@@ -90,6 +93,15 @@ fun DriverTrips(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (activeTripId != null) {
+                MinimizedTrip(
+                    distance = 0.0,
+                    arrivalTime = "Active",
+                    onExpandClick = {
+                        navController?.navigate(Screen.LiveTrip.createRoute(activeTripId!!))
+                    }
+                )
+            }
             Text("Assigned Trips", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
             when (val state = scheduledTripsState) {
@@ -103,10 +115,14 @@ fun DriverTrips(
                     Button(onClick = { tripViewModel.loadScheduledTrips() }) { Text("Retry")}
                 }
                 is TripViewModel.SuccessScheduledTrips -> {
-                    if (state.scheduledTrips.isEmpty()) {
+                    val pendingTrips = state.scheduledTrips.filter { trip ->
+                        val status = trip.status?.uppercase() ?: "SCHEDULED"
+                        status == "SCHEDULED" || status == "NOT STARTED"
+                    }
+                    if (pendingTrips.isEmpty()) {
                         Text("No trips assigned by manager.", color = Color.Gray)
                     } else {
-                        state.scheduledTrips.forEach { trip ->
+                        pendingTrips.forEach { trip ->
                             ScheduledTripCard(
                                 trip = trip,
                                 onStartTrip = {

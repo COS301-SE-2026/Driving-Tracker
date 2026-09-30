@@ -231,10 +231,10 @@ interface ApiService{
         @Body request: DeleteAccountRequest
     )
 
-    @GET("trips/scheduled")
+    @GET("fleet/fleet_trips?status=SCHEDULED")
     suspend fun getScheduledTrips(): ScheduledTripsResponse
 
-    @POST("trips/scheduled/{trip_id}/start")
+    @PATCH("fleet/{trip_id}/start_scheduled_trip")
     suspend fun startScheduledTrip(
         @Path("trip_id") tripId: String,
         @Body body: StartScheduledTripRequest
