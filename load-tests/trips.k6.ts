@@ -133,7 +133,7 @@ export function setup(): AuthedUser[] {
     return authed;
 }
 
-export default function (data: AuthedUser[]): void {
+export default function loadStartAndEnd(data: AuthedUser[]): void {
     const me = data[(__VU - 1) % data.length];
 
     if (!me || !me.token) {

@@ -2,7 +2,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-const BASE_URL = __ENV.API_URL || 'http://api-nfr:3000';
+const BASE_URL = __ENV.API_URL || 'https://api-nfr:3000';
 
 export const options = {
     setupTimeout: '5m',    // Gives setup() up to 5 minutes to seed 200 users & trips , 
@@ -99,7 +99,7 @@ export function setup(){
     }
     return {drivers}
 }
-export default function(data: {drivers: TestDriver[]}){
+export default function readingsLoadTest(data: {drivers: TestDriver[]}){
     if (!data?.drivers || data.drivers.length === 0) { sleep(1); return; }
     const driver = data.drivers[(__VU - 1) % data.drivers.length];
 
@@ -146,7 +146,7 @@ export function teardown(data: { drivers: TestDriver[]}){
         });
 
         if (res.status === 200 || res.status === 204) {
-            console.log(`User : ${driver} deleted`)
+            console.log(`[Teardown] Deleted user account: status ${res.status}`);
         } else {
             console.log(`[Teardown] Failed to delete user: status ${res.status}`);
         }
