@@ -59,11 +59,11 @@ fun DriverMore(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            ContentCard {
-                CRow(label = "Assigned Vehicles", icon = Icons.Default.DirectionsCar) {
-                    navController?.navigate(Screen.Vehicles.route)
-                }
-            }
+//            ContentCard {
+//                CRow(label = "Assigned Vehicles", icon = Icons.Default.DirectionsCar) {
+//                    navController?.navigate(Screen.Vehicles.route)
+//                }
+//            }
 
             Spacer(modifier = Modifier.height(14.dp))
 
