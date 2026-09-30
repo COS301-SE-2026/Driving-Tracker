@@ -441,10 +441,11 @@ export default function AddRoute(
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label htmlFor="plannedStartTime" className="mb-1 block text-sm font-medium text-gray-700">
                             Time
                         </label>
                         <input
+                        id="plannedStartTime"
                         type = "datetime-local"
                         value = {plannedStartTime}
                         onChange = {(e) => setPlannedStartTime(e.target.value)}
@@ -454,10 +455,10 @@ export default function AddRoute(
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label htmlFor="stopsList" className="mb-1 block text-sm font-medium text-gray-700">
                             Stops
                         </label>
-                        <div className="flex flex-col gap-1">
+                        <div id="stopsList" className="flex flex-col gap-1">
                             {stops.map((stop, index) => {
                                 const isFirst = index === 0;
                                 const isLast = index === stops.length - 1;

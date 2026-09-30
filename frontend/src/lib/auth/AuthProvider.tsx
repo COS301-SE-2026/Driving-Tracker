@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }){
             setIsAuthenticated(true);
             setIsInitializing(false);
         } else {
-            rehydrate();
+            void rehydrate();
         }
 
         return () => {
