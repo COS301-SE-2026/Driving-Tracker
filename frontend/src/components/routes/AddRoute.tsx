@@ -5,6 +5,7 @@ import {X,Plus,Trash2,Circle,Route as RouteIcon, Loader2} from "lucide-react";
 import Image from "next/image";
 import {BASE_PATH} from "@/lib/basePath";
 import { apiFetch } from "@/lib/auth/apiClient";
+import { toLocalDatetimePickerValue } from "@/lib/dateUtils";
 
 // type Stop = {id: string, address: string};
 type Stop = { id: string; address: string; lat?: number; lng?: number };
@@ -233,7 +234,7 @@ export default function AddRoute(
             setDriverId(initialData?.driverId ?? "");
             setVehicle(initialData?.vehicle ?? "");
             setVehicleId(initialData?.vehicleId ?? "");
-            setPlannedStartTime(initialData?.plannedStartTime ?? "");
+            setPlannedStartTime(initialData?.plannedStartTime ?? toLocalDatetimePickerValue());
             setStops(initialData?.stops ?? emptyStops());
             setRouteOptions([]);
             setSelectedRouteIndex(0);
