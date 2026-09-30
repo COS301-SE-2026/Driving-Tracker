@@ -173,19 +173,26 @@ fun Vehicles(
                             VehicleCard(
                                 vehicle = vehicle,
                                 onDrivingInfoClick = { selectedVehicleForStats = vehicle },
-                                onEditNameClick = { vehicleToEditName = vehicle },
+                                onEditNameClick = { if (!viewModel.isDriver) vehicleToEditName = vehicle },
                                 onEditImageClick = {
-                                    vehicleToEditImage = vehicle
-                                    showImagePicker = true
+                                    if (!viewModel.isDriver) {
+                                        vehicleToEditImage = vehicle
+                                        showImagePicker = true
+                                    }
                                 },
-                                onRemoveClick = { vehicleToRemove = vehicle }
+                                onRemoveClick = { if (!viewModel.isDriver) vehicleToRemove = vehicle },
+                                isDriver = viewModel.isDriver
                             )
                         }
-                        item {
-                            AddVehicleButton(
-                                modifier = Modifier.testTag("buttonOpenAddVehicleDialog"),
-                                onClick = { showAddVehicleDialog = true })
+                        if (!viewModel.isDriver) {
+                            item {
+                                AddVehicleButton(
+                                    modifier = Modifier.testTag("buttonOpenAddVehicleDialog"),
+                                    onClick = { showAddVehicleDialog = true }
+                                )
+                            }
                         }
+
                     }
                 }
             }

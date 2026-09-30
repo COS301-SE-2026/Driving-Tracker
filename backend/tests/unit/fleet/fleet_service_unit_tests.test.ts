@@ -655,7 +655,14 @@ describe('fleet services ', () => {
             expect(mock_prisma.trips.create).toHaveBeenCalledWith(
                 expect.objectContaining({
                     data: expect.objectContaining({
-                        route_polyline: customPoints,
+                        route_polyline: {
+                            type: "LineString",
+                            coordinates: [
+                                [28.1, -26.1],
+                                [28.15, -26.15],
+                                [28.2, -26.2],
+                            ],
+                        },
                     }),
                 }),
             );

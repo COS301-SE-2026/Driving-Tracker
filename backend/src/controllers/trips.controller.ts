@@ -67,6 +67,8 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
         const user_id = req.user?.sub; // From JWT decoded by verifyToken middleware
         const { end_time, route_polyline, distance_km, duration_minutes, fuel_estimate, status,end_location,fuel_level_end } = req.body;
 
+        const org_role = req.user?.org_role;
+
         if(!user_id){
             res.status(403).json({
                 error:"UNAUTHORIZED"
@@ -85,7 +87,7 @@ export const end_trip = async (req:AuthRequest, res:Response) =>{
             fuel_estimate,
             status,
             fuel_level_end
-        });
+        }, org_role);
 
         res.status(200).json({
             message:"Trip completed successfully",

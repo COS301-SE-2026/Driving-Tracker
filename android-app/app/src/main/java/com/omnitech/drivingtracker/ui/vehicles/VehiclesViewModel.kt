@@ -16,12 +16,16 @@ import android.net.Uri
 import com.omnitech.drivingtracker.data.api.ApiException
 import com.omnitech.drivingtracker.data.models.UpdateVehicleRequest
 import com.omnitech.drivingtracker.utils.ImageUploadUtils
+import com.omnitech.drivingtracker.data.local.SessionManager
 
 @HiltViewModel
 class VehiclesViewModel @Inject constructor(
     private val repository: VehicleRepository,
+    private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context
 ): ViewModel(){
+
+    val isDriver: Boolean get() = sessionManager.isDriver()
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
 

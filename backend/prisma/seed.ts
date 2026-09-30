@@ -564,6 +564,131 @@ async function main() {
         }
     }
     console.log(`Seeded ${fleet_vehicles.length} fleet vehicles for ${fleet_org.name}`);
+
+    const temporaryDriverPassword = process.env.SEED_USER_PASSWORD;
+
+    if (!temporaryDriverPassword) {
+        throw new Error("SEED_USER_PASSWORD is not set");
+    }
+
+    const temporaryDriver = await prisma.users.upsert({
+        where: { email: "testdriver@omnitech.com" },
+        update: {
+            password_hash: await bcrypt.hash(temporaryDriverPassword, 10),
+            status: "ACTIVE",
+            email_verified: true,
+            consent_status: true,
+        },
+        create: {
+            username: "testdriver",
+            name: "Test",
+            surname: "Driver",
+            email: "testdriver@omnitech.com",
+            password_hash: await bcrypt.hash(temporaryDriverPassword, 10),
+            role: "USER",
+            dob: new Date("1995-01-01T00:00:00.000Z"),
+            phone_number: "0600000001",
+            consent_status: true,
+            status: "ACTIVE",
+            email_verified: true,
+        },
+    });
+
+    await prisma.organization_members.upsert({
+        where: {
+            user_id: temporaryDriver.user_id,
+        },
+        update: {
+            org_id: fleet_org.org_id,
+            role: "DRIVER",
+        },
+        create: {
+            org_id: fleet_org.org_id,
+            user_id: temporaryDriver.user_id,
+            role: "DRIVER",
+        },
+    });
+
+    let temporaryVehicle = await prisma.vehicles.findFirst({
+        where: {
+            registration: "TMP-DRV-001",
+        },
+    });
+
+    if (!temporaryVehicle) {
+        temporaryVehicle = await prisma.vehicles.create({
+            data: {
+                name: "Temporary Driver Vehicle",
+                registration: "TMP-DRV-001",
+                make: "Toyota",
+                model: "Corolla",
+                year: 2023,
+                fuel_type: "PETROL",
+                fuel_tank: 50,
+                org_id: fleet_org.org_id,
+            },
+        });
+    }
+
+    await prisma.users_vehicles.upsert({
+        where: {
+            user_id_vehicle_id: {
+                user_id: temporaryDriver.user_id,
+                vehicle_id: temporaryVehicle.vehicle_id,
+            },
+        },
+        update: {},
+        create: {
+            user_id: temporaryDriver.user_id,
+            vehicle_id: temporaryVehicle.vehicle_id,
+        },
+    });
+
+    const existingTemporaryTrips = await prisma.trips.count({
+        where: {
+            user_id: temporaryDriver.user_id,
+        },
+    });
+
+    for (let tripNumber = existingTemporaryTrips; tripNumber < 2; tripNumber++) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + tripNumber + 1);
+
+        const endDate = new Date(startDate);
+        endDate.setHours(endDate.getHours() + 2);
+
+        await prisma.trips.create({
+            data: {
+                user_id: temporaryDriver.user_id,
+                vehicle_id: temporaryVehicle.vehicle_id,
+                created_by: myLoginUser.user_id,
+                status: "SCHEDULED",
+                title: `Temporary Driver Trip ${tripNumber + 1}`,
+                description: "Temporary seeded fleet trip",
+                scheduled_for: startDate,
+                scheduled_end: endDate,
+                planned_start_addr: "Omnitech Office",
+                planned_start_lat: -26.1438,
+                planned_start_lng: 27.8421,
+                planned_end_addr: "Johannesburg",
+                planned_dest_lat: -26.2041,
+                planned_dest_lng: 28.0473,
+                start_latitude: -26.1438,
+                start_longitude: 27.8421,
+                end_latitude: -26.2041,
+                end_longitude: 28.0473,
+                distance_km: 18,
+                duration_minutes: 120,
+                fuel_estimate: 3,
+                data_source: "PHONE",
+            },
+        });
+    }
+
+    console.log(
+        `Seeded temporary driver ${temporaryDriver.email} with vehicle ${temporaryVehicle.registration} and two trips`,
+    );
+
     //Creating Vehicles, Trips, Scores, Events and readings
     const trips = [];
     for (const user of users) {

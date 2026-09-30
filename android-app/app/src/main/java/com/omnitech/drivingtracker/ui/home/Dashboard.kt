@@ -36,12 +36,30 @@ import com.omnitech.drivingtracker.ui.theme.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.remember
+import com.omnitech.drivingtracker.data.local.SessionManagerEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun Dashboard(navController: NavController? = null,
               dashboardViewModel: DashboardViewModel = hiltViewModel()
 ){
     val uiState by dashboardViewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val sessionManager = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SessionManagerEntryPoint::class.java
+        ).sessionManager()
+    }
+
+    LaunchedEffect(Unit) {
+        if (sessionManager.isDriver()) {
+            navController?.navigate(Screen.DriverDashboard.route) {
+                popUpTo(Screen.Dashboard.route) { inclusive = true }
+            }
+        }
+    }
 
     Box(
         modifier = Modifier

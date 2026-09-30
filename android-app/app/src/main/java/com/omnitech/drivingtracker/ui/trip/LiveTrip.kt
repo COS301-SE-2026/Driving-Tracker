@@ -67,6 +67,7 @@ import java.time.Instant
 import kotlinx.coroutines.delay
 import com.omnitech.drivingtracker.data.models.MapPoiItem
 import com.omnitech.drivingtracker.data.models.RoadDefectItem
+import com.omnitech.drivingtracker.data.models.TripShareDto
 import com.omnitech.drivingtracker.ui.components.SafetyPromptDialog
 import com.omnitech.drivingtracker.utils.VoiceAlertManager
 
@@ -118,6 +119,10 @@ fun LiveTrip(
         viewModel.loadGlobalHotspots()
     }
     val context = LocalContext.current
+    val sessionManager = remember(context) { com.omnitech.drivingtracker.data.local.SessionManager(context) }
+    val isOrgDriver = remember { sessionManager.isDriver() || !sessionManager.getOrgRole().isNullOrEmpty() }
+    val showShareButton = !isOrgDriver
+
     val tripPath by viewModel.tripPath.collectAsState()
 
     var activeHotspotAlert by remember { mutableStateOf<String?>(null) }
@@ -200,11 +205,10 @@ fun LiveTrip(
         }
     }
 
-    LaunchedEffect(uiState, mapToken, liveMetrics) {
+    LaunchedEffect(uiState, mapToken, liveMetrics, plannedRoute) {
         val state = uiState
-        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute == null) {
+        if (state is TripSummaryViewModel.UiState.Success && mapToken != null && plannedRoute.isNullOrEmpty()) {
             val trip = state.trip
-
 
             if (trip.destinationLatitude != null && trip.destinationLongitude != null) {
 
@@ -313,6 +317,7 @@ fun LiveTrip(
     LiveTripContent(
         uiState = uiState,
         endTripState = currentEndTripState,
+        showShareButton = showShareButton,
         mapToken = mapToken,
         liveDistance = liveDistance,
         liveDuration = liveDurationMinutes ,
@@ -436,7 +441,8 @@ fun LiveTripContent(
     onToggleShowPotholes: (Boolean) -> Unit = {},
     liveDistance: Double =0.0,
     liveDuration: Int= 0,
-    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList() // Add this
+    globalHotspots: List<com.omnitech.drivingtracker.data.models.TripEventDto> = emptyList(), // Add this
+    showShareButton: Boolean = true,
 ) {
     Column(modifier = Modifier.fillMaxSize()){
         //alert banner for E2E test
@@ -568,6 +574,7 @@ fun LiveTripContent(
                             onToggleActiveViewersDialog = onToggleActiveViewersDialog,
                             onRevokeShare = onRevokeShare,
                             globalHotspots = globalHotspots,
+                            showShareButton = showShareButton
                         )
                     }
 
@@ -582,6 +589,7 @@ fun LiveTripContent(
 private fun TripDetails(
     trip: TripSummaryDto,
     endTripState: TripSummaryViewModel.UiState,
+    showShareButton: Boolean = true,
     mapToken: String?,
     liveLocation: LiveSensorMetrics? = null,
     contactsState: ContactsViewModel.UiState,
@@ -793,7 +801,7 @@ private fun TripDetails(
             Button(
                 onClick = onEndTrip,
                 enabled = endTripState !is TripSummaryViewModel.UiState.Loading,
-                modifier = Modifier.weight(1f),
+                modifier = if (showShareButton) Modifier.weight(1f) else Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (endTripState is TripSummaryViewModel.UiState.Loading) {
@@ -802,21 +810,23 @@ private fun TripDetails(
                     Text("End Trip", color = Color.White)
                 }
             }
-            Button(
-                onClick = {showShareDialog = true},
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    Icons.Default.Share,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Share Trip", color = Color.White)
+            if(showShareButton){
+                Button(
+                    onClick = {showShareDialog = true},
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Share Trip", color = Color.White)
+                }
             }
         }
-        if (activeShares.isNotEmpty()) {
+        if (showShareButton && activeShares.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(
                 onClick = { onToggleActiveViewersDialog(true) },

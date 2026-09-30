@@ -88,11 +88,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.omnitech.drivingtracker.data.local.SessionManagerEntryPoint
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
 import com.omnitech.drivingtracker.services.TripTrackingService
 import com.omnitech.drivingtracker.ui.obd.ObdViewModel
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import com.omnitech.drivingtracker.ui.contacts.ContactsViewModel
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun Trips(
@@ -116,6 +118,20 @@ fun Trips(
     }
 
     val context = LocalContext.current
+    val sessionManager = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SessionManagerEntryPoint::class.java
+        ).sessionManager()
+    }
+
+    LaunchedEffect(Unit) {
+        if (sessionManager.isDriver()) {
+            navController?.navigate(Screen.DriverTrips.route) {
+                popUpTo(Screen.Trips.route) { inclusive = true }
+            }
+        }
+    }
 
     LaunchedEffect(tripStartState){
         val state = tripStartState

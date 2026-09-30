@@ -456,6 +456,10 @@ export const fleet_services = {
             const chosenPoints = (data.selected_points && data.selected_points.length > 0)
                 ? data.selected_points
                 : route.points;
+            const geoJsonPolyline = {
+                type: "LineString",
+                coordinates: chosenPoints.map(p => [p.lng, p.lat])
+            };
 
             const trip = await tx.trips.create({
                 data: {
@@ -463,7 +467,7 @@ export const fleet_services = {
                     vehicle_id: data.vehicle_id,
                     created_by: user_id,
                     status: 'SCHEDULED',
-                    route_polyline: chosenPoints as any,
+                    route_polyline: geoJsonPolyline as any,
                     description: data.description,
                     title: data.title,
                     scheduled_for: new_start,

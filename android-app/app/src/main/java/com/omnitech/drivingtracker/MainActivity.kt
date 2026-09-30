@@ -74,6 +74,11 @@ import com.omnitech.drivingtracker.ui.analytics.FuelAnalytics
 import com.omnitech.drivingtracker.ui.analytics.FuelComparisonScreen
 import com.omnitech.drivingtracker.ui.analytics.SafetyAnalytics
 import com.omnitech.drivingtracker.ui.auth.ResetPasswordScreen
+import javax.inject.Inject
+import com.omnitech.drivingtracker.data.local.SessionManager
+import com.omnitech.drivingtracker.ui.driver.DriverDashboard
+import com.omnitech.drivingtracker.ui.driver.DriverTrips
+import com.omnitech.drivingtracker.ui.driver.DriverMore
 
 sealed class Screen(val route: String){
     data object Welcome : Screen("welcome")
@@ -134,10 +139,19 @@ sealed class Screen(val route: String){
     data object ForgotPassword : Screen("forgot_password")
 
     data object FuelComparison : Screen("fuel_comparison")
+
+    data object DriverDashboard : Screen("driver_dashboard")
+
+    data object DriverTrips : Screen("driver_trips")
+
+    data object DriverMore : Screen("driver_more")
 }
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sessionManager: SessionManager
 
     private fun checkNotificationPermission(): Boolean {
         return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
@@ -148,6 +162,9 @@ class MainActivity : ComponentActivity() {
     }
 
     fun getPostAuthDestination(): String {
+        if (sessionManager.isDriver()) {
+            return Screen.DriverDashboard.route
+        }
         return if (checkNotificationPermission()) Screen.Dashboard.route
         else Screen.NotificationRationale.route
     }
@@ -418,6 +435,18 @@ class MainActivity : ComponentActivity() {
 
                     composable(Screen.FuelComparison.route) {
                         FuelComparisonScreen(navController = navController)
+                    }
+
+                    composable(Screen.DriverDashboard.route) {
+                        DriverDashboard(navController = navController)
+                    }
+
+                    composable(Screen.DriverTrips.route) {
+                        DriverTrips(navController = navController)
+                    }
+
+                    composable(Screen.DriverMore.route) {
+                        DriverMore(navController = navController)
                     }
                 }
 
