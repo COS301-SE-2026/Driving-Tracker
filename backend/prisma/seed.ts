@@ -565,10 +565,10 @@ async function main() {
     }
     console.log(`Seeded ${fleet_vehicles.length} fleet vehicles for ${fleet_org.name}`);
 
-    const temporaryDriverPassword = process.env.TEST_DRIVER_PASSWORD;
+    const temporaryDriverPassword = process.env.SEED_USER_PASSWORD;
 
     if (!temporaryDriverPassword) {
-        throw new Error("TEST_DRIVER_PASSWORD is not set");
+        throw new Error("SEED_USER_PASSWORD is not set");
     }
 
     const temporaryDriver = await prisma.users.upsert({
