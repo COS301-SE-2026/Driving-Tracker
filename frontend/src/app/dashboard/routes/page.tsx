@@ -269,9 +269,18 @@ export default function Routes(){
             const foundDriver = driverList.find(
                 (d) => `${d.name} ${d.surname}`.trim() === data.driver.trim() || d.user_id === data.driver
             );
-            const foundVehicle = vehicleList.find(
-                (v) => `${v.make} ${v.model}`.trim() === data.vehicle.trim() || v.registration === data.vehicle || v.vehicle_id === data.vehicle
-            );
+            const foundVehicle = vehicleList.find((vehicle) => {
+                const makeModel = `${vehicle.make} ${vehicle.model}`.trim();
+                const makeModelRegistration = `${makeModel} (${vehicle.registration})`.trim();
+                const selected = data.vehicle.trim().toLowerCase();
+                
+                return (
+                    makeModelRegistration.toLowerCase() === selected || 
+                    makeModel.toLowerCase() === selected ||
+                    vehicle.registration.toLowerCase() === selected ||
+                    vehicle.vehicle_id.toLowerCase() === selected
+                );
+            });
 
             if (!foundDriver || !foundVehicle) {
                 alert("Please select a valid driver and vehicle from your fleet.");
@@ -440,10 +449,13 @@ export default function Routes(){
             [driver.name, driver.surname].filter(Boolean).join(" ") ||driver.user_id,
     );
 
-    const vehicleOptions = vehicleList.map(
-        (vehicle) => 
-            [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||vehicle.vehicle_id,
-    );
+    const vehicleOptions = vehicleList.map((vehicle) => {
+        const makeModel = `${vehicle.make} ${vehicle.model}`.trim();
+
+        return vehicle.registration
+            ? `${makeModel} (${vehicle.registration})`
+            : makeModel || vehicle.vehicle_id;
+    });
 
     return(
         <div className="flex">
