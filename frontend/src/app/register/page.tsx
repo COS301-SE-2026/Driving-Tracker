@@ -53,7 +53,7 @@ export default function RegisterPage(){
         if (!form.email.trim()){
             next.email = "Enter an email address.";
         }
-        else if (!/^\S+@\S+\.\S+$/.test(form.email)){
+        else if (!/^[^\s@]+@[^\s@.]+\.[^\s@]+$/.test(form.email)){
             next.email = "Please enter a valid email address";
         }
 
