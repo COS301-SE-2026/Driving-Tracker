@@ -52,7 +52,7 @@ class TripRepository @Inject constructor(
             val response = api.getRoadDefects(lat, lng, heading, radius)
             Result.success(response.data)
         }catch (e: Exception){
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -128,7 +128,7 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
         }
         catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -147,7 +147,7 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to get map token"))
         }
         catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun getGlobalHotspots(): Result<List<TripEventDto>> {
@@ -156,7 +156,7 @@ class TripRepository @Inject constructor(
             Result.success(response.data)
         } catch (e: Exception) {
             android.util.Log.e("TripRepo", "Failed to fetch community hotspots: ${e.message}")
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun startTrip(
@@ -207,7 +207,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to start trip"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -219,7 +219,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch vehicles"))
         } catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -257,7 +257,7 @@ class TripRepository @Inject constructor(
                 Result.failure(ApiException(error.error, error.message ?: "Failed to fetch history"))
             }
         } catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -269,7 +269,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch trip summary"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -305,7 +305,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to end trip"))
         }catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun searchAddress(query: String): Result<List<AddressSearchResult>> {
@@ -316,7 +316,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to search address"))
         } catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun getSuggestedRoute(start: LocationDto, dest: LocationDto): Result<SuggestedRouteData> {
@@ -324,7 +324,7 @@ class TripRepository @Inject constructor(
             val response = api.getSuggestedRoute(start.lat, start.lng, dest.lat, dest.lng)
             Result.success(response.data)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -341,7 +341,7 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to check stop event"))
         } catch (e: Exception) {
             Log.d("StopMonitor", "Check stop address failed android")
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -356,7 +356,7 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to confirm stop event"))
         } catch (e: Exception) {
             Log.d("StopMonitor", "Confirm stop event failed android")
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -372,7 +372,7 @@ class TripRepository @Inject constructor(
             Result.failure(ApiException(error.error, error.message ?: "Failed to resolve stop event"))
         } catch (e: Exception) {
             Log.d("StopMonitor", "Resolve stop event failed android")
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -383,7 +383,7 @@ class TripRepository @Inject constructor(
 
         } catch (e: Exception) {
             Log.d("UnusualDuration", "Failed to log unusual duration")
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -396,7 +396,7 @@ class TripRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch scheduled trips"))
         } catch (e: Exception) {
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 

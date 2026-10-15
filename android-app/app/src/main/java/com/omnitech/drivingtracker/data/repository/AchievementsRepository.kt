@@ -32,7 +32,7 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get badges"))
         } catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -44,7 +44,7 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get categories"))
         } catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -56,7 +56,7 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get scopes"))
         } catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -68,7 +68,7 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get badge definitions"))
         } catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -81,7 +81,7 @@ class AchievementsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get leaderboard"))
         } catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error: ${e.message}"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.omnitech.drivingtracker.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omnitech.drivingtracker.data.api.ApiException
@@ -163,24 +164,11 @@ class AuthViewModel @Inject constructor(private val repository: AuthRepository) 
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
-            repository.logout().fold(
-                onSuccess = {
-                    _uiState.value = UiState.SuccessLogout
-                },
-                onFailure = { exception ->
-                    when {
-                        exception is ApiException -> {
-                            _uiState.value = UiState.Error(message = exception.errorMessage ?: "Something went wrong",
-                                code = exception.errorCode)
-                        }
-                        else -> {
-                            _uiState.value = UiState.Error(
-                                message = exception.message ?: "Something went wrong"
-                            )
-                        }
-                    }
-                }
-            )
+            repository.logout().onFailure { exception ->
+                Log.e("AuthViewModel", "Logout request failed", exception)
+            }
+
+            _uiState.value = UiState.SuccessLogout
         }
     }
 
