@@ -95,7 +95,7 @@ The system operates across three layers:
 
 | <img src="docs/images/Sente.jpeg" alt="Sente Mngomezulu" width="280"/>|
 |:---:|
-| **Sentelweyinkhosi Mngomezulu** |
+| **Sentelweyinkhosi Mngomezulu • mngomezulu.sentelwe@gmail.com** |
 | Backend Engineer |
 | I am an aspiring security-oriented software engineer with hands-on IT support and networking experience, focused on building secure software solutions. Experienced in Kotlin, TypeScript, Java and React among others, with practical security skills built through CTF challenges using tools like Burp Suite. Passionate about the intersection of software engineering and cybersecurity, and driven to learn by tackling difficult problems. Outside tech, I produce music: beat making, mixing and vocals.|
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/SenteMngomez) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sentelweyinkhosi-mngomezulu?) |
