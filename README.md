@@ -89,9 +89,10 @@ The system operates across three layers:
 
 | <img src="docs/images/Brayden.jpeg" alt="Brayden Butler" width="280"/>|
 |:---:|
-| **Brayden Butler** |
+| **Brayden Butler • brayden9011@gmail.com** |
 | Team Lead • Backend |
-| [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Brayden-ux) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brayden-butler-b96591328?) |
+| BSc Computer Science student with experience in full-stack development, backend systems, Android applications and team leadership. Interested in software engineering, scalable systems and solving real-world problems through technology. Always looking to learn, build and grow as a developer while taking initiative and embracing leadership opportunities. Outside of coding I enjoy investment analysis, volleyball and gaming. |
+| [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Brayden-ux) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brayden-mm-butler/) |
 
 | <img src="docs/images/Sente.jpeg" alt="Sente Mngomezulu" width="280"/>|
 |:---:|
