@@ -113,8 +113,9 @@ The system operates across three layers:
 
 | <img src="docs/images/Lesedi.jpeg" alt="Lesedi Padi" width="280"/>|
 |:---:|
-| **Lesedi Padi** |
+| **Lesedi Padi • lesedipadi@gmail.com** |
 | Backend Engineer |
+| I am an aspiring backend and full-stack developer passionate about learning new technologies and frameworks. I have experience building scalable backends with Node.js and TypeScript, alongside knowledge of React.js, HTML, and CSS. I value teamwork, collaboration, and continuous improvement. I believe that hard work, consistency, and a willingness to learn are key to success, and I approach every challenge as an opportunity to grow and build better solutions. Outside of code, I play tennis aiming to better my footwork and back hand.|
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Padi-le) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/lesedi-padi-b90ba3271?) |
 
 ---
