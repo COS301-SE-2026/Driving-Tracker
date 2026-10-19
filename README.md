@@ -108,9 +108,8 @@ The system operates across three layers:
 | <img src="docs/images/Kundai.jpeg" alt="Kundai Ndemera" width="280"/>|
 |:---:|
 | **Kundai Ndemera • kjndemera@gmail.com** |
-| UI/UX Designer  |
+| UI/UX Designer |
 | I am an aspiring UI/UX designer passionate about creating intuitive, user-friendly, and visually engaging digital experiences. As a Computer Science student at the University of Pretoria, I have a background in web design and programming, with a growing interest in how technology and innovation can solve real-world problems. I value creativity, teamwork, communication, and continuous improvement, and I approach every design challenge as an opportunity to learn and build better solutions. Outside of technology, I am interested in digital diplomacy and the ethical use of emerging technologies.|
-
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/kundaindemera) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kundai-ndemera?) |
 
 | <img src="docs/images/Lesedi.jpeg" alt="Lesedi Padi" width="280"/>|
