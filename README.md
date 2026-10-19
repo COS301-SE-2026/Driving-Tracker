@@ -99,10 +99,11 @@ The system operates across three layers:
 | Backend Engineer |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/SenteMngomez) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sentelweyinkhosi-mngomezulu?) |
 
-| <img src="docs/images/Mosa.jpeg" alt="Mosa Leiee" width="280"/>|
+| <img src="docs/images/Mosa.jpg" alt="Mosa Leiee" width="280"/>|
 |:---:|
-| **Mosa Leiee** |
-| Frontend Engineer |
+| **Mosa Leiee • mosalleiee@gmail.com** |
+| Frontend & Integration Engineer |
+| I am an aspiring software engineer with a strong interest in frontend development and a growing passion for software security. I enjoy creating intuitive, visually appealing, and user-friendly applications, while continuously expanding my technical skills. I have recent experience using React, JavaScript, HTML, CSS, Java and Figma. Outside of technology, I am passionate about fitness, particularly running, which reflects my commitment to consistency, discipline, and continuous improvement. |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Mosa-L) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mosa-leiee?) |
 
 | <img src="docs/images/Kundai.jpeg" alt="Kundai Ndemera" width="280"/>|
