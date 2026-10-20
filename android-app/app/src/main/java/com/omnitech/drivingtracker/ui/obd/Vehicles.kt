@@ -133,7 +133,7 @@ fun Vehicles(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ){
-                        Text(text = state.message, color = Color.Red)
+                        Text(text = state.message, textAlign = TextAlign.Center, color = Color.Red)
                         Button(onClick = { viewModel.loadVehicles() }) { Text("Retry")}
                     }
                 }

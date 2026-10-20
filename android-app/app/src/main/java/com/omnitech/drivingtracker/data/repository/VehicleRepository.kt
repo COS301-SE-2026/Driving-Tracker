@@ -21,7 +21,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message ?: "Failed to fetch vehicle"))
     }catch (e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun addVehicle(req: AssignVehicleRequest) : Result<AddVehicleResponse> = try {
@@ -31,7 +31,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message ?: "Failed to add vehicle"))
     }catch (e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun updateVehicle(vehicleId: String, req: UpdateVehicleRequest): Result<Unit> = try {
@@ -41,14 +41,14 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message ?: "Failed to update vehicle name"))
     }catch (e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun removeVehicle(vehicleId: String): Result<Unit> = try {
         apiService.removeVehicle(vehicleId)
         Result.success(Unit)
     }catch (e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun uploadVehicleImage(vehicleId: String, imagePart: MultipartBody.Part): Result<VehicleDto> = try {
@@ -58,7 +58,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message ?: "Failed to upload vehicle image"))
     }catch (e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
     
     suspend fun getFuelAnalytics(): Result<FuelAnalyticsDto> = try{
@@ -69,7 +69,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         Result.failure(ApiException(error.error, error.message ?: "Failed to fetch fuel analytics."))
     }
     catch( e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun getFuelComparison(): Result<FuelComparisonData> = try {
@@ -79,7 +79,7 @@ class VehicleRepository  @Inject constructor(private val apiService: ApiService)
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message ?: "Failed to fetch fuel comparison."))
     } catch (e: Exception) {
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
 }

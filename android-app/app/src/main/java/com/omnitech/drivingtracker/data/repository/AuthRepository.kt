@@ -104,7 +104,7 @@ class AuthRepository @Inject constructor(
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message?: "Failed to fetch profile"))
         }catch (e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -133,7 +133,7 @@ class AuthRepository @Inject constructor(
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message?: "Failed to send reset email"))
     }catch(e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun resetPassword(token : String, newPassword: String) : Result<Unit> = try{
@@ -143,7 +143,7 @@ class AuthRepository @Inject constructor(
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message?: "Failed to reset password"))
     }catch(e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
 
     suspend fun uploadProfilePicture(imagePart : MultipartBody.Part) : Result<String> = try{
@@ -153,7 +153,7 @@ class AuthRepository @Inject constructor(
         val error = ApiErrorParser.parse(e)
         Result.failure(ApiException(error.error, error.message?: "Failed to upload profile picture"))
     }catch(e: Exception){
-        Result.failure(e)
+        Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
     }
     
     suspend fun deleteAccount(password: String): Result<Unit>{
