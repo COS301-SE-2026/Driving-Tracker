@@ -341,25 +341,13 @@ fun LiveTrip(
                     java.time.Duration.between(startTime, now).toMinutes().toInt()
                 } catch (e: Exception) { 0 }
             } ?: 0
-            //check the obd fuel level metrics if they are there
-            val obdFuel = metrics.fuelLevel
-            // If OBD data is missing, show the manual entry dialog
-            if (metrics.isDataLive && (obdFuel == null || obdFuel == 0f)) {
-                showManualEndFuelDialog = true
-            } else {
-                triggerEndTrip(obdFuel)
+            metrics.fuelLevel?.let { fuel ->
+                if (manualEndFuel.isBlank()) {
+                    manualEndFuel = fuel.toInt().toString()
+                }
             }
-            // Pass the actual totals to the ViewModel
-//            viewModel.endTrip(
-//                tripId = tripId,
-//                latitude = liveMetrics.latitude,
-//                longitude = liveMetrics.longitude,
-//                distance = liveDistance,
-//                durationMinutes = liveDurationMinutes,
-//                fuelEstimate = currentTrip?.fuelEstimate?:0.0,
-//                fuelLevelEnd = obdFuel,
-//                path = tripPath
-//            )
+            showManualEndFuelDialog = true
+
         },
         navController = navController,
         destination = destinationLoc,
@@ -393,11 +381,15 @@ fun LiveTrip(
             title = { Text("Trip Finished") },
             text = {
                 Column {
-                    Text("We couldn't read your final fuel level from the car. Please enter the current percentage shown on your dashboard:")
+                    Text(
+                        text = "Please enter or confirm your final fuel level percentage shown on your dashboard:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     OutlinedTextField(
                         value = manualEndFuel,
                         onValueChange = { if (it.all { char -> char.isDigit() }) manualEndFuel = it },
                         label = { Text("Final Fuel Level (%)") },
+                        placeholder = {Text("e.g 50")},
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -405,9 +397,14 @@ fun LiveTrip(
             },
             confirmButton = {
                 Button(onClick = {
-                    triggerEndTrip(manualEndFuel.toFloatOrNull())
+                    val finalFuel = manualEndFuel.toFloatOrNull() ?: metrics.fuelLevel
+                    triggerEndTrip(finalFuel)
                     showManualEndFuelDialog = false
                 }) { Text("Confirm & Finish") }
+            }, dismissButton = {
+                TextButton( {showManualEndFuelDialog= false}) {
+                    Text("Cancel")
+                }
             }
         )
     }
