@@ -22,7 +22,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e) //parse HTTP error
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch contacts")) //wrap in failure
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection.")) //handle other errors
         }
     }
     suspend fun fetchApprovedContacts(): Result<List<ContactDto>> {
@@ -39,7 +39,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to add contact"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -52,7 +52,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to get contact requests"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -76,7 +76,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to alert contacts"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -96,7 +96,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             val error = ApiErrorParser.parse(e)
             Result.failure(ApiException(error.error, error.message ?: "Failed to share location"))
         }catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun getTripShares(tripId: String): Result<List<ContactDto>>{
@@ -113,7 +113,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             }
             Result.success(contacts)
         }catch(e: Exception){
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
     suspend fun revokeTripShare(tripId: String, contactId: String): Result<Unit> {
@@ -121,7 +121,7 @@ class ContactsRepository @Inject constructor(private val api: ApiService){
             api.revokeTripShare(tripId, contactId)
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 }

@@ -89,32 +89,37 @@ The system operates across three layers:
 
 | <img src="docs/images/Brayden.jpeg" alt="Brayden Butler" width="280"/>|
 |:---:|
-| **Brayden Butler** |
+| **Brayden Butler • brayden9011@gmail.com** |
 | Team Lead • Backend |
-| [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Brayden-ux) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brayden-butler-b96591328?) |
+| BSc Computer Science student with experience in full-stack development, backend systems, Android applications and team leadership. Interested in software engineering, scalable systems and solving real-world problems through technology. Always looking to learn, build and grow as a developer while taking initiative and embracing leadership opportunities. Outside of coding I enjoy investment analysis, volleyball and gaming. |
+| [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Brayden-ux) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/brayden-mm-butler/) |
 
 | <img src="docs/images/Sente.jpeg" alt="Sente Mngomezulu" width="280"/>|
 |:---:|
-| **Sentelweyinkhosi Mngomezulu** |
+| **Sentelweyinkhosi Mngomezulu • mngomezulu.sentelwe@gmail.com** |
 | Backend Engineer |
+| I am an aspiring security-oriented software engineer with hands-on IT support and networking experience, focused on building secure software solutions. Experienced in Kotlin, TypeScript, Java and React among others, with practical security skills built through CTF challenges using tools like Burp Suite. Passionate about the intersection of software engineering and cybersecurity, and driven to learn by tackling difficult problems. Outside tech, I produce music: beat making, mixing and vocals.|
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/SenteMngomez) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sentelweyinkhosi-mngomezulu?) |
 
-| <img src="docs/images/Mosa.jpeg" alt="Mosa Leiee" width="280"/>|
+| <img src="docs/images/Mosa.jpg" alt="Mosa Leiee" width="280"/>|
 |:---:|
-| **Mosa Leiee** |
-| Frontend Engineer |
+| **Mosa Leiee • mosalleiee@gmail.com** |
+| Frontend & Integration Engineer |
+| I am a BSc Computer Science student with experience in web and Android development and a strong interest in frontend engineering and cybersecurity. I enjoy creating intuitive, visually appealing, and user-friendly applications while exploring new areas of technology and expanding my knowledge. I am a hardworking and adaptable individual who values collaboration, problem-solving, and continuous learning. I am always open to new opportunities that allow me to grow both personally and professionally, challenge myself, and develop new skills. Outside of technology, I am passionate about fitness, particularly running, which has taught me the importance of discipline, perseverance, and consistency in working towards my goals. |
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Mosa-L) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mosa-leiee?) |
 
 | <img src="docs/images/Kundai.jpeg" alt="Kundai Ndemera" width="280"/>|
 |:---:|
-| **Kundai Ndemera** |
-| Frontend Engineer |
+| **Kundai Ndemera • kjndemera@gmail.com** |
+| UI/UX Designer |
+| I am an aspiring UI/UX designer passionate about creating intuitive, user-friendly, and visually engaging digital experiences. As a Computer Science student at the University of Pretoria, I have a background in web design and programming, with a growing interest in how technology and innovation can solve real-world problems. I value creativity, teamwork, communication, and continuous improvement, and I approach every design challenge as an opportunity to learn and build better solutions. Outside of technology, I am interested in digital diplomacy and the ethical use of emerging technologies.|
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/kundaindemera) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kundai-ndemera?) |
 
 | <img src="docs/images/Lesedi.jpeg" alt="Lesedi Padi" width="280"/>|
 |:---:|
-| **Lesedi Padi** |
+| **Lesedi Padi • lesedipadi@gmail.com** |
 | Backend Engineer |
+| I am an aspiring backend and full-stack developer passionate about learning new technologies and frameworks. I have experience building scalable backends with Node.js and TypeScript, alongside knowledge of React.js, HTML, and CSS. I value teamwork, collaboration, and continuous improvement. I believe that hard work, consistency, and a willingness to learn are key to success, and I approach every challenge as an opportunity to grow and build better solutions. Outside of code, I play tennis aiming to better my footwork and back hand.|
 | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Padi-le) [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/lesedi-padi-b90ba3271?) |
 
 ---

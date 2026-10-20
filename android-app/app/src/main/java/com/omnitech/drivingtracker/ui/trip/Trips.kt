@@ -87,6 +87,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.data.local.SessionManagerEntryPoint
 import com.omnitech.drivingtracker.data.models.AddressSearchResult
@@ -282,6 +283,7 @@ fun TripsContent(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = tripsState.message ?: "Failed to load trips",
+                            textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))

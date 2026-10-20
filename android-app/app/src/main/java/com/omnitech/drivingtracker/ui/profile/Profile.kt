@@ -44,6 +44,7 @@ import coil.compose.AsyncImage
 import com.omnitech.drivingtracker.ui.components.ImagePickerSheet
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.omnitech.drivingtracker.BuildConfig
 import com.omnitech.drivingtracker.ui.auth.ProfileViewModel
@@ -114,7 +115,16 @@ fun Profile(navController: NavController? = null,
                         }
                     }
                 }
-                is ProfileViewModel.UiState.Error -> Text(state.message, color = Color.Red)
+                is ProfileViewModel.UiState.Error -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ){
+                        Text(text = state.message, textAlign = TextAlign.Center, color = Color.Red)
+                        Button(onClick = { viewModel.loadProfile() }) { Text("Retry")}
+                    }
+                }
             }
         }
     }

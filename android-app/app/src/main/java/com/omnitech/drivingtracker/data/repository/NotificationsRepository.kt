@@ -23,9 +23,9 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
             Result.success(response) //extract contacts, wrap in success
         } catch(e: HttpException){
             val error = ApiErrorParser.parse(e) //parse HTTP error
-            Result.failure(ApiException(error.error, error.message ?: "Failed to fetch respond to trusted contact response")) //wrap in failure
+            Result.failure(ApiException(error.error, error.message ?: "Failed to respond to trusted contact response")) //wrap in failure
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection.")) //handle other errors
         }
     }
 
@@ -45,7 +45,7 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
             val error = ApiErrorParser.parse(e) //parse HTTP error
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch notifications")) //wrap in failure
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection." ?: "Network error")) //handle other errors
         }
     }
 
@@ -57,7 +57,7 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
             val error = ApiErrorParser.parse(e) //parse HTTP error
             Result.failure(ApiException(error.error, error.message ?: "Failed to delete notifications"))
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error"))
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection."))
         }
     }
 
@@ -69,7 +69,7 @@ class NotificationsRepository @Inject constructor(private val api: ApiService, p
             val error = ApiErrorParser.parse(e) //parse HTTP error
             Result.failure(ApiException(error.error, error.message ?: "Failed to fetch notifications")) //wrap in failure
         } catch(e: Exception){
-            Result.failure(ApiException("NETWORK_ERROR", e.message ?: "Network error")) //handle other errors
+            Result.failure(ApiException("NETWORK_ERROR", "Unable to connect. Please check your internet connection.")) //handle other errors
         }
     }
 
