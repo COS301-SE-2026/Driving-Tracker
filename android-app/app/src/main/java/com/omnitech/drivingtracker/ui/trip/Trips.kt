@@ -459,8 +459,8 @@ private fun StartTripDialog(
 
     var selectedDestination by remember { mutableStateOf<AddressSearchResult?>(null) }
 
-    var manualFuelLevel by remember { mutableStateOf("") }
-    val obdMetrics by obdViewModel.vehicleMetrics.collectAsState()
+   val obdMetrics by obdViewModel.vehicleMetrics.collectAsState()
+    var manualFuelLevel by remember { mutableStateOf(obdMetrics.fuelLevel?.toInt()?.toString() ?: "") }
 
     val needsManualFuel = dataSource == "OBD" && (obdMetrics.fuelLevel == null || obdMetrics.fuelLevel == 0f)
 
@@ -532,29 +532,34 @@ private fun StartTripDialog(
                         }
                     }
                 }
-                if (needsManualFuel) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Fuel level could not be read from OBD. Please enter it manually:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    OutlinedTextField(
-                        value = manualFuelLevel,
-                        onValueChange = { if (it.all { char -> char.isDigit() }) manualFuelLevel = it },
-                        label = { Text("Current Fuel Level (%)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-//                OutlinedTextField(
-//                    value = dataSource,
-//                    onValueChange = { dataSource = it },
-//                    label = { Text("Data source") },
-//                    singleLine = true,
-//                    modifier = Modifier.fillMaxWidth()
-//                )
+//                if (needsManualFuel) {
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    Text(
+//                        text = "Fuel level could not be read from OBD. Please enter it manually:",
+//                        style = MaterialTheme.typography.bodySmall,
+//                        color = MaterialTheme.colorScheme.error
+//                    )
+//                    OutlinedTextField(
+//                        value = manualFuelLevel,
+//                        onValueChange = { if (it.all { char -> char.isDigit() }) manualFuelLevel = it },
+//                        label = { Text("Current Fuel Level (%)") },
+//                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
+                Text(
+                    text = "Starting fuel level (%)",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedTextField(
+                    value = manualFuelLevel,
+                    onValueChange = { if (it.all { char -> char.isDigit() }) manualFuelLevel = it },
+                    label = { Text("Fuel Level (%)") },
+                    placeholder = { Text("e.g. 75") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
                 OutlinedTextField(
                     value = destinationQuery,
                     onValueChange = {
@@ -655,9 +660,7 @@ private fun StartTripDialog(
                 val lng = longitude.toDoubleOrNull()
                 val vehicleId = selectedVehicle?.vehicleId
 
-                val fuelValue = if (dataSource == "OBD") {
-                    obdMetrics.fuelLevel ?: manualFuelLevel.toFloatOrNull()
-                } else null
+                val startFuel = manualFuelLevel.toFloatOrNull() ?: obdMetrics.fuelLevel
 
                 val destLat = if (selectedDestination?.latitude != 0.0) selectedDestination?.latitude else null
                 val destLng = if (selectedDestination?.longitude != 0.0) selectedDestination?.longitude else null
@@ -670,7 +673,7 @@ private fun StartTripDialog(
                         selectedDestination?.latitude,
                         selectedDestination?.longitude,
                         selectedContactIds.toList(),
-                        fuelValue,
+                        startFuel,
                     )
                 }
             },
