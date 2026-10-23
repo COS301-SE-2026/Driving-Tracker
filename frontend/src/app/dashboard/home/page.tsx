@@ -217,26 +217,6 @@ export default function DashboardHomePage() {
 
                 const harshEvents = await getFleetEvents();
 
-                // const response = await apiFetch(`${apiUrl}/admin/fleet/dashboard`, {
-                //     headers: {
-                //         Authorization: `Bearer ${accessToken ?? ""}`,
-                //     },
-                // });
-
-                // if (!response.ok) {
-                //     throw new Error("Unabel to load fleet dashboard data");
-                // }
-
-                // const result = (await response.json()) as {
-                //     data?: FleetDashboardResponse;
-                // } & FleetDashboardResponse;
-
-                //supports both {  data: {...} } and direct API responses
-                // const dashboard = result.data ?? result;
-
-                // setDrivers(dashboard.drivers);
-                // setStats(dashboard.stats);
-
                 const displayDrivers: Driver[] = fleetDrivers.map((d) => ({
                     id: d.user_id,
                     name: `${d.name} ${d.surname}`,

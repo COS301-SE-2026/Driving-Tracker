@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import DashboardNavbar from "@/components/DashboardNavbar"
 import VehicleCard from "@/components/vehicles/VehicleCard";
 import AddVehicleDialog from "@/components/vehicles/AddVehicleDialog";
@@ -9,6 +9,7 @@ import { deleteVehicle, getVehicles, uploadVehicleImage } from "@/lib/vehicle-ap
 import type { Vehicle } from "@/components/vehicles/types";
 import EditVehicleDialog from "@/components/vehicles/EditVehicleDialog";
 import FilterVehicles, { VehicleFilterState } from "@/components/vehicles/FilterVehicles";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function VehiclesPage() {
 
@@ -88,27 +89,23 @@ export default function VehiclesPage() {
                 <h1 className="text-4xl text-center font-extrabold text-gray-900">
                     Vehicles
                 </h1>
-                <div className="mt-4 border-t border-gray-200 pt-3 mb-6" />
-                <header className="mb-8 flex items-center gap-8">
-                    <div className="flex h-7 w-[177px] items-center rounded-full border border-black px-3">
-                        <input
-                            type="search"
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Search"
-                            aria-label="Search vehicles"
-                            className="w-full bg-transparent text-[11px] outline-none"
-                        />
+                <div className="mt-4 border-t border-gray-200 pt-3" />
+                <div className="mt-6 flex items-center justify-between">
+                    <button onClick={() => setIsAddOpen(true)} className="rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200">
+                        + Add Vehicle
+                    </button>
 
-                        <Search size={15} />
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input value={search} onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search Vehicles"
+                                aria-label = "Search vehicles"
+                                className="w-48 rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-400" />
+                        </div>
+                        <FilterVehicles filters={filters} onChange={setFilters} availableStatuses={availableStatuses}/>
                     </div>
-
-					<FilterVehicles
-						filters={filters}
-						onChange={setFilters}
-						availableStatuses={availableStatuses}
-					/>
-                </header>
+                </div>
 
 				{filters.status.length > 0 && (
 					<div className="mb-6 flex flex-wrap items-center gap-2">
@@ -147,11 +144,7 @@ export default function VehiclesPage() {
 					</div>
 				)}
 
-                {isLoading && (
-                    <p className="text-sm text-slate-500">
-                        Loading vehicles...
-                    </p>
-                )}
+                {isLoading && <LoadingSpinner message = "Loading vehicles..."/>}
 
                 {error && (
                     <p className="text-sm text-red-600">
@@ -202,15 +195,6 @@ export default function VehiclesPage() {
                                 }}
                             />
                         ))}
-
-                        <button
-                            type="button"
-                            onClick={() => setIsAddOpen(true)}
-                            className="flex min-h-[258px] w-full max-w-[238px] flex-col items-center justify-center gap-2 rounded-[9px] text-center hover:bg-slate-50"
-                        >
-                            <Plus size={76} strokeWidth={1.5} />
-                            <span className="text-sm">Add Vehicle</span>
-                        </button>
                     </div>
                 )}
 

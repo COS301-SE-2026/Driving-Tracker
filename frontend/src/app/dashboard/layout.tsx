@@ -3,6 +3,7 @@
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import DashboardHeader from "@/components/DashboardHeader";
 
 function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
     const { isInitializing, isAuthenticated } = useAuth();
@@ -26,7 +27,7 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
         return null;
     }
 
-    return <>{children}</>;
+    return <><DashboardHeader/> {children}</>;
 }
 
 export default function DashboardLayout({

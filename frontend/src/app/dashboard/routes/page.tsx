@@ -11,6 +11,7 @@ import PastRoutes from "@/components/routes/PastRoutes";
 import { apiFetch } from "@/lib/auth/apiClient";
 import { useRouter } from "next/navigation";
 import { toLocalDatetimePickerValue } from "@/lib/dateUtils";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 type Stop = {
     id: string;
@@ -68,12 +69,6 @@ type FleetTripApi ={
         model: string;
     };
 };
-// //mocks
-const routes: Route[] = [
-    {id: "1",title:"Bread delivery",task: "Sales", vehicle: "Car1",stops: [{id: "1-start", address: "Logistics house"},{id: "1-end", address: "PNP Northridge"}],startDestination: "Logistics house",endDestination: "PNP Northridge",driver: "Noah Beck",status: "Not Started"},
-    {id: "2",title:"Egg delivery",task: "Sales",vehicle: "Car1",stops: [{id: "2-start", address: "Logistics house"},{id: "2-end", address: "Spar"}],startDestination: "Logistics house",endDestination: "Spar Baysvillage",driver: "Sipho Man",status: "On Trip"},
-    {id: "3",title:"Shirts delivery",task: "Sales",vehicle: "Car1",stops: [{id: "3-start", address: "Logistics house"},{id: "3-end", address: "PNP Hatfield"}],startDestination: "Logistics house",endDestination: "PNP Clothing",driver: "Ally Jackson",status: "Completed"},
-];
 
 function StatusPill({status} : {status: Route["status"]}){
 
@@ -156,20 +151,24 @@ function RouteCard({route, onView, onEdit, onDelete, onViewProgress}: {
 export default function Routes(){
 
     const [query, setQuery] = useState("");
-    const [routesList, setRoutesList] = useState<Route[]>(routes);
+    const [routesList, setRoutesList] = useState<Route[]>([]);
     const [driverList, setDriversList] = useState<FleetDriver[]>([]);
     const [vehicleList, setVehiclesList]= useState<FleetVehicle[]>([]);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [filters, setFilters] = useState<FilterState>({status : [], sortBy: null});
     const [editingRoute, setEditingRoute] = useState<Route | null>(null);
     const [viewingRoute, setViewingRoute] = useState<Route | null>(null);
-    // const [addOpen, setAddOpen] = useState(false);
     const router = useRouter();
     const [routeToDelete, setRouteToDelete] = useState<Route | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadData = useCallback(async () =>{
+
+        setIsLoading(true);
+        setLoadError(null);
+
         try{
             const [driversRes, vehiclesRes, tripsRes] = await Promise.all([
                 apiFetch<{ data: { drivers: FleetDriver[] } }>('/fleet/fleet_drivers'),
@@ -219,6 +218,9 @@ export default function Routes(){
         }catch(err){
             console.error("Failed to load fleet data:", err);
             setLoadError(err instanceof Error ? err.message : "Failed to load fleet data");
+        }
+        finally{
+            setIsLoading(false);
         }
     },[]);
 
@@ -527,7 +529,15 @@ export default function Routes(){
 
                 <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
 
-                    {activeRoutes.map((route) => (
+                    {isLoading ? (<LoadingSpinner message = "Loading Routes..."/> ) : loadError ? (
+                        <p role="alert" className="mt-4 text-sm text-red-600">
+                            {loadError}
+                        </p>
+                    ) : activeRoutes.length === 0 ? (
+                        <p className="mt-6 text-sm text-slate-500"> No active routes found.</p>
+                    ) : 
+                    ( <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        {activeRoutes.map((route) => (
                         <RouteCard key = {route.id} route = {route}
                         onView = {() => setViewingRoute(route)}
                         onEdit={() => setEditingRoute(route)}
@@ -538,10 +548,9 @@ export default function Routes(){
                             }
                         }} />
                     ))}
-
                 </div>
-
-                {loadError && <p role="alert" className="mt-4 text-sm text-red-600">{loadError}</p>}
+                )}
+                </div>
             </div>
         </div>
     );
