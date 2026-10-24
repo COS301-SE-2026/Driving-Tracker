@@ -76,27 +76,43 @@ export default function VehicleCard({
     },[vehicle.vehicle_id, vehicle.image_url]);
 
     return (
-        <div
-            className="w-full max-w-[238px] rounded-[9px] bg-[#d9d9d9] p-2 text-left transition hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
-        >
+        <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                        {imageLoading ? (
+                            <span className="text-[10px] text-slate-500">Loading...</span>
+                        ) : imageSrc ? (
+                            <Image src = {imageSrc} alt = {`${vehicleName} image`}
+                            fill sizes = "64px" unoptimized className="object-cover"
+                            />) : (
+                                <span className="px-1 text-center text-[10px] text-slate-500">
+                                    No image
+                                </span>
+                            )}
+                    </div>
 
-            <div className="relative flex items-start justify-between gap-2">
-                <h2 className="truncate text-[14px] font-bold">
-                    {vehicleName}
-                </h2>
+                    <div className="min-w-0">
+                        <h2 className="truncate text-lg font-bold text-gray-900">
+                            {vehicleName}
+                        </h2>
+                        <span className="text-sm text-gray-500">
+                            {vehicle.year ?? "Year unavailable"}
+                        </span>
+                    </div>
+                </div>
 
                 <div className="relative shrink-0">
-                    <button 
-                        type="button"
-                        aria-label={`Options for ${vehicleName}`}
-                        onClick={() => setMenuOpen((open) => !open)}
-                        className="rounded-md p-1 hover:bg-white"
+                    <button type = "button" aria-label={`Options for ${vehicleName}`}
+                    onClick={() => setMenuOpen((open) => !open)}
+                    className="rounded-md p-1 hover:bg-slate-100"
                     >
-                        <MoreVertical size={18} />
+                        <MoreVertical size = {18}/>
+
                     </button>
 
                     {menuOpen && (
-                        <div className="absolte right-0 top-8 z-20 w-40 rounded-md border border-slate-200 bg-white p-1 shadow-lg">
+                        <div className="absolute right-0 top-8 z-20 w-40 rounded-md border border-slate-200 bg-white p-1 shadow-lg">
                             <button
                                 type="button"
                                 onClick={() => {
@@ -143,60 +159,38 @@ export default function VehicleCard({
                 </div>
             </div>
 
-            <span className="mb-2 inline-flex rounded-full bg-[#0095ff] px-2 py-[2px] text-[10px] font-semibold text-white">
-                {vehicle.year ?? "Year unavailable"}
-            </span>
+            <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
 
-            {/*vehicle image returned by the backend image search endpoint */}
-            <div className="relative flex h-[202px] items-center justify-center overflow-hidden rounded-md bg-white">
-                {imageLoading ? (
-                    <span className="text-xs text-slate-400">
-                        Loading image...
-                    </span>
-                ) : imageSrc ? (
-                    <Image
-                        src={imageSrc}
-                        alt={`${vehicleName} image`}
-                        fill
-                        sizes="238px"
-                        unoptimized
-                        className="object-contain"
-                    />
-                ) : (
-                    <span className="text-xs text-slate-400">
-                        No image available
-                    </span>
-                )}
+                <span className="font-medium text-gray-900">Registration</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {vehicle.registration ?? "Not available"}
+                </span>
+
+                <span className="font-medium text-gray-900">Status</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {capitalizeFirst(vehicle.status ?? "Unknown")}
+                </span>
+
+                <span className="font-medium text-gray-900">Driver</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {vehicle.assigned_driver?.name ?? "Unassigned"}
+                </span>
+
+                <span className="font-medium text-gray-900">Fuel Type</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {vehicle.fuel_type ? capitalizeFirst(vehicle.fuel_type) : "Not available"}
+                </span>
+
+                <span className="font-medium text-gray-900">Fuel Tank</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {vehicle.fuel_tank != null ? `${vehicle.fuel_tank} L` : "Not available"}
+                </span>
+
+                <span className="font-medium text-gray-900">Trips</span>
+                <span className="min-w-0 break-all text-gray-700">
+                    {vehicle.trip_count ?? 0}
+                </span>
             </div>
-
-            <div className="mt-2 grid grid-cols-[1fr_auto] gap-1 text-[11px]">
-                <div className="space-y-1">
-                    <p>
-                        <strong>Registration:</strong>{" "}
-                        {vehicle.registration ?? "Not available"}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>{" "}
-                        { capitalizeFirst(vehicle.status?? "Unknown") }
-                    </p>
-
-                    <p>
-                        <strong>Driver:</strong>{" "}
-                        {vehicle.assigned_driver
-                            ? vehicle.assigned_driver.name
-                            : "Unassigned"}
-                    </p>
-                </div>
-
-                <div className="flex flex-col items-center justify-center">
-                    <strong className="text-[14px]">TRIPS</strong>
-                    <span className="text-[16px]">
-                        {vehicle.trip_count}
-                    </span>
-                </div>
-            </div>
-
         </div>
     );
 

@@ -18,7 +18,7 @@ export default function PastRoutes({
 } : PastRoutesProps){
 
     return(
-        <div className="flex w-56 flex-col gap-3 border-r border-black bg-white p-4">
+        <div className="flex h-full min-h-0 w-56 shrink-0 flex-col gap-3 border-r border-black bg-white p-4">
             <div className="flex items-center gap-2">
                 <History size={22} className="text-gray-700"/>
                 <h1 className="text-xl font-extrabold text-gray-900">
@@ -33,11 +33,11 @@ export default function PastRoutes({
                     No completed routes.
                 </p>
                 ) : (
-                    <div className="flex flex-col gap-2 overflow-y-auto">
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                         {routes.map((route) => (
                             <button key = {route.id} 
                             onClick={()=> onSelect(route.id)}
-                            className="flex flex-col items-start gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left hover:border-sky-300">
+                            className="flex min-h-20 w-full flex-col items-start gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left hover:border-sky-300">
 
                                 <div className="flex items-center gap-1.5">
                                     <MapPin size = {12} className="shrink-0 text-sky-500"/>

@@ -9,6 +9,7 @@ import ViewDriver from "@/components/drivers/ViewDriver";
 import FilterDrivers, { FilterState } from "@/components/drivers/FilterDrivers";
 import { apiFetch } from "@/lib/auth/apiClient";
 import Image from "next/image";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 type DriverStatus = "Available" | "Assigned" | "On Trip";
 
@@ -254,10 +255,9 @@ export default function ManageDrivers(){
     }
 
     return(
-        <div className="flex">
-            <DashboardNavbar/>
+        <div className="flex min-h-full">
 
-        <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
+        <div className="min-h-full flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
 
             <h1 className="text-4xl text-center font-extrabold text-gray-900">
                 Manage Drivers
@@ -283,21 +283,21 @@ export default function ManageDrivers(){
                 </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((driver) => (
-                    <DriverCard key = {driver.id} driver = {driver} 
-                    onView={()=> setViewingDriver(driver)}
-                    onDelete={() => handleDeleteDriver(driver.id)}/>
-                ))}
-            </div>
+            {isLoading ? ( <LoadingSpinner message = "Loading drivers..." />
+            ) : (<div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map((driver) => (
+                        <DriverCard key = {driver.id} driver = {driver} 
+                        onView={()=> setViewingDriver(driver)}
+                        onDelete={() => handleDeleteDriver(driver.id)}/>
+                    ))}
+                </div>
+            )}
 
             <ViewDriver
             open = {!!viewingDriver}
             onClose = {() => setViewingDriver(null)}
             driver = {viewingDriver}
             />
-
-            {isLoading && <p>Loading drivers...</p>}
             {loadError && <p role="alert">{loadError}</p>}
 
         </div>
