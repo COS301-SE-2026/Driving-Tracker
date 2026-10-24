@@ -44,6 +44,9 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.omnitech.drivingtracker.BuildConfig
 import com.omnitech.drivingtracker.ui.components.StandardScreen
+import com.omnitech.drivingtracker.ui.theme.Blue
+import androidx.compose.foundation.BorderStroke
+import com.omnitech.drivingtracker.ui.theme.Border
 
 @Composable
 fun Contacts(
@@ -70,7 +73,27 @@ fun Contacts(
         bottomBarColor = "more",
         snackbarHost = { SnackbarHost(hostState = snackbarHostState)}
     ) {
-
+        Row(
+                modifier = Modifier.fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ){
+                // Add contact button
+                Button(
+                    onClick = {showAddContactDialog = true},
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Add Contact")
+                }
+        }
         Box(modifier = Modifier.weight(1f)) {
             when (state) {
                 is ContactsViewModel.UiState.Idle, is ContactsViewModel.UiState.Loading -> {
@@ -90,20 +113,6 @@ fun Contacts(
                                     text = "No contacts yet",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                // Add contact button
-                                OutlinedButton(
-                                    onClick = {showAddContactDialog = true},
-                                    shape = RoundedCornerShape(50),
-                                    border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Add",
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = "Add Contact")
-                                }
                             }
                         }
                     } else {
@@ -111,28 +120,12 @@ fun Contacts(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             contacts.forEach { contact ->
                                 ContactCard(contact = contact)
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Add contact button
-                            OutlinedButton(
-                                onClick = {showAddContactDialog = true},
-                                shape = RoundedCornerShape(50),
-                                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "Add Contact")
                             }
                         }
                     }
@@ -155,6 +148,7 @@ fun Contacts(
                 }
             }
         }
+        
     }
 
     if(showAddContactDialog){
@@ -213,9 +207,10 @@ fun ContactCard(contact: ContactDto) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(5.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(1.dp, Border)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
