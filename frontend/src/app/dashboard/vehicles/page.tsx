@@ -83,7 +83,6 @@ export default function VehiclesPage() {
 
     return (
         <main className="flex min-h-screen bg-white">
-            <DashboardNavbar />
 
             <section className="min-w-0 flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
                 <h1 className="text-4xl text-center font-extrabold text-gray-900">
@@ -159,7 +158,7 @@ export default function VehiclesPage() {
                 )}
 
                 {!isLoading && !error && (
-                    <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-6 grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3">
                         {filteredVehicles.map((vehicle) => (
                             <VehicleCard
                                 key={vehicle.vehicle_id}

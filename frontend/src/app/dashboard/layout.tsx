@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardNavbar from "@/components/DashboardNavbar";
 
 function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
     const { isInitializing, isAuthenticated } = useAuth();
@@ -27,8 +28,18 @@ function DashboardAuthGuard({ children }: { children: React.ReactNode }) {
         return null;
     }
 
-    return <><DashboardHeader/> {children}</>;
-}
+    return (
+    <div className="flex h-dvh overflow-hidden">
+        <DashboardNavbar/>
+        <div className = "flex min-h-0 min-w-0 flex-1 flex-col">
+            <DashboardHeader/>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+                {children}
+            </div>
+        </div>
+    </div>
+    );
+};
 
 export default function DashboardLayout({
     children,

@@ -256,7 +256,6 @@ export default function ManageDrivers(){
 
     return(
         <div className="flex">
-            <DashboardNavbar/>
 
         <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
 

@@ -452,8 +452,8 @@ export default function Routes(){
     );
 
     return(
-        <div className="flex">
-            <DashboardNavbar />
+        <div className="flex h-full min-h-0 w-full overflow-hidden">
+            
 
             <PastRoutes routes={pastRoutes} 
             onSelect={(id)=> {
@@ -463,7 +463,7 @@ export default function Routes(){
                 }
             }} />
 
-            <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
                 <h1 className="text-4xl text-center font-extrabold text-gray-900">
                     Routes
                 </h1>
@@ -527,8 +527,6 @@ export default function Routes(){
                     </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-
                     {isLoading ? (<LoadingSpinner message = "Loading Routes..."/> ) : loadError ? (
                         <p role="alert" className="mt-4 text-sm text-red-600">
                             {loadError}
@@ -552,6 +550,5 @@ export default function Routes(){
                 )}
                 </div>
             </div>
-        </div>
     );
 }

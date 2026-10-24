@@ -79,12 +79,12 @@ export default function VehicleCard({
         <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
                         {imageLoading ? (
                             <span className="text-[10px] text-slate-500">Loading...</span>
                         ) : imageSrc ? (
                             <Image src = {imageSrc} alt = {`${vehicleName} image`}
-                            fill sizes = "48px" unoptimized className="object-cover"
+                            fill sizes = "64px" unoptimized className="object-cover"
                             />) : (
                                 <span className="px-1 text-center text-[10px] text-slate-500">
                                     No image
@@ -161,32 +161,32 @@ export default function VehicleCard({
 
             <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
 
-                <span className="font medium text-gray-900">Registration</span>
+                <span className="font-medium text-gray-900">Registration</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {vehicle.registration ?? "Not available"}
                 </span>
 
-                <span className="font medium text-gray-900">Status</span>
+                <span className="font-medium text-gray-900">Status</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {capitalizeFirst(vehicle.status ?? "Unknown")}
                 </span>
 
-                <span className="font medium text-gray-900">Driver</span>
+                <span className="font-medium text-gray-900">Driver</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {vehicle.assigned_driver?.name ?? "Unassigned"}
                 </span>
 
-                <span className="font medium text-gray-900">Fuel Type</span>
+                <span className="font-medium text-gray-900">Fuel Type</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {vehicle.fuel_type ? capitalizeFirst(vehicle.fuel_type) : "Not available"}
                 </span>
 
-                <span className="font medium text-gray-900">Fuel Tank</span>
+                <span className="font-medium text-gray-900">Fuel Tank</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {vehicle.fuel_tank != null ? `${vehicle.fuel_tank} L` : "Not available"}
                 </span>
 
-                <span className="font medium text-gray-900">Fuel Tank</span>
+                <span className="font-medium text-gray-900">Trips</span>
                 <span className="min-w-0 break-all text-gray-700">
                     {vehicle.trip_count ?? 0}
                 </span>
