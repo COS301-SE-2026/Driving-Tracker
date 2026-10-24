@@ -1500,7 +1500,7 @@ describe("Fleet controller", () =>{
 
         it("returns the organization's name", async () => {
 
-            mockFleetServices.get_organization_name.mockResolvedValueOnce(null);
+            mockFleetServices.get_organization_name.mockResolvedValueOnce("Fleet One");
             const response = makeResponse();
 
             await fleet_controller.get_organization(
