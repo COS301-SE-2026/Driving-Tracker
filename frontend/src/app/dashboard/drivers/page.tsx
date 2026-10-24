@@ -255,9 +255,9 @@ export default function ManageDrivers(){
     }
 
     return(
-        <div className="flex">
+        <div className="flex min-h-full">
 
-        <div className="flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
+        <div className="min-h-full flex-1 bg-gradient-to-br from-white via-sky-50 to-sky-150 p-8">
 
             <h1 className="text-4xl text-center font-extrabold text-gray-900">
                 Manage Drivers

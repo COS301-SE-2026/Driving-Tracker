@@ -46,6 +46,7 @@ import com.omnitech.drivingtracker.BuildConfig
 import com.omnitech.drivingtracker.ui.components.StandardScreen
 import com.omnitech.drivingtracker.ui.theme.Blue
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import com.omnitech.drivingtracker.ui.theme.Border
 
 @Composable
@@ -76,7 +77,7 @@ fun Contacts(
         Row(
                 modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.Start
             ){
                 // Add contact button
                 Button(
