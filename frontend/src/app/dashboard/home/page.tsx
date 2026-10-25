@@ -217,26 +217,6 @@ export default function DashboardHomePage() {
 
                 const harshEvents = await getFleetEvents();
 
-                // const response = await apiFetch(`${apiUrl}/admin/fleet/dashboard`, {
-                //     headers: {
-                //         Authorization: `Bearer ${accessToken ?? ""}`,
-                //     },
-                // });
-
-                // if (!response.ok) {
-                //     throw new Error("Unabel to load fleet dashboard data");
-                // }
-
-                // const result = (await response.json()) as {
-                //     data?: FleetDashboardResponse;
-                // } & FleetDashboardResponse;
-
-                //supports both {  data: {...} } and direct API responses
-                // const dashboard = result.data ?? result;
-
-                // setDrivers(dashboard.drivers);
-                // setStats(dashboard.stats);
-
                 const displayDrivers: Driver[] = fleetDrivers.map((d) => ({
                     id: d.user_id,
                     name: `${d.name} ${d.surname}`,
@@ -276,12 +256,10 @@ export default function DashboardHomePage() {
     }, [drivers, search]);
 
     return (
-        <main className="flex h-screen w-full overflow-hidden bg-white">
-
-            <DashboardNavbar />
+        <main className="flex h-full min-h-0 w-full overflow-hidden bg-white">
 
             {/* driver search and driver cards section */}
-            <aside className="w-[190px] shrink-0 border-r border-black bg-white px-[18px] py-[26px]">
+            <aside className="flex h-full min-h-0 w-[190px] shrink-0 flex-col overflow-hidden border-r border-black bg-white px-[18px] py-[26px]">
                 <div className="mx-auto mb-[50px] flex h-7 w-[122px] items-center rounded-full border border-black px-2">
                     <input 
                         type="search"
@@ -303,7 +281,7 @@ export default function DashboardHomePage() {
                     </span> 
                 </div>
 
-                <div className="flex flex-col gap-5">
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
                     {filteredDrivers.map((driver) => {
                         const isSelected = selectedDriverId === driver.id;
 
@@ -375,7 +353,7 @@ export default function DashboardHomePage() {
             </aside>
 
             {/* Main map and stats area */}
-            <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+            <section className="flex flex-1 min-w-0 flex-1 flex-col overflow-hidden">
                 <div className="h-3/4 min-h-0 border-b-2 border-[#159fe9]">
                     <FleetMap
                         drivers={drivers}

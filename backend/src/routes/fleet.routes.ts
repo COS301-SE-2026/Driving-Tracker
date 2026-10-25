@@ -791,6 +791,6 @@ fleet_router.get('/fleet_harsh_events', verify_token, create_user_based_limiter(
 fleet_router.delete('/fleet_trips/:trip_id', verify_token, create_user_based_limiter(), fleet_controller.delete_fleet_trip);
 
 fleet_router.patch('/fleet_trips/:trip_id', verify_token, create_user_based_limiter(), fleet_controller.edit_scheduled_trip);
-
+fleet_router.get("/organization", verify_token, create_user_based_limiter(), fleet_controller.get_organization);
 
 export default fleet_router;

@@ -1141,6 +1141,13 @@ export const fleet_services = {
         return updated_trip;
     },
 
+    async get_organization_name(org_id: string): Promise<string|null>{
+        const organization = await prisma.organizations.findUnique({
+            where: {org_id},
+            select: {name: true},
+        });
+        return organization?.name ?? null;
+    }
 };
 
 
