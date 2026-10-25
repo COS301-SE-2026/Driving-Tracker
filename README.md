@@ -13,17 +13,21 @@
 
 > An intelligent Android driving companion that unifies sensor fusion, vehicle diagnostics, behavioural analytics, and social engagement into one platform - making safer, more efficient driving accessible and rewarding for everyday drivers.
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Driving-Tracker/DT-CI.yml?style=plastic&logo=GitHub)
-[![codecov](https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov)](https://codecov.io/gh/COS301-SE-2026/Driving-Tracker)
-
-![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)
-[![Pull Requests](https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub)](https://github.com/COS301-SE-2026/Driving-Tracker/pulls)
-
-[![Uptime Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/SenteMngomez/upptime/master/api/driving-tracker-api/uptime.json)](https://sentemngomez.github.io/upptime)
-
-![Static Badge](https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs)
-![Static Badge](https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin)
-
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/Driving-Tracker/DT-CI.yml?style=plastic&logo=GitHub" alt="GitHub Actions Workflow Status">
+  <a href="https://codecov.io/gh/COS301-SE-2026/Driving-Tracker">
+    <img src="https://img.shields.io/codecov/c/github/COS301-SE-2026/Driving-Tracker/dev?style=plastic&logo=codecov" alt="Codecov">
+  </a>
+  <img src="https://img.shields.io/github/issues/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub" alt="GitHub Issues">
+  <a href="https://github.com/COS301-SE-2026/Driving-Tracker/pulls">
+    <img src="https://img.shields.io/github/issues-pr/COS301-SE-2026/Driving-Tracker?style=plastic&logo=GitHub" alt="Pull Requests">
+  </a>
+  <a href="https://sentemngomez.github.io/upptime">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/SenteMngomez/upptime/master/api/driving-tracker-api/uptime.json" alt="Uptime Status">
+  </a>
+  <img src="https://img.shields.io/badge/NodeJS-20-green?style=plastic&logo=nodedotjs" alt="NodeJS 20">
+  <img src="https://img.shields.io/badge/Kotlin-2.3-%237F52FF?style=plastic&logo=kotlin" alt="Kotlin 2.3">
+</p>
 
 <h2>Client</h2>
 </br>
@@ -73,6 +77,8 @@ The system operates across three layers:
 ---
 
 ## Demos & Project Management
+[▶ **App Showcase video**](https://drive.google.com/file/d/1rC_vPJdh-C7h1PiZo3ekdKXx1F-0i0wj/view)
+
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
 [Demo2 video](docs/Documentation-Demo2/Demo2.mp4)\
