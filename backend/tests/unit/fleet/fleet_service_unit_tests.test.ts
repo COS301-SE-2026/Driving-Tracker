@@ -22,6 +22,7 @@ jest.mock('../../../src/db/prisma', () => {
         },
         organizations: {
             create: jest.fn(),
+            findUnique: jest.fn(),
         },
         organization_members: {
             findUnique: jest.fn(),
@@ -1338,6 +1339,42 @@ describe('fleet services ', () => {
             ).rejects.toThrow("Driver has a scheduled trip that overlaps this time");
         });
 	});
+
+    describe("get_organization_name", () => {
+
+        it("returns the organization's name", async () => {
+            mock_prisma.organizations.findUnique.mockResolvedValue({
+                name: "Fleet One",
+            });
+
+            await expect(
+                fleet_services.get_organization_name("org-1"),
+            ).resolves.toBe("Fleet One");
+
+            expect(mock_prisma.organizations.findUnique).toHaveBeenCalledWith({
+                where: {org_id:  "org-1"},
+                select: {name: true},
+            });
+        });
+
+        it("returns null when the organization does not exist", async () => {
+            mock_prisma.organizations.findUnique.mockResolvedValue(null);
+
+            await expect(
+                fleet_services.get_organization_name("missing-org"),
+            ).resolves.toBeNull();
+        });
+
+        it("propagates database errors", async () => {
+            const databaseError = new Error("Database unavailable");
+            mock_prisma.organizations.findUnique.mockRejectedValue(databaseError);
+
+            await expect(
+                fleet_services.get_organization_name("org-1"),
+            ).rejects.toThrow("Database unavailable");
+        });
+        
+    });
 });
 
 

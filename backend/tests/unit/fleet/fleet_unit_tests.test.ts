@@ -20,6 +20,7 @@ jest.mock("../../../src/services/fleet_services", () =>({
         delete_fleet_driver: jest.fn(),
         delete_fleet_trip: jest.fn(),
         edit_scheduled_trip: jest.fn(),
+        get_organization_name: jest.fn(),
     },
 }));
 
@@ -1463,6 +1464,70 @@ describe("Fleet controller", () =>{
             expect(response.json).toHaveBeenCalledWith({ 
                 error: "INTERNAL_SERVER_ERROR",
                 message: "Failed to update scheduled trip",
+            });
+        });
+    });
+
+    describe("get_organization", () => {
+
+        it("returns 401 when unauthenticated", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.get_organization(
+                makeRequest({user:undefined}),
+                response as any,
+            );
+
+            expectStatus(response, 401);
+        });
+
+        it("returns 403 for a driver role", async () => {
+            const response = makeResponse();
+
+            await fleet_controller.get_organization(
+                makeRequest({
+                    user: {
+                        sub: "user-1",
+                        org_id: "org-1",
+                        org_role: OrganizationRole.DRIVER,
+                    },
+                }),
+                response as any,
+            );
+
+            expectStatus(response, 403);
+        });
+
+        it("returns the organization's name", async () => {
+
+            mockFleetServices.get_organization_name.mockResolvedValueOnce("Fleet One");
+            const response = makeResponse();
+
+            await fleet_controller.get_organization(
+                makeRequest(),
+                response as any,
+            );
+
+            expect(mockFleetServices.get_organization_name).toHaveBeenCalledWith("org-1");
+            expectStatus(response, 200);
+            expect(response.json).toHaveBeenCalledWith({data: {name: "Fleet One"},
+            });
+        });
+
+        it("returns 404 when no organization is found", async () => {
+
+            mockFleetServices.get_organization_name.mockResolvedValueOnce(null);
+            const response = makeResponse();
+
+            await fleet_controller.get_organization(
+                makeRequest(),
+                response as any,
+            );
+
+            expectStatus(response, 404);
+            expect(response.json).toHaveBeenCalledWith({
+                error: "ORGANIZATION_NOT_FOUND",
+                message: "Organization not found",
             });
         });
     })

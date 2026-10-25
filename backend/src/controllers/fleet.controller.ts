@@ -879,6 +879,47 @@ const fleet_controller = {
         }
     },
 
+    async get_organization(req: AuthRequest, res: Response){
+
+        const user_id = req.user?.sub;
+        const org_id = req.user?.org_id;
+        const org_role = req.user?.org_role;
+
+        if (!user_id){
+            return res.status(401).json({error: "UNAUTHORIZED"});
+        }
+
+        if (!check_org_authorization(
+            res,
+            org_role as OrganizationRole,
+            org_id,
+            "You do not have permission to view this organization",
+            [OrganizationRole.ADMIN, OrganizationRole.MANAGER],
+        )){
+            return;
+        }
+
+        try{
+            const name = await fleet_services.get_organization_name(org_id!);
+
+            if (!name){
+                return res.status(404).json({
+                    error: "ORGANIZATION_NOT_FOUND",
+                    message: "Organization not found",
+                });
+            }
+
+            return res.status(200).json({data: {name}});
+        }
+        catch (error){
+            console.error("Failed to retrieve organization:", error);
+            return res.status(500).json({
+                error: "INTERNAL_SERVER_ERROR",
+                message: "Failed to retrieve organization",
+            });
+        }
+    },
+
 };
 
 export default fleet_controller;
