@@ -77,7 +77,7 @@ The system operates across three layers:
 ---
 
 ## Demos & Project Management
-[▶ **App Showcase video**](https://drive.google.com/file/d/1rC_vPJdh-C7h1PiZo3ekdKXx1F-0i0wj/view)
+[▶ **App showcase video**](https://drive.google.com/file/d/1rC_vPJdh-C7h1PiZo3ekdKXx1F-0i0wj/view)
 
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
