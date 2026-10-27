@@ -77,7 +77,10 @@ The system operates across three layers:
 ---
 
 ## Demos & Project Management
-[▶ **App showcase video**](https://drive.google.com/file/d/1rC_vPJdh-C7h1PiZo3ekdKXx1F-0i0wj/view)
+[▶ **App trailer video (Youtube)**](https://youtu.be/v4HnPUjByNw)\
+[▶ **App trailer video (Google Drive)**](https://drive.google.com/file/d/1shNYi0mtdywuzb43Qu0RCrL6KVuK6qzh/view?usp=drive_link)\
+[▶ **App showcase video (Youtube)**](https://youtu.be/DSiHE-Dp_dY)\
+[▶ **App showcase video (Google Drive)**](https://drive.google.com/file/d/1rC_vPJdh-C7h1PiZo3ekdKXx1F-0i0wj/view)
 
 [Github Project Board](https://github.com/orgs/COS301-SE-2026/projects/56)\
 [Demo1 video](docs/Documentation-Demo1/Demo1.mp4)\
@@ -134,10 +137,10 @@ The system operates across three layers:
 
 | Layer | Technologies |
 |-------|-------------|
-| **Mobile** | Kotlin, Android Sensor API, Mapbox, Bluetooth OBD (ELM327), Retrofit |
-| **Backend** | Node.js, Express, REST API, WebSockets, JWT Auth |
-| **Database** | PostgreSQL, Redis |
-| **Infrastructure** | Microsoft Azure App Service, Azure Functions, Azure Blob Storage |
+| **Mobile** | Kotlin, Android Sensor API, Azure Maps, Bluetooth OBD (ELM327), Retrofit, Jetpack Compose |
+| **Backend** | Node.js, Express, WebSockets, JWT Auth |
+| **Database** | PostgreSQL, Room DB |
+| **Infrastructure** | Microsoft Azure App Service, Azure DB for Postgres, Azure Blob Storage, Firebase Cloud Messaging |
 | **Web Dashboard** | React, Next.js, TypeScript, Tailwind CSS |
 
 ---
@@ -157,7 +160,7 @@ The system operates across three layers:
 ## Getting our app
 
 To download the Driving Tracker application, visit our deployed landing page:
-[Driving Tracker Landing Page](https://cos301-se-2026.github.io/Driving-Tracker/)
+[Driving Tracker Landing Page](https://driving-tracker-seven.vercel.app/)
 
 Explore the features and learn more about the app, then click the **Download** button located in the navigation bar at the top of the page or in the footer section.
 
