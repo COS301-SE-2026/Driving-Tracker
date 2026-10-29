@@ -92,7 +92,7 @@ export default function Welcome({ onFinish }: WelcomeProps) {
             <svg 
                 ref={wheelRef} 
                 viewBox="0 0 200 200"
-                className="w-[180px] h-[180px] text-[var(--color-primary)] opacity-0 overflow-visible" 
+                className="h-[clamp(120px,35vw,180px)] w-[clamp(120px,35vw,180px)] overflow-visible text-[var(--color-primary)] opacity-0" 
                 aria-hidden="true"
             >
 
@@ -120,7 +120,7 @@ export default function Welcome({ onFinish }: WelcomeProps) {
                 <circle cx="100" cy="100" r="23" fill="currentColor" />
             </svg>
 
-            <div className="flex items-center gap-5 text-[2rem] font-medium tracking-[0.04em] uppercase">
+            <div className="flex flex-wrap justify-center gap-2 px-4 text-center text-[clamp(1rem,5vw,2rem)] font-medium uppercase tracking-[0.04em]">
                 {TAGLINE.map((word, index) => (
 
                     <span
