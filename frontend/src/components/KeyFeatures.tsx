@@ -159,7 +159,10 @@ useEffect(() => {
 }, [activeScreenIndex]);
 
 return (
-  <section id="key-features" className="w-full py-16 px-4 md:px-8 bg-[var(--color-bg)]">
+  <section
+    id="key-features"
+    className="w-full overflow-hidden bg-[var(--color-bg)] px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+  >
     {/*Title Header */}
     <div className="text-center mb-12">
       <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-[var(--color-text)]">
@@ -170,7 +173,7 @@ return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
       {/*Left Column: Blue gradient container with screenshot */}
-      <div className="lg:col-span-5 relative flex flex-col justify-center items-center p-6 md:p-10 rounded-[36px] bg-gradient-to-b from-[#e0f2fe] via-[#bae6fd]/50 to-white/10 shadow-sm border border-sky-100/60 min-h-[580px]">
+      <div className="lg:col-span-5 relative flex flex-col justify-center items-center p-6 md:p-10 rounded-[36px] bg-gradient-to-b from-[#e0f2fe] via-[#bae6fd]/50 to-white/10 shadow-sm border border-sky-100/60 min-h-[420px] sm:min-h-[520px] lg:min-h-[580px]">
       
         {/*image element */}
         <div className="relative flex justify-center items-center max-w-[280px] md:max-w-[310px]">
@@ -201,7 +204,7 @@ return (
       </div>
 
       {/*Right Column: 3 card display */}
-      <div className="lg:col-span-7 relative min-h-[580px] flex flex-col justify-between py-2 gap-6 lg:gap-0">
+      <div className="lg:col-span-7 relative min-h-[420px] sm:min-h-[520px] lg:min-h-[580px] flex flex-col justify-between py-2 gap-6 lg:gap-0">
 
           {/*Top Left card */}
           <div className="flex justify-start">
