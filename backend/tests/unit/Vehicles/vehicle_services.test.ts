@@ -936,7 +936,7 @@ describe('vehicle services get fuel analytics', ()=>{
         const result = await vehicle_services.get_fuel_analytics({user_id: 'u1'});
 
         expect(result.history).toHaveLength(2);
-        expect(result.average_fuel_efficiency).toBeCloseTo(13.5,1);
+        expect(result.average_fuel_efficiency).toBeCloseTo(12,1);
         expect(result.best_fuel_efficiency).toBeCloseTo(9,2);
         expect(result.worst_fuel_efficiency).toBeCloseTo(18,2);
     });

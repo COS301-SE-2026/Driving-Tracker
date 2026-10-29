@@ -196,7 +196,7 @@ fun DriverAnalytics(navController: NavController ?= null,
                 item{
                     PerformanceSection(safety = uiState.safetyScore ?: 0,
                         eco = uiState.ecoScore ?: 0,
-                        fuel = uiState.fuelEfficiency ?: 0.0,
+                        fuel = uiState.fuelEfficiency,
                         events = uiState.eventCount ?: 0,
 
                         onFuelClick = { navController?.navigate(Screen.FuelAnalytics.route)},
@@ -313,7 +313,7 @@ fun PerformanceCard(
 fun PerformanceSection(
     safety: Int,
     eco: Int,
-    fuel: Double,
+    fuel: Double?,
     events: Int,
     onFuelClick: (()->Unit)?= null,
     onEventsClick: (()->Unit)?= null,
@@ -358,11 +358,15 @@ fun PerformanceSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ){
+
+            val fuelText = fuel?.takeIf { it > 0.0 }
+                ?.let { String.format(Locale.getDefault(), "%.1f", it) }
+
             PerformanceCard(
                 icon = Icons.Default.LocalGasStation,
                 title = "Fuel",
-                value = String.format(Locale.getDefault(),"%.1f", fuel),
-                unit = "L/100",
+                value = fuelText ?: "-",
+                unit = if(fuelText != null) "L/100km" else "",
                 accentColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
                 onClick = onFuelClick

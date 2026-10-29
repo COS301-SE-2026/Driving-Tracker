@@ -175,7 +175,7 @@ describe('rate limiting', () =>{
 
             const next = jest.fn();
 
-            for(let i = 0; i<100; i++){
+            for(let i = 0; i<150; i++){
                 await user_based_limiter(req, res, next);
             }
 

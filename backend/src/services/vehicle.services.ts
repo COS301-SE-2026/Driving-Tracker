@@ -418,6 +418,8 @@ export const vehicle_services={
 
         const user_id = data.user_id;
 
+        const MIN_TRIP_KM = 3;
+
         if (!user_id){
             throw new Error("Missing field(s)");
         }
@@ -468,7 +470,7 @@ export const vehicle_services={
                     const fuel_level_start = t.fuel_level_start != null ? Number(t.fuel_level_start) : null;
                     const fuel_level_end = t.fuel_level_end != null ? Number(t.fuel_level_end) : null;
 
-                    if (distance_km === null || distance_km <= 0 || fuel_level_start === null || fuel_level_end === null){
+                    if (distance_km === null || distance_km <= MIN_TRIP_KM || fuel_level_start === null || fuel_level_end === null || fuel_level_end <= 0){
                         continue;
                     }
 
@@ -479,6 +481,10 @@ export const vehicle_services={
                     }
 
                     const efficiency_l_per_100km = (fuel_used_liters / distance_km) * 100;
+
+                    if(efficiency_l_per_100km > 40){ //implausable value for a standard road vehicle
+                        continue;
+                    }
 
                     points.push({
                         date: t.end_time ? t.end_time.toISOString().slice(0,10) : "", distance_km,
@@ -495,13 +501,22 @@ export const vehicle_services={
                     history: []
                 };
             }
+            // const efficiencies = points.map(
+            //     p=> p.efficiency_l_per_100km
+            // );
+            // const average = efficiencies.reduce(
+            //     (sum,e) => sum + e, 0
+            // ) / efficiencies.length;            // Calculate weighted average based on total fuel and total distance
+            let total_fuel = 0;
+            let total_dist = 0;
+            for (const p of points) {
+                total_fuel += p.fuel_used_liters;
+                total_dist += p.distance_km;
+            }
+            const average = total_dist > 0 ? (total_fuel / total_dist) * 100 : 0;
             const efficiencies = points.map(
-                p=> p.efficiency_l_per_100km
+            p=> p.efficiency_l_per_100km
             );
-            const average = efficiencies.reduce(
-                (sum,e) => sum + e, 0
-            ) / efficiencies.length;
-
             return{
                 average_fuel_efficiency: parseFloat(average.toFixed(2)),
                 best_fuel_efficiency: Math.min(...efficiencies),
