@@ -468,7 +468,7 @@ export const vehicle_services={
                     const fuel_level_start = t.fuel_level_start != null ? Number(t.fuel_level_start) : null;
                     const fuel_level_end = t.fuel_level_end != null ? Number(t.fuel_level_end) : null;
 
-                    if (distance_km === null || distance_km <= 0 || fuel_level_start === null || fuel_level_end === null){
+                    if (distance_km === null || distance_km <= 0 || fuel_level_start === null || fuel_level_end === null || fuel_level_end <= 0){
                         continue;
                     }
 
@@ -479,6 +479,10 @@ export const vehicle_services={
                     }
 
                     const efficiency_l_per_100km = (fuel_used_liters / distance_km) * 100;
+
+                    if(efficiency_l_per_100km > 40){ //implausable value for a standard road vehicle
+                        continue;
+                    }
 
                     points.push({
                         date: t.end_time ? t.end_time.toISOString().slice(0,10) : "", distance_km,

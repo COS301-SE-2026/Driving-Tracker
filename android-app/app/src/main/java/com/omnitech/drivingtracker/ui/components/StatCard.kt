@@ -63,33 +63,43 @@ fun StatCard(label: String, value: Int, unit: String = "", icon: Painter, percen
                 fontWeight = FontWeight.Bold
             )
 
-
+            Text(
+                text = if(percentage > 0) "+$percentage%"
+                    else if(percentage < 0) "-$percentage%"
+                    else "$percentage%",
+                color = if(percentage >= 0) Green else Error,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .align(Alignment.End) //pushes text to the right
+                    .padding(bottom = 8.dp)
+            )
 
             //for the  increase
-            if (percentage > 0) {
-                //positive change
-                Text(
-                    text = "+$percentage%",
-                    color = Green,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .align(Alignment.End) //pushes text to the right
-                        .padding(bottom = 8.dp)
-                )
-
-            } else if (percentage < 0) {
-                //negative change
-                Text(
-                    text = "$percentage%",
-                    color = Error,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .align(Alignment.End) //pushes text to the right
-                        .padding(bottom = 8.dp)
-                )
-            }
+//            if (percentage > 0) {
+//                //positive change
+//                Text(
+//                    text = "+$percentage%",
+//                    color = Green,
+//                    fontWeight = FontWeight.Bold,
+//                    fontSize = 12.sp,
+//                    modifier = Modifier
+//                        .align(Alignment.End) //pushes text to the right
+//                        .padding(bottom = 8.dp)
+//                )
+//
+//            } else if (percentage < 0) {
+//                //negative change
+//                Text(
+//                    text = "-$percentage%",
+//                    color = Error,
+//                    fontWeight = FontWeight.Bold,
+//                    fontSize = 12.sp,
+//                    modifier = Modifier
+//                        .align(Alignment.End) //pushes text to the right
+//                        .padding(bottom = 8.dp)
+//                )
+//            }
 
         }
     }
