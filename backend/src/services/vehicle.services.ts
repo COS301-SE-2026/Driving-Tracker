@@ -418,6 +418,8 @@ export const vehicle_services={
 
         const user_id = data.user_id;
 
+        const MIN_TRIP_KM = 3;
+
         if (!user_id){
             throw new Error("Missing field(s)");
         }
@@ -468,7 +470,7 @@ export const vehicle_services={
                     const fuel_level_start = t.fuel_level_start != null ? Number(t.fuel_level_start) : null;
                     const fuel_level_end = t.fuel_level_end != null ? Number(t.fuel_level_end) : null;
 
-                    if (distance_km === null || distance_km <= 0 || fuel_level_start === null || fuel_level_end === null || fuel_level_end <= 0){
+                    if (distance_km === null || distance_km <= MIN_TRIP_KM || fuel_level_start === null || fuel_level_end === null || fuel_level_end <= 0){
                         continue;
                     }
 
