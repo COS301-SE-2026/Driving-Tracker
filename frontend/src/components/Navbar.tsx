@@ -22,29 +22,44 @@ export default function Navbar() {
 
   return(
 
-    <nav className = "flex items-center px-6 py-4 h-[var(--navbar-height)] sticky top-0 z-50 hero-gradient">
+    <nav className="relative sticky top-0 z-50 flex min-h-[var(--navbar-height)] items-center justify-between px-4 py-3 sm:px-6 hero-gradient">
       <Link href = "/" className = "text-2xl md:text-3xl tracking-tight font-semibold">
         <span className = "text-[var(--color-primary)]">Driving </span>
         <span className = "text-[var(--color-text)]">Tracker</span>
       </Link>
 
     {/*Links*/}
-    <div className = "hidden md:flex flex-1 justify-end items-center gap-16 mr-8">
+    <div className="hidden flex-1 items-center justify-end gap-6 lg:gap-10 md:flex">
       {/*dropdown menu of the features*/}
       <div className = "relative"
       onMouseEnter = {() => setFeaturesOpen(true)}
       onMouseLeave= {() => setFeaturesOpen(false)}>
-        <button type = "button" className = "rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
+        <button
+          type="button"
+          className="rounded-full bg-[var(--color-bg)] px-5 py-2 font-semibold text-[var(--color-primary)] transition-colors duration-200 hover:bg-[var(--color-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          aria-haspopup="menu"
+          aria-expanded={featuresOpen}
+          onClick={() => setFeaturesOpen((open) => !open)}
+        >
           Features
         </button>
         {featuresOpen && (
-          <div className = "absolute top-full left-0 flex flex-col py-2 w-64 bg-white border border-[var(--color-border)] rounded-lg shadow-lg">
+          <div
+            className="absolute left-0 top-full z-50 mt-2 flex w-64 flex-col rounded-lg border border-[var(--color-border)] bg-white py-2 shadow-lg"
+            role="menu"
+          >
             {FEATURES.map((feature) => (
-              <a key = {feature.label} href = {feature.href} className = "px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] transition-colors">
+              <a
+                key={feature.label}
+                href={feature.href}
+                role="menuitem"
+                onClick={() => setFeaturesOpen(false)}
+                className="px-4 py-3 text-sm text-[var(--color-text)] transition-colors hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] focus-visible:bg-[var(--color-bg)] focus-visible:text-[var(--color-primary)] focus-visible:outline-none"
+              >
                 {feature.label}
               </a>
             ))}
-            </div>
+          </div>
         )}
       </div>
       <Link href = "/help" className = "relative rounded-full bg-[var(--color-bg)] px-5 py-2 text-[var(--color-primary)] font-semibold hover:bg-[var(--color-secondary)] transition-colors duration-200 border-[var(--color-primary)]">
@@ -69,13 +84,18 @@ export default function Navbar() {
     </div>
 
     {/* Mobile menu to account for devices since we are android */}
-    <div className = "flex items-center gap-4">
-      <button type = "button"
-      className = "md:hidden absolute top-full left-0 w-full flex flex-col px-6 py-4 bg-white border-t border-[var(--color-border)] shadow-lg gap-2"
-      onClick = {() => setMobileMenuOpen((prev) => !prev)}
-      aria-label = "Toggle menu"
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        className="rounded-lg p-2 text-[var(--color-text)] transition-colors hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)] md:hidden"
+        onClick={() => setMobileMenuOpen((open) => !open)}
+        aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={mobileMenuOpen}
+        aria-controls="mobile-navigation"
       >
-        {mobileMenuOpen ? "Close" : "Menu"}
+        <span aria-hidden="true" className="text-2xl leading-none">
+          {mobileMenuOpen ? "×" : "☰"}
+        </span>
       </button>
       <Image
        src = {`${BASE_PATH}/images/screen1.png`} 
@@ -84,6 +104,61 @@ export default function Navbar() {
        height={56}
        className="h-14 w-14 rounded-full"/>
     </div>
+
+    {mobileMenuOpen && (
+      <div
+        id="mobile-navigation"
+        className="absolute left-0 top-full w-full border-t border-[var(--color-border)] bg-white p-4 shadow-lg md:hidden"
+      >
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              document
+                .getElementById("key-features")
+                ?.scrollIntoView({ behavior: "smooth" });
+              setMobileMenuOpen(false);
+            }}
+            className="rounded-lg px-4 py-3 text-left font-semibold text-[var(--color-primary)] hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          >
+            Features
+          </button>
+
+          <Link
+            href="/help"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg px-4 py-3 font-semibold text-[var(--color-primary)] hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          >
+            Help
+          </Link>
+
+          <Link
+            href="/style-guide"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg px-4 py-3 font-semibold text-[var(--color-primary)] hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          >
+            Style Guide
+          </Link>
+
+          <Link
+            href="/login"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg px-4 py-3 font-semibold text-[var(--color-primary)] hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          >
+            Fleet Dashboard
+          </Link>
+
+          <a
+            href={APK_URL}
+            download
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg bg-[var(--color-secondary)] px-4 py-3 font-semibold text-white hover:bg-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-tertiary)]"
+          >
+            Download
+          </a>
+        </div>
+      </div>
+    )}
 
     </nav>
 

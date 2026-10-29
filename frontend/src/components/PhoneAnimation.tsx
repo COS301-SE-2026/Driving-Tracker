@@ -67,14 +67,14 @@ export default function PhoneAnimation(){
         ref = {containerRef}
         onMouseMove = {handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="relative w-full max-w-md h-[520px] [perspective:1000px]"
+        className="relative h-[360px] w-full max-w-md [perspective:1000px] sm:h-[460px] lg:h-[520px]"
         >
             {PHONE_PICS.map((phone, i) => (
 
                 <div
                 key = {phone.src}
                 ref = {(el) => {cardRefs.current[i] = el;}}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 md:w-48"
+                className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 sm:w-40 lg:w-48"
                 style = {{
                     zIndex: phone.z,
                     transform: `translate(${phone.base.x}px, ${phone.base.y}px) rotate(${phone.base.rotate}deg)`
