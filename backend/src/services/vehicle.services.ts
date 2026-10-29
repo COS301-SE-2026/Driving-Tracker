@@ -495,13 +495,22 @@ export const vehicle_services={
                     history: []
                 };
             }
+            // const efficiencies = points.map(
+            //     p=> p.efficiency_l_per_100km
+            // );
+            // const average = efficiencies.reduce(
+            //     (sum,e) => sum + e, 0
+            // ) / efficiencies.length;            // Calculate weighted average based on total fuel and total distance
+            let total_fuel = 0;
+            let total_dist = 0;
+            for (const p of points) {
+                total_fuel += p.fuel_used_liters;
+                total_dist += p.distance_km;
+            }
+            const average = total_dist > 0 ? (total_fuel / total_dist) * 100 : 0;
             const efficiencies = points.map(
-                p=> p.efficiency_l_per_100km
+            p=> p.efficiency_l_per_100km
             );
-            const average = efficiencies.reduce(
-                (sum,e) => sum + e, 0
-            ) / efficiencies.length;
-
             return{
                 average_fuel_efficiency: parseFloat(average.toFixed(2)),
                 best_fuel_efficiency: Math.min(...efficiencies),

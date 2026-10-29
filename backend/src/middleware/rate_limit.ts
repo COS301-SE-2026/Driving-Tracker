@@ -6,8 +6,8 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 const isTestEnv = process.env.NODE_ENV === 'test';
 
 export const create_user_based_limiter = () => isTestEnv? (req: any, res: any, next: any) => next() : rateLimit({
-    windowMs: 15*60*1000, //15 minutes
-    max: 100, //100 requests
+    windowMs: 5*60*1000, //15 minutes
+    max: 150, //100 requests
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: AuthRequest): string => {
