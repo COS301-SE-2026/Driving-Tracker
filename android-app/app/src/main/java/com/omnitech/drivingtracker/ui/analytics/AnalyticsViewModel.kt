@@ -107,7 +107,7 @@ class AnalyticsViewModel @Inject constructor(
                                 drivingScore = avgOverall,
                                 safetyScore = avgSafety,
                                 ecoScore = avgEco,
-                                fuelEfficiency = fuelData.averageFuelEfficiency,
+                                fuelEfficiency = fuelData.averageFuelEfficiency?.let { if (it > 0) 100.0 / (if (it > 50) it / 10.0 else it) else null },
                                 totalDistanceKm = totalDistance,
                                 tripCount = tripCount,
                                 totalMinutes = totalMinutes,
